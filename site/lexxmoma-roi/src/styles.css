@@ -65,7 +65,7 @@ h1, h2, h3 { margin: 0; font-weight: 700; }
 }
 .splitter::before { content: ""; position: absolute; left: 3px; top: 0; bottom: 0; width: 4px; border-radius: 2px; background: var(--border); }
 .splitter:hover::before, .splitter.drag::before { background: var(--primary); }
-.corp-logo { height: 28px; width: auto; display: block; margin-right: 8px; box-sizing: content-box; padding: 3px 6px; border-radius: 6px; background: #fff; } /* assets/theme.js の .lx-logo と同じ見た目(単体配布でも同じ) */
+.corp-logo { height: 28px; width: auto; display: block; box-sizing: content-box; padding: 3px 6px; border-radius: 6px; background: #fff; } /* assets/theme.js の .lx-logo と同じ見た目(単体配布でも同じ) */
 .hdr .brand { align-items: center; }
 .panel {
   background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
@@ -264,7 +264,7 @@ dialog p { color: var(--muted); font-size: 12px; margin: 0 0 8px; }
 }
 
 /* ---------- テーマ（light / dark）: サイト共通の assets/theme.js が <html data-theme> を設定 ---------- */
-.corp-link { display: block; border-radius: 6px; }
+.corp-link { display: flex; align-items: center; gap: 18px; color: inherit; text-decoration: none; border-radius: 6px; } /* ロゴ + LexxMoMa をまとめてトップへのリンクに(.lx-brand と同じ) */
 .corp-link:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .lx-theme-btn:empty { display: none; } /* theme.js が無い単体配布時はボタンを出さない */
 .hdr .lx-theme-btn { --lx-theme-btn: 34px; border-radius: 50%; border-color: var(--border); color: var(--muted); }
