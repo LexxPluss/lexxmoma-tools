@@ -1,0 +1,23 @@
+# Original package from the tools team (reference only; this repo is the source of truth)
+LexxMoMa-Tools/
+/*.pdf
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.claude/
+
+# Internal-only content: never commit, even once (see site/README of the original package)
+site/**/internal/
+site/**/safety-navi/
+site/**/crx-eoat-tool/
+site/**/CRX_EOAT_Tool/
+site/robot-sier-map/scripts/
+site/robot-sier-map/data/raw/
+site/robot-sier-map/README.md
+site/library/README.md
+site/lexxmoma-roi/SPEC.md
+site/lexxmoma-roi/CLAUDE.md
+__pycache__/
+*.pyc
