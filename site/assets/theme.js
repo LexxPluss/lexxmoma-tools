@@ -1,7 +1,8 @@
 /* LexxMoMa Tools 共通テーマ (light / dark)
  * 使い方: <head> 内、CSS より前に同期読込する(描画前に適用して色のちらつきを防ぐ)
  *   <script src="../assets/theme.js"></script>   (階層に応じて assets/ や ../../assets/)
- *   - 既定は light。OS の設定には追従しない
+ *   - 既定は OS の設定(prefers-color-scheme)に従い、OS 側の変更にも追従する
+ *     切替ボタンで選んだら、その選択を OS の設定より優先する
  *   - <html data-theme="light|dark"> を常に明示するので、ページ側の CSS は :root[data-theme="dark"] を書けばよい
  *     (既存の @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) … } は light 固定時に効かない)
  *   - 切替ボタン: data-lx-theme-toggle を付けた要素をクリックで切替。aria-pressed を自動で更新
@@ -16,14 +17,19 @@
  *     色はページの CSS で --lx-brand / --lx-hdr-bg / --lx-hdr-text を上書きできる
  *   - JS から: lxTheme.get() / lxTheme.set("dark") / lxTheme.toggle()
  *     変更は "lx-theme" イベント(document)で通知。canvas など CSS 以外で色を持つ描画はこれで再描画する
- *   - 選択は localStorage("lx_theme") に保存し、全ページ・他タブで共有
+ *   - 選択は localStorage("lx_theme") に保存し、全ページ・他タブで共有(未選択なら保存しない)
  */
 (function () {
   var KEY = "lx_theme";
   var root = document.documentElement;
 
+  var mq = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+
+  function saved() {
+    try { var v = localStorage.getItem(KEY); return v === "dark" || v === "light" ? v : null; } catch (e) { return null; }
+  }
   function read() {
-    try { return localStorage.getItem(KEY) === "dark" ? "dark" : "light"; } catch (e) { return "light"; }
+    return saved() || (mq && mq.matches ? "dark" : "light");
   }
   var ICONS = '<svg class="lx-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>' +
     '<svg class="lx-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg>';
@@ -81,6 +87,11 @@
   });
   // 他のタブで切り替えたら追従
   window.addEventListener("storage", function (e) { if (e.key === KEY) apply(read(), false); });
+  // 未選択なら OS の切替に追従
+  if (mq) {
+    var onOs = function () { if (!saved()) apply(read(), false); };
+    if (mq.addEventListener) mq.addEventListener("change", onOs); else if (mq.addListener) mq.addListener(onOs);
+  }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", sync);
   else sync();
 })();

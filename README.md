@@ -57,8 +57,9 @@ do not copy in packages (zip) from elsewhere.
 
 Every page loads it in `<head>` before CSS (404 copies the styles inline).
 
-- Light by default; the toggle `<button class="lx-theme-btn" data-lx-theme-toggle>` switches to dark and the choice
-  is shared by all pages (`localStorage["lx_theme"]`). Style dark mode with `:root[data-theme="dark"]`.
+- Follows the OS light / dark setting by default (and tracks OS changes). Once the user presses the toggle
+  `<button class="lx-theme-btn" data-lx-theme-toggle>`, that choice wins over the OS and is shared by all pages
+  (`localStorage["lx_theme"]`). Style dark mode with `:root[data-theme="dark"]`.
 - Header (ROI Calculator style): `.lx-hdr` > `.lx-title` > `a.lx-brand` (`img.lx-logo` + `.lx-wordmark`) + `.lx-tool`.
   The logo always links back to the landing page.
 
