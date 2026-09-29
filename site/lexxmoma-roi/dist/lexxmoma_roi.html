@@ -1,0 +1,2171 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1024">
+<title>LexxMoMa 費用対効果（ROI）計算ツール</title>
+<!-- 共通テーマ(light/dark)。サイト外で単体配布したときは読めずに light のまま動く。ビルドでもインライン化しない -->
+<script src="../../assets/theme.js"></script>
+<style>
+/* LexxMoMa 費用対効果 簡易計算ツール — styles.css */
+:root {
+  --primary: #0068B7;
+  --primary-light: #E6F0F9;
+  --accent: #3EB370;
+  --accent-light: #E8F6EE;
+  --yellow: #F2B705;
+  --grey: #9AA0A6;
+  --text: #1F2933;
+  --muted: #5F6B7A;
+  --border: #D9DEE3;
+  --bg: #FFFFFF;
+  --bg-soft: #F5F7FA;
+  --warn: #D93025;
+  --radius: 8px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  min-width: 1024px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Noto Sans JP", "Hiragino Sans", "Yu Gothic UI", Meiryo, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+h1, h2, h3 { margin: 0; font-weight: 700; }
+
+/* ---------- ヘッダー ---------- */
+.hdr {
+  display: flex; align-items: center; gap: 20px;
+  padding: 12px 24px;
+  border-bottom: 3px solid var(--primary);
+  background: var(--bg);
+}
+.hdr .brand { display: flex; align-items: baseline; gap: 10px; }
+/* LexxMoMa Tools 共通ヘッダー(.lx-hdr / .lx-wordmark / .lx-tool, ../../assets/theme.js)と同じ値。theme.js が無い単体表示でも同じ見た目にする */
+.hdr .brand .logo, .hdr .brand h1 { font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", Meiryo, system-ui, sans-serif; }
+.hdr .brand .logo { color: var(--primary); font-weight: 800; font-size: 20px; letter-spacing: .02em; }
+.hdr .brand h1 { font-size: 16px; font-weight: 600; }
+.hdr .spacer { flex: 1; }
+.mode-toggle { display: inline-flex; border: 1px solid var(--primary); border-radius: 999px; overflow: hidden; }
+.mode-toggle button { background: #fff; border: 0; padding: 6px 18px; color: var(--primary); font-weight: 600; }
+.mode-toggle button.on { background: var(--primary); color: #fff; }
+.scn { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+.scn input { width: 200px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; }
+.icon-btn {
+  width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border); background: #fff;
+  display: inline-flex; align-items: center; justify-content: center; color: var(--muted);
+}
+.icon-btn:hover { border-color: var(--primary); color: var(--primary); }
+.icon-btn svg { width: 18px; height: 18px; }
+
+/* ---------- レイアウト ---------- */
+.grid {
+  display: grid; grid-template-columns: var(--inputs-w, 470px) 10px 1fr; gap: 0 8px;
+  padding: 18px 24px 8px;
+  align-items: start;
+}
+.splitter {
+  align-self: stretch; cursor: col-resize; border-radius: 5px; position: relative;
+  background: transparent;
+}
+.splitter::before { content: ""; position: absolute; left: 3px; top: 0; bottom: 0; width: 4px; border-radius: 2px; background: var(--border); }
+.splitter:hover::before, .splitter.drag::before { background: var(--primary); }
+.corp-logo { height: 28px; width: auto; display: block; margin-right: 8px; box-sizing: content-box; padding: 3px 6px; border-radius: 6px; background: #fff; } /* assets/theme.js の .lx-logo と同じ見た目(単体配布でも同じ) */
+.hdr .brand { align-items: center; }
+.panel {
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px 18px;
+}
+/* 入力パネルは画面内に固定し、内側で独立スクロール */
+.panel.inputs { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; overscroll-behavior: contain; }
+.panel.inputs > h2 { position: sticky; top: 0; background: var(--bg); z-index: 1; margin-top: -4px; padding-top: 4px; }
+.panel > h2 { font-size: 14px; color: var(--primary); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+
+/* ---------- 入力 ---------- */
+.field { display: grid; grid-template-columns: 1fr; gap: 4px; padding: 8px 0; border-bottom: 1px dashed var(--border); }
+.field:last-child { border-bottom: 0; }
+.field > label { font-weight: 600; font-size: 13px; }
+.field .ctl { display: flex; align-items: center; gap: 8px; }
+.field .ctl input[type="range"] { flex: 1; accent-color: var(--primary); }
+.field .ctl input[type="number"], .field .ctl input[type="text"] {
+  width: 110px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; text-align: right;
+  background: #fff;
+}
+.field .ctl input[data-path="base.opexAnnual"] { width: 160px; }
+.field .ctl input.warn { border-color: var(--warn); background: #FDECEA; }
+.field .ctl .unit { color: var(--muted); min-width: 44px; font-size: 12px; }
+.field .hint { color: var(--muted); font-size: 12px; }
+.btn-group { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.btn-group button { border: 0; background: #fff; padding: 6px 16px; border-right: 1px solid var(--border); }
+.btn-group button:last-child { border-right: 0; }
+.btn-group button.on { background: var(--primary); color: #fff; }
+
+.group { border: 1px solid var(--border); border-radius: var(--radius); margin: 8px 0; padding: 6px 12px 8px; background: var(--bg-soft); }
+.group > legend { font-weight: 700; font-size: 13px; color: var(--primary); padding: 0 6px; background: #fff; border-radius: 4px; }
+.group .field { padding: 5px 0; border-bottom: 0; }
+.group .field > label { font-weight: 500; }
+.group .row { display: grid; grid-template-columns: 1fr 160px 60px; align-items: center; gap: 8px; padding: 4px 0; }
+.group .row label { font-size: 13px; }
+.group .row input { width: 100%; padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; text-align: right; background: #fff; }
+.group .row input.warn { border-color: var(--warn); background: #FDECEA; }
+.group .row .unit { color: var(--muted); font-size: 12px; }
+.group .total { display: grid; grid-template-columns: 1fr 160px 60px; align-items: center; gap: 8px; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border); font-weight: 700; }
+.group .total .val { text-align: right; color: var(--primary); font-size: 15px; }
+.group .total input { width: 100%; padding: 5px 8px; border: 1px solid var(--primary); border-radius: 6px; text-align: right; font-weight: 700; color: var(--primary); background: #fff; }
+.group .total input.derived { border-color: var(--border); color: var(--text); background: #F0F2F5; }
+.group .total .unit { color: var(--muted); font-size: 12px; font-weight: 400; }
+.group .note { grid-column: 1 / -1; color: var(--muted); font-size: 11px; font-weight: 400; }
+.group .ref { color: var(--muted); font-size: 12px; margin-top: 4px; }
+.check { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.check input { accent-color: var(--primary); width: 16px; height: 16px; }
+
+/* ---------- 結果 ---------- */
+.results { display: grid; grid-template-columns: 300px 1fr; grid-auto-rows: max-content; align-content: start; gap: 14px 18px; }
+.results h2 { grid-column: 1 / -1; }
+.kpi-main { grid-column: 1; }
+.kpi-side { grid-column: 2; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-content: start; }
+.chart-wrap { grid-column: 1 / -1; }
+.compare-wrap { grid-column: 1 / -1; }
+
+.gauge { text-align: center; }
+.gauge svg { width: 100%; height: auto; display: block; }
+.gauge .big { font-size: 40px; font-weight: 800; line-height: 1; color: var(--text); }
+.gauge .big small { font-size: 18px; font-weight: 600; margin-left: 4px; }
+.gauge .status { font-size: 13px; color: var(--muted); margin-top: 6px; min-height: 1.5em; }
+.gauge .legend { display: flex; justify-content: center; gap: 12px; font-size: 11px; color: var(--muted); margin-top: 4px; }
+.gauge .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+.placeholder {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 190px; border: 2px dashed var(--border); border-radius: var(--radius); color: var(--muted); text-align: center; padding: 16px;
+}
+.placeholder b { color: var(--primary); font-size: 16px; }
+.placeholder .tip { font-size: 12px; margin-top: 8px; }
+
+.kpi { border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; background: var(--bg-soft); }
+.kpi .k { font-size: 12px; color: var(--muted); }
+.kpi .v { font-size: 22px; font-weight: 800; color: var(--primary); line-height: 1.2; }
+.kpi .v small { font-size: 12px; font-weight: 500; color: var(--muted); margin-left: 3px; }
+.kpi .sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.kpi.accent .v { color: var(--accent); }
+.kpi.neg .v { color: var(--warn); }
+.kpi.muted .v { color: var(--text); }
+
+.chart-wrap svg { width: 100%; height: auto; display: block; }
+.chart-title { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.chart-title .legend { display: flex; gap: 12px; font-size: 11px; font-weight: 400; color: var(--muted); }
+.chart-title .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+
+.compare-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.compare-head h3 { font-size: 13px; flex: 1; }
+.btn { border: 1px solid var(--primary); background: #fff; color: var(--primary); padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; }
+.btn:hover { background: var(--primary-light); }
+.btn.primary { background: var(--primary); color: #fff; }
+.btn.primary:hover { background: #005596; }
+.btn.accent { border-color: var(--accent); color: var(--accent); }
+.btn.accent:hover { background: var(--accent-light); }
+.btn.ghost { border-color: var(--border); color: var(--muted); }
+.btn.sm { padding: 4px 10px; font-size: 12px; }
+table.compare { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.compare th, table.compare td { padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: right; }
+table.compare th { background: var(--bg-soft); font-weight: 600; }
+table.compare th:first-child, table.compare td:first-child { text-align: left; }
+table.compare th.a { color: var(--primary); }
+table.compare th.b { color: var(--accent); }
+table.compare tr.hl td { font-weight: 700; }
+table.compare .empty { color: var(--muted); font-weight: 400; }
+
+/* ---------- 工場タイクーン 3D（結果パネル最上段） ---------- */
+.factory-wrap { grid-column: 1 / -1; }
+.scene-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-size: 12px; }
+.scene-bar .btn-group button { padding: 5px 12px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.scene-bar .btn { white-space: nowrap; }
+.scene-hint { white-space: nowrap; }
+.scene-bar .btn-group button[data-view="before"].on { background: var(--grey); }
+.scene-bar .btn-group button[data-view="after"].on { background: var(--accent); }
+.scene-bar .btn-group button:disabled { color: #B9C6D2; cursor: not-allowed; }
+.scene-hint { color: var(--muted); }
+.scene-caption { margin-left: auto; font-weight: 700; color: var(--text); }
+.factory { position: relative; }
+.scene-events { position: absolute; right: 12px; top: 52px; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+.ev-btn { border: 1px solid var(--border); background: rgba(255,255,255,.94); color: var(--text); border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.08); white-space: nowrap; }
+.ev-btn:hover { border-color: var(--primary); color: var(--primary); }
+.ev-btn:disabled { opacity: .45; cursor: not-allowed; }
+.ev-btn.active { background: var(--warn); border-color: var(--warn); color: #fff; }
+.ev-count { font-size: 10.5px; color: var(--muted); background: rgba(255,255,255,.85); border-radius: 999px; padding: 2px 8px; }
+.factory canvas { display: block; width: 100%; height: 320px; border-radius: var(--radius); border: 1px solid var(--border); cursor: grab; touch-action: none; user-select: none; background: #F1F5F9; }
+.factory canvas.drag { cursor: grabbing; }
+
+/* 初期投資：単価 × 数量 */
+.group .row.capex { grid-template-columns: 1fr 120px 14px 58px 34px 84px; }
+.group .row.capex .x { text-align: center; color: var(--muted); }
+.group .row.capex input.qty { text-align: center; }
+.group .row.capex .amt { text-align: right; font-weight: 600; color: var(--text); font-size: 12.5px; white-space: nowrap; }
+.group .row.capex .amt small { color: var(--muted); font-weight: 400; }
+.group .capex-head { display: grid; grid-template-columns: 1fr 120px 14px 58px 34px 84px; gap: 8px; font-size: 10.5px; color: var(--muted); padding: 0 0 2px; }
+.group .capex-head span:nth-child(2) { text-align: right; }
+.group .capex-head span:nth-child(4) { text-align: center; }
+.group .capex-head span:last-child { text-align: right; }
+
+/* ---------- アクション ---------- */
+.actions { display: flex; gap: 10px; padding: 8px 24px 16px; align-items: center; }
+.actions .btn { padding: 8px 16px; }
+.toast {
+  position: fixed; left: 50%; bottom: 70px; transform: translateX(-50%);
+  background: var(--text); color: #fff; padding: 10px 18px; border-radius: 6px; font-size: 13px;
+  opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.toast.show { opacity: .95; }
+
+/* ---------- フッター ---------- */
+footer {
+  padding: 10px 24px 18px; color: var(--muted); font-size: 12px; border-top: 1px solid var(--border);
+  display: flex; justify-content: space-between;
+}
+
+/* ---------- ダイアログ ---------- */
+dialog { border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 22px; min-width: 360px; }
+dialog::backdrop { background: rgba(31,41,51,.35); }
+dialog h3 { font-size: 15px; color: var(--primary); margin-bottom: 10px; }
+dialog .row { display: grid; grid-template-columns: 1fr 90px 40px; gap: 8px; align-items: center; padding: 6px 0; }
+dialog .row input { padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; text-align: right; }
+dialog .row i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+dialog .foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+dialog p { color: var(--muted); font-size: 12px; margin: 0 0 8px; }
+
+/* ---------- 印刷用入力サマリー ---------- */
+.print-summary { display: none; }
+
+/* ---------- 印刷 ---------- */
+@media print {
+  @page { size: A4 portrait; margin: 10mm 12mm; }
+  html, body { min-width: 0; width: auto; font-size: 10.5px; }
+  .hdr { padding: 4px 0 6px; border-bottom-width: 2px; }
+  .hdr .mode-toggle, .hdr .icon-btn, .hdr .scn input { display: none; }
+  .hdr .scn::after { content: attr(data-print); font-weight: 600; color: var(--text); }
+  .actions, .toast, dialog, .inputs, .splitter, .compare-head .btn, .no-print { display: none !important; }
+  .corp-logo { height: 22px; }
+  .grid { display: block; padding: 6px 0 0; }
+  .panel { border: 0; padding: 0; }
+  .print-summary { display: block; grid-column: 1 / -1; margin-bottom: 6px; }
+  .print-summary h2 { font-size: 11px; color: var(--primary); border-bottom: 1px solid var(--border); padding-bottom: 2px; margin-bottom: 4px; }
+  .print-summary table { width: 100%; border-collapse: collapse; font-size: 9.5px; }
+  .print-summary td { padding: 1px 6px; border-bottom: 1px dotted var(--border); }
+  .print-summary td.v { text-align: right; white-space: nowrap; }
+  .print-summary .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; align-items: start; }
+  .print-summary .cols.three { grid-template-columns: 1fr 1fr 1fr; }
+  .results { grid-template-columns: 220px 1fr; gap: 6px 12px; }
+  .results > h2 { font-size: 11px; margin-bottom: 2px; }
+  .gauge .big { font-size: 26px; }
+  .gauge .big small { font-size: 13px; }
+  .gauge .status, .gauge .legend { font-size: 9px; }
+  .kpi { padding: 5px 8px; }
+  .kpi .v { font-size: 15px; }
+  .kpi .k, .kpi .sub { font-size: 9px; }
+  .chart-wrap svg { max-height: 62mm; }
+  table.compare { font-size: 9.5px; }
+  table.compare th, table.compare td { padding: 2px 6px; }
+  footer { padding: 4px 0; font-size: 9px; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+/* ---------- テーマ（light / dark）: サイト共通の assets/theme.js が <html data-theme> を設定 ---------- */
+.corp-link { display: block; border-radius: 6px; }
+.corp-link:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.lx-theme-btn:empty { display: none; } /* theme.js が無い単体配布時はボタンを出さない */
+.hdr .lx-theme-btn { --lx-theme-btn: 34px; border-radius: 50%; border-color: var(--border); color: var(--muted); }
+
+/* dark は画面表示のみ。印刷（A4）は常に light（ui.js が beforeprint でも light に戻して再描画） */
+@media screen {
+  :root[data-theme="dark"] {
+    --primary: #5aa8e6;
+    --primary-light: #12314a;
+    --accent: #5fcb8a;
+    --accent-light: #14352a;
+    --yellow: #F2B705;
+    --grey: #7d8a96;
+    --text: #e7edf2;
+    --muted: #a3b1bd;
+    --border: #2b3741;
+    --bg: #0f1519;
+    --bg-soft: #171f26;
+    --warn: #ff7a6e;
+    --panel-2: #1e2831;
+    --on-primary: #0f1519;
+    --chart-track: #26323c;
+    color-scheme: dark;
+  }
+  :root[data-theme="dark"] .panel { background: var(--bg-soft); }
+  :root[data-theme="dark"] .panel.inputs > h2 { background: var(--bg-soft); }
+  :root[data-theme="dark"] .group { background: var(--bg); }
+  :root[data-theme="dark"] .kpi, :root[data-theme="dark"] table.compare th { background: var(--panel-2); }
+  /* 白地だった入力・ボタン類 */
+  :root[data-theme="dark"] .mode-toggle button,
+  :root[data-theme="dark"] .icon-btn,
+  :root[data-theme="dark"] .btn-group button,
+  :root[data-theme="dark"] .btn,
+  :root[data-theme="dark"] .group > legend,
+  :root[data-theme="dark"] .field .ctl input[type="number"],
+  :root[data-theme="dark"] .field .ctl input[type="text"],
+  :root[data-theme="dark"] .group .row input,
+  :root[data-theme="dark"] .group .total input,
+  :root[data-theme="dark"] .scn input,
+  :root[data-theme="dark"] dialog,
+  :root[data-theme="dark"] dialog .row input { background: var(--panel-2); color: var(--text); }
+  :root[data-theme="dark"] .mode-toggle button,
+  :root[data-theme="dark"] .btn { color: var(--primary); }
+  :root[data-theme="dark"] .btn.accent { color: var(--accent); }
+  :root[data-theme="dark"] .btn.ghost { color: var(--muted); }
+  :root[data-theme="dark"] .group .total input { color: var(--primary); }
+  :root[data-theme="dark"] .group .total input.derived { background: var(--bg); color: var(--text); }
+  :root[data-theme="dark"] .field .ctl input.warn,
+  :root[data-theme="dark"] .group .row input.warn { background: #3a1d1a; }
+  /* 塗りの主ボタン: 明るい青の上は暗い文字 */
+  :root[data-theme="dark"] .mode-toggle button.on,
+  :root[data-theme="dark"] .btn-group button.on,
+  :root[data-theme="dark"] .btn.primary { background: var(--primary); color: var(--on-primary); }
+  :root[data-theme="dark"] .btn.primary:hover { background: #8cc4f0; }
+  :root[data-theme="dark"] .btn:hover { background: var(--primary-light); }
+  :root[data-theme="dark"] .btn.accent:hover { background: var(--accent-light); }
+  :root[data-theme="dark"] .scene-bar .btn-group button[data-view="before"].on { background: var(--grey); color: var(--on-primary); }
+  :root[data-theme="dark"] .scene-bar .btn-group button[data-view="after"].on { background: var(--accent); color: var(--on-primary); }
+  :root[data-theme="dark"] .scene-bar .btn-group button:disabled { color: #56636f; }
+  /* 3D の工場シーンは絵として light のまま。上に重なるボタンだけ暗色に */
+  :root[data-theme="dark"] .ev-btn { background: rgba(23,31,38,.94); }
+  :root[data-theme="dark"] .ev-btn.active { background: var(--warn); color: var(--on-primary); }
+  :root[data-theme="dark"] .ev-count { background: rgba(23,31,38,.85); }
+  :root[data-theme="dark"] .toast { background: var(--text); color: var(--bg); }
+  :root[data-theme="dark"] dialog::backdrop { background: rgba(0,0,0,.55); }
+}
+
+</style>
+</head>
+<body>
+
+<header class="hdr lx-hdr">
+  <div class="brand lx-title">
+    <a class="corp-link" href="../../index.html" title="LexxMoMa Tools のトップへ" aria-label="LexxMoMa Tools のトップへ戻る"><img class="corp-logo lx-logo" src="data:image/png;base64,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" alt="LexxPluss"></a>
+    <span class="logo lx-wordmark">LexxMoMa</span>
+    <h1 class="lx-tool">費用対効果（ROI）計算ツール</h1>
+  </div>
+  <div class="mode-toggle" role="tablist" aria-label="モード">
+    <button type="button" data-mode="light" class="on" role="tab">ライト</button>
+    <button type="button" data-mode="detail" role="tab">精緻</button>
+  </div>
+  <div class="spacer"></div>
+  <label class="scn" id="scnLabel" data-print="">シナリオ名
+    <input id="scenarioName" type="text" placeholder="例：2直・1人再配置案" maxlength="60">
+  </label>
+  <button type="button" class="icon-btn" id="btnGear" title="稟議基準（メーターのしきい値）" aria-label="稟議基準を設定">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
+    </svg>
+  </button>
+  <button type="button" class="lx-theme-btn" data-lx-theme-toggle aria-label="ライト / ダーク切替"></button>
+</header>
+
+<main class="grid">
+  <section class="panel inputs" aria-label="入力">
+    <h2>入力</h2>
+    <div id="inputs"></div>
+  </section>
+
+  <div class="splitter" id="splitter" title="ドラッグで入力パネルの幅を変更" role="separator" aria-orientation="vertical"></div>
+
+  <section class="panel results" aria-label="結果">
+    <h2>結果</h2>
+    <div class="print-summary" id="printSummary"></div>
+    <div class="factory-wrap no-print" id="factoryWrap">
+      <div class="scene-bar">
+        <div class="btn-group" id="viewToggle" role="tablist" aria-label="表示切替">
+          <button type="button" data-view="before" role="tab">Before：現状</button>
+          <button type="button" data-view="after" role="tab" class="on">After：LexxMoMa 導入後</button>
+        </div>
+        <button type="button" class="btn ghost sm" id="scenePlay" aria-pressed="true">⏸ 一時停止</button>
+        <button type="button" class="btn ghost sm" id="sceneReset">視点リセット</button>
+        <span class="scene-hint">ドラッグで視点を回転／ホイールで拡大縮小</span>
+        <span class="scene-caption" id="sceneCaption"></span>
+      </div>
+      <div class="factory" id="factory">
+        <canvas id="sceneCanvas" aria-label="工場の3Dビュー"></canvas>
+        <div class="scene-events" aria-label="イベント">
+          <button type="button" class="ev-btn" data-ev="rush" title="フル稼働の指示。人は焦り、LexxMoMaは速度アップで対応します（約9秒）">🚨 フル稼働指示</button>
+          <button type="button" class="ev-btn" data-ev="heat" title="猛暑日。人は汗をかき作業量が落ち、LexxMoMaは変わらず稼働します（約10秒）">🌡 猛暑</button>
+          <button type="button" class="ev-btn" data-ev="quake" title="地震。人は避難、LexxMoMaは緊急停止。復旧時間の差に注目（約13秒）">🌏 災害</button>
+          <span class="ev-count" id="evCount" title="イベントが3回重なると作業者が倒れ、救急搬送されます"></span>
+        </div>
+      </div>
+    </div>
+    <div class="kpi-main" id="gauge"></div>
+    <div class="kpi-side" id="kpis"></div>
+    <div class="chart-wrap" id="chart"></div>
+    <div class="compare-wrap" id="compare"></div>
+  </section>
+</main>
+
+<div class="actions">
+  <button type="button" class="btn primary" id="btnCsv">CSVダウンロード</button>
+  <button type="button" class="btn" id="btnSummary">サマリー文をコピー</button>
+  <button type="button" class="btn" id="btnPrint">印刷</button>
+  <button type="button" class="btn" id="btnUrl">URLをコピー</button>
+  <button type="button" class="btn ghost" id="btnReset" title="入力を初期値に戻します（シナリオA/Bも消えます）">初期化</button>
+</div>
+
+<footer>
+  <span>本ツールの計算結果は概算であり、正式な見積・提案とは異なります。</span>
+  <span>LexxMoMa 費用対効果（ROI）計算ツール v1 / 株式会社LexxPluss</span>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<dialog id="dlgThreshold">
+  <h3>稟議基準（メーターの色分け）</h3>
+  <p>投資回収年数の判定しきい値です。設定はURLに保持されます。</p>
+  <div class="row"><span><i style="background:#3EB370"></i>緑：この年数以下</span><input type="number" id="thGreen" min="0" step="0.1"><span>年</span></div>
+  <div class="row"><span><i style="background:#F2B705"></i>黄：この年数以下</span><input type="number" id="thYellow" min="0" step="0.1"><span>年</span></div>
+  <div class="row"><span><i style="background:#9AA0A6"></i>グレー：それ以上・未回収</span><span></span><span></span></div>
+  <div class="foot">
+    <button type="button" class="btn ghost sm" id="thDefault">初期値に戻す</button>
+    <button type="button" class="btn primary sm" id="thClose">閉じる</button>
+  </div>
+</dialog>
+
+<script>
+/* LexxMoMa 費用対効果 簡易計算ツール — calc.js
+ * 計算ロジック（純関数のみ・DOM非依存）。ブラウザでは globalThis.LXCALC、Node では module.exports。
+ * 通貨単位はすべて万円。 */
+(function (root, factory) {
+  'use strict';
+  const api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  root.LXCALC = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  // ---------- 入力の正規化 ----------
+  function isBlank(v) { return v === null || v === undefined || v === ''; }
+  function toNumber(v) {
+    if (typeof v === 'number') return v;
+    if (isBlank(v)) return NaN;
+    return Number(String(v).replace(/,/g, '').trim());
+  }
+  /** 負値・NaN・空欄は 0 扱い */
+  function num(v) {
+    const n = toNumber(v);
+    if (!Number.isFinite(n) || n < 0) return 0;
+    return n;
+  }
+  /** 警告表示用：空欄以外で数値として不正（NaN・負値）なら true */
+  function isInvalid(v) {
+    if (isBlank(v)) return false;
+    const n = toNumber(v);
+    return !Number.isFinite(n) || n < 0;
+  }
+  function normalizeShifts(s) { const n = Math.round(num(s)); return Math.min(3, Math.max(1, n || 1)); }
+  function normalizeYears(y) { const n = Math.round(num(y)); return n >= 1 ? n : 5; }
+
+  // ---------- 状態の既定値 ----------
+  const DEFAULT_STATE = {
+    v: 1,
+    mode: 'light',                 // 'light' | 'detail'
+    scenarioName: '',
+    base: {                        // 両モード共通の入力（ライトモードの7項目）
+      laborCostPerPerson: 600,
+      shifts: 2,
+      personsPerShift: 1,
+      wageGrowth: 3,
+      capex: { robot: '', camera: '', endEffector: '', integration: '' },          // 単価（万円）
+      capexQty: { robot: 1, camera: 1, endEffector: 1, integration: 1 },          // 数量（台・個・式）
+      opexAnnual: '',
+      years: 5
+    },
+    detail: {                      // 精緻モードの展開項目
+      wage: { base: 450, overheadRate: 30, overtimeHours: 0, overtimeRate: 0, hiringTraining: 0 },
+      ops: { workingDays: 240, hoursPerShift: 8, stationsPerRobot: 1, availability: 95 },
+      capex: { si: '', safety: '', layout: '', training: '', spares: '' },        // 単価（万円）
+      capexQty: { si: 1, safety: 1, layout: 1, training: 1, spares: 1 },         // 数量（式）
+      opex: { maintenance: '', software: '', power: '', consumables: '' },
+      extra: { qualitySaving: 0, downtimeSaving: 0 },
+      fin: { enableNPV: false, discountRate: 5, depreciationYears: 7 },
+      // 合計欄の直接入力値（null なら展開項目から自動算出）
+      override: { labor: null, integration: null, opex: null }
+    },
+    thresholds: { green: 2.0, yellow: 3.0 },
+    scenarios: { A: null, B: null },
+    ui: { inputWidth: 470 }                    // 画面レイアウト（入力パネル幅）
+  };
+  function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
+  function defaultState() { return deepClone(DEFAULT_STATE); }
+  /** base の構造を保ちつつ patch の値を取り込む（未知キーは無視） */
+  function mergeState(base, patch) {
+    if (!patch || typeof patch !== 'object') return base;
+    for (const k of Object.keys(base)) {
+      if (!(k in patch)) continue;
+      const bv = base[k], pv = patch[k];
+      if (k === 'scenarios' || k === 'override') { base[k] = Object.assign({}, bv, pv || {}); continue; }
+      if (bv && typeof bv === 'object' && !Array.isArray(bv)) {
+        if (pv && typeof pv === 'object') mergeState(bv, pv);
+      } else {
+        base[k] = pv;
+      }
+    }
+    return base;
+  }
+
+  // ---------- 精緻モードの部分計算 ----------
+  function laborCostFromWage(w) {
+    return num(w.base) * (1 + num(w.overheadRate) / 100)
+      + num(w.overtimeHours) * num(w.overtimeRate) / 10000
+      + num(w.hiringTraining);
+  }
+  function effectivePersonsPerShift(personsPerShift, ops) {
+    return num(personsPerShift) * num(ops.stationsPerRobot) * num(ops.availability) / 100;
+  }
+  function sumItems(obj) { return Object.keys(obj).reduce((a, k) => a + num(obj[k]), 0); }
+  /** 数量：空欄は 1 扱い（負値・NaN は 0） */
+  function qty(v) { return isBlank(v) ? 1 : num(v); }
+  /** 金額 = 単価 × 数量 */
+  function amount(price, q) { return num(price) * qty(q); }
+  /** 単価×数量の合計（qtyObj が無ければ数量1） */
+  function sumAmounts(prices, qtys) { return Object.keys(prices).reduce((a, k) => a + amount(prices[k], qtys ? qtys[k] : 1), 0); }
+  function allBlank(obj) { return Object.keys(obj).every(k => isBlank(obj[k])); }
+  /** 参考表示：時間あたり人件費（円/h） */
+  function hourlyRate(laborCostPerPerson, ops) {
+    const h = num(ops.workingDays) * num(ops.hoursPerShift);
+    return h > 0 ? num(laborCostPerPerson) * 10000 / h : 0;
+  }
+
+  /** 状態 → 実効パラメータ（モードに応じて合計値を解決） */
+  function resolveInputs(state) {
+    const b = state.base, d = state.detail;
+    const light = state.mode !== 'detail';
+    const derived = {
+      labor: laborCostFromWage(d.wage),
+      integration: sumAmounts(d.capex, d.capexQty),
+      opex: sumItems(d.opex)
+    };
+    let labor, integration, opex, effPersons, extra = 0, discountRate = null;
+    if (light) {
+      labor = num(b.laborCostPerPerson);
+      integration = amount(b.capex.integration, b.capexQty.integration);
+      opex = num(b.opexAnnual);
+      effPersons = num(b.personsPerShift);
+    } else {
+      labor = !isBlank(d.override.labor) ? num(d.override.labor) : derived.labor;
+      integration = !isBlank(d.override.integration) ? num(d.override.integration) : derived.integration;
+      opex = !isBlank(d.override.opex) ? num(d.override.opex) : derived.opex;
+      effPersons = effectivePersonsPerShift(b.personsPerShift, d.ops);
+      extra = num(d.extra.qualitySaving) + num(d.extra.downtimeSaving);
+      if (d.fin.enableNPV) discountRate = num(d.fin.discountRate);
+    }
+    const capex = {
+      robot: amount(b.capex.robot, b.capexQty.robot), camera: amount(b.capex.camera, b.capexQty.camera),
+      endEffector: amount(b.capex.endEffector, b.capexQty.endEffector), integration
+    };
+    const capexQty = {
+      robot: qty(b.capexQty.robot), camera: qty(b.capexQty.camera),
+      endEffector: qty(b.capexQty.endEffector), integration: qty(b.capexQty.integration)
+    };
+    return {
+      mode: light ? 'light' : 'detail',
+      capexQty,
+      robotUnits: Math.max(1, Math.round(capexQty.robot) || 1),
+      laborCostPerPerson: labor,
+      shifts: normalizeShifts(b.shifts),
+      personsPerShift: num(b.personsPerShift),
+      effectivePersonsPerShift: effPersons,
+      wageGrowth: num(b.wageGrowth),
+      capex,
+      capexTotal: capex.robot + capex.camera + capex.endEffector + capex.integration,
+      opexAnnual: opex,
+      years: normalizeYears(b.years),
+      extraAnnual: extra,
+      discountRate,
+      derived,
+      hourlyRate: light ? null : hourlyRate(labor, d.ops)
+    };
+  }
+
+  // ---------- 本体計算 ----------
+  /**
+   * @param p { laborCostPerPerson, shifts, personsPerShift | effectivePersonsPerShift,
+   *            wageGrowth(%), capex{...} | capexTotal, opexAnnual, years, extraAnnual?, discountRate?(%)|null }
+   */
+  function compute(p) {
+    const shifts = normalizeShifts(p.shifts);
+    const years = normalizeYears(p.years);
+    const labor = num(p.laborCostPerPerson);
+    const persons = !isBlank(p.effectivePersonsPerShift) ? num(p.effectivePersonsPerShift) : num(p.personsPerShift);
+    const g = num(p.wageGrowth) / 100;
+    const opex = num(p.opexAnnual);
+    const extra = num(p.extraAnnual);
+    const capexTotal = !isBlank(p.capexTotal) ? num(p.capexTotal) : sumItems(p.capex || {});
+
+    const annualSaving0 = labor * shifts * persons;
+    const series = [{ year: 0, saving: 0, opex: 0, net: 0, cum: -capexTotal }];
+    let cum = -capexTotal;
+    for (let n = 1; n <= years; n++) {
+      const saving = annualSaving0 * Math.pow(1 + g, n - 1) + extra;   // 付加効果は高騰率を掛けない
+      const net = saving - opex;
+      cum += net;
+      series.push({ year: n, saving, opex, net, cum });
+    }
+    const out = {
+      error: null, annualSaving0, extraAnnual: extra, firstYearSaving: annualSaving0 + extra,
+      capexTotal, opexAnnual: opex, years, series, cumFinal: cum, paybackYears: null, npv: null
+    };
+    if (capexTotal <= 0) { out.error = 'NO_CAPEX'; return out; }
+    out.paybackYears = paybackYears(series);
+    if (!isBlank(p.discountRate)) out.npv = npv(series, num(p.discountRate));
+    return out;
+  }
+
+  /** cumCF(k-1) < 0 ≤ cumCF(k) となる最小 k を線形補間。回収しなければ null */
+  function paybackYears(series) {
+    for (let k = 1; k < series.length; k++) {
+      const a = series[k - 1].cum, b = series[k].cum;
+      if (a < 0 && b >= 0) return (k - 1) + (-a) / (b - a);
+    }
+    if (series.length && series[0].cum >= 0) return 0;
+    return null;
+  }
+  function npv(series, ratePct) {
+    const d = num(ratePct) / 100;
+    let v = series[0].cum;
+    for (let k = 1; k < series.length; k++) v += series[k].net / Math.pow(1 + d, k);
+    return v;
+  }
+
+  // ---------- 表示用 ----------
+  function roundInt(x) { const n = Number(x); return Number.isFinite(n) ? Math.round(n) : 0; }
+  function fmtMan(x) { return roundInt(x).toLocaleString('ja-JP'); }
+  function fmtYears(y) { return isBlank(y) ? null : (Math.round(y * 10) / 10).toFixed(1); }
+  function fmtDec(x, maxDigits) {
+    const n = Number(x); if (!Number.isFinite(n)) return '0';
+    return String(Number(n.toFixed(maxDigits === undefined ? 2 : maxDigits)));
+  }
+
+  /** 3行固定のサマリー文 */
+  function summaryText(p, r) {
+    const persons = fmtDec(!isBlank(p.effectivePersonsPerShift) ? p.effectivePersonsPerShift : p.personsPerShift, 2);
+    const l1 = `LexxMoMa ${p.robotUnits || 1}台の導入により、${normalizeShifts(p.shifts)}直体制で1直あたり${persons}人の省人化（再配置）を想定し、年間${fmtMan(r.annualSaving0)}万円の効果を見込む。`;
+    const head = `初期投資${fmtMan(r.capexTotal)}万円・年間ランニング${fmtMan(r.opexAnnual)}万円に対し、`;
+    const tail = `（人件費上昇率${fmtDec(p.wageGrowth, 1)}%/年で試算）。`;
+    const l2 = r.paybackYears === null
+      ? `${head}評価期間${r.years}年以内では回収に至らない${tail}`
+      : `${head}投資回収年数は${fmtYears(r.paybackYears)}年${tail}`;
+    const l3 = `${r.years}年間の累積効果は${fmtMan(r.cumFinal)}万円。`;
+    return [l1, l2, l3].join('\n');
+  }
+
+  /** シナリオA/B 保存用スナップショット */
+  function snapshot(state, p, r) {
+    return {
+      name: state.scenarioName || '',
+      mode: p.mode,
+      inputs: {
+        laborCostPerPerson: p.laborCostPerPerson,
+        shifts: p.shifts,
+        personsPerShift: p.personsPerShift,
+        effectivePersonsPerShift: p.effectivePersonsPerShift,
+        wageGrowth: p.wageGrowth,
+        capexTotal: p.capexTotal,
+        opexAnnual: p.opexAnnual,
+        years: p.years,
+        extraAnnual: p.extraAnnual
+      },
+      result: {
+        error: r.error, paybackYears: r.paybackYears, cumFinal: r.cumFinal,
+        annualSaving0: r.annualSaving0, npv: r.npv
+      },
+      series: r.series.map(s => ({ year: s.year, cum: s.cum }))
+    };
+  }
+
+  /** メーター色判定 */
+  function paybackColor(years, thresholds) {
+    const t = thresholds || DEFAULT_STATE.thresholds;
+    if (isBlank(years)) return 'grey';
+    if (years <= num(t.green)) return 'green';
+    if (years <= num(t.yellow)) return 'yellow';
+    return 'grey';
+  }
+
+  return {
+    DEFAULT_STATE, defaultState, mergeState, deepClone,
+    num, isBlank, isInvalid, normalizeShifts, normalizeYears,
+    laborCostFromWage, effectivePersonsPerShift, sumItems, qty, amount, sumAmounts, allBlank, hourlyRate,
+    resolveInputs, compute, paybackYears, npv,
+    roundInt, fmtMan, fmtYears, fmtDec, summaryText, snapshot, paybackColor
+  };
+});
+
+</script>
+<script>
+/* LexxMoMa 費用対効果 簡易計算ツール — csv.js
+ * CSV生成（UTF-8 BOM・CRLF・RFC4180）とダウンロード。生成部はDOM非依存。 */
+(function (root, factory) {
+  'use strict';
+  const calc = (typeof module === 'object' && module.exports) ? require('./calc.js') : root.LXCALC;
+  const api = factory(calc);
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  root.LXCSV = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (C) {
+  'use strict';
+
+  const BOM = '﻿';
+  const CRLF = '\r\n';
+
+  function esc(v) {
+    const s = v === null || v === undefined ? '' : String(v);
+    return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  function row(cells) { return cells.map(esc).join(','); }
+  function pad2(n) { return String(n).padStart(2, '0'); }
+  function fmtDateTime(d) {
+    return `${d.getFullYear()}/${pad2(d.getMonth() + 1)}/${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+  }
+  function yyyymmdd(d) { return `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}`; }
+  function int(x) { return C.roundInt(x); }
+  function pb(y) { return y === null || y === undefined ? '' : C.fmtYears(y); }
+
+  /** ファイル名：LexxMoMa_ROI_{シナリオ名 or 無題}_{YYYYMMDD}.csv */
+  function fileName(scenarioName, date) {
+    const raw = (scenarioName || '').trim() || '無題';
+    const safe = raw.replace(/[\\/:*?"<>|\r\n\t]/g, '_');
+    return `LexxMoMa_ROI_${safe}_${yyyymmdd(date || new Date())}.csv`;
+  }
+
+  /** 入力一覧（モードに応じて全入力）：[項目, 値, 単位] の配列 */
+  function inputRows(state, p) {
+    const b = state.base, d = state.detail;
+    const rows = [];
+    if (p.mode === 'light') {
+      rows.push(['1人あたり年間人件費＋管理費', int(p.laborCostPerPerson), '万円/年']);
+    } else {
+      rows.push(['直接人件費（年）', int(d.wage.base), '万円']);
+      rows.push(['法定福利・管理費率', C.fmtDec(C.num(d.wage.overheadRate), 2), '%']);
+      rows.push(['年間残業時間/人', C.fmtDec(C.num(d.wage.overtimeHours), 2), 'h']);
+      rows.push(['残業単価', int(d.wage.overtimeRate), '円/h']);
+      rows.push(['採用・教育費（年・1人あたり）', int(d.wage.hiringTraining), '万円']);
+      rows.push(['1人あたり年間人件費＋管理費（合計）', int(p.laborCostPerPerson), '万円/年']);
+    }
+    rows.push(['直数', p.shifts, '直']);
+    rows.push(['1直あたり省人化（再配置）人数', C.fmtDec(p.personsPerShift, 2), '人']);
+    if (p.mode === 'detail') {
+      rows.push(['年間稼働日', int(d.ops.workingDays), '日']);
+      rows.push(['1直あたり時間', C.fmtDec(C.num(d.ops.hoursPerShift), 2), 'h']);
+      rows.push(['1台が担当するステーション数', C.fmtDec(C.num(d.ops.stationsPerRobot), 2), '箇所']);
+      rows.push(['目標可動率', C.fmtDec(C.num(d.ops.availability), 2), '%']);
+      rows.push(['実効 1直あたり省人化（再配置）人数', C.fmtDec(p.effectivePersonsPerShift, 3), '人']);
+    }
+    rows.push(['人件費上昇率', C.fmtDec(p.wageGrowth, 2), '%/年']);
+    // 初期投資：単価 × 数量 = 金額
+    const capexRow = (label, price, q, unit) => {
+      rows.push([`初期投資 ${label}（単価）`, int(price), '万円']);
+      rows.push([`初期投資 ${label}（数量）`, C.fmtDec(C.qty(q), 2), unit]);
+      rows.push([`初期投資 ${label}（金額）`, int(C.amount(price, q)), '万円']);
+    };
+    capexRow('機体', b.capex.robot, b.capexQty.robot, '台');
+    capexRow('カメラ・ビジョン', b.capex.camera, b.capexQty.camera, '台');
+    capexRow('エンドエフェクタ', b.capex.endEffector, b.capexQty.endEffector, '個');
+    if (p.mode === 'light') {
+      capexRow('導入・周辺費用（SI・安全対策・レイアウト）', b.capex.integration, b.capexQty.integration, '式');
+    } else {
+      capexRow('SI・ティーチング', d.capex.si, d.capexQty.si, '式');
+      capexRow('安全対策・柵', d.capex.safety, d.capexQty.safety, '式');
+      capexRow('レイアウト変更', d.capex.layout, d.capexQty.layout, '式');
+      capexRow('教育', d.capex.training, d.capexQty.training, '式');
+      capexRow('予備品', d.capex.spares, d.capexQty.spares, '式');
+      rows.push(['初期投資 導入・周辺費用（合計）', int(p.capex.integration), '万円']);
+    }
+    rows.push(['初期投資 合計', int(p.capexTotal), '万円']);
+    if (p.mode === 'light') {
+      rows.push(['年間ランニング費（保守・ソフトライセンス）', int(p.opexAnnual), '万円/年']);
+    } else {
+      rows.push(['ランニング 保守契約', int(d.opex.maintenance), '万円/年']);
+      rows.push(['ランニング フリート管理・ソフトライセンス', int(d.opex.software), '万円/年']);
+      rows.push(['ランニング 電力', int(d.opex.power), '万円/年']);
+      rows.push(['ランニング 消耗品', int(d.opex.consumables), '万円/年']);
+      rows.push(['年間ランニング費（合計）', int(p.opexAnnual), '万円/年']);
+      rows.push(['不良低減による年間削減額', int(d.extra.qualitySaving), '万円/年']);
+      rows.push(['ラインストップ低減による年間削減額', int(d.extra.downtimeSaving), '万円/年']);
+    }
+    rows.push(['評価期間', p.years, '年']);
+    if (p.mode === 'detail') {
+      rows.push(['NPVを表示', d.fin.enableNPV ? 'ON' : 'OFF', '']);
+      if (d.fin.enableNPV) rows.push(['割引率', C.fmtDec(C.num(d.fin.discountRate), 2), '%']);
+      rows.push(['減価償却年数（参考）', int(d.fin.depreciationYears), '年']);
+    }
+    return rows;
+  }
+
+  /** シナリオ比較の行（A/B両方保存時のみ使用） */
+  function compareRows(A, B) {
+    const v = (s, f) => (s ? f(s) : '');
+    return [
+      ['シナリオ名', v(A, s => s.name || '無題'), v(B, s => s.name || '無題')],
+      ['モード', v(A, s => s.mode === 'detail' ? '精緻' : 'ライト'), v(B, s => s.mode === 'detail' ? '精緻' : 'ライト')],
+      ['1人あたり年間人件費＋管理費', v(A, s => int(s.inputs.laborCostPerPerson)), v(B, s => int(s.inputs.laborCostPerPerson))],
+      ['直数', v(A, s => s.inputs.shifts), v(B, s => s.inputs.shifts)],
+      ['1直あたり省人化（再配置）人数', v(A, s => C.fmtDec(s.inputs.effectivePersonsPerShift, 3)), v(B, s => C.fmtDec(s.inputs.effectivePersonsPerShift, 3))],
+      ['人件費上昇率', v(A, s => C.fmtDec(s.inputs.wageGrowth, 2)), v(B, s => C.fmtDec(s.inputs.wageGrowth, 2))],
+      ['初期投資 合計', v(A, s => int(s.inputs.capexTotal)), v(B, s => int(s.inputs.capexTotal))],
+      ['年間ランニング費', v(A, s => int(s.inputs.opexAnnual)), v(B, s => int(s.inputs.opexAnnual))],
+      ['評価期間', v(A, s => s.inputs.years), v(B, s => s.inputs.years)],
+      ['初年度 年間省人効果', v(A, s => int(s.result.annualSaving0)), v(B, s => int(s.result.annualSaving0))],
+      ['投資回収年数', v(A, s => pb(s.result.paybackYears)), v(B, s => pb(s.result.paybackYears))],
+      ['累積効果', v(A, s => int(s.result.cumFinal)), v(B, s => int(s.result.cumFinal))]
+    ];
+  }
+
+  /**
+   * CSV本文を生成（BOM付き・CRLF）
+   * @param {object} o { state, params, result, now }
+   */
+  function buildCsv(o) {
+    const { state, params: p, result: r } = o;
+    const now = o.now || new Date();
+    const L = [];
+    // [サマリー]
+    L.push('[サマリー]');
+    L.push(row(['項目', '値', '単位']));
+    L.push(row(['出力日時', fmtDateTime(now), '']));
+    L.push(row(['モード', p.mode === 'detail' ? '精緻' : 'ライト', '']));
+    L.push(row(['シナリオ名', state.scenarioName || '', '']));
+    L.push(row(['投資回収年数', r.error ? '' : pb(r.paybackYears), '年']));
+    L.push(row(['初年度 年間省人効果', int(r.annualSaving0), '万円']));
+    L.push(row([`${r.years}年累積効果`, int(r.cumFinal), '万円']));
+    L.push(row(['初期投資 合計', int(r.capexTotal), '万円']));
+    L.push(row(['年間ランニング費', int(r.opexAnnual), '万円']));
+    if (r.npv !== null && r.npv !== undefined) L.push(row(['NPV', int(r.npv), '万円']));
+    L.push('');
+    // [入力一覧]
+    L.push('[入力一覧]');
+    L.push(row(['項目', '値', '単位']));
+    inputRows(state, p).forEach(x => L.push(row(x)));
+    L.push('');
+    // [年次表]
+    L.push('[年次表]');
+    L.push(row(['年', '年間省人効果', '年間ランニング費', '年間純効果', '累積キャッシュフロー']));
+    r.series.forEach(s => L.push(row([s.year, int(s.saving), int(s.opex), int(s.net), int(s.cum)])));
+    // [シナリオ比較]
+    const A = state.scenarios && state.scenarios.A, B = state.scenarios && state.scenarios.B;
+    if (A && B) {
+      L.push('');
+      L.push('[シナリオ比較]');
+      L.push(row(['項目', 'シナリオA', 'シナリオB']));
+      compareRows(A, B).forEach(x => L.push(row(x)));
+    }
+    return BOM + L.join(CRLF) + CRLF;
+  }
+
+  /** ブラウザでのダウンロード（Blob + a[download]） */
+  function download(text, filename) {
+    const blob = new Blob([text], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  return { BOM, CRLF, esc, row, fileName, inputRows, compareRows, buildCsv, download, fmtDateTime, yyyymmdd };
+});
+
+</script>
+<script>
+/* LexxMoMa 費用対効果 簡易計算ツール — scene.js
+ * 工場タイクーン 3D：入力が増える・良くなるほど育つ工場を、外部ライブラリなしの軽量3D（Canvas 2D にポリゴン投影・奥行きソート）で描く。
+ *  - Before（現状：手作業）／After（LexxMoMa 導入後）の切替、ドラッグで視点回転、ホイールで拡大縮小、再生/一時停止
+ *  - LexxMoMa は AMR台車＋制御筐体＋協働アーム（手首カメラ・ハンド）。台数＝「機体」の数量
+ *  - イベントボタン：フル稼働指示／猛暑／災害（地震）。一定時間で通常運用に戻る。イベントが3回重なると作業者が倒れ救急搬送
+ * 稟議出力（印刷・CSV）には含めない。数値は calc.js の出力（p, r, state）だけを使い、ここで式は書かない。 */
+(function (root) {
+  'use strict';
+  const C = root.LXCALC;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const ease = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+  const PAL = {
+    primary: '#0068B7', accent: '#3EB370', accentDark: '#2E8F58', yellow: '#F2B705', grey: '#9AA0A6', text: '#1F2933', muted: '#5F6B7A',
+    warn: '#D93025', wood: '#B08968', gold: '#E9B949', goldDark: '#B48A1E', white: '#EEF2F5', dark: '#3B4754', black: '#1F2933', orange: '#F28C28'
+  };
+
+  // ---------- 入力 → 工場の状態 ----------
+  function factoryModel(p, r, state) {
+    const b = state.base, d = state.detail, detail = state.mode === 'detail';
+    const has = v => !C.isBlank(v) && C.num(v) > 0;
+    const m = {
+      shifts: p.shifts,
+      workers: clamp(Math.round(p.shifts * p.effectivePersonsPerShift), 0, 12),
+      robot: has(b.capex.robot),
+      units: has(b.capex.robot) ? clamp(p.robotUnits || 1, 1, 4) : 0,
+      camera: has(b.capex.camera),
+      hand: has(b.capex.endEffector),
+      fence: detail ? (has(d.capex.si) || has(d.capex.safety)) : has(b.capex.integration),
+      layout: detail ? has(d.capex.layout) : has(b.capex.integration),
+      training: detail && has(d.capex.training),
+      spares: detail && has(d.capex.spares),
+      monitor: detail ? has(d.opex.software) : has(b.opexAnnual),
+      toolbox: detail ? has(d.opex.maintenance) : has(b.opexAnnual),
+      charger: detail ? has(d.opex.power) : has(b.capex.robot),
+      quality: detail && has(d.extra.qualitySaving),
+      uptime: detail && has(d.extra.downtimeSaving),
+      availability: detail ? C.num(d.ops.availability) : 95,
+      stations: detail ? clamp(Math.round(C.num(d.ops.stationsPerRobot)) || 1, 1, 3) : 1,
+      abSaved: !!(state.scenarios.A && state.scenarios.B),
+      saving: r.annualSaving0,
+      years: r.years,
+      payback: r.error ? null : r.paybackYears,
+      color: C.paybackColor(r.error ? null : r.paybackYears, state.thresholds)
+    };
+    m.score = ['robot', 'camera', 'hand', 'fence', 'layout', 'training', 'spares', 'monitor', 'toolbox', 'quality', 'uptime', 'abSaved'].filter(k => m[k]).length;
+    m.grade = m.score <= 1 ? '町工場' : m.score <= 4 ? '自動化ライン' : m.score <= 8 ? 'スマート工場' : '未来工場';
+    m.stars = clamp(Math.ceil(m.score / 3), 0, 4);
+    m.next = nextUnlock(m, detail);
+    return m;
+  }
+  function nextUnlock(m, detail) {
+    if (!m.robot) return '「機体」に単価と台数を入れると LexxMoMa が搬入され、After が見られます';
+    if (!m.camera) return '「カメラ・ビジョン」を入れると手首にカメラが付きます';
+    if (!m.hand) return '「エンドエフェクタ」を入れるとハンドが付いてワークを掴みます';
+    if (!m.fence) return detail ? '「SI・ティーチング」「安全対策・柵」で安全柵と走行テープが敷かれます' : '「導入・周辺費用」で安全柵と走行テープが敷かれます';
+    if (!m.monitor) return detail ? '「フリート管理・ソフトライセンス」で壁に稼働モニターが付きます' : '「年間ランニング費」で壁に稼働モニターと保守工具が付きます';
+    if (!detail) return '精緻モードに切り替えると、教育・予備品・不良低減など増える設備がまだあります';
+    if (!m.training) return '「教育」を入れると安全講習の掲示が出ます';
+    if (!m.spares) return '「予備品」で部品棚が置かれます';
+    if (!m.quality) return '「不良低減」で品質ポスターが貼られます';
+    if (!m.uptime) return '「ラインストップ低減」で稼働ランプが増えます';
+    if (!m.abSaved) return 'シナリオA/Bを両方保存すると社長賞の盾が飾られます';
+    return 'フル装備の未来工場です！';
+  }
+
+  // ---------- イベント定義 ----------
+  const EVENTS = {
+    rush: { dur: 9, label: '🚨 フル稼働指示', color: PAL.orange },
+    heat: { dur: 10, label: '🌡 猛暑日 35℃', color: '#E85D04' },
+    quake: { dur: 13, label: '🌏 地震発生', color: PAL.warn },
+    medic: { dur: 11, label: '🚑 救急搬送', color: PAL.warn }
+  };
+
+  function hexToRgb(h) { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+  function shade(hex, k) { const [r, g, b] = hexToRgb(hex); return `rgb(${clamp(r * k, 0, 255) | 0},${clamp(g * k, 0, 255) | 0},${clamp(b * k, 0, 255) | 0})`; }
+
+  // ============================================================
+  // 軽量3Dエンジン
+  // ============================================================
+  function create(canvas, opts) {
+    const ctx = canvas.getContext('2d');
+    const onView = (opts && opts.onView) || (() => {});
+    const onEvent = (opts && opts.onEvent) || (() => {});
+    const H = 320;
+    let W = 800, dpr = 1;
+    const DEF = { yaw: -0.62, pitch: 0.52, dist: 2300 };
+    const cam = Object.assign({}, DEF, { tx: 650, ty: 50, tz: 300, F: 1050 });
+    const LIGHT = norm([-0.45, 1, 0.55]);
+    let m = null, view = 'before', userView = null, running = true, t = 0, rt = 0, last = 0, raf = 0;
+    let prims = [], bg = [], curObj = null, seq = 0, amb = 1;
+    let cy, sy, cp, sp;
+    // イベント状態
+    let ev = null, evCount = 0;
+    const wk = [];                       // 作業者の現在位置など
+    let shake = 0;
+
+    function norm(v) { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; }
+    function rot(x, y, z) {
+      const x1 = x * cy - z * sy, z1 = x * sy + z * cy;
+      const y2 = y * cp - z1 * sp, z2 = y * sp + z1 * cp;
+      return [x1, y2, z2];
+    }
+    // 部品ローカル座標 → ワールド座標の縮尺変換（LexxMoMa を実寸比に縮めて描くため）
+    let XF = null;   // { x, z, s }：床上の (x, z) を中心に s 倍
+    function xf(pt) { return XF ? [XF.x + (pt[0] - XF.x) * XF.s, pt[1] * XF.s, XF.z + (pt[2] - XF.z) * XF.s] : pt; }
+    function toLocal(pt) { return XF ? [XF.x + (pt[0] - XF.x) / XF.s, pt[1] / XF.s, XF.z + (pt[2] - XF.z) / XF.s] : pt; }
+    const xs = () => (XF ? XF.s : 1);
+    function camSpace(pt) { const q = xf(pt); return rot(q[0] - cam.tx, q[1] - cam.ty, q[2] - cam.tz); }
+    function proj(pt) {
+      const [x1, y2, z2] = camSpace(pt);
+      const depth = cam.dist - z2, s = cam.F / Math.max(80, depth);
+      return { x: W / 2 + x1 * s, y: H * 0.58 - y2 * s, z: z2, s };
+    }
+    /** オブジェクト単位でまとめて奥行きソートする（面ごとのソートによる「見えたり消えたり」を防ぐ） */
+    function begin(cx, cyy, cz, bias) { curObj = { z: camSpace([cx, cyy, cz])[2] + (bias || 0) }; }
+    function end() { curObj = null; }
+    function push(q) {
+      q.oz = curObj ? curObj.z : q.z; q.seq = seq++;
+      if (curObj && curObj.ordered) q.z = 0;      // 凸な部品の組立順どおりに描く（描画順＝登録順）
+      (q.layer === 'bg' ? bg : prims).push(q);
+    }
+    /** 面がカメラを向いているか（透視カメラ基準） */
+    function facing(pt, n) {
+      const c = camSpace(pt), nc = rot(n[0], n[1], n[2]);
+      return nc[0] * -c[0] + nc[1] * -c[1] + nc[2] * (cam.dist - c[2]) > 0;
+    }
+    function poly(pts, color, n, opt) {
+      const pp = pts.map(proj);
+      let k = 1;
+      if (n) {
+        // 透視カメラ基準の裏面判定：面の中心→カメラ位置ベクトルと法線の内積
+        const c = camSpace([pts.reduce((a, q) => a + q[0], 0) / pts.length, pts.reduce((a, q) => a + q[1], 0) / pts.length, pts.reduce((a, q) => a + q[2], 0) / pts.length]);
+        const nc = rot(n[0], n[1], n[2]);
+        const toCam = [-c[0], -c[1], cam.dist - c[2]];
+        if (nc[0] * toCam[0] + nc[1] * toCam[1] + nc[2] * toCam[2] < 0 && !(opt && opt.twoSided)) return;
+        k = 0.62 + 0.38 * Math.max(0, n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2]);
+      }
+      push({ t: 'poly', pp, color: n ? shade(color, k * amb) : color, z: pp.reduce((a, q) => a + q.z, 0) / pp.length, stroke: opt && opt.stroke, layer: opt && opt.layer });
+    }
+    function line(a, b, color, w, opt) {
+      const pa = proj(a), pb = proj(b);
+      push({ t: 'line', pa, pb, color, w: w * xs() * (pa.s + pb.s) / 2, z: (pa.z + pb.z) / 2 + ((opt && opt.bias) || 0), layer: opt && opt.layer });
+    }
+    function disc(c, r, color, bias) { const pc = proj(c); push({ t: 'disc', pc, r: r * xs() * pc.s, color, z: pc.z + (bias || 0) }); }
+    function text(c, str, size, color, bold) { const pc = proj(c); push({ t: 'text', pc, str, size: size * xs() * pc.s, color, z: pc.z + 6, bold }); }
+    function box(cx, y0, cz, w, h, d, color, opt) {
+      const x0 = cx - w / 2, x1 = cx + w / 2, z0 = cz - d / 2, z1 = cz + d / 2, y1 = y0 + h;
+      if (!(opt && opt.noTop)) poly([[x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1]], color, [0, 1, 0], opt);
+      poly([[x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]], color, [0, 0, 1], opt);
+      poly([[x1, y0, z0], [x0, y0, z0], [x0, y1, z0], [x1, y1, z0]], color, [0, 0, -1], opt);
+      poly([[x0, y0, z0], [x0, y0, z1], [x0, y1, z1], [x0, y1, z0]], color, [-1, 0, 0], opt);
+      poly([[x1, y0, z1], [x1, y0, z0], [x1, y1, z0], [x1, y1, z1]], color, [1, 0, 0], opt);
+    }
+    function cylinder(cx, y0, cz, r, h, color, sides) {
+      sides = sides || 10;
+      const top = [];
+      for (let i = 0; i < sides; i++) {
+        const a0 = i / sides * Math.PI * 2, a1 = (i + 1) / sides * Math.PI * 2;
+        const p0 = [cx + r * Math.cos(a0), y0, cz + r * Math.sin(a0)], p1 = [cx + r * Math.cos(a1), y0, cz + r * Math.sin(a1)];
+        poly([p0, p1, [p1[0], y0 + h, p1[2]], [p0[0], y0 + h, p0[2]]], color, [Math.cos((a0 + a1) / 2), 0, Math.sin((a0 + a1) / 2)]);
+        top.push([p0[0], y0 + h, p0[2]]);
+      }
+      poly(top, color, [0, 1, 0]);
+    }
+
+    // ---------- 配置定数 ----------
+    const ST_X = [180, 430, 680];
+    const MZ = 110, CONV_Z = 215, WORK_Z = 292, PATH_Z = 272;
+    const FX0 = 70, FX1 = 790, FZ0 = 40, FZ1 = PATH_Z + 42;    // 安全柵の範囲（走行レーンを内包）
+    const LANE_X0 = 140, LANE_X1 = 720;                         // LexxMoMa の走行範囲（台数で区間分け）
+    const EVAC = [1260, 610];            // 避難場所
+    const EXIT = [1420, 520];            // 搬出口
+
+    // ---------- イベント制御 ----------
+    function trigger(type) {
+      if (ev || !EVENTS[type] || !m) return false;
+      ev = { type, t0: t };
+      if (type !== 'medic') evCount++;
+      onEvent(ev, evCount);
+      return true;
+    }
+    function evElapsed() { return ev ? t - ev.t0 : 0; }
+    function evType() { return ev ? ev.type : null; }
+    function quakePhase() {       // 'shake' | 'calm' | 'recover'
+      const e = evElapsed(); return e < 3 ? 'shake' : e < 5 ? 'calm' : 'recover';
+    }
+    function robotStopped() { return evType() === 'quake' && evElapsed() < 5; }
+    function robotSpeed() { return evType() === 'rush' ? 1.9 : robotStopped() ? 0 : 1; }
+    function tickEvents(dt) {
+      if (!ev) return;
+      if (evElapsed() >= EVENTS[ev.type].dur) {
+        const wasMedic = ev.type === 'medic';
+        ev = null;
+        onEvent(null, evCount);
+        if (wasMedic) evCount = 0;
+        else if (evCount >= 3 && m.workers >= 2) { trigger('medic'); }
+      }
+    }
+
+    // ---------- 作業者の目標位置 ----------
+    function normalTarget(i, after) {
+      if (after) return [940 + (i % 5) * 46, 430 + Math.floor(i / 5) * 58, Math.PI];
+      const st = ST_X[i % 3], row = Math.floor(i / 3);
+      return [st - 40 + (row % 2) * 80 + (row >= 2 ? 20 : 0), WORK_Z + row * 22, 0];
+    }
+    function updateWorkers(dt, after) {
+      const n = m.workers;
+      while (wk.length < n) { const i = wk.length; const tg = normalTarget(i, after); wk.push({ x: tg[0], z: tg[1], tx: tg[0], tz: tg[1], walking: false, arrived: true, arriveT: 0 }); }
+      wk.length = n;
+      const type = evType(), e = evElapsed();
+      wk.forEach((w, i) => {
+        let tg = normalTarget(i, after), speed = 90;
+        w.mode = 'normal';
+        if (type === 'rush') { w.mode = 'panic'; speed = 200; tg = [tg[0] + Math.sin(t * 9 + i * 2) * 10, tg[1] + Math.cos(t * 7 + i) * 8]; }
+        else if (type === 'heat') { w.mode = 'heat'; speed = 45; }
+        else if (type === 'quake') {
+          const ph = quakePhase();
+          if (ph !== 'recover') { w.mode = 'evac'; speed = 230; tg = [EVAC[0] + (i % 4) * 34 - 50, EVAC[1] + Math.floor(i / 4) * 34 - 30]; }
+          else { w.mode = 'check'; speed = 75; }
+        } else if (type === 'medic') {
+          if (i === 0) { w.mode = e < 1 ? 'wobble' : 'down'; tg = [w.tx, w.tz]; }
+          else if (i === 1 || i === 2) {
+            const v = wk[0];
+            if (e < 4.5) { w.mode = 'helper'; speed = 160; tg = [v.x + (i === 1 ? -26 : 26), v.z + 4]; }
+            else { w.mode = 'carry'; speed = 130; tg = [EXIT[0] + (i === 1 ? -26 : 26), EXIT[1]]; }
+          }
+        }
+        w.tx = tg[0]; w.tz = tg[1];
+        const dx = w.tx - w.x, dz = w.tz - w.z, dist = Math.hypot(dx, dz);
+        if (dist > 1.5) { const st = Math.min(dist, speed * dt); w.x += dx / dist * st; w.z += dz / dist * st; w.walking = true; w.arrived = false; }
+        else { if (!w.arrived) { w.arrived = true; w.arriveT = t; } w.walking = false; }
+      });
+      // 搬送中：倒れた作業者は担架（ヘルパーの中点）に乗る
+      if (type === 'medic' && e >= 4.5 && wk.length >= 3) { wk[0].x = (wk[1].x + wk[2].x) / 2; wk[0].z = (wk[1].z + wk[2].z) / 2 - 4; }
+    }
+
+    // ---------- シーン ----------
+    function drawWorld(now) {
+      const night = m.shifts >= 3, dusk = m.shifts === 2;
+      amb = night ? 0.78 : 1;
+      const after = view === 'after' && m.robot;
+      const type = evType(), e = evElapsed();
+      // 背景レイヤ（床・壁・窓）：常に最初に描く
+      const BG = { layer: 'bg' };
+      poly([[-60, 0, 0], [1460, 0, 0], [1460, 0, 760], [-60, 0, 760]], night ? '#4A586C' : '#DDE3E9', [0, 1, 0], BG);
+      for (let x = 0; x <= 1400; x += 100) line([x, 0.5, 0], [x, 0.5, 760], night ? '#55647A' : '#CDD5DD', 1.2, BG);
+      for (let z = 100; z <= 700; z += 100) line([-60, 0.5, z], [1460, 0.5, z], night ? '#55647A' : '#CDD5DD', 1.2, BG);
+      poly([[-60, 0, 0], [1460, 0, 0], [1460, 280, 0], [-60, 280, 0]], night ? '#2C3848' : dusk ? '#F3E3CF' : type === 'heat' ? '#FBE3C8' : '#EEF2F6', [0, 0, 1], BG);
+      for (let x = 0; x <= 1400; x += 100) line([x, 0, 1], [x, 280, 1], night ? '#3B4858' : '#E0E6EC', 1, BG);
+      const win = night ? '#FFE08A' : type === 'heat' ? '#FFB347' : dusk ? '#F7B267' : '#BFDCF3';
+      for (let i = 0; i < 6; i++) { const x = 90 + i * 210; poly([[x, 170, 2], [x + 110, 170, 2], [x + 110, 240, 2], [x, 240, 2]], win, null, BG); line([x + 55, 170, 3], [x + 55, 240, 3], night ? '#2C3848' : '#8FA6BA', 1.5, BG); line([x, 205, 3], [x + 110, 205, 3], night ? '#2C3848' : '#8FA6BA', 1.5, BG); }
+      // 壁の掲示（壁と同じ背景レイヤ）
+      if (m.monitor) { poly([[495, 100, 4], [625, 100, 4], [625, 176, 4], [495, 176, 4]], '#1F2933', null, BG); poly([[500, 106, 5], [620, 106, 5], [620, 170, 5], [500, 170, 5]], '#0F1620', null, BG); line([508, 122, 6], [530, 140, 6], PAL.accent, 3, BG); line([530, 140, 6], [560, 132, 6], PAL.accent, 3, BG); line([560, 132, 6], [612, 158, 6], PAL.accent, 3, BG); text([560, 150, 7], robotStopped() ? '緊急停止' : '稼働モニター', 11, robotStopped() ? PAL.warn : '#fff'); }
+      if (m.quality) { poly([[700, 100, 4], [790, 100, 4], [790, 160, 4], [700, 160, 4]], '#fff', null, Object.assign({ stroke: '#C9CFD6' }, BG)); text([745, 128, 5], '不良ゼロ', 13, PAL.warn, true); text([745, 112, 5], '品質第一', 10, PAL.text); }
+      if (m.uptime) { poly([[810, 100, 4], [900, 100, 4], [900, 160, 4], [810, 160, 4]], '#fff', null, Object.assign({ stroke: '#C9CFD6' }, BG)); text([855, 140, 5], 'ラインストップ', 10, PAL.text); text([855, 118, 5], '↓ 低減', 14, PAL.accent, true); }
+      if (m.training) { poly([[920, 100, 4], [1010, 100, 4], [1010, 160, 4], [920, 160, 4]], PAL.yellow, null, Object.assign({ stroke: '#C99A00' }, BG)); text([965, 132, 5], '安全講習', 13, PAL.text, true); text([965, 114, 5], '教育中', 10, PAL.text); }
+      if (m.abSaved) { poly([[1040, 96, 4], [1080, 106, 4], [1120, 96, 4], [1120, 150, 4], [1080, 166, 4], [1040, 150, 4]], PAL.gold, null, Object.assign({ stroke: PAL.goldDark }, BG)); text([1080, 128, 5], '社長賞', 11, '#5A4300', true); }
+      // 避難場所・搬出口の床表示
+      poly([[EVAC[0] - 90, 0.6, EVAC[1] - 60], [EVAC[0] + 90, 0.6, EVAC[1] - 60], [EVAC[0] + 90, 0.6, EVAC[1] + 60], [EVAC[0] - 90, 0.6, EVAC[1] + 60]], type === 'quake' ? 'rgba(62,179,112,.35)' : night ? '#4F5F74' : '#D3DAE1', null, BG);
+      text([EVAC[0], 2, EVAC[1]], '避難場所', 11, type === 'quake' ? PAL.accentDark : (night ? '#8FA0B4' : '#9AA0A6'), true);
+      // 天井灯（3直）
+      if (night) for (let i = 0; i < 4; i++) { const x = 250 + i * 280; begin(x, 250, 180); box(x, 250, 180, 70, 6, 18, '#FFF3C4'); end(); }
+
+      // 機械（3ステーション）とコンベア
+      ST_X.forEach((x, i) => {
+        const active = (after ? true : i < m.stations) && !(type === 'quake' && e < 5);
+        begin(x, 60, MZ);
+        box(x, 0, MZ, 130, 120, 110, '#C9D1DA');
+        box(x, 62, MZ + 56, 70, 40, 6, '#E9EEF3');
+        box(x + 42, 90, MZ + 56, 20, 8, 4, '#9AA0A6'); box(x + 42, 74, MZ + 56, 20, 8, 4, '#9AA0A6');
+        disc([x + 46, 40, MZ + 58], 5, active && Math.sin(now * (type === 'rush' ? 8 : 3) + i) > 0 ? PAL.accent : (type === 'quake' && e < 5 ? PAL.warn : '#B9C6D2'), 2);
+        text([x, 24, MZ + 58], `ST${i + 1}`, 10, PAL.muted);
+        end();
+      });
+      begin(430, 20, CONV_Z, -40);
+      box(430, 0, CONV_Z, 690, 40, 32, '#8D99A6');
+      box(430, 40, CONV_Z, 690, 4, 26, '#B9C6D2');
+      if (!robotStopped()) for (let x = 100; x <= 760; x += 60) { const off = ((now * (type === 'rush' ? 90 : 40)) % 60); line([x + off, 45, CONV_Z - 10], [x + off, 45, CONV_Z + 10], '#DCE2E8', 2, { bias: 2 }); }
+      end();
+      // 安全柵・走行テープ（After）
+      if (after && m.fence) {      // 全台が走る1レーン（FZ1 まで）を囲む
+        const post = (x, z) => { begin(x, 40, z); line([x, 0, z], [x, 60, z], PAL.yellow, 4); line([x, 60, z], [x, 78, z], PAL.black, 4); end(); };
+        for (let x = FX0; x <= FX1; x += 80) { post(x, FZ0); post(x, FZ1); }
+        for (let z = FZ0 + 80; z < FZ1; z += 80) { post(FX0, z); post(FX1, z); }
+        const cxm = (FX0 + FX1) / 2, czm = (FZ0 + FZ1) / 2;
+        begin(cxm, 40, FZ0, -60); line([FX0, 50, FZ0], [FX1, 50, FZ0], PAL.yellow, 2.5); line([FX0, 24, FZ0], [FX1, 24, FZ0], PAL.yellow, 1.5); end();
+        begin(cxm, 40, FZ1, -60); line([FX0, 50, FZ1], [FX1, 50, FZ1], PAL.yellow, 2.5); line([FX0, 24, FZ1], [FX1, 24, FZ1], PAL.yellow, 1.5); end();
+        begin(FX0, 40, czm, -60); line([FX0, 50, FZ0], [FX0, 50, FZ1], PAL.yellow, 2.5); line([FX0, 24, FZ0], [FX0, 24, FZ1], PAL.yellow, 1.5); end();
+        begin(FX1, 40, czm, -60); line([FX1, 50, FZ0], [FX1, 50, FZ1], PAL.yellow, 2.5); line([FX1, 24, FZ0], [FX1, 24, FZ1], PAL.yellow, 1.5); end();
+      }
+      if (after && m.layout) for (let x = FX0 + 20; x < FX1 - 40; x += 70) { line([x, 1, PATH_Z + 24], [x + 40, 1, PATH_Z + 24], PAL.yellow, 3, BG); }
+      // 右側設備
+      if (m.spares) { begin(1000, 40, 90); box(1000, 0, 90, 90, 78, 40, '#B9C6D2'); box(1000, 38, 90, 90, 3, 40, '#8D99A6'); [0, 1, 2].forEach(i => box(975 + i * 26, 41, 90, 20, 20, 24, PAL.wood)); [0, 1].forEach(i => box(982 + i * 34, 3, 90, 26, 22, 26, PAL.primary)); text([1000, 90, 112], '予備品', 10, night ? '#E8EDF2' : PAL.muted); end(); }
+      if (m.toolbox) { begin(870, 10, 100); box(870, 0, 100, 36, 18, 22, PAL.warn); box(870, 18, 100, 14, 5, 6, PAL.black); text([870, 34, 112], '保守', 10, night ? '#E8EDF2' : PAL.muted); end(); }
+      if (after && m.charger) { begin(1150, 20, PATH_Z); box(1150, 0, PATH_Z, 30, 40, 40, '#8D99A6'); box(1150, 12, PATH_Z + 21, 16, 14, 2, PAL.accent); text([1150, 56, PATH_Z], '充電', 10, night ? '#E8EDF2' : PAL.muted); end(); }
+      // 人と機体
+      const n = m.workers;
+      if (after) {
+        begin(1170, 45, 470); box(1170, 0, 470, 8, 90, 90, '#8D99A6'); box(1170, 40, 470, 4, 60, 84, '#fff'); text([1165, 88, 470], '改善ボード', 9, PAL.text, true); box(1165, 62, 448, 2, 14, 22, PAL.yellow); box(1165, 62, 486, 2, 14, 22, PAL.accent); end();
+        if (n && !type) text([1050, 100, 560], `創出工数：${n}人分を改善活動へ`, 12, night ? '#E8EDF2' : PAL.text, true);
+        for (let k = 0; k < m.units; k++) robotAt(k, rt, now);
+      } else {
+        if (n && !type) text([430, 150, WORK_Z + 60], `現状：${n}人が手作業で投入・取出し`, 12, night ? '#E8EDF2' : PAL.text, true);
+        if (n && type !== 'quake' && type !== 'medic') {    // 手運びの作業者
+          const sp = type === 'rush' ? 0.3 : type === 'heat' ? 0.06 : 0.12;
+          const ph = (now * sp) % 1, x = lerp(ST_X[0], ST_X[2], ph < 0.5 ? ease(ph * 2) : ease(2 - ph * 2));
+          drawWorker({ x, z: WORK_Z + 50, walking: true, mode: type === 'rush' ? 'panic' : type === 'heat' ? 'heat' : 'normal' }, 99, now, true);
+        }
+        if (m.robot) text([1000, 40, 500], 'After に切り替えると LexxMoMa が稼働します', 11, night ? '#C9D3DE' : PAL.muted);
+        else { begin(1000, 1, PATH_Z); box(1000, 0, PATH_Z, 100, 2, 70, night ? '#5A6980' : '#C9D1DA'); text([1000, 30, PATH_Z], 'LexxMoMa 搬入予定地', 11, PAL.primary, true); end(); }
+      }
+      wk.forEach((w, i) => drawWorker(w, i, now, false, after));
+      // 担架・搬送口
+      if (type === 'medic' && wk.length >= 3 && e >= 4.5) {
+        const a = wk[1], b = wk[2];
+        begin((a.x + b.x) / 2, 24, (a.z + b.z) / 2, 4);
+        line([a.x, 26, a.z - 6], [b.x, 26, b.z - 6], '#fff', 3.5); line([a.x, 26, a.z + 6], [b.x, 26, b.z + 6], '#fff', 3.5);
+        box((a.x + b.x) / 2, 24, (a.z + b.z) / 2, Math.abs(b.x - a.x) - 14, 3, 16, '#fff');
+        end();
+      }
+      if (type === 'medic') { begin(EXIT[0], 30, EXIT[1]); box(EXIT[0], 0, EXIT[1], 40, 50, 60, '#fff'); box(EXIT[0], 50, EXIT[1], 14, 8, 14, Math.sin(now * 12) > 0 ? PAL.warn : '#F5B7B1'); box(EXIT[0] - 21, 22, EXIT[1], 2, 14, 6, PAL.warn); box(EXIT[0] - 21, 26, EXIT[1], 2, 6, 14, PAL.warn); text([EXIT[0], 66, EXIT[1]], '救急車', 10, PAL.warn, true); end(); }
+    }
+
+    // ---------- 作業者 ----------
+    function drawWorker(w, i, now, carryBox, after) {
+      const mode = w.mode || 'normal';
+      const col = i % 2 ? PAL.accent : PAL.primary;
+      const x = w.x, z = w.z;
+      begin(x, 30, z, 6);
+      if (mode === 'down' || mode === 'carry') {      // 倒れている／担架に乗っている
+        const y = mode === 'carry' ? 27 : 2;
+        box(x, y, z, 26, 10, 14, col); disc([x - 17, y + 6, z], 6.5, '#F6D6B8'); line([x + 13, y + 4, z - 4], [x + 24, y + 3, z - 4], PAL.dark, 4); line([x + 13, y + 4, z + 4], [x + 24, y + 3, z + 4], PAL.dark, 4);
+        if (mode === 'down') text([x, 34, z], Math.sin(now * 6) > 0 ? '…' : '', 12, PAL.warn, true);
+        end(); return;
+      }
+      const speedBob = mode === 'panic' || mode === 'evac' ? 14 : mode === 'heat' ? 1.6 : after ? 2.2 : 3.6;
+      const amp = mode === 'panic' || mode === 'evac' ? 3.5 : mode === 'heat' ? 0.8 : 2;
+      const bob = Math.sin(now * speedBob + i) * amp + (mode === 'heat' ? -4 : 0);
+      const swing = w.walking ? Math.sin(now * (mode === 'evac' || mode === 'panic' ? 22 : 12) + i) * 7 : 0;
+      line([x - 4, 0, z], [x - 4, 22, z + swing], PAL.dark, 4.5); line([x + 4, 0, z], [x + 4, 22, z - swing], PAL.dark, 4.5);
+      box(x, 22 + bob, z, 15, 24, 10, col);
+      disc([x, 54 + bob, z], 6.5, '#F6D6B8', 1);
+      disc([x, 58.5 + bob, z], 6.2, col, 2);                 // ヘルメット
+      if (mode === 'wobble') { text([x, 72, z], '！', 14, PAL.warn, true); }
+      if (mode === 'panic') { text([x, 74 + bob, z], '！', 14, PAL.orange, true); line([x - 9, 40 + bob, z], [x - 16, 52 + bob + Math.sin(now * 20) * 4, z], '#F6D6B8', 4); line([x + 9, 40 + bob, z], [x + 16, 52 + bob - Math.sin(now * 20) * 4, z], '#F6D6B8', 4); }
+      else if (mode === 'heat') { for (let k = 0; k < 2; k++) { const f = ((now * 1.4 + i * 0.37 + k * 0.5) % 1); disc([x + (k ? 9 : -9), 62 + bob - f * 22, z + 2], 1.8, '#4FA3E8', 3); } text([x, 74 + bob, z], '暑…', 10, '#E85D04', true); }
+      else if (mode === 'evac') { text([x, 74 + bob, z], '！', 13, PAL.warn, true); }
+      else if (mode === 'check') { box(x + 11, 34 + bob, z - 2, 8, 11, 2, '#fff'); if (w.arrived) text([x, 74 + bob, z], (now - w.arriveT) % 2 < 1.2 ? '安全確認' : '✓', 10, PAL.accentDark, true); }
+      else if (mode === 'helper') { text([x, 74 + bob, z], '急げ', 10, PAL.warn, true); }
+      else if (after && !w.walking) box(x + 11, 34 + bob, z - 2, 8, 11, 2, '#fff');
+      else if (carryBox) box(x, 30 + bob, z - 12, 16, 12, 14, PAL.wood);
+      else if (!after) box(x, 28 + bob, z - 10, 6, 5, 8, '#8D99A6');
+      end();
+    }
+
+    // ---------- LexxMoMa（実機形状：AMR台車＋制御キャビネット＋協働アーム） ----------
+    const CAB = '#BCC2C8', CAB_DOOR = '#B0B7BE', CAB_EDGE = '#8E969F', ARM = '#E4E7EA', ARM_BLACK = '#2A2F35';
+    const L1 = 112, L2 = 96, CAB_TOP = 126;
+    const RS = 0.30;   // 実寸比：全高（アーム待機姿勢）≈ 76 ≒ 2.0m（作業者 ≈ 65 ≒ 1.7m）
+    function robotAt(k, rnow, now) {
+      // 台数で走行区間を等分し、各台は自区間内だけを往復（柵内の1レーン・台同士が重ならない）
+      const n = m.units, seg = (LANE_X1 - LANE_X0) / n, cx = LANE_X0 + seg * (k + 0.5);
+      const A = n === 1 ? 250 : Math.max(8, (seg - 112 * RS - 12) / 2);
+      const xa = cx - A, xb = cx + A;
+      const T = 9, ph = ((rnow + k * 2.3) % T) / T;
+      let x, moving = false, reach = 0, hold = false;
+      if (ph < 0.25) { x = lerp(xa, xb, ease(ph / 0.25)); moving = true; }
+      else if (ph < 0.40) { x = xb; reach = ease((ph - 0.25) / 0.15); hold = ph > 0.38; }
+      else if (ph < 0.52) { x = xb; reach = 1 - ease((ph - 0.40) / 0.12); hold = true; }
+      else if (ph < 0.77) { x = lerp(xb, xa, ease((ph - 0.52) / 0.25)); moving = true; hold = true; }
+      else if (ph < 0.90) { x = xa; reach = ease((ph - 0.77) / 0.13); hold = ph < 0.88; }
+      else { x = xa; reach = 1 - ease((ph - 0.90) / 0.10); }
+      const z = PATH_Z;
+      XF = { x, z, s: RS };      // 以降はローカル（実機の相対寸法）で組み立て、描画時に縮尺
+      const stopped = robotStopped(), type = evType(), e = evElapsed();
+      if (stopped) moving = false;
+      const ledCol = stopped ? (Math.sin(now * 10) > 0 ? PAL.warn : '#F5B7B1') : type === 'rush' && Math.sin(now * 14) > 0 ? '#7ED9A5' : moving ? PAL.accent : PAL.primary;
+
+      // ===== 本体（台車＋キャビネット）：凸部品を組立順に描く =====
+      const bodyZ = camSpace([x, 60, z])[2];
+      curObj = { z: bodyZ, ordered: true };
+      box(x, 0, z, 104, 24, 100, '#9DA4AC');                 // AMR 台車
+      box(x, 24, z, 110, 5, 106, '#C7CCD2');                 // 台車上のフランジ
+      if (facing([x, 12, z + 50], [0, 0, 1])) box(x, 10, z + 50.6, 80, 3, 1, ledCol);   // 状態LED
+      if (facing([x + 52, 12, z], [1, 0, 0])) box(x + 52.6, 10, z, 1, 3, 70, ledCol);
+      if (facing([x - 52, 12, z], [-1, 0, 0])) box(x - 52.6, 10, z, 1, 3, 70, ledCol);
+      box(x, 29, z, 96, 85, 92, CAB, { noTop: true });      // キャビネット側面
+      // 面取りした天面（ベベル4面＋天板）
+      const yb = 114, yt = CAB_TOP, bx = 48, bz = 46, tx = 38, tz = 36;
+      poly([[x - bx, yb, z + bz], [x + bx, yb, z + bz], [x + tx, yt, z + tz], [x - tx, yt, z + tz]], CAB, [0, 0.64, 0.77]);
+      poly([[x + bx, yb, z - bz], [x - bx, yb, z - bz], [x - tx, yt, z - tz], [x + tx, yt, z - tz]], CAB, [0, 0.64, -0.77]);
+      poly([[x + bx, yb, z + bz], [x + bx, yb, z - bz], [x + tx, yt, z - tz], [x + tx, yt, z + tz]], CAB, [0.77, 0.64, 0]);
+      poly([[x - bx, yb, z - bz], [x - bx, yb, z + bz], [x - tx, yt, z + tz], [x - tx, yt, z - tz]], CAB, [-0.77, 0.64, 0]);
+      poly([[x - tx, yt, z - tz], [x + tx, yt, z - tz], [x + tx, yt, z + tz], [x - tx, yt, z + tz]], '#C9CED3', [0, 1, 0]);
+      poly([[x - 16, yt + 0.4, z - 30], [x + 16, yt + 0.4, z - 30], [x + 16, yt + 0.4, z + 2], [x - 16, yt + 0.4, z + 2]], '#D5D9DD', [0, 1, 0]);   // 取付プレート
+      // 扉（前面・側面）
+      if (facing([x, 70, z + 46], [0, 0, 1])) {
+        poly([[x - 42, 38, z + 46.6], [x + 10, 38, z + 46.6], [x + 10, 108, z + 46.6], [x - 42, 108, z + 46.6]], CAB_DOOR, [0, 0, 1], { stroke: CAB_EDGE });
+        poly([[x + 14, 38, z + 46.6], [x + 44, 38, z + 46.6], [x + 44, 108, z + 46.6], [x + 14, 108, z + 46.6]], CAB_DOOR, [0, 0, 1], { stroke: CAB_EDGE });
+        line([x + 5, 66, z + 47.2], [x + 5, 78, z + 47.2], '#6B7580', 2.4);
+        text([x - 16, 100, z + 47.4], 'LexxMoMa', 7.5, PAL.primary, true);
+      }
+      if (facing([x + 48, 70, z], [1, 0, 0])) {
+        poly([[x + 48.6, 38, z + 40], [x + 48.6, 38, z - 8], [x + 48.6, 108, z - 8], [x + 48.6, 108, z + 40]], CAB_DOOR, [1, 0, 0], { stroke: CAB_EDGE });
+        line([x + 49.2, 66, z - 2], [x + 49.2, 78, z - 2], '#6B7580', 2.4);
+      }
+      if (facing([x - 48, 70, z], [-1, 0, 0])) poly([[x - 48.6, 38, z - 40], [x - 48.6, 38, z + 8], [x - 48.6, 108, z + 8], [x - 48.6, 108, z - 40]], CAB_DOOR, [-1, 0, 0], { stroke: CAB_EDGE });
+      disc([x + 30, yt + 1.5, z + 26], 3.2, stopped ? ledCol : Math.sin(now * 4) > 0 ? (m.availability >= 95 ? PAL.accent : m.availability >= 90 ? PAL.yellow : PAL.warn) : '#B9C6D2');
+      end();
+
+      // ===== 協働アーム =====
+      // 天面より上の部品は常に本体の手前に、下へ伸びた部品は実際の奥行きで並べる
+      const sub = (pt, bias) => { const cz = camSpace(pt)[2] + (bias || 0); curObj = { z: pt[1] > CAB_TOP + 2 ? Math.max(bodyZ + 0.5, cz) : cz, ordered: true }; };
+      const M = [x, CAB_TOP, z - 14];
+      sub([M[0], CAB_TOP + 8, M[2]]);
+      cylinder(M[0], CAB_TOP, M[2], 19, 13, ARM_BLACK, 12);          // J1 ベース（黒）
+      cylinder(M[0], CAB_TOP + 13, M[2], 19.5, 3, PAL.accent, 12);    // 緑リング
+      cylinder(M[0], CAB_TOP + 16, M[2], 15, 12, ARM, 12);            // J1 旋回部
+      end();
+      const S = [M[0], CAB_TOP + 40, M[2]];                            // J2 肩
+      // IK ターゲット：待機姿勢 ⇔ コンベア上のワーク
+      const sway = moving ? Math.sin(now * 2 + k) * 6 : 0;
+      const Wrest = [x + (n === 1 ? 60 : 0) + sway, 150, S[2] - 110];
+      const Wc = toLocal([x, 44, CONV_Z + 4]);
+      const Wpick = [Wc[0], Wc[1] + 22 + 30, Wc[2]];   // ワーク底面＝コンベア上面
+      const Wt = [lerp(Wrest[0], Wpick[0], reach), lerp(Wrest[1], Wpick[1], reach), lerp(Wrest[2], Wpick[2], reach)];
+      let hx = Wt[0] - S[0], hz = Wt[2] - S[2], d = Math.hypot(hx, hz);
+      const dirH = d > 1 ? [hx / d, hz / d] : [0, -1];
+      let dy = Wt[1] - S[1], D = Math.hypot(d, dy);
+      const Dc = clamp(D, L1 - L2 + 8, L1 + L2 - 2);
+      if (Dc !== D) { d *= Dc / D; dy *= Dc / D; D = Dc; }
+      const phi = Math.atan2(dy, d), alpha = Math.acos(clamp((L1 * L1 + D * D - L2 * L2) / (2 * L1 * D), -1, 1));
+      const th1 = phi + alpha;                                          // エルボーアップ
+      const E = [S[0] + dirH[0] * Math.cos(th1) * L1, S[1] + Math.sin(th1) * L1, S[2] + dirH[1] * Math.cos(th1) * L1];
+      const Wr = [S[0] + dirH[0] * d, S[1] + dy, S[2] + dirH[1] * d];
+      const lat = [-dirH[1], 0, dirH[0]];
+      const near = (J) => camSpace([J[0] + lat[0], J[1], J[2] + lat[2]])[2] > camSpace([J[0] - lat[0], J[1], J[2] - lat[2]])[2] ? 1 : -1;
+      const add = (P, v, s) => [P[0] + v[0] * s, P[1] + v[1] * s, P[2] + v[2] * s];
+      const link = (a, b, w, color) => {                                // リンクを3分割して奥行きを正しく
+        for (let i = 0; i < 3; i++) {
+          const p0 = [lerp(a[0], b[0], i / 3), lerp(a[1], b[1], i / 3), lerp(a[2], b[2], i / 3)];
+          const p1 = [lerp(a[0], b[0], (i + 1) / 3), lerp(a[1], b[1], (i + 1) / 3), lerp(a[2], b[2], (i + 1) / 3)];
+          sub([(p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2, (p0[2] + p1[2]) / 2]);
+          line(p0, p1, color, w); end();
+        }
+      };
+      const joint = (J, hl, w) => {                                     // 関節ハウジング（横向きカプセル）＋手前側に緑リング
+        const s = near(J);
+        sub(J, 0.4);
+        line(add(J, lat, -hl), add(J, lat, hl), ARM, w);
+        line(add(J, lat, s * (hl - 1)), add(J, lat, s * (hl + 3)), PAL.accent, w + 2);
+        line(add(J, lat, s * (hl + 3)), add(J, lat, s * (hl + 5)), ARM, w - 4);
+        end();
+      };
+      // J1 → J2 の立ち上がり
+      sub([S[0], CAB_TOP + 34, S[2]]); line([M[0], CAB_TOP + 26, M[2]], S, ARM, 22); end();
+      link(S, E, 22, ARM);            // 上腕
+      link(E, Wr, 16, ARM);           // 前腕
+      joint(S, 15, 30);               // J2 肩
+      joint(E, 12, 25);               // J3 肘
+      joint(Wr, 8, 17);               // J5 手首
+      // ツール（黒フランジ＋グリッパ）・手首カメラ
+      const T1 = [Wr[0], Wr[1] - 14, Wr[2]], TE = [Wr[0], Wr[1] - 30, Wr[2]];
+      sub(T1, 0.2);
+      line([Wr[0], Wr[1] - 6, Wr[2]], T1, PAL.accent, 16);
+      line(T1, TE, ARM_BLACK, 14);
+      if (m.hand) {
+        line(add(TE, [dirH[0], 0, dirH[1]], -15), add(TE, [dirH[0], 0, dirH[1]], 15), ARM_BLACK, 7);
+        disc(add(add(TE, [dirH[0], 0, dirH[1]], -12), [0, 1, 0], -5), 4.5, ARM_BLACK);
+        disc(add(add(TE, [dirH[0], 0, dirH[1]], 12), [0, 1, 0], -5), 4.5, ARM_BLACK);
+      }
+      end();
+      if (m.hand && hold) { sub([TE[0], TE[1] - 14, TE[2]], 0.1); box(TE[0], TE[1] - 22, TE[2], 30, 13, 22, PAL.wood); end(); }
+      if (m.camera) {
+        const s = near(Wr), C0 = add([Wr[0], Wr[1] - 8, Wr[2]], lat, s * 13);
+        sub(C0, 0.6);
+        box(C0[0], C0[1] - 6, C0[2], 11, 12, 11, ARM_BLACK);
+        disc([C0[0] + dirH[0] * 6, C0[1] - 2, C0[2] + dirH[1] * 6], 2.6, PAL.yellow);
+        end();
+      }
+      // 状態ラベル
+      XF = null;                  // 状態ラベルはワールド座標・等倍文字
+      if (stopped) text([x, 100, z], '緊急停止', 11, PAL.warn, true);
+      else if (type === 'quake' && e < 7.5) text([x, 100, z], '復旧 ✓ 即時再開', 11, PAL.accentDark, true);
+      else if (type === 'rush') text([x, 100, z], '増速 ×1.9', 10, PAL.orange, true);
+    }
+
+    // ---------- HUD（2D） ----------
+    function hud() {
+      const night = m.shifts >= 3, dusk = m.shifts === 2;
+      const type = evType(), e = evElapsed();
+      ctx.save();
+      if (type === 'heat') { ctx.fillStyle = 'rgba(255,140,0,0.10)'; ctx.fillRect(0, 0, W, H); ctx.font = '26px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('☀', W / 2 + 140, 32); }
+      rrect(14, 12, 236, 40, 7, night ? '#1F2933' : '#fff', PAL.primary);
+      ctx.font = '700 17px sans-serif'; ctx.fillStyle = PAL.primary; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(m.grade, 28, 32);
+      ctx.font = '15px sans-serif'; ctx.fillStyle = PAL.yellow; ctx.fillText('★'.repeat(m.stars), 160, 32);
+      ctx.fillStyle = night ? '#5A6980' : '#C9CFD6'; ctx.fillText('★'.repeat(4 - m.stars), 160 + m.stars * 15.5, 32);
+      const badge = `${m.shifts}直 ${night ? '🌙 24時間稼働' : dusk ? '🌇 夕方も稼働' : '☀ 日勤のみ'}`;
+      ctx.font = '12px sans-serif'; const bw = ctx.measureText(badge).width + 26;
+      rrect(W - bw - 14, 14, bw, 26, 13, night ? '#1F2933' : '#fff', night ? '#FFE08A' : '#B9C6D2');
+      ctx.fillStyle = night ? '#FFE08A' : PAL.text; ctx.textAlign = 'center'; ctx.fillText(badge, W - bw / 2 - 14, 27);
+      // イベントバナー
+      if (type) {
+        const def = EVENTS[type], prog = clamp(e / def.dur, 0, 1);
+        let sub = '';
+        if (type === 'rush') sub = 'フル稼働の指示 — 人：焦り・残業　／　LexxMoMa：速度アップで淡々と対応';
+        else if (type === 'heat') sub = '人：汗・作業量ダウン・熱中症リスク　／　LexxMoMa：変わらず稼働';
+        else if (type === 'quake') sub = e < 3 ? '人：避難　／　LexxMoMa：緊急停止' : e < 5 ? '揺れ収束 — 安全確認へ' : `復旧：LexxMoMa 即時再開 ✓　／　人：安全確認中… あと ${Math.ceil(def.dur - e)} 秒`;
+        else sub = 'イベントが重なり作業者が倒れました — 人に依存した生産の脆さ';
+        ctx.font = '700 13px sans-serif';
+        const title = def.label, tw = ctx.measureText(title).width;
+        ctx.font = '11px sans-serif'; const sw = ctx.measureText(sub).width;
+        const bwid = Math.min(W - 40, Math.max(tw, sw) + 36), bx = (W - bwid) / 2;
+        rrect(bx, 58, bwid, 46, 8, night ? 'rgba(31,41,51,.94)' : 'rgba(255,255,255,.95)', def.color);
+        ctx.fillStyle = def.color; ctx.font = '700 13px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(title, W / 2, 72);
+        ctx.fillStyle = night ? '#E8EDF2' : PAL.text; ctx.font = '11px sans-serif';
+        ctx.save(); ctx.beginPath(); ctx.rect(bx + 4, 58, bwid - 8, 46); ctx.clip(); ctx.fillText(sub, W / 2, 90); ctx.restore();
+        ctx.fillStyle = '#E5E9EE'; ctx.fillRect(bx + 10, 100, bwid - 20, 3); ctx.fillStyle = def.color; ctx.fillRect(bx + 10, 100, (bwid - 20) * (1 - prog), 3);
+      }
+      // 年間効果・回収
+      const eff = `年間効果 ${C.fmtMan(m.saving)} 万円`;
+      const pb = m.payback === null ? (m.robot ? `${m.years}年内 未回収` : '') : `回収 ${C.fmtYears(m.payback)} 年`;
+      const pbc = { green: PAL.accent, yellow: PAL.yellow, grey: PAL.grey }[m.color];
+      ctx.font = '700 12px sans-serif'; const ew = ctx.measureText(eff).width + 44, pw = pb ? ctx.measureText(pb).width + 30 : 0;
+      rrect(W - ew - pw - 24, H - 40, ew, 28, 6, night ? '#1F2933' : '#fff', PAL.goldDark);
+      ctx.fillStyle = PAL.gold; ctx.beginPath(); ctx.arc(W - ew - pw - 24 + 18, H - 26, 9, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#5A4300'; ctx.font = '700 11px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('¥', W - ew - pw - 24 + 18, H - 25.5);
+      ctx.fillStyle = night ? '#E8EDF2' : PAL.text; ctx.font = '700 12px sans-serif'; ctx.textAlign = 'left'; ctx.fillText(eff, W - ew - pw - 24 + 34, H - 26);
+      if (pb) { rrect(W - pw - 14, H - 40, pw, 28, 6, pbc, pbc); ctx.fillStyle = m.color === 'yellow' ? PAL.text : '#fff'; ctx.textAlign = 'center'; ctx.fillText(pb, W - pw / 2 - 14, H - 26); }
+      // 次のアンロック
+      ctx.font = '11px sans-serif'; const nx = `次：${m.next}`; const nw = Math.min(W - ew - pw - 60, ctx.measureText(nx).width + 22);
+      rrect(14, H - 36, nw, 22, 11, night ? 'rgba(31,41,51,.9)' : 'rgba(255,255,255,.92)', null);
+      ctx.fillStyle = night ? '#C9D3DE' : PAL.muted; ctx.textAlign = 'left';
+      ctx.save(); ctx.beginPath(); ctx.rect(14, H - 36, nw, 22); ctx.clip(); ctx.fillText(nx, 24, H - 25); ctx.restore();
+      ctx.restore();
+    }
+    function rrect(x, y, w, h, r, fill, stroke) {
+      ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+      if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+      if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 1.2; ctx.stroke(); }
+    }
+
+    // ---------- フレーム ----------
+    function frame(now) {
+      if (!m) return;
+      const q = evType() === 'quake' && evElapsed() < 3 ? (1 - evElapsed() / 3) : 0;
+      const yawOff = q ? Math.sin(now * 47) * 0.02 * q : 0, pitchOff = q ? Math.cos(now * 39) * 0.012 * q : 0;
+      cy = Math.cos(cam.yaw + yawOff); sy = Math.sin(cam.yaw + yawOff); cp = Math.cos(cam.pitch + pitchOff); sp = Math.sin(cam.pitch + pitchOff);
+      prims = []; bg = []; seq = 0;
+      drawWorld(now);
+      const order = (a, b) => (a.oz - b.oz) || (a.z - b.z) || (a.seq - b.seq);
+      prims.sort(order);
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = m.shifts >= 3 ? '#1B2430' : m.shifts === 2 ? '#F7EBDD' : '#F1F5F9'; ctx.fillRect(0, 0, W, H);
+      ctx.save();
+      if (q) ctx.translate((Math.random() - 0.5) * 10 * q, (Math.random() - 0.5) * 8 * q);
+      ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+      const drawList = list => {
+        for (const p of list) {
+          if (p.t === 'poly') {
+            ctx.beginPath(); ctx.moveTo(p.pp[0].x, p.pp[0].y); for (let i = 1; i < p.pp.length; i++) ctx.lineTo(p.pp[i].x, p.pp[i].y); ctx.closePath();
+            ctx.fillStyle = p.color; ctx.fill();
+            if (p.stroke) { ctx.strokeStyle = p.stroke; ctx.lineWidth = 1; ctx.stroke(); }
+          } else if (p.t === 'line') {
+            ctx.beginPath(); ctx.moveTo(p.pa.x, p.pa.y); ctx.lineTo(p.pb.x, p.pb.y); ctx.strokeStyle = p.color; ctx.lineWidth = Math.max(0.6, p.w); ctx.stroke();
+          } else if (p.t === 'disc') {
+            ctx.beginPath(); ctx.arc(p.pc.x, p.pc.y, Math.max(0.5, p.r), 0, Math.PI * 2); ctx.fillStyle = p.color; ctx.fill();
+          } else if (p.t === 'text') {
+            if (p.size < 4) continue;
+            ctx.font = `${p.bold ? '700 ' : ''}${p.size.toFixed(1)}px sans-serif`; ctx.fillStyle = p.color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(p.str, p.pc.x, p.pc.y);
+          }
+        }
+      };
+      drawList(bg);          // 床・壁は常に最初
+      drawList(prims);
+      ctx.restore();
+      hud();
+    }
+    function loop(ts) {
+      raf = 0;
+      if (!running) return;
+      if (document.hidden) { raf = requestAnimationFrame(loop); return; }
+      const rect = canvas.getBoundingClientRect();
+      const visible = rect.bottom > 0 && rect.top < window.innerHeight;
+      if (ts - last >= 33) {
+        const dt = last ? Math.min(0.1, (ts - last) / 1000) : 0;
+        last = ts; t += dt; rt += dt * robotSpeed();
+        tickEvents(dt);
+        updateWorkers(dt, view === 'after' && m.robot);
+        if (visible) frame(t);
+      }
+      raf = requestAnimationFrame(loop);
+    }
+    function start() { if (!raf) raf = requestAnimationFrame(loop); }
+    function resize() {
+      dpr = window.devicePixelRatio || 1;
+      W = Math.max(320, canvas.clientWidth || canvas.parentElement.clientWidth);
+      cam.F = W * 1.9;
+      canvas.width = Math.floor(W * dpr); canvas.height = Math.floor(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      if (m) frame(t);
+    }
+
+    // ---------- 操作 ----------
+    let drag = null;
+    canvas.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, yaw: cam.yaw, pitch: cam.pitch }; canvas.classList.add('drag'); canvas.setPointerCapture(e.pointerId); });
+    canvas.addEventListener('pointermove', e => {
+      if (!drag) return;
+      cam.yaw = drag.yaw + (e.clientX - drag.x) * 0.006;
+      cam.pitch = clamp(drag.pitch + (e.clientY - drag.y) * 0.005, 0.12, 1.25);
+      if (!running) frame(t);
+    });
+    const endDrag = () => { drag = null; canvas.classList.remove('drag'); };
+    canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointercancel', endDrag);
+    canvas.addEventListener('wheel', e => { e.preventDefault(); cam.dist = clamp(cam.dist * (e.deltaY > 0 ? 1.08 : 0.93), 1100, 4200); if (!running) frame(t); }, { passive: false });
+    window.addEventListener('resize', resize);
+
+    // ---------- 公開API ----------
+    function update(p, r, state) {
+      const hadRobot = m && m.robot;
+      m = factoryModel(p, r, state);
+      if (!m.robot) view = 'before';
+      else if (!hadRobot) view = userView || 'after';
+      else view = userView || view;
+      onView(view);
+      resize();
+      start();
+      return m;
+    }
+    function setView(v) { userView = v; view = m && !m.robot ? 'before' : v; onView(view); frame(t); }
+    function toggle() { running = !running; if (running) { last = 0; start(); } return running; }
+    function resetCamera() { Object.assign(cam, DEF); frame(t); }
+    resize();
+    return { update, setView, toggle, resetCamera, trigger, cam, get running() { return running; }, get event() { return ev; }, get eventCount() { return evCount; }, EVENTS };
+  }
+
+  root.LXSCENE = { factoryModel, create, EVENTS };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+</script>
+<script>
+/* LexxMoMa 費用対効果 簡易計算ツール — ui.js
+ * DOM・イベント・描画。計算式はここに書かない（calc.js を呼ぶ）。 */
+(function () {
+  'use strict';
+  const C = window.LXCALC, CSV = window.LXCSV;
+  const $ = (s, el) => (el || document).querySelector(s);
+  const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
+  const COLORS = { primary: '#0068B7', accent: '#3EB370', yellow: '#F2B705', grey: '#9AA0A6', text: '#1F2933', muted: '#5F6B7A', border: '#D9DEE3', warn: '#D93025', track: '#EEF1F4', bg: '#fff' };
+  // テーマ(light/dark): グラフの色は styles.css の CSS 変数から読む(assets/theme.js が無い単体配布時は既定の light 色のまま)
+  const CSS_VARS = { primary: '--primary', accent: '--accent', yellow: '--yellow', grey: '--grey', text: '--text', muted: '--muted', border: '--border', warn: '--warn', track: '--chart-track', bg: '--bg' };
+  const LIGHT_COLORS = Object.assign({}, COLORS);
+  function readThemeColors() {
+    const cs = getComputedStyle(document.documentElement);
+    Object.keys(CSS_VARS).forEach(k => { COLORS[k] = cs.getPropertyValue(CSS_VARS[k]).trim() || LIGHT_COLORS[k]; });
+  }
+  readThemeColors();
+
+  let state = C.defaultState();
+
+  // ============ URLハッシュ ============
+  function b64urlEncode(str) {
+    const bytes = new TextEncoder().encode(str);
+    let bin = ''; bytes.forEach(b => { bin += String.fromCharCode(b); });
+    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function b64urlDecode(s) {
+    let b = s.replace(/-/g, '+').replace(/_/g, '/');
+    while (b.length % 4) b += '=';
+    const bin = atob(b);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  }
+  function encodeState(s) { return 'v1=' + b64urlEncode(JSON.stringify(s)); }
+  function decodeHash(hash) {
+    try {
+      const m = /(?:^|[#&])v1=([A-Za-z0-9_-]+)/.exec(hash || '');
+      if (!m) return null;
+      return JSON.parse(b64urlDecode(m[1]));
+    } catch (e) { return null; }
+  }
+  function loadFromHash() {
+    const patch = decodeHash(location.hash);
+    state = C.defaultState();
+    if (patch) C.mergeState(state, patch);
+  }
+  function writeHash() {
+    const h = '#' + encodeState(state);
+    if (location.hash !== h) history.replaceState(null, '', h);
+  }
+
+  // ============ 状態パス操作 ============
+  function getPath(obj, path) { return path.split('.').reduce((o, k) => (o == null ? undefined : o[k]), obj); }
+  function setPath(obj, path, val) {
+    const ks = path.split('.'); let o = obj;
+    for (let i = 0; i < ks.length - 1; i++) { if (o[ks[i]] == null || typeof o[ks[i]] !== 'object') o[ks[i]] = {}; o = o[ks[i]]; }
+    o[ks[ks.length - 1]] = val;
+  }
+  /** 入力欄の生値 → 状態格納値（空欄は ''、正しい数値は number、不正はそのまま保持して警告表示に使う） */
+  function storeValue(raw) {
+    if (raw === '' || raw === null || raw === undefined) return '';
+    const n = Number(String(raw).replace(/,/g, '').trim());
+    return Number.isFinite(n) ? n : raw;
+  }
+  function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+  function attrVal(v) { return v === null || v === undefined ? '' : esc(v); }
+
+  // ============ 入力パネル ============
+  function fSlider(o) {
+    const v = getPath(state, o.path);
+    return `<div class="field">
+      <label>${o.label}</label>
+      <div class="ctl">
+        <input type="range" data-path="${o.path}" min="${o.min}" max="${o.max}" step="${o.step}" value="${C.num(v)}" aria-label="${o.label}（スライダー）">
+        <input type="number" data-path="${o.path}" min="0" step="${o.nstep || o.step}" value="${attrVal(v)}" class="${C.isInvalid(v) ? 'warn' : ''}" aria-label="${o.label}">
+        <span class="unit">${o.unit}</span>
+      </div>${o.hint ? `<div class="hint">${o.hint}</div>` : ''}
+    </div>`;
+  }
+  function fButtons(o) {
+    const v = C.num(getPath(state, o.path));
+    return `<div class="field">
+      <label>${o.label}</label>
+      <div class="ctl"><div class="btn-group" data-path="${o.path}">
+        ${o.options.map(x => `<button type="button" data-value="${x}" class="${x === v ? 'on' : ''}">${x}</button>`).join('')}
+      </div><span class="unit">${o.unit}</span></div>
+    </div>`;
+  }
+  function fRow(o) {
+    const v = getPath(state, o.path);
+    return `<div class="row">
+      <label for="in_${o.path.replace(/\./g, '_')}">${o.label}</label>
+      <input id="in_${o.path.replace(/\./g, '_')}" type="number" data-path="${o.path}" ${o.group ? `data-group="${o.group}"` : ''} min="0" step="${o.step || 1}"
+        value="${attrVal(v)}" placeholder="${o.placeholder || ''}" class="${C.isInvalid(v) ? 'warn' : ''}">
+      <span class="unit">${o.unit}</span>
+    </div>`;
+  }
+  /** 初期投資の行：単価 × 数量 = 金額 */
+  function fCapexRow(o) {
+    const price = getPath(state, o.path), q = getPath(state, o.qtyPath);
+    const id = o.path.replace(/\./g, '_');
+    return `<div class="row capex">
+      <label for="in_${id}">${o.label}</label>
+      <input id="in_${id}" type="number" data-path="${o.path}" ${o.group ? `data-group="${o.group}"` : ''} min="0" step="${o.step || 10}"
+        value="${attrVal(price)}" placeholder="${o.placeholder || ''}" class="${C.isInvalid(price) ? 'warn' : ''}" aria-label="${o.label} 単価">
+      <span class="x">×</span>
+      <input type="number" class="qty ${C.isInvalid(q) ? 'warn' : ''}" data-path="${o.qtyPath}" ${o.group ? `data-group="${o.group}"` : ''} min="0" step="1" value="${attrVal(q)}" placeholder="1" aria-label="${o.label} 数量">
+      <span class="unit">${o.unit}</span>
+      <span class="amt" data-amount="${o.path}">${C.fmtMan(C.amount(price, q))}<small> 万円</small></span>
+    </div>`;
+  }
+  function capexHead() { return `<div class="capex-head"><span></span><span>単価（万円）</span><span></span><span>数量</span><span></span><span>金額</span></div>`; }
+  function fTotal(o) {
+    // 表示のみ（自動合計）
+    return `<div class="total"><span>${o.label}</span><span class="val" data-derived="${o.key}">—</span><span class="unit">${o.unit}</span></div>`;
+  }
+  function fTotalEditable(o) {
+    // 合計欄：直接入力可。override が null のときは展開項目の合計を表示
+    const ov = getPath(state, 'detail.override.' + o.key);
+    const derived = o.derived;
+    const manual = !C.isBlank(ov);
+    return `<div class="total">
+      <span>${o.label}</span>
+      <input type="number" data-path="detail.override.${o.key}" data-total="${o.key}" min="0" step="1"
+        value="${manual ? attrVal(ov) : C.fmtDec(derived, 2)}" class="${manual ? 'manual' : 'derived'} ${C.isInvalid(ov) ? 'warn' : ''}" aria-label="${o.label}">
+      <span class="unit">${o.unit}</span>
+      <span class="note" data-note="${o.key}">${manual ? '合計を直接入力中（項目を編集すると自動合計に戻ります）' : '展開項目の合計（直接入力で上書き可）'}</span>
+    </div>`;
+  }
+
+  const CAPEX_PH = 'お見積りの金額を入力';
+
+  function renderInputs() {
+    const light = state.mode !== 'detail';
+    const d = state.detail;
+    let h = '';
+    // 1. 人件費
+    if (light) {
+      h += fSlider({ path: 'base.laborCostPerPerson', label: '1人あたり年間人件費＋管理費', unit: '万円/年', min: 300, max: 1500, step: 10 });
+    } else {
+      h += `<fieldset class="group"><legend>1人あたり年間人件費＋管理費</legend>
+        ${fRow({ path: 'detail.wage.base', label: '直接人件費（年）', unit: '万円', group: 'labor', step: 10 })}
+        ${fRow({ path: 'detail.wage.overheadRate', label: '法定福利・管理費率', unit: '%', group: 'labor', step: 1 })}
+        ${fRow({ path: 'detail.wage.overtimeHours', label: '年間残業時間/人', unit: 'h', group: 'labor', step: 10 })}
+        ${fRow({ path: 'detail.wage.overtimeRate', label: '残業単価', unit: '円/h', group: 'labor', step: 100 })}
+        ${fRow({ path: 'detail.wage.hiringTraining', label: '採用・教育費（年・1人あたり）', unit: '万円', group: 'labor', step: 10 })}
+        ${fTotalEditable({ key: 'labor', label: '合計', unit: '万円/年', derived: C.laborCostFromWage(d.wage) })}
+        <div class="ref" data-derived="hourly"></div>
+      </fieldset>`;
+    }
+    // 2. 直数
+    h += fButtons({ path: 'base.shifts', label: '直数', unit: '直', options: [1, 2, 3] });
+    // 3. 省人化人数
+    h += fSlider({ path: 'base.personsPerShift', label: '1直あたり省人化（再配置）人数', unit: '人', min: 0.5, max: 3, step: 0.5 });
+    if (!light) {
+      h += `<fieldset class="group"><legend>稼働（実効人数の補正）</legend>
+        ${fRow({ path: 'detail.ops.stationsPerRobot', label: '1台が担当するステーション数', unit: '箇所', step: 1 })}
+        ${fRow({ path: 'detail.ops.availability', label: '目標可動率', unit: '%', step: 1 })}
+        ${fRow({ path: 'detail.ops.workingDays', label: '年間稼働日（参考）', unit: '日', step: 1 })}
+        ${fRow({ path: 'detail.ops.hoursPerShift', label: '1直あたり時間（参考）', unit: 'h', step: 0.5 })}
+        ${fTotal({ key: 'effPersons', label: '実効 省人化（再配置）人数 /直', unit: '人' })}
+        <div class="ref">実効人数 = 人数 × ステーション数 × 可動率。稼働日・時間は時間単価の参考表示にのみ使用します。</div>
+      </fieldset>`;
+    }
+    // 4. 上昇率
+    h += fSlider({ path: 'base.wageGrowth', label: '人件費上昇率', unit: '%/年', min: 0, max: 10, step: 0.5, nstep: 0.1 });
+    // 5. 初期投資
+    h += `<fieldset class="group"><legend>初期投資</legend>
+      ${capexHead()}
+      ${fCapexRow({ path: 'base.capex.robot', qtyPath: 'base.capexQty.robot', label: '機体', unit: '台', placeholder: '単価' })}
+      ${fCapexRow({ path: 'base.capex.camera', qtyPath: 'base.capexQty.camera', label: 'カメラ・ビジョン', unit: '台', placeholder: '単価' })}
+      ${fCapexRow({ path: 'base.capex.endEffector', qtyPath: 'base.capexQty.endEffector', label: 'エンドエフェクタ', unit: '個', placeholder: '単価' })}`;
+    if (light) {
+      h += fCapexRow({ path: 'base.capex.integration', qtyPath: 'base.capexQty.integration', label: '導入・周辺費用（SI・安全対策・レイアウト）', unit: '式', placeholder: '金額' });
+    } else {
+      h += `${fCapexRow({ path: 'detail.capex.si', qtyPath: 'detail.capexQty.si', label: 'SI・ティーチング', unit: '式', placeholder: '金額', group: 'integration' })}
+        ${fCapexRow({ path: 'detail.capex.safety', qtyPath: 'detail.capexQty.safety', label: '安全対策・柵', unit: '式', placeholder: '金額', group: 'integration' })}
+        ${fCapexRow({ path: 'detail.capex.layout', qtyPath: 'detail.capexQty.layout', label: 'レイアウト変更', unit: '式', placeholder: '金額', group: 'integration' })}
+        ${fCapexRow({ path: 'detail.capex.training', qtyPath: 'detail.capexQty.training', label: '教育', unit: '式', placeholder: '金額', group: 'integration' })}
+        ${fCapexRow({ path: 'detail.capex.spares', qtyPath: 'detail.capexQty.spares', label: '予備品', unit: '式', placeholder: '金額', group: 'integration' })}
+        ${fTotalEditable({ key: 'integration', label: '導入・周辺費用 合計', unit: '万円', derived: C.sumAmounts(d.capex, d.capexQty) })}`;
+    }
+    h += `${fTotal({ key: 'capexTotal', label: '初期投資 合計', unit: '万円' })}
+      <div class="ref">お見積書の金額をそのまま転記してください。</div>
+    </fieldset>`;
+    // 6. ランニング
+    if (light) {
+      h += `<div class="field"><label>年間ランニング費（保守・ソフトライセンス）</label>
+        <div class="ctl"><input type="number" data-path="base.opexAnnual" min="0" step="10" value="${attrVal(state.base.opexAnnual)}"
+          placeholder="お見積りの金額を入力" class="${C.isInvalid(state.base.opexAnnual) ? 'warn' : ''}" aria-label="年間ランニング費"><span class="unit">万円/年</span></div></div>`;
+    } else {
+      h += `<fieldset class="group"><legend>年間ランニング費</legend>
+        ${fRow({ path: 'detail.opex.maintenance', label: '保守契約', unit: '万円/年', placeholder: CAPEX_PH, group: 'opex', step: 10 })}
+        ${fRow({ path: 'detail.opex.software', label: 'フリート管理・ソフトライセンス', unit: '万円/年', placeholder: CAPEX_PH, group: 'opex', step: 10 })}
+        ${fRow({ path: 'detail.opex.power', label: '電力', unit: '万円/年', placeholder: '', group: 'opex', step: 1 })}
+        ${fRow({ path: 'detail.opex.consumables', label: '消耗品', unit: '万円/年', placeholder: '', group: 'opex', step: 1 })}
+        ${fTotalEditable({ key: 'opex', label: '合計', unit: '万円/年', derived: C.sumItems(d.opex) })}
+      </fieldset>`;
+    }
+    // 7. 評価期間
+    h += fButtons({ path: 'base.years', label: '評価期間', unit: '年', options: [3, 5, 7] });
+    // 精緻のみ：付加効果・財務
+    if (!light) {
+      h += `<fieldset class="group"><legend>付加効果（任意）</legend>
+        ${fRow({ path: 'detail.extra.qualitySaving', label: '不良低減による年間削減額', unit: '万円/年', step: 10 })}
+        ${fRow({ path: 'detail.extra.downtimeSaving', label: 'ラインストップ低減による年間削減額', unit: '万円/年', step: 10 })}
+        <div class="ref">年間省人効果に加算します（人件費上昇率は適用しません）。</div>
+      </fieldset>
+      <fieldset class="group"><legend>財務（任意）</legend>
+        <label class="check"><input type="checkbox" data-path="detail.fin.enableNPV" ${d.fin.enableNPV ? 'checked' : ''}> NPV（正味現在価値）を表示</label>
+        ${fRow({ path: 'detail.fin.discountRate', label: '割引率', unit: '%', step: 0.5 })}
+        ${fRow({ path: 'detail.fin.depreciationYears', label: '減価償却年数（参考表示のみ）', unit: '年', step: 1 })}
+      </fieldset>`;
+    }
+    $('#inputs').innerHTML = h;
+  }
+
+  // ============ 派生表示の更新 ============
+  function updateDerived(p, r) {
+    const set = (key, txt) => $$(`[data-derived="${key}"]`).forEach(el => { el.textContent = txt; });
+    set('capexTotal', C.fmtMan(p.capexTotal));
+    $$('[data-amount]').forEach(el => {
+      const path = el.dataset.amount;
+      const q = getPath(state, path.replace('.capex.', '.capexQty.'));
+      el.innerHTML = `${C.fmtMan(C.amount(getPath(state, path), q))}<small> 万円</small>`;
+    });
+    set('effPersons', C.fmtDec(p.effectivePersonsPerShift, 3));
+    if (p.hourlyRate !== null) set('hourly', `参考：時間あたり人件費 ≈ ${Math.round(p.hourlyRate).toLocaleString('ja-JP')} 円/h（${C.fmtMan(p.laborCostPerPerson)}万円 ÷ 稼働日 × 1直時間）。減価償却年数 ${C.num(state.detail.fin.depreciationYears)} 年（参考）。`);
+    // 合計欄（自動算出中のもののみ表示更新）
+    $$('[data-total]').forEach(inp => {
+      const key = inp.dataset.total;
+      const ov = state.detail.override[key];
+      const manual = !C.isBlank(ov);
+      inp.classList.toggle('manual', manual);
+      inp.classList.toggle('derived', !manual);
+      if (!manual && document.activeElement !== inp) inp.value = C.fmtDec(p.derived[key], 2);
+      const note = $(`[data-note="${key}"]`);
+      if (note) note.textContent = manual ? '合計を直接入力中（項目を編集すると自動合計に戻ります）' : '展開項目の合計（直接入力で上書き可）';
+    });
+  }
+
+  // ============ 結果：メーター ============
+  function polar(cx, cy, r, deg) { const a = deg * Math.PI / 180; return { x: cx + r * Math.cos(a), y: cy - r * Math.sin(a) }; }
+  function arcPath(cx, cy, r, fromV, toV, max) {
+    const a1 = 180 - 180 * Math.max(0, Math.min(max, fromV)) / max;
+    const a2 = 180 - 180 * Math.max(0, Math.min(max, toV)) / max;
+    if (Math.abs(a1 - a2) < 0.01) return '';
+    const p1 = polar(cx, cy, r, a1), p2 = polar(cx, cy, r, a2);
+    return `M ${p1.x.toFixed(2)} ${p1.y.toFixed(2)} A ${r} ${r} 0 0 1 ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+  }
+  function renderGauge(p, r) {
+    const el = $('#gauge');
+    if (r.error === 'NO_CAPEX') {
+      el.innerHTML = `<div class="placeholder"><b>初期投資を入力してください</b><div class="tip">お見積書の金額を4欄に転記してください。<br>入力と同時に投資回収年数が表示されます。</div></div>`;
+      return;
+    }
+    const max = r.years, t = state.thresholds;
+    const g = Math.min(C.num(t.green), max), y = Math.min(Math.max(C.num(t.yellow), g), max);
+    const cx = 150, cy = 150, R = 118, W = 22;
+    const pb = r.paybackYears;
+    const color = C.paybackColor(pb, t);
+    const colHex = { green: COLORS.accent, yellow: COLORS.yellow, grey: COLORS.grey }[color];
+    const needleV = pb === null ? max : Math.min(pb, max);
+    const na = 180 - 180 * needleV / max;
+    const tip = polar(cx, cy, R - W / 2 - 6, na), base1 = polar(cx, cy, 14, na + 90), base2 = polar(cx, cy, 14, na - 90);
+    const ticks = [];
+    for (let i = 0; i <= max; i++) {
+      const a = 180 - 180 * i / max; const o = polar(cx, cy, R + 16, a);
+      ticks.push(`<text x="${o.x.toFixed(1)}" y="${(o.y + 4).toFixed(1)}" text-anchor="middle" font-size="11" fill="${COLORS.muted}">${i}</text>`);
+    }
+    const status = pb === null
+      ? `評価期間 ${max} 年以内に回収しません`
+      : (color === 'green' ? `稟議基準（緑 ≤ ${C.fmtDec(t.green, 1)} 年）を満たします`
+        : color === 'yellow' ? `黄（≤ ${C.fmtDec(t.yellow, 1)} 年）の範囲です`
+          : `回収まで ${C.fmtDec(t.yellow, 1)} 年超`);
+    el.innerHTML = `<div class="gauge">
+      <svg viewBox="0 0 300 175" role="img" aria-label="投資回収年数メーター">
+        <path d="${arcPath(cx, cy, R, 0, max, max)}" fill="none" stroke="${COLORS.track}" stroke-width="${W}" />
+        <path d="${arcPath(cx, cy, R, 0, g, max)}" fill="none" stroke="${COLORS.accent}" stroke-width="${W}" />
+        <path d="${arcPath(cx, cy, R, g, y, max)}" fill="none" stroke="${COLORS.yellow}" stroke-width="${W}" />
+        <path d="${arcPath(cx, cy, R, y, max, max)}" fill="none" stroke="${COLORS.grey}" stroke-width="${W}" />
+        ${ticks.join('')}
+        <polygon points="${tip.x.toFixed(1)},${tip.y.toFixed(1)} ${base1.x.toFixed(1)},${base1.y.toFixed(1)} ${base2.x.toFixed(1)},${base2.y.toFixed(1)}" fill="${COLORS.text}" />
+        <circle cx="${cx}" cy="${cy}" r="9" fill="${COLORS.bg}" stroke="${COLORS.text}" stroke-width="3" />
+        <text x="${cx}" y="${cy + 22}" text-anchor="middle" font-size="11" fill="${COLORS.muted}">投資回収年数（年）</text>
+      </svg>
+      <div class="big" style="color:${pb === null ? COLORS.grey : colHex}">${pb === null ? '—' : C.fmtYears(pb)}<small>年</small></div>
+      <div class="status">${status}</div>
+      <div class="legend"><span><i style="background:${COLORS.accent}"></i>≤${C.fmtDec(t.green, 1)}年</span><span><i style="background:${COLORS.yellow}"></i>≤${C.fmtDec(t.yellow, 1)}年</span><span><i style="background:${COLORS.grey}"></i>それ以上</span></div>
+    </div>`;
+  }
+
+  // ============ 結果：KPI ============
+  function renderKpis(p, r) {
+    const el = $('#kpis');
+    const disabled = r.error === 'NO_CAPEX';
+    const kp = (k, v, unit, cls, sub) => `<div class="kpi ${cls || ''}"><div class="k">${k}</div><div class="v">${v}<small>${unit}</small></div>${sub ? `<div class="sub">${sub}</div>` : ''}</div>`;
+    let h = '';
+    h += kp('初年度 年間省人効果', C.fmtMan(r.annualSaving0), '万円/年', 'accent',
+      `${C.fmtMan(p.laborCostPerPerson)}万円 × ${p.shifts}直 × ${C.fmtDec(p.effectivePersonsPerShift, 3)}人` + (r.extraAnnual > 0 ? `　＋付加効果 ${C.fmtMan(r.extraAnnual)}万円/年` : ''));
+    h += kp(`${r.years}年累積効果`, disabled ? '—' : C.fmtMan(r.cumFinal), '万円', disabled ? 'muted' : (r.cumFinal < 0 ? 'neg' : ''), disabled ? '初期投資の入力後に表示' : `初期投資・ランニング費を差し引いた累積キャッシュフロー`);
+    h += kp('初期投資 合計', C.fmtMan(p.capexTotal), '万円', 'muted', `機体 ${C.fmtMan(p.capex.robot)} / カメラ ${C.fmtMan(p.capex.camera)} / EE ${C.fmtMan(p.capex.endEffector)} / 導入・周辺 ${C.fmtMan(p.capex.integration)}`);
+    h += kp('年間ランニング費', C.fmtMan(p.opexAnnual), '万円/年', 'muted', `人件費上昇率 ${C.fmtDec(p.wageGrowth, 1)}%/年・評価期間 ${r.years}年`);
+    if (r.npv !== null && r.npv !== undefined) {
+      h += kp(`NPV（割引率 ${C.fmtDec(p.discountRate, 1)}%）`, C.fmtMan(r.npv), '万円', r.npv < 0 ? 'neg' : 'accent', `${r.years}年間の純効果を現在価値に換算し初期投資を差し引いた額`);
+    }
+    el.innerHTML = h;
+  }
+
+  // ============ 結果：累積CF棒グラフ ============
+  function renderChart(p, r) {
+    const el = $('#chart');
+    const A = state.scenarios.A, B = state.scenarios.B;
+    const both = !!(A && B && !A.result.error && !B.result.error);
+    let series;
+    if (both) {
+      series = [{ name: `A：${A.name || '無題'}`, color: COLORS.primary, cum: A.series.map(s => s.cum), pb: A.result.paybackYears },
+      { name: `B：${B.name || '無題'}`, color: COLORS.accent, cum: B.series.map(s => s.cum), pb: B.result.paybackYears }];
+    } else {
+      if (r.error === 'NO_CAPEX') { el.innerHTML = ''; return; }
+      series = [{ name: '現在の入力', color: COLORS.primary, cum: r.series.map(s => s.cum), pb: r.paybackYears }];
+    }
+    const N = Math.max(...series.map(s => s.cum.length - 1));
+    const W = 640, H = 260, mL = 70, mR = 16, mT = 18, mB = 34;
+    const iw = W - mL - mR, ih = H - mT - mB;
+    let vmin = 0, vmax = 0;
+    series.forEach(s => s.cum.forEach(v => { vmin = Math.min(vmin, v); vmax = Math.max(vmax, v); }));
+    if (vmax === vmin) vmax = vmin + 1;
+    const pad = (vmax - vmin) * 0.12; vmax += pad; vmin -= pad;
+    const yOf = v => mT + (vmax - v) / (vmax - vmin) * ih;
+    const groupW = iw / (N + 1);
+    const barW = Math.min(46, groupW * (both ? 0.36 : 0.6));
+    const xOf = (i, k) => mL + groupW * i + groupW / 2 + (both ? (k === 0 ? -barW / 2 - 2 : barW / 2 + 2) : 0);
+    // y 目盛
+    const step = niceStep((vmax - vmin) / 5);
+    let g = '';
+    for (let v = Math.ceil(vmin / step) * step; v <= vmax; v += step) {
+      const y = yOf(v);
+      g += `<line x1="${mL}" x2="${W - mR}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="${v === 0 ? COLORS.text : COLORS.track}" stroke-width="${v === 0 ? 1.2 : 1}" />
+            <text x="${mL - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end" font-size="11" fill="${COLORS.muted}">${C.fmtMan(v)}</text>`;
+    }
+    let bars = '';
+    series.forEach((s, k) => {
+      s.cum.forEach((v, i) => {
+        const x = xOf(i, k) - barW / 2, y0 = yOf(0), y1 = yOf(v);
+        const top = Math.min(y0, y1), hgt = Math.max(1, Math.abs(y1 - y0));
+        bars += `<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${barW.toFixed(1)}" height="${hgt.toFixed(1)}" rx="3" fill="${s.color}" fill-opacity="${v < 0 ? 0.45 : 1}" />`;
+        if (!both) {
+          const ly = v >= 0 ? top - 5 : top + hgt + 12;
+          bars += `<text x="${(x + barW / 2).toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" font-size="10.5" fill="${v < 0 ? COLORS.muted : COLORS.text}">${C.fmtMan(v)}</text>`;
+        }
+      });
+      if (s.pb !== null && s.pb !== undefined) {
+        const px = mL + groupW * s.pb + groupW / 2;
+        bars += `<line x1="${px.toFixed(1)}" x2="${px.toFixed(1)}" y1="${mT}" y2="${mT + ih}" stroke="${s.color}" stroke-width="1.5" stroke-dasharray="4 3" />
+                 <text x="${(px + 4).toFixed(1)}" y="${mT + 10}" font-size="10.5" fill="${s.color}">回収 ${C.fmtYears(s.pb)} 年</text>`;
+      }
+    });
+    let xl = '';
+    for (let i = 0; i <= N; i++) xl += `<text x="${(mL + groupW * i + groupW / 2).toFixed(1)}" y="${H - 12}" text-anchor="middle" font-size="11" fill="${COLORS.muted}">${i === 0 ? '導入時' : i + '年目'}</text>`;
+    el.innerHTML = `<div class="chart-title"><span>累積キャッシュフロー（万円）</span>
+        <span class="legend">${series.map(s => `<span><i style="background:${s.color}"></i>${esc(s.name)}</span>`).join('')}</span></div>
+      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="累積キャッシュフロー棒グラフ">${g}${bars}${xl}</svg>`;
+  }
+  function niceStep(raw) {
+    if (!(raw > 0)) return 1;
+    const p = Math.pow(10, Math.floor(Math.log10(raw)));
+    const m = raw / p;
+    return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * p;
+  }
+
+  // ============ 結果：シナリオ比較 ============
+  function renderCompare() {
+    const el = $('#compare');
+    const A = state.scenarios.A, B = state.scenarios.B;
+    const cell = (s, f, cls) => s ? `<td class="${cls || ''}">${f(s)}</td>` : '<td class="empty">未保存</td>';
+    const pbTxt = s => s.result.error ? '—' : (s.result.paybackYears === null ? '未回収' : `${C.fmtYears(s.result.paybackYears)} 年`);
+    const rows = [
+      ['1人あたり年間人件費＋管理費', s => `${C.fmtMan(s.inputs.laborCostPerPerson)} 万円/年`],
+      ['直数', s => `${s.inputs.shifts} 直`],
+      ['1直あたり省人化（再配置）人数', s => `${C.fmtDec(s.inputs.effectivePersonsPerShift, 3)} 人`],
+      ['初期投資 合計', s => `${C.fmtMan(s.inputs.capexTotal)} 万円`],
+      ['投資回収年数', pbTxt, true],
+      ['累積効果', s => `${C.fmtMan(s.result.cumFinal)} 万円（${s.inputs.years}年）`, true]
+    ];
+    el.innerHTML = `<div class="compare-head">
+        <h3>シナリオ A/B 比較</h3>
+        <button type="button" class="btn sm" id="saveA">現在の入力をシナリオAに保存</button>
+        <button type="button" class="btn accent sm" id="saveB">Bに保存</button>
+        <button type="button" class="btn ghost sm" id="clearAB" ${A || B ? '' : 'disabled'}>クリア</button>
+      </div>
+      <table class="compare">
+        <thead><tr><th>項目</th><th class="a">シナリオA${A ? `：${esc(A.name || '無題')}` : ''}</th><th class="b">シナリオB${B ? `：${esc(B.name || '無題')}` : ''}</th></tr></thead>
+        <tbody>${rows.map(r => `<tr class="${r[2] ? 'hl' : ''}"><td>${r[0]}</td>${cell(A, r[1])}${cell(B, r[1])}</tr>`).join('')}</tbody>
+      </table>`;
+    $('#saveA').onclick = () => saveScenario('A');
+    $('#saveB').onclick = () => saveScenario('B');
+    $('#clearAB').onclick = () => { state.scenarios = { A: null, B: null }; schedule(); toast('シナリオA/Bをクリアしました'); };
+  }
+  function saveScenario(key) {
+    const p = C.resolveInputs(state), r = C.compute(p);
+    if (r.error) { toast('初期投資を入力してから保存してください'); return; }
+    state.scenarios[key] = C.snapshot(state, p, r);
+    schedule();
+    toast(`シナリオ${key}に保存しました`);
+  }
+
+  // ============ 印刷用入力サマリー ============
+  function renderPrintSummary(p) {
+    const rows = CSV.inputRows(state, p);
+    const cols = rows.length > 20 ? 3 : 2;
+    const per = Math.ceil(rows.length / cols);
+    const tbl = rs => `<table>${rs.map(r => `<tr><td>${esc(r[0])}</td><td class="v">${esc(r[1])} ${esc(r[2])}</td></tr>`).join('')}</table>`;
+    const parts = []; for (let i = 0; i < cols; i++) parts.push(tbl(rows.slice(i * per, (i + 1) * per)));
+    $('#printSummary').innerHTML = `<h2>入力サマリー（${p.mode === 'detail' ? '精緻' : 'ライト'}モード${state.scenarioName ? '・' + esc(state.scenarioName) : ''}）</h2>
+      <div class="cols ${cols === 3 ? 'three' : ''}">${parts.join('')}</div>`;
+    $('#scnLabel').dataset.print = state.scenarioName ? `：${state.scenarioName}` : '：（無題）';
+  }
+
+  // ============ 再計算・再描画（rAFでスロットル） ============
+  let raf = 0;
+  function schedule() {
+    if (raf) return;
+    const tick = () => { raf = 0; render(); };
+    // 非表示タブでは rAF が止まるため setTimeout に切り替える
+    raf = document.hidden ? setTimeout(tick, 16) : requestAnimationFrame(tick);
+  }
+  function render() {
+    const p = C.resolveInputs(state), r = C.compute(p);
+    updateDerived(p, r);
+    renderGauge(p, r);
+    renderKpis(p, r);
+    renderChart(p, r);
+    renderCompare();
+    renderPrintSummary(p);
+    renderScene(p, r);
+    writeHash();
+  }
+
+  // ============ 工場タイクーン 3D（結果パネル最上段） ============
+  let scene = null;
+  function renderScene(p, r) {
+    if (!window.LXSCENE) return;
+    if (!scene) {
+      scene = LXSCENE.create($('#sceneCanvas'), {
+        onView: v => {
+          $$('#viewToggle button').forEach(b => b.classList.toggle('on', b.dataset.view === v));
+          $('#sceneCaption').textContent = v === 'before' ? 'Before：現状（手作業）' : 'After：LexxMoMa 導入後';
+        },
+        onEvent: (ev, count) => {
+          $$('.ev-btn').forEach(b => { b.disabled = !!ev; b.classList.toggle('active', !!ev && ev.type === b.dataset.ev); });
+          $('#evCount').textContent = ev && ev.type === 'medic' ? '救急搬送中…' : `イベント ${Math.min(count, 3)}/3`;
+        }
+      });
+      $('#evCount').textContent = 'イベント 0/3';
+    }
+    const m = scene.update(p, r, state);
+    $('#viewToggle button[data-view="after"]').disabled = !m.robot;
+    $('#viewToggle button[data-view="after"]').title = m.robot ? '' : '「機体」に金額を入れると After が見られます';
+  }
+  function bindScene() {
+    $$('#viewToggle button').forEach(b => b.addEventListener('click', () => { if (scene && !b.disabled) scene.setView(b.dataset.view); }));
+    $('#scenePlay').addEventListener('click', () => {
+      if (!scene) return;
+      const running = scene.toggle();
+      $('#scenePlay').textContent = running ? '⏸ 一時停止' : '▶ 再生';
+      $('#scenePlay').setAttribute('aria-pressed', String(running));
+    });
+    $('#sceneReset').addEventListener('click', () => { if (scene) scene.resetCamera(); });
+    $$('.ev-btn').forEach(b => b.addEventListener('click', () => {
+      if (!scene) return;
+      if (!scene.running) { scene.toggle(); $('#scenePlay').textContent = '⏸ 一時停止'; $('#scenePlay').setAttribute('aria-pressed', 'true'); }
+      scene.trigger(b.dataset.ev);
+    }));
+  }
+  function applyLayout() {
+    const w = Math.max(360, Math.min(900, C.num(state.ui.inputWidth) || 470));
+    document.documentElement.style.setProperty('--inputs-w', w + 'px');
+  }
+  function bindLayout() {
+    const sp = $('#splitter');
+    sp.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      sp.classList.add('drag'); sp.setPointerCapture(e.pointerId);
+      const startX = e.clientX, startW = C.num(state.ui.inputWidth) || 470;
+      const move = ev => { state.ui.inputWidth = Math.round(startW + (ev.clientX - startX)); applyLayout(); };
+      const up = ev => { sp.classList.remove('drag'); sp.removeEventListener('pointermove', move); sp.removeEventListener('pointerup', up); writeHash(); };
+      sp.addEventListener('pointermove', move); sp.addEventListener('pointerup', up);
+    });
+    sp.addEventListener('dblclick', () => { state.ui.inputWidth = 470; applyLayout(); writeHash(); });
+  }
+
+  // ============ モード切替（値は失わない） ============
+  function switchMode(mode) {
+    if (mode === state.mode) return;
+    const p = C.resolveInputs(state);
+    const d = state.detail, b = state.base;
+    if (mode === 'detail') {
+      // ライト → 精緻：ライト値を合計欄に直接持つ（展開項目は按分しない）。展開項目の合計と一致すれば自動算出に戻す
+      const setOv = (key, raw) => {
+        if (C.isBlank(raw)) { d.override[key] = null; return; }
+        d.override[key] = Math.abs(C.num(raw) - p.derived[key]) < 1e-9 ? null : raw;
+      };
+      setOv('labor', b.laborCostPerPerson);
+      setOv('integration', b.capex.integration);
+      setOv('opex', b.opexAnnual);
+    } else {
+      // 精緻 → ライト：合計値を書き戻す
+      b.laborCostPerPerson = round2(p.laborCostPerPerson);
+      b.capex.integration = (p.capex.integration === 0 && C.allBlank(d.capex) && C.isBlank(d.override.integration)) ? '' : round2(p.capex.integration);
+      b.opexAnnual = (p.opexAnnual === 0 && C.allBlank(d.opex) && C.isBlank(d.override.opex)) ? '' : round2(p.opexAnnual);
+    }
+    state.mode = mode;
+    $$('.mode-toggle button').forEach(x => x.classList.toggle('on', x.dataset.mode === mode));
+    renderInputs();
+    render();
+  }
+  function round2(x) { return Math.round(x * 100) / 100; }
+
+  // ============ イベント ============
+  function bindEvents() {
+    const inputs = $('#inputs');
+    inputs.addEventListener('input', e => {
+      const el = e.target; const path = el.dataset.path; if (!path) return;
+      if (el.type === 'checkbox') { setPath(state, path, el.checked); renderInputs(); schedule(); return; }
+      const raw = el.value;
+      setPath(state, path, storeValue(raw));
+      el.classList.toggle('warn', C.isInvalid(raw));
+      // スライダー⇄数値の同期
+      $$(`[data-path="${path}"]`, inputs).forEach(o => {
+        if (o === el) return;
+        if (o.type === 'range') o.value = C.num(raw); else o.value = raw;
+        o.classList.toggle('warn', C.isInvalid(raw));
+      });
+      if (el.dataset.group) state.detail.override[el.dataset.group] = null;   // 展開項目を触ったら自動合計に戻す
+      if (el.dataset.total && raw === '') state.detail.override[el.dataset.total] = null;
+      schedule();
+    });
+    inputs.addEventListener('click', e => {
+      const btn = e.target.closest('.btn-group button'); if (!btn) return;
+      const grp = btn.parentElement; const path = grp.dataset.path;
+      setPath(state, path, Number(btn.dataset.value));
+      $$('button', grp).forEach(x => x.classList.toggle('on', x === btn));
+      schedule();
+    });
+    $$('.mode-toggle button').forEach(b => b.addEventListener('click', () => switchMode(b.dataset.mode)));
+    $('#scenarioName').addEventListener('input', e => { state.scenarioName = e.target.value; schedule(); });
+
+    // アクション
+    $('#btnCsv').addEventListener('click', () => {
+      const p = C.resolveInputs(state), r = C.compute(p); const now = new Date();
+      CSV.download(CSV.buildCsv({ state, params: p, result: r, now }), CSV.fileName(state.scenarioName, now));
+      toast('CSVをダウンロードしました');
+    });
+    $('#btnSummary').addEventListener('click', async () => {
+      const p = C.resolveInputs(state), r = C.compute(p);
+      if (r.error) { toast('初期投資を入力してください'); return; }
+      const ok = await copyText(C.summaryText(p, r));
+      toast(ok ? 'サマリー文をコピーしました' : 'コピーできませんでした');
+    });
+    $('#btnPrint').addEventListener('click', () => { render(); window.print(); });
+    $('#btnUrl').addEventListener('click', async () => {
+      writeHash();
+      const ok = await copyText(location.href);
+      toast(ok ? 'URLをコピーしました（入力・シナリオA/B・しきい値を含みます）' : 'コピーできませんでした');
+    });
+    $('#btnReset').addEventListener('click', () => {
+      if (!confirm('入力を初期値に戻します。シナリオA/Bも消えます。よろしいですか？')) return;
+      state = C.defaultState();
+      $('#scenarioName').value = '';
+      $$('.mode-toggle button').forEach(x => x.classList.toggle('on', x.dataset.mode === 'light'));
+      renderInputs(); applyLayout(); render();
+    });
+
+    // しきい値ダイアログ
+    const dlg = $('#dlgThreshold');
+    $('#btnGear').addEventListener('click', () => {
+      $('#thGreen').value = state.thresholds.green; $('#thYellow').value = state.thresholds.yellow;
+      dlg.showModal();
+    });
+    const onTh = () => {
+      state.thresholds.green = storeValue($('#thGreen').value);
+      state.thresholds.yellow = storeValue($('#thYellow').value);
+      schedule();
+    };
+    $('#thGreen').addEventListener('input', onTh);
+    $('#thYellow').addEventListener('input', onTh);
+    $('#thDefault').addEventListener('click', () => { state.thresholds = C.deepClone(C.DEFAULT_STATE.thresholds); $('#thGreen').value = 2; $('#thYellow').value = 3; schedule(); });
+    $('#thClose').addEventListener('click', () => dlg.close());
+
+    window.addEventListener('hashchange', () => {
+      const cur = '#' + encodeState(state);
+      if (location.hash === cur) return;
+      loadFromHash(); syncHeader(); renderInputs(); applyLayout(); render();
+    });
+  }
+
+  async function copyText(text) {
+    try {
+      if (navigator.clipboard && window.isSecureContext !== false) { await navigator.clipboard.writeText(text); return true; }
+    } catch (e) { /* fall through */ }
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      const ok = document.execCommand('copy'); ta.remove(); return ok;
+    } catch (e) { return false; }
+  }
+  let toastTimer = 0;
+  function toast(msg) {
+    const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+  function syncHeader() {
+    $('#scenarioName').value = state.scenarioName || '';
+    $$('.mode-toggle button').forEach(x => x.classList.toggle('on', x.dataset.mode === state.mode));
+  }
+
+  // ============ 起動 ============
+  loadFromHash();
+  syncHeader();
+  renderInputs();
+  bindEvents();
+  bindLayout();
+  bindScene();
+  applyLayout();
+  render();
+
+  // テーマ切替: 色を読み直して再描画。印刷(A4)は常に light で出す
+  document.addEventListener('lx-theme', () => { readThemeColors(); render(); });
+  let printTheme = null;
+  window.addEventListener('beforeprint', () => {
+    printTheme = document.documentElement.getAttribute('data-theme');
+    if (printTheme === 'dark') { document.documentElement.setAttribute('data-theme', 'light'); readThemeColors(); render(); }
+  });
+  window.addEventListener('afterprint', () => {
+    if (printTheme === 'dark') { document.documentElement.setAttribute('data-theme', 'dark'); readThemeColors(); render(); }
+    printTheme = null;
+  });
+
+  // デバッグ・テスト用（計算はすべて LXCALC 側）
+  window.LXROI = { getState: () => state, setState: s => { state = C.mergeState(C.defaultState(), s); syncHeader(); renderInputs(); applyLayout(); render(); }, render, scene: () => scene };
+})();
+
+</script>
+</body>
+</html>

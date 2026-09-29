@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ページが見つかりません | LexxMoMa Tools</title>
+<link rel="icon" type="image/png" href="/assets/favicon.png">
+<script>
+// テーマ: LexxMoMa Tools 共通の設定(assets/theme.js と同じ localStorage "lx_theme")。既定は light
+// 404 は任意のパスで表示されるため、相対パスの theme.js を読まずにここで適用する
+try { document.documentElement.setAttribute("data-theme", localStorage.getItem("lx_theme") === "dark" ? "dark" : "light"); } catch (e) { document.documentElement.setAttribute("data-theme", "light"); }
+</script>
+<style>
+:root{--bg:#f5f7fa;--panel:#fff;--text:#1f2933;--muted:#5b6b7b;--brand:#0068B7;--line:#d9e1ea}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0f1519;--panel:#171f26;--text:#e7edf2;--muted:#a3b1bd;--brand:#5aa8e6;--line:#2b3741}}
+:root[data-theme="dark"]{--bg:#0f1519;--panel:#171f26;--text:#e7edf2;--muted:#a3b1bd;--brand:#5aa8e6;--line:#2b3741}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:flex;flex-direction:column;background:var(--bg);color:var(--text);font-family:"Noto Sans JP",system-ui,-apple-system,"Segoe UI",sans-serif}
+.stage{flex:1;display:grid;place-items:center;padding:16px}
+main{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:32px 28px;max-width:440px;text-align:center}
+.face{font-size:44px;line-height:1;margin-bottom:12px}
+h1{font-size:20px;margin:0 0 8px}
+p{color:var(--muted);font-size:14px;line-height:1.7;margin:0 0 20px}
+/* assets/theme.js の共通ヘッダー .lx-hdr / .lx-logo と同じ見た目(404 は任意のパスで表示され theme.js を読めないためここに複製) */
+.lx-hdr{display:flex;align-items:center;gap:20px;padding:12px 24px;background:var(--panel);border-bottom:3px solid var(--brand)}
+.lx-title{display:flex;align-items:center;gap:10px;min-width:0}
+.lx-brand{display:flex;align-items:center;gap:18px;color:inherit;text-decoration:none;white-space:nowrap}
+.lx-wordmark,.lx-tool{font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic",Meiryo,system-ui,sans-serif}
+.lx-wordmark{color:var(--brand);font-weight:800;font-size:20px;letter-spacing:.02em;line-height:1.2}
+.lx-tool{font-size:16px;font-weight:600;line-height:1.3}
+@media (max-width:600px){.lx-hdr{padding:10px 16px;gap:12px}.lx-wordmark{font-size:17px}.lx-tool{font-size:14px}}
+.lx-logo{height:28px;width:auto;display:block;box-sizing:content-box;padding:3px 6px;border-radius:6px;background:#fff}
+.home{display:inline-block;background:var(--brand);color:#fff;text-decoration:none;font-weight:700;font-size:14px;border-radius:9px;padding:10px 18px}
+:root[data-theme="dark"] .home{color:#0f1519}
+</style>
+</head>
+<body>
+<header class="lx-hdr">
+  <div class="lx-title">
+  <a class="lx-brand" href="index.html" id="logo" title="LexxMoMa Tools のトップへ"><img src="/assets/lexxpluss-logo.png" alt="LexxPluss" id="logoImg" class="lx-logo"><span class="lx-wordmark">LexxMoMa</span></a>
+  <span class="lx-tool">Tools</span>
+  </div>
+</header>
+<div class="stage">
+<main>
+  <div class="face" aria-hidden="true">🤖❓</div>
+  <h1>ページが見つかりません</h1>
+  <p>LexxMoMa がくまなく探しましたが、このページは見つかりませんでした。URLが変わったか、公開を終了したツールかもしれません。</p>
+  <a class="home" href="index.html" id="home">LexxMoMa Tools のトップへ</a>
+</main>
+</div>
+<script>
+// プロジェクトサイト(https://<org>.github.io/<repo>/)でもトップへ戻れるようにする
+(function(){var seg=location.pathname.split("/").filter(Boolean);var base=location.hostname.endsWith("github.io")&&seg.length?"/"+seg[0]+"/":"/";document.getElementById("home").href=base;document.getElementById("logo").href=base;document.getElementById("logoImg").src=base+"assets/lexxpluss-logo.png";var l=document.querySelector('link[rel="icon"]');if(l)l.href=base+"assets/favicon.png";})();
+</script>
+</body>
+</html>
