@@ -2,6 +2,9 @@
 LexxMoMa-Tools/
 /*.pdf
 
+# Packaged site (built by CI from site/)
+_site/
+
 # OS / editor
 .DS_Store
 Thumbs.db

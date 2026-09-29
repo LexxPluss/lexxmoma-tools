@@ -46,11 +46,20 @@ jobs:
           node site/lexxmoma-roi/test/calc.test.js
           node site/process-sketch/test/continuity.test.cjs
 
+      # Publish only what the pages need: sources, build scripts, tests and dev notes stay in the repo
+      - name: Package site
+        run: |
+          rsync -a --delete \
+            --exclude 'src/' --exclude 'test/' --exclude 'build.py' --exclude 'build.js' \
+            --exclude '*.md' --exclude '*.gs' --exclude 'library/tools/' \
+            site/ _site/
+          find _site -type f | sort
+
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: _site
 
       - id: deployment
         uses: actions/deploy-pages@v4
