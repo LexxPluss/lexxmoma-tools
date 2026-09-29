@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<title>工場マップ | LexxPluss 社内</title>
+<link rel="icon" type="image/png" href="../../assets/favicon.png">
+<script src="../../assets/theme.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=6">
+</head>
+<body>
+
+<!-- 入口(共通パスワード) -->
+<div class="gate" id="gate">
+  <button type="button" class="lx-theme-btn" data-lx-theme-toggle aria-label="ライト / ダーク切替"></button>
+  <form class="gate-card" id="gateForm" autocomplete="off">
+    <a class="gate-home" href="../../index.html" title="LexxMoMa Tools のトップへ"><img class="lx-logo" src="../../assets/lexxpluss-logo.png" alt="LexxPluss"></a>
+    <h1>工場マップ</h1>
+    <p>LexxPluss 社内メンバー向けのツールです。共通パスワードを入力してください。</p>
+    <label class="sr" for="pw">パスワード</label>
+    <input type="password" id="pw" placeholder="パスワード" autocomplete="current-password" required>
+    <label class="remember"><input type="checkbox" id="remember"> この端末で記憶する</label>
+    <button type="submit" id="gateBtn">開く</button>
+    <p class="gate-err" id="gateErr" role="alert"></p>
+    <a class="gate-back" href="../../index.html">LexxMoMa Tools に戻る</a>
+  </form>
+</div>
+
+<div class="app" id="app" hidden>
+  <div id="map" aria-label="工場の地図"></div>
+
+  <div class="legend" id="legend" aria-label="業種の凡例"></div>
+  <button class="locate" id="locate" type="button" title="現在地の近くの工場">◎ 現在地の近く</button>
+
+  <aside class="panel" id="panel">
+    <div class="p-resize" id="pResize" title="ドラッグで幅を変更(ダブルクリックで元の幅)" aria-hidden="true"></div>
+    <header class="p-head">
+      <div class="p-title">
+        <a href="../../index.html" title="LexxMoMa Tools のトップへ"><img class="lx-logo" src="../../assets/lexxpluss-logo.png" alt="LexxPluss"></a>
+        <h1>工場マップ</h1><span class="tag">社内</span>
+      </div>
+      <span class="p-btns">
+        <button type="button" class="lx-theme-btn" data-lx-theme-toggle aria-label="ライト / ダーク切替"></button>
+        <button class="icon-btn" id="lock" type="button" title="ロックする(パスワードを忘れさせる)">🔒</button>
+      </span>
+    </header>
+
+    <div class="p-filters">
+      <input type="search" id="q" placeholder="会社名・工場名・製品・地域で検索(例: デンソー 愛知 ブレーキ)">
+      <div class="chips" id="indChips" role="group" aria-label="業種で絞り込み"></div>
+      <div class="row">
+        <select id="grp" aria-label="グループ"><option value="">すべてのグループ</option></select>
+        <select id="region" aria-label="地域"><option value="">全国</option></select>
+      </div>
+      <div class="tabs" role="tablist">
+        <button role="tab" class="on" data-tab="co" id="tabCo">会社</button>
+        <button role="tab" data-tab="fa" id="tabFa">工場</button>
+        <select id="sort" aria-label="並べ替え"></select>
+      </div>
+      <div class="res" id="res"></div>
+    </div>
+
+    <div class="p-list" id="list"></div>
+
+    <section class="p-detail" id="detail" hidden>
+      <div class="d-bar">
+        <button class="link-btn" id="back" type="button">← 一覧に戻る</button>
+      </div>
+      <div id="detailBody"></div>
+    </section>
+
+    <footer class="p-foot" id="foot"></footer>
+  </aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="../../assets/track.js" data-tool="factory-map"></script>
+<script src="data.enc.js?v=4"></script>
+<script src="app.js?v=4"></script>
+</body>
+</html>

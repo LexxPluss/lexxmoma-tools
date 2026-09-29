@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1024">
+<title>LexxMoMa 費用対効果（ROI）計算ツール</title>
+<!-- 共通テーマ(light/dark)。サイト外で単体配布したときは読めずに light のまま動く。ビルドでもインライン化しない -->
+<script src="../../assets/theme.js"></script>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="hdr lx-hdr">
+  <div class="brand lx-title">
+    <a class="corp-link lx-brand" href="../../index.html" title="LexxMoMa Tools のトップへ" aria-label="LexxMoMa Tools のトップへ戻る"><img class="corp-logo lx-logo" src="../../assets/lexxpluss-logo.png" alt="LexxPluss"><span class="logo lx-wordmark">LexxMoMa</span></a>
+    <h1 class="lx-tool">費用対効果（ROI）計算ツール</h1>
+  </div>
+  <div class="mode-toggle" role="tablist" aria-label="モード">
+    <button type="button" data-mode="light" class="on" role="tab">ライト</button>
+    <button type="button" data-mode="detail" role="tab">精緻</button>
+  </div>
+  <div class="spacer"></div>
+  <label class="scn" id="scnLabel" data-print="">シナリオ名
+    <input id="scenarioName" type="text" placeholder="例：2直・1人再配置案" maxlength="60">
+  </label>
+  <button type="button" class="icon-btn" id="btnGear" title="稟議基準（メーターのしきい値）" aria-label="稟議基準を設定">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
+    </svg>
+  </button>
+  <button type="button" class="lx-theme-btn" data-lx-theme-toggle aria-label="ライト / ダーク切替"></button>
+</header>
+
+<main class="grid">
+  <section class="panel inputs" aria-label="入力">
+    <h2>入力</h2>
+    <div id="inputs"></div>
+  </section>
+
+  <div class="splitter" id="splitter" title="ドラッグで入力パネルの幅を変更" role="separator" aria-orientation="vertical"></div>
+
+  <section class="panel results" aria-label="結果">
+    <h2>結果</h2>
+    <div class="print-summary" id="printSummary"></div>
+    <div class="factory-wrap no-print" id="factoryWrap">
+      <div class="scene-bar">
+        <div class="btn-group" id="viewToggle" role="tablist" aria-label="表示切替">
+          <button type="button" data-view="before" role="tab">Before：現状</button>
+          <button type="button" data-view="after" role="tab" class="on">After：LexxMoMa 導入後</button>
+        </div>
+        <button type="button" class="btn ghost sm" id="scenePlay" aria-pressed="true">⏸ 一時停止</button>
+        <button type="button" class="btn ghost sm" id="sceneReset">視点リセット</button>
+        <span class="scene-hint">ドラッグで視点を回転／ホイールで拡大縮小</span>
+        <span class="scene-caption" id="sceneCaption"></span>
+      </div>
+      <div class="factory" id="factory">
+        <canvas id="sceneCanvas" aria-label="工場の3Dビュー"></canvas>
+        <div class="scene-events" aria-label="イベント">
+          <button type="button" class="ev-btn" data-ev="rush" title="フル稼働の指示。人は焦り、LexxMoMaは速度アップで対応します（約9秒）">🚨 フル稼働指示</button>
+          <button type="button" class="ev-btn" data-ev="heat" title="猛暑日。人は汗をかき作業量が落ち、LexxMoMaは変わらず稼働します（約10秒）">🌡 猛暑</button>
+          <button type="button" class="ev-btn" data-ev="quake" title="地震。人は避難、LexxMoMaは緊急停止。復旧時間の差に注目（約13秒）">🌏 災害</button>
+          <span class="ev-count" id="evCount" title="イベントが3回重なると作業者が倒れ、救急搬送されます"></span>
+        </div>
+      </div>
+    </div>
+    <div class="kpi-main" id="gauge"></div>
+    <div class="kpi-side" id="kpis"></div>
+    <div class="chart-wrap" id="chart"></div>
+    <div class="compare-wrap" id="compare"></div>
+  </section>
+</main>
+
+<div class="actions">
+  <button type="button" class="btn primary" id="btnCsv">CSVダウンロード</button>
+  <button type="button" class="btn" id="btnSummary">サマリー文をコピー</button>
+  <button type="button" class="btn" id="btnPrint">印刷</button>
+  <button type="button" class="btn" id="btnUrl">URLをコピー</button>
+  <button type="button" class="btn ghost" id="btnReset" title="入力を初期値に戻します（シナリオA/Bも消えます）">初期化</button>
+</div>
+
+<footer>
+  <span>本ツールの計算結果は概算であり、正式な見積・提案とは異なります。</span>
+  <span>LexxMoMa 費用対効果（ROI）計算ツール v1 / 株式会社LexxPluss</span>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<dialog id="dlgThreshold">
+  <h3>稟議基準（メーターの色分け）</h3>
+  <p>投資回収年数の判定しきい値です。設定はURLに保持されます。</p>
+  <div class="row"><span><i style="background:#3EB370"></i>緑：この年数以下</span><input type="number" id="thGreen" min="0" step="0.1"><span>年</span></div>
+  <div class="row"><span><i style="background:#F2B705"></i>黄：この年数以下</span><input type="number" id="thYellow" min="0" step="0.1"><span>年</span></div>
+  <div class="row"><span><i style="background:#9AA0A6"></i>グレー：それ以上・未回収</span><span></span><span></span></div>
+  <div class="foot">
+    <button type="button" class="btn ghost sm" id="thDefault">初期値に戻す</button>
+    <button type="button" class="btn primary sm" id="thClose">閉じる</button>
+  </div>
+</dialog>
+
+<script src="calc.js"></script>
+<script src="csv.js"></script>
+<script src="scene.js"></script>
+<script src="ui.js"></script>
+</body>
+</html>
