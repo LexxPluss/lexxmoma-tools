@@ -9,7 +9,6 @@ Everything under `site/` is served as-is (no build step).
 site/                      ← published root (https://<org>.github.io/<repo>/)
 ├ index.html               ← landing page (edit the TOOLS array to add/change a tool)
 ├ 404.html
-├ .nojekyll
 ├ assets/                  ← logo, favicon, analytics (track.js), shared theme + header (theme.js)
 ├ library/                 ← LexxMoMa Tour
 ├ simulator/               ← Motion Simulator (2D)
@@ -23,16 +22,18 @@ site/                      ← published root (https://<org>.github.io/<repo>/)
 ## Preview locally
 
 ```sh
-python3 -m http.server 8000 -d site
+python3 scripts/serve.py        # or: python3 scripts/serve.py 8743
 ```
 
-Open http://localhost:8000/. Use a local server rather than opening `index.html` directly
+Open http://localhost:8000/. The script serves `site/` with caching disabled, so edits show up on reload
+(`python3 -m http.server -d site` also works, but the browser may keep showing old copies). Use a local server rather than opening `index.html` directly
 (`file://` blocks some features, e.g. the Factory Map's encrypted data loading).
 
 ## Publishing
 
-Pushing changes under `site/` to `main` runs `.github/workflows/pages.yml`, which uploads `site/`
-and deploys it. It can also be run manually from the Actions tab.
+Pushing changes under `site/` to `main` runs `.github/workflows/pages.yml`, which packages `site/`
+and deploys it. Development files stay in the repo but are not published: `src/`, `test/`, `build.py` / `build.js`,
+`*.md`, `*.gs` and `library/tools/`. It can also be run manually from the Actions tab.
 
 One-time repo setup: **Settings → Pages → Build and deployment → Source = "GitHub Actions"**.
 
