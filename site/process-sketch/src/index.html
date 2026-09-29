@@ -114,17 +114,17 @@
 <div id="help" class="modal" hidden>
   <div class="card">
     <button class="x" id="helpX" aria-label="閉じる">×</button>
-    <h2>工程スケッチの使い方(1分)</h2>
-    <p class="hint" style="margin-top:0">初めての方は、近い工程のひな形を選んで、名前と時間を書き換えるのが早道です(あとから右上の「ひな形 ▾」でも選べます)。</p>
-    <section class="guide-welcome">
-      <h3>まずは「名前と時間を変えて、結果を見る」から</h3>
-      <p>① 設備を選ぶ → ② 時間を入れる → ③ 1日分を計算 → ④ 検討シートを作る</p>
-      <button class="btn p" id="startGuide">画面を見ながら使い方を教わる</button>
-      <p class="hint">今の図を使って案内します。図が空の場合は、下の「直線ライン」から始めてください。</p>
-      <label class="chk"><input type="checkbox" id="guideOnStartup" checked> 次回も起動時に使い方を表示する</label>
-    </section>
+    <h2>工程スケッチの使い方</h2>
+    <p class="hint" style="margin-top:0">工程のレイアウトを描いて、1日に何個できるか・人の手間がどれだけかかるかを確かめるツールです。</p>
+    <div class="guide-start">
+      <button type="button" class="gcard" data-guide="map"><b>画面の見かた</b><span>どこに何があるかを、画面の上に番号で示します</span><small>15秒</small></button>
+      <button type="button" class="gcard p" data-guide="tour"><b>操作ツアー</b><span>今の図を使って「設備を選ぶ → 時間を入れる → 1日分を計算 → 検討シート」を実際に操作します</span><small>2分</small></button>
+    </div>
+    <h3>ひな形から始める <small class="muted">近い工程を選んで、名前と時間を書き換えるのが早道です(今の図は置き換わります)</small></h3>
     <div id="helpTpl" class="tplrow"></div>
-    <details class="guide-reference"><summary>白紙から描く方法・細かい操作を見る</summary>
+    <h3>やりたいことから探す <small class="muted">押すと、画面のどこで操作するかを示します</small></h3>
+    <div id="helpWhere" class="where"></div>
+    <details class="guide-reference"><summary>くわしい操作説明・設備の考え方・キー操作</summary>
     <ol>
       <li><b>置く</b> … 左の部品をクリック→図の上をクリック(ドラッグでも可)。「ひな形」から始めると早いです。</li>
       <li><b>つなぐ</b> … 設備を選ぶと右端に出る <span class="knob">●</span> を次の設備へドラッグ。モノの流れの矢印ができ、近くの作業者が運び手になります。</li>
@@ -148,6 +148,7 @@
     <p class="keys"><kbd>ドラッグ</kbd>移動(何もない所で画面移動) <kbd>ホイール</kbd>拡大縮小 <kbd>R</kbd>90°回転 <kbd>Del</kbd>削除 <kbd>Ctrl+D</kbd>複製 <kbd>Ctrl+Z</kbd>元に戻す <kbd>矢印</kbd>100mm移動(Shiftで10mm) <kbd>Alt</kbd>押しながら動かすと吸着なし</p>
     <p class="hint">通路幅の色は目安です: <span class="cl r">赤 800mm未満</span> <span class="cl a">黄 1,200mm未満</span> <span class="cl g">緑 1,200mm以上</span>(人のすれ違い・台車・LexxMoMaの走行を考える目安)。データはこのブラウザの中だけに保存され、外部へは送られません。</p>
     </details>
+    <label class="chk guide-startup"><input type="checkbox" id="guideOnStartup" checked> 次回も起動時にこの画面を表示する(右上の「?」でいつでも開けます)</label>
   </div>
 </div>
 

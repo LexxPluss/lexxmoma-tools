@@ -253,19 +253,64 @@ details.setbox section h3 { margin-top: 6px; }
 .tplrow .btn b { display: block; color: var(--blue); }
 .tplrow .btn small { color: var(--sub); font-size: 11px; }
 
-/* Optional onboarding: no backdrop over editable canvas. */
-.guide-welcome { padding: 12px; background: #f0f6fa; border: 1px solid #c9dce9; margin: 10px 0 14px; border-radius: 8px; }
-.guide-welcome h3 { margin-top: 0; }
+/* 使い方ガイド(onboarding.js): 入口カード・スポットライト・吹き出し・画面の見かた */
+.guide-start { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0 6px; }
+.gcard { display: flex; flex-direction: column; gap: 4px; text-align: left; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 12px 14px; cursor: pointer; position: relative; }
+.gcard:hover { border-color: var(--blue); background: var(--soft); }
+.gcard b { font-size: 15px; color: var(--blue); }
+.gcard span { color: var(--ink); line-height: 1.55; }
+.gcard small { position: absolute; right: 12px; top: 12px; color: var(--sub); font-size: 11px; }
+.gcard.p { border: 2px solid var(--blue); background: #f0f6fa; }
+.modal h3 small { font-weight: 400; font-size: 11.5px; margin-left: 6px; }
+.where { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; margin: 6px 0 4px; }
+.where .btn { display: flex; justify-content: space-between; align-items: center; gap: 8px; text-align: left; white-space: normal; padding: 8px 10px; }
+.where .btn small { color: var(--blue); font-size: 11px; white-space: nowrap; }
 .guide-reference { margin-top: 14px; }
 .guide-reference summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
-#operationGuide { position: fixed; left: 16px; bottom: 80px; width: min(350px, calc(100vw - 32px)); max-height: calc(100vh - 110px); overflow: auto; z-index: 40; background: var(--panel); color: #263746; border: 2px solid #0068b7; border-radius: 10px; box-shadow: 0 6px 24px #20364b33; padding: 14px; }
-#operationGuide h3 { margin: 10px 0 8px; font-size: 16px; }
-#operationGuide p { line-height: 1.7; margin: 8px 0; }
-.guide-head,.guide-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.guide-head { color: #0068b7; }
-#guideClose { border: 0; background: transparent; font-size: 24px; cursor: pointer; min-width: 32px; }
-.guide-actions { margin-top: 12px; }
-.guide-highlight { outline: 3px solid #0068b7 !important; outline-offset: -3px; }
+.guide-startup { margin-top: 12px; }
+.gstart { background: #f0f6fa; border: 1px solid #c9dce9; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; }
+.gstart b { color: var(--blue); }
+.gstart p { margin: 4px 0 8px; line-height: 1.55; }
+.gstart .acts { display: flex; gap: 6px; flex-wrap: wrap; }
+@media (max-width: 560px) { .guide-start { grid-template-columns: 1fr; } }
+
+#gSpot { position: fixed; z-index: 90; pointer-events: none; border-radius: 8px; box-shadow: 0 0 0 9999px rgba(12,28,44,.55); outline: 3px solid #ffb400; outline-offset: 0; transition: left .18s, top .18s, width .18s, height .18s; animation: gPulse 1.6s ease-in-out infinite; }
+#gSpot.none { outline: 0; animation: none; }
+@keyframes gPulse { 0%,100% { outline-color: #ffb400; } 50% { outline-color: #ffe08a; } }
+#gPop { position: fixed; z-index: 95; width: min(340px, calc(100vw - 16px)); background: var(--panel); color: var(--ink); border-radius: 10px; box-shadow: 0 10px 32px rgba(0,0,0,.28); padding: 12px 14px 12px; line-height: 1.6; }
+#gPop::before { content: ""; position: absolute; width: 14px; height: 14px; background: var(--panel); transform: rotate(45deg); }
+#gPop[data-side="right"]::before { left: -7px; top: calc(var(--ay, 50%) - 7px); }
+#gPop[data-side="left"]::before { right: -7px; top: calc(var(--ay, 50%) - 7px); }
+#gPop[data-side="bottom"]::before { top: -7px; left: calc(var(--ax, 50%) - 7px); }
+#gPop[data-side="top"]::before { bottom: -7px; left: calc(var(--ax, 50%) - 7px); }
+#gPop[data-side="center"]::before, #gPop[data-side="inside"]::before { display: none; }
+#gPop h3 { margin: 6px 0 4px; font-size: 15.5px; }
+#gPop p { margin: 4px 0; }
+#gPop ul { margin: 4px 0; padding-left: 18px; }
+#gPop li { margin: 2px 0; }
+.g-head { display: flex; align-items: center; justify-content: space-between; color: var(--blue); font-size: 12px; }
+.g-x { border: 0; background: none; font-size: 22px; line-height: 1; cursor: pointer; color: var(--sub); padding: 0 2px; }
+.g-dots { display: flex; gap: 4px; margin-top: 4px; }
+.g-dots i { flex: 1; height: 4px; border-radius: 2px; background: var(--line); }
+.g-dots i.d { background: var(--green); }
+.g-dots i.c { background: var(--blue); }
+.g-do { font-weight: 600; }
+.g-why { color: var(--sub); font-size: 12px; }
+.g-ok { color: #1f8a4c; font-weight: 700; }
+.g-acts { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 10px; }
+.g-r { display: flex; gap: 6px; }
+
+#gMap { position: fixed; inset: 0; z-index: 90; background: rgba(12,28,44,.55); cursor: pointer; }
+.g-reg { position: absolute; border: 3px solid #ffb400; border-radius: 8px; box-sizing: border-box; background: rgba(255,180,0,.06); }
+.g-reg > .g-n { position: absolute; left: -3px; top: -3px; }
+.g-n { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #ffb400; color: #1d2733; font-style: normal; font-weight: 800; font-size: 14px; flex: none; }
+.g-lab { position: absolute; display: flex; gap: 8px; align-items: flex-start; background: var(--panel); color: var(--ink); border-radius: 8px; padding: 8px 10px; box-shadow: 0 6px 18px rgba(0,0,0,.25); line-height: 1.5; }
+.g-lab.up { transform: translateY(-100%); }
+.g-lab b { display: block; font-size: 13.5px; }
+.g-lab span { font-size: 12px; color: var(--sub); }
+.g-mapbar { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 10px; background: var(--panel); color: var(--ink); border-radius: 10px; padding: 10px 14px; box-shadow: 0 8px 24px rgba(0,0,0,.3); white-space: nowrap; }
+.g-mapbar b { font-size: 14px; color: var(--blue); }
+.g-mapbar span { color: var(--sub); font-size: 12px; }
 
 /* ===== ダークテーマ (assets/theme.js が <html data-theme="dark"> を付ける) =====
  * ライト表示は変えない。図(#cvWrap 内の SVG・時間カード・凡例)は「用紙」としてライトのまま残す。
@@ -307,10 +352,10 @@ details.setbox section h3 { margin-top: 6px; }
 :root[data-theme="dark"] details.adv { background: #1a232b; }
 :root[data-theme="dark"] .daybar { background: var(--soft); }
 :root[data-theme="dark"] .modal { background: rgba(0,0,0,.6); }
-:root[data-theme="dark"] .guide-welcome { background: #12314a; border-color: #24506f; }
-:root[data-theme="dark"] #operationGuide { color: var(--ink); border-color: var(--blue); box-shadow: 0 6px 24px rgba(0,0,0,.5); }
-:root[data-theme="dark"] .guide-head { color: var(--blue); }
-:root[data-theme="dark"] .guide-highlight { outline-color: var(--blue) !important; }
+:root[data-theme="dark"] .gcard.p, :root[data-theme="dark"] .gstart { background: #12314a; border-color: #24506f; }
+:root[data-theme="dark"] .gcard.p { border-color: var(--blue); }
+:root[data-theme="dark"] .g-ok { color: #8fdcae; }
+:root[data-theme="dark"] #gPop, :root[data-theme="dark"] .g-lab, :root[data-theme="dark"] .g-mapbar { box-shadow: 0 10px 32px rgba(0,0,0,.6); }
 
 </style>
 </head>
@@ -420,17 +465,17 @@ details.setbox section h3 { margin-top: 6px; }
 <div id="help" class="modal" hidden>
   <div class="card">
     <button class="x" id="helpX" aria-label="閉じる">×</button>
-    <h2>工程スケッチの使い方(1分)</h2>
-    <p class="hint" style="margin-top:0">初めての方は、近い工程のひな形を選んで、名前と時間を書き換えるのが早道です(あとから右上の「ひな形 ▾」でも選べます)。</p>
-    <section class="guide-welcome">
-      <h3>まずは「名前と時間を変えて、結果を見る」から</h3>
-      <p>① 設備を選ぶ → ② 時間を入れる → ③ 1日分を計算 → ④ 検討シートを作る</p>
-      <button class="btn p" id="startGuide">画面を見ながら使い方を教わる</button>
-      <p class="hint">今の図を使って案内します。図が空の場合は、下の「直線ライン」から始めてください。</p>
-      <label class="chk"><input type="checkbox" id="guideOnStartup" checked> 次回も起動時に使い方を表示する</label>
-    </section>
+    <h2>工程スケッチの使い方</h2>
+    <p class="hint" style="margin-top:0">工程のレイアウトを描いて、1日に何個できるか・人の手間がどれだけかかるかを確かめるツールです。</p>
+    <div class="guide-start">
+      <button type="button" class="gcard" data-guide="map"><b>画面の見かた</b><span>どこに何があるかを、画面の上に番号で示します</span><small>15秒</small></button>
+      <button type="button" class="gcard p" data-guide="tour"><b>操作ツアー</b><span>今の図を使って「設備を選ぶ → 時間を入れる → 1日分を計算 → 検討シート」を実際に操作します</span><small>2分</small></button>
+    </div>
+    <h3>ひな形から始める <small class="muted">近い工程を選んで、名前と時間を書き換えるのが早道です(今の図は置き換わります)</small></h3>
     <div id="helpTpl" class="tplrow"></div>
-    <details class="guide-reference"><summary>白紙から描く方法・細かい操作を見る</summary>
+    <h3>やりたいことから探す <small class="muted">押すと、画面のどこで操作するかを示します</small></h3>
+    <div id="helpWhere" class="where"></div>
+    <details class="guide-reference"><summary>くわしい操作説明・設備の考え方・キー操作</summary>
     <ol>
       <li><b>置く</b> … 左の部品をクリック→図の上をクリック(ドラッグでも可)。「ひな形」から始めると早いです。</li>
       <li><b>つなぐ</b> … 設備を選ぶと右端に出る <span class="knob">●</span> を次の設備へドラッグ。モノの流れの矢印ができ、近くの作業者が運び手になります。</li>
@@ -454,6 +499,7 @@ details.setbox section h3 { margin-top: 6px; }
     <p class="keys"><kbd>ドラッグ</kbd>移動(何もない所で画面移動) <kbd>ホイール</kbd>拡大縮小 <kbd>R</kbd>90°回転 <kbd>Del</kbd>削除 <kbd>Ctrl+D</kbd>複製 <kbd>Ctrl+Z</kbd>元に戻す <kbd>矢印</kbd>100mm移動(Shiftで10mm) <kbd>Alt</kbd>押しながら動かすと吸着なし</p>
     <p class="hint">通路幅の色は目安です: <span class="cl r">赤 800mm未満</span> <span class="cl a">黄 1,200mm未満</span> <span class="cl g">緑 1,200mm以上</span>(人のすれ違い・台車・LexxMoMaの走行を考える目安)。データはこのブラウザの中だけに保存され、外部へは送られません。</p>
     </details>
+    <label class="chk guide-startup"><input type="checkbox" id="guideOnStartup" checked> 次回も起動時にこの画面を表示する(右上の「?」でいつでも開けます)</label>
   </div>
 </div>
 
@@ -479,8 +525,10 @@ const FN = {
 // demand=必要数(個/日, 0=未設定) / robotAvail=LexxMoMa の稼働率[%](充電などで止まる分を除く)
 function dayOf(d) {
   const x = Object.assign({ hours: 8, breakMin: 60, demand: 0, robotAvail: 95 }, (d && d.day) || d || {});
-  x.hours = Math.max(0.5, Math.min(24, +x.hours || 8)); x.breakMin = Math.max(0, Math.min(x.hours * 60, +x.breakMin || 0));
-  x.demand = Math.max(0, Math.round(+x.demand || 0)); x.robotAvail = Math.max(10, Math.min(100, +x.robotAvail || 100));
+  // 空欄・文字は既定値、数値は範囲に収める(0 を既定値に置き換えない)
+  const num = (v, def) => (v === "" || v == null || !Number.isFinite(+v) ? def : +v);
+  x.hours = Math.max(0.5, Math.min(24, num(x.hours, 8))); x.breakMin = Math.max(0, Math.min(x.hours * 60, num(x.breakMin, 0)));
+  x.demand = Math.max(0, Math.round(num(x.demand, 0))); x.robotAvail = Math.max(10, Math.min(100, num(x.robotAvail, 100)));
   return x;
 }
 // ===== 部品カタログ =====
@@ -564,6 +612,11 @@ function migrateObj(o) {
     if (o.outQty != null) o.outQty = Math.max(1, Math.round(+o.outQty || 1));
     o.inQty = o.inQty || {};
   }
+  // 負の値・文字は計算を止める(到着間隔が負だと無限ループ)ので、入力・読み込みのたびに下限をそろえる
+  if (o.interval != null) o.interval = Math.max(0, +o.interval || 0);
+  if (o.swapT != null) o.swapT = Math.max(0, +o.swapT || 0);
+  if (o.ngRate != null) o.ngRate = Math.max(0, Math.min(100, +o.ngRate || 0));
+  if (o.cap != null && !(+o.cap >= 1)) o.cap = (DEFAULTS[o.type] || {}).cap || 1; // 0・負・空欄 → 既定の容量
   return o;
 }
 // parallel=並行作業: 自動運転中に、人が次のワークのセット・取り出しを同時に進められる(ワークを置く場所が2つある設備)。
@@ -599,13 +652,18 @@ function outQty(o) { return Math.max(1, Math.round(+o.outQty || 1)); }
 function timeSummary(doc) {
   const timed = doc.objs.filter(o => isTimed(o.type));
   let slow = null;
-  for (const o of timed) { const t = cycleTime(o) / outQty(o); if (!slow || t > slow.t) slow = { o, t, ct: cycleTime(o) }; }
-  const memo = {};
+  for (const o of timed) { const t = cycleTime(o) / (o.type === "inspect" ? inQty(o) : outQty(o)); if (!slow || t > slow.t) slow = { o, t, ct: cycleTime(o) }; }
+  const memo = {}, onPath = new Set();
   const longest = (o, depth) => {
     if (memo[o.id]) return memo[o.id];
     if (depth > 40) return { t: 0, route: [o] };
+    onPath.add(o.id);
     let best = { t: 0, route: [] };
-    for (const f of doc.flows.filter(f2 => f2.to === o.id)) { const a = byId(doc, f.from); if (!a) continue; const r = longest(a, depth + 1); if (r.t > best.t || !best.route.length) best = r; }
+    for (const f of doc.flows.filter(f2 => f2.to === o.id)) {
+      const a = byId(doc, f.from); if (!a || onPath.has(a.id)) continue; // 往復・手戻りの矢印は1回だけ数える
+      const r = longest(a, depth + 1); if (r.t > best.t || !best.route.length) best = r;
+    }
+    onPath.delete(o.id);
     return (memo[o.id] = { t: best.t + cycleTime(o), route: [...best.route, o] });
   };
   let path = null;
@@ -1045,7 +1103,7 @@ Sim.prototype.stepStations = function (dt) {
   for (const id in this.st) {
     const s = this.st[id], o = s.o;
     if (o.type === "in") {
-      if (!o.interval) { const need = this.outCap(o) - s.outN; if (need > 0) { s.out[o.item] = (s.out[o.item] || 0) + need; s.outN += need; } }
+      if (!(o.interval > 0)) { const need = this.outCap(o) - s.outN; if (need > 0) { s.out[o.item] = (s.out[o.item] || 0) + need; s.outN += need; } }
       else { s.genT += dt; while (s.genT >= o.interval) { s.genT -= o.interval; if (s.outN < this.outCap(o)) { s.out[o.item] = (s.out[o.item] || 0) + 1; s.outN++; } } }
       continue;
     }
@@ -1064,7 +1122,7 @@ Sim.prototype.stepStations = function (dt) {
       } else { const u = Math.min(dt, s.autoLeft); s.autoLeft -= u; s.busyT += u; s.autoBusyT += u; }
       if (s.manLeft <= 1e-9 && s.autoLeft <= 1e-9) {
         s.busy = false; s.cycles++;
-        const nm = s.cur, n = o.type === "inspect" ? 1 : outQty(o);
+        const nm = s.cur, n = o.type === "inspect" ? inQty(o) : outQty(o); // 検査はモノを変えずに、入れた数だけ通す
         for (let k = 0; k < n; k++) {
           if (o.type === "inspect" && o.ngRate > 0 && this.rnd() * 100 < o.ngRate) s.ng++;
           else { s.out[nm] = (s.out[nm] || 0) + 1; s.outN++; }
@@ -1384,7 +1442,7 @@ function simulateDay(doc) {
   const peopleH = workers.reduce((n, a) => n + (a.ratio.work + a.ratio.walk + a.ratio.carry + a.ratio.handle) * day.hours, 0);
   const walkKm = workers.reduce((n, a) => n + a.distM / 1000, 0);
   const robotH = robots.reduce((n, a) => n + (a.ratio.work + a.ratio.walk + a.ratio.carry + a.ratio.handle) * day.hours, 0);
-  const perDay = main.done, takt = day.demand ? dayS / day.demand : null;
+  const perDay = main.done, takt = day.demand ? workS / day.demand : null; // タクト = 休憩を除いた稼働時間 ÷ 必要数
   return { sim, main, brk: null, day, perDay, workS, breakS, dayS, takt, peopleH, walkKm, robotH,
     breakStart: start, breakEnd: end, nWorkers: workers.length, nRobots: robots.length,
     met: day.demand ? perDay >= day.demand : null, short: day.demand ? Math.max(0, day.demand - perDay) : 0 };
@@ -1434,9 +1492,21 @@ const cv = $("#cv"), W = $("#world");
 
 // ===== 保存・読込 =====
 function save() { try { localStorage.setItem(STORE, JSON.stringify(doc)); } catch (e) { try { localStorage.setItem(STORE, JSON.stringify(Object.assign({}, doc, { bg: null }))); } catch (e2) { /* 保存不可の環境 */ } } }
+// 共有URL・.json・検討シートから来たデータは信用しない: id と色は形を確かめ、寸法などは数値にする(画面の HTML にそのまま入るため)
+const SAFE_ID = /^[\w-]{1,40}$/;
+const okId = v => v == null || v === "" || SAFE_ID.test(String(v));
+function cleanObj(o) {
+  const x = Object.assign({}, o);
+  for (const k of ["x", "y", "w", "h", "cap", "interval", "autoT", "manT", "swapT", "ngRate", "outQty", "speed", "dir"]) if (x[k] != null && x[k] !== "") x[k] = +x[k] || 0;
+  if (x.portW != null && x.portW !== "") x.portW = +x.portW || "";
+  if (x.color != null && !/^#[0-9a-f]{3,8}$/i.test(String(x.color))) delete x.color;
+  if (Array.isArray(x.pts)) x.pts = x.pts.map(p => ({ x: +(p && p.x) || 0, y: +(p && p.y) || 0 })); else delete x.pts;
+  if (!okId(x.op)) x.op = null;
+  return x;
+}
 function normalize(d) {
   const n = Object.assign(PS.newDoc(), d);
-  n.objs = (n.objs || []).filter(o => CAT[o.type]).map(o => {
+  n.objs = (n.objs || []).filter(o => o && CAT[o.type] && SAFE_ID.test(String(o.id))).map(cleanObj).map(o => {
     const x = Object.assign({ edited: [] }, JSON.parse(JSON.stringify(DEFAULTS[o.type] || {})), o);
     if (isStation(x.type)) PS.ensurePorts(x);
     PS.migrateObj(x);
@@ -1444,8 +1514,12 @@ function normalize(d) {
     if (isPoly(x.type)) { x.pts = x.pts || []; if (x.pts.length) PS.polyBBox(x); }
     return x;
   }).filter(o => !isPoly(o.type) || o.pts.length >= 3);
-  n.flows = (n.flows || []).filter(f => byId(n, f.from) && byId(n, f.to));
-  n.dims = n.dims || [];
+  n.flows = (n.flows || []).filter(f => f && SAFE_ID.test(String(f.id)) && byId(n, f.from) && byId(n, f.to));
+  for (const f of n.flows) { if (f.batch != null && f.batch !== "") f.batch = +f.batch || 1; if (!okId(f.agent)) f.agent = null; if (!okId(f.mover)) f.mover = null; if (Array.isArray(f.movers)) f.movers = f.movers.filter(v => SAFE_ID.test(String(v))); }
+  n.dims = (Array.isArray(n.dims) ? n.dims : []).filter(m => m && SAFE_ID.test(String(m.id))).map(m => Object.assign({}, m, { x1: +m.x1 || 0, y1: +m.y1 || 0, x2: +m.x2 || 0, y2: +m.y2 || 0 }));
+  const a0 = n.area || {}; n.area = { w: Math.max(1000, +a0.w || 20000), h: Math.max(1000, +a0.h || 12000) }; n.snap = +n.snap || 100;
+  if (n.bg && !/^data:image\/[\w.+-]+;base64,[\w+/=]+$/.test(String(n.bg.src || ""))) n.bg = null;
+  if (n.bg) for (const k of ["x", "y", "iw", "ih", "mmPerPx", "op"]) n.bg[k] = +n.bg[k] || 0;
   n.day = PS.dayOf(n.day);
   PS.autoOrient(n);
   return n;
@@ -2338,6 +2412,9 @@ window.addEventListener("keydown", e => {
   const inField = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
   if (e.key === "Escape") { setPlace(null); connectFrom = null; dimStart = null; calibPts = []; $("#calibBox").hidden = true; $("#help").hidden = true; closeMenus(); if (tool !== "select") setTool("select"); renderOverlay(); return; }
   if (inField) return;
+  // 使い方の窓・ガイドを見ている間は、元に戻す/やり直す以外の図のショートカットを使わない(Delete で設備が消える・Space でボタンが押せない等を防ぐ)
+  const undoKey = (e.ctrlKey || e.metaKey) && /^[zy]$/i.test(e.key);
+  if (!undoKey && (!$("#help").hidden || document.activeElement.closest("#gPop,#gMap"))) return;
   if (tool === "poly" && polyDraft) {
     if (e.key === "Enter") { e.preventDefault(); closePoly(); return; }
     if (e.key === "Backspace") { e.preventDefault(); polyDraft.pts.pop(); renderOverlay(); return; }
@@ -2409,14 +2486,10 @@ function docPanel() {
   const eq = doc.objs.filter(o => ["process", "join", "inspect", "bench"].includes(o.type)).length;
   const warns = checks();
   const ts = PS.timeSummary(doc);
-  return `<h2>はじめ方</h2>
-    <ol class="steps">
-      <li><b>置く</b>: 左の部品をクリック→図をクリック(「ひな形 ▾」からでもOK)</li>
-      <li><b>つなぐ</b>: 設備を選び、右の <span class="knob">●→</span> を次の設備へドラッグ</li>
-      <li><b>時間を入れる</b>: 設備を選び、工程カードの③に自動・人の秒数</li>
-      <li><b>計算する</b>: 下の「1日分を計算」→ 1日にできる数と人の時間</li>
-      <li><b>比べる</b>: 結果の「LexxMoMa に任せる作業を選ぶ」→ 検討シート</li>
-    </ol>
+  return `<div class="gstart"><b>初めての方へ</b>
+      <p>図の設備をクリックすると、ここにその設備の設定が出ます。何も選んでいない時は、図全体の条件が出ます。</p>
+      <div class="acts"><button class="btn p" data-guide="tour">操作ツアー(2分)</button><button class="btn" data-guide="map">画面の見かた</button></div></div>
+    <h2>図全体の条件</h2>
     ${ts.slow ? `<h4>工程の時間(計算前の目安)</h4><table class="t"><tr><th>一番長い設備</th><td>${esc(ts.slow.o.name)} ${fmt(ts.slow.ct)}秒/回</td></tr>${ts.path ? `<tr><th>1個が通る設備の時間</th><td>${fmt(ts.path.t)}秒</td></tr>` : ""}</table>` : ""}
     <h4>1日の条件</h4>
     <div class="grid2">
@@ -2519,7 +2592,7 @@ function processCard(o) {
     + `<div class="io-row"><input data-k="outName" value="${esc(o.outName)}" placeholder="空欄なら ${esc(outputName(doc, Object.assign({}, o, { outName: "" })))}"><span class="x2">×</span><input class="q" type="number" min="1" step="1" data-k="outQty" value="${PS.outQty(o)}"></div>`;
   for (const f of outs) { const b = byId(doc, f.to); h += `<div class="io-row"><span class="to">→ ${esc(b.name)}</span><button class="del" data-delflow="${f.id}" title="この流れを消す">×</button></div>`; }
   h += `<select class="add" data-addout="1"><option value="">＋ 次工程を追加…</option>${opts(dsts)}</select>`;
-  const a = +o.autoT || 0, m = +o.manT || 0, oq = o.type === "inspect" ? 1 : PS.outQty(o);
+  const a = +o.autoT || 0, m = +o.manT || 0, oq = o.type === "inspect" ? PS.inQty(o) : PS.outQty(o);
   h += `<div class="pc-h"><b>③</b> 時間(1回あたり)${tmpT ? '<i class="tag">仮の値</i>' : ""}</div>
     <div class="grid2">${field("自動運転 [秒]", inp("autoT", a, "number", `step="any" min="0"${tmpT ? ' class="tmp"' : ""}`))}${field("人の作業 [秒]", inp("manT", m, "number", `step="any" min="0"${tmpT ? ' class="tmp"' : ""}`))}</div>
     ${o.type !== "inspect" ? `<label class="chk"><input type="checkbox" data-k="parallel" ${o.parallel ? "checked" : ""}> 自動運転中に、人が次のセット・取り出しを同時に進められる(並行作業)</label>${o.parallel ? field("ワークの入れ替え時間 [秒](仕上がったワークと次のワークを入れ替える時間)", inp("swapT", +o.swapT || 0, "number", 'step="any" min="0"')) : ""}` : ""}
@@ -2551,7 +2624,8 @@ function flowPanel(f) {
 }
 function bindPanel(P) {
   P.querySelectorAll("[data-day]").forEach(el => el.addEventListener("change", () => {
-    doc.day[el.dataset.day] = +el.value || 0; doc.day = PS.dayOf(doc.day); save(); docVer++;
+    doc.day[el.dataset.day] = el.value; doc.day = PS.dayOf(doc.day); save(); docVer++;
+    el.value = el.dataset.day === "demand" && !doc.day.demand ? "" : doc.day[el.dataset.day]; // 範囲外は直した値を見せる
     const st = $("#resStale"); if (st) st.hidden = false;
   }));
   P.querySelectorAll("[data-k]").forEach(el => el.addEventListener("change", () => {
@@ -2654,6 +2728,8 @@ function checks() {
   }
   for (const o of doc.objs) if (o.needOp && PS.accessPoint(doc, g0, o, "op").off > 600) w.push(`「${o.name}」の作業する面の前に立てません`);
   if (doc.walkOnly !== false && !doc.objs.some(o => o.type === "walk") && doc.objs.some(o => isAgent(o.type))) w.push("通路(歩く所)が描かれていません。左の「通路(歩く所)」で囲むと、人はその中だけを歩きます");
+  const zero = eq.filter(o => PS.isTimed(o.type) && !(PS.cycleTime(o) > 0));
+  if (zero.length) w.push(`1回の時間が0秒の設備があります(入力漏れの可能性。1日の数が多く出ます): ${zero.map(o => o.name).join("、")}`);
   const tmp = eq.filter(o => !(o.edited || []).some(k => k === "autoT" || k === "manT"));
   if (tmp.length) w.push(`時間(自動運転/人の作業)が仮の値: ${tmp.map(o => o.name).join("、")}`);
   if (doc.bg && !doc.bg.calibrated) w.push("下絵の縮尺がまだ合わせられていません");
@@ -2791,7 +2867,7 @@ function dayHTML(r) {
   // 詳しく
   const res = r.main;
   h += `<details class="more"><summary>詳しく見る(1時間あたり・人と設備ごと)</summary>`;
-  h += `<table class="t"><tr><th>完成(人がいる時間)</th><td class="n">${fmt(res.perHour, 1)} 個/時</td></tr>
+  h += `<table class="t"><tr><th>完成(1日の平均)</th><td class="n">${fmt(res.perHour, 1)} 個/時</td></tr>
     ${r.brk ? `<tr><th>完成(人の休憩中)</th><td class="n">${fmt(r.brk.perHour, 1)} 個/時</td></tr>` : ""}
     <tr><th>リードタイム(搬入→搬出・概算)</th><td class="n">${res.leadTime ? (res.leadTime >= 120 ? fmt(res.leadTime / 60, 1) + " 分" : fmt(res.leadTime) + " 秒") : "-"}</td></tr>
     <tr><th>1個が通る設備の時間(最長ルート)</th><td class="n">${res.time.path ? fmt(res.time.path.t) + " 秒" : "-"}</td></tr></table>`;
@@ -2828,6 +2904,8 @@ function lxChooserHTML(r) {
     <div class="acts"><button class="btn g" id="lxApply">選んだ作業を LexxMoMa に任せて比べる</button></div>
     <p class="hint">LexxMoMa がいなければ1台置きます。前提: 走行 ${fmt((byId(doc, (doc.objs.find(o => o.type === "robot") || {}).id) || { speed: 1 }).speed, 1)} m/s、積み降ろし ${fmt((doc.objs.find(o => o.type === "robot") || { handle: 20 }).handle)} 秒/回(アームでのピック想定。LexxMoMa を選んで「詳しい設定」で変えられます)。作業が多すぎると LexxMoMa が詰まるので、その時は2台目を置いて担当を分けてください。</p></div>`;
 }
+// 図を変えた後の古い結果を「現状」にしない(変えていたら計算し直してから残す)
+function freshDay() { return lastDay && lastDay.ver === docVer ? lastDay : calcDay(); }
 function saveBaseline(r, name) {
   const snap = JSON.parse(JSON.stringify(Object.assign({}, doc, { bg: null, baseline: null })));
   doc.baseline = { name: name || "現状", at: Date.now(), m: PS.dayMetrics(r), doc: snap };
@@ -2836,23 +2914,24 @@ function saveBaseline(r, name) {
 function bindDay() {
   const q = id => document.getElementById(id);
   document.querySelectorAll("#res [data-day]").forEach(el => el.addEventListener("change", () => {
-    doc.day[el.dataset.day] = +el.value || 0; doc.day = PS.dayOf(doc.day); save(); docVer++;
+    doc.day[el.dataset.day] = el.value; doc.day = PS.dayOf(doc.day); save(); docVer++;
+    el.value = el.dataset.day === "demand" && !doc.day.demand ? "" : doc.day[el.dataset.day];
     const stl = q("resStale"); if (stl) stl.hidden = false;
   }));
   if (q("dayRecalc")) q("dayRecalc").onclick = () => calcDay();
   if (q("lxOpen")) q("lxOpen").onclick = () => { const b = q("lxBox"); b.hidden = !b.hidden; if (!b.hidden) b.scrollIntoView({ block: "nearest" }); };
-  if (q("blSave")) q("blSave").onclick = () => { saveBaseline(lastDay); showDay(); toast("この結果を「現状」として残しました。図や担当を変えて「1日分を計算」を押すと比べられます"); };
+  if (q("blSave")) q("blSave").onclick = () => { saveBaseline(freshDay()); showDay(); toast("この結果を「現状」として残しました。図や担当を変えて「1日分を計算」を押すと比べられます"); };
   if (q("blClear")) q("blClear").onclick = () => { doc.baseline = null; save(); showDay(); };
   if (q("blRestore")) q("blRestore").onclick = () => {
-    const bl = doc.baseline; const u = undoS.slice(); snapshot();
-    setDoc(Object.assign({}, bl.doc, { baseline: bl })); undoS = u.concat(undoS.slice(-1)); fit();
+    const bl = doc.baseline; snapshot(); const u = undoS.slice();
+    setDoc(Object.assign({}, bl.doc, { baseline: bl, bg: doc.bg })); undoS = u; fit(); // 下絵は現状の図に保存していないので今のものを使う
     toast(`「${bl.name}」の図に戻しました`);
   };
   if (q("resReport")) q("resReport").onclick = () => $("#btnReport").click();
   if (q("lxApply")) q("lxApply").onclick = () => {
     const picks = [...document.querySelectorAll("[data-lxt]:checked")].map(el => el.dataset.lxt.split(":"));
     if (!picks.length) { toast("任せる作業を1つ以上選んでください"); return; }
-    if (!doc.baseline) saveBaseline(lastDay);
+    if (!doc.baseline) saveBaseline(freshDay());
     let r = doc.objs.find(o => o.type === "robot");
     change(() => {
       if (!r) {
@@ -2885,7 +2964,7 @@ function bindResults() {
       }
       f.agent = r.id;
     });
-    toast(`「${flowName(f)}」を ${r.name} の担当にしました。もう一度「1時間分を計算」で比べられます`);
+    toast(`「${flowName(f)}」を ${r.name} の担当にしました。もう一度「1日分を計算」で比べられます`);
     track("sim/lexxmoma", "LexxMoMaに任せる");
     $("#simCalc").click();
   });
@@ -3115,22 +3194,39 @@ window.addEventListener("resize", () => renderAll());
 async function boot() {
   renderPalette(); initSplit();
   $("#legend").innerHTML = legendHTML();
-  let d = null;
+  let d = null, local = null, shared = false;
   const m = location.hash.match(/#d=([\w-]+)/);
-  if (m) { try { d = await unpackDoc(m[1]); history.replaceState(null, "", location.pathname + location.search); } catch (e) { d = null; } }
-  if (!d) { try { d = JSON.parse(localStorage.getItem(STORE) || "null"); } catch (e) { d = null; } }
+  if (m) { try { d = await unpackDoc(m[1]); shared = true; history.replaceState(null, "", location.pathname + location.search); } catch (e) { d = null; toast("共有URLを読み込めませんでした(URLが途中で切れていないか確認してください)"); } }
+  try { local = JSON.parse(localStorage.getItem(STORE) || "null"); } catch (e) { local = null; }
+  if (!d) d = local;
   if (!d) d = TEMPLATES.find(t => t.id === "line").build();
   setDoc(d); fit();
+  // 共有URLで開くと自動保存が上書きされるので、このブラウザで描いていた図を「元に戻す」で戻せるようにする
+  if (shared && local && local.objs && local.objs.length && JSON.stringify(normalize(local).objs) !== JSON.stringify(doc.objs)) {
+    undoS = [JSON.stringify(normalize(local))];
+    toast("共有URLの図を開きました。このブラウザで前に描いていた図は「元に戻す」で戻せます");
+  }
   window.PSGuide.init();
 }
 // レポート・書き出し(report.js)から使う描画関数
-window.PSUI = { staticSVG, bgSVG, agentSVG, agentColor, moverSVG, fmt, esc, flowName: f => flowName(f) };
+window.PSUI = { staticSVG, bgSVG, agentSVG, agentColor, moverSVG, fmt, esc, flowName: f => flowName(f),
+  // 使い方ガイド(onboarding.js)から使う: 図のデータは変えずに、選択・タブ・表示範囲だけを動かす
+  get doc() { return doc; }, selectedId: () => (sel && sel.k === "obj" ? sel.id : null),
+  select(id) { sel = id ? { k: "obj", id } : null; inspector(); renderAll(); }, switchTab, fit };
 // テスト用フック
 window.__ps = { get doc() { return doc; }, get day() { return lastDay; }, setDoc, addObj, addFlow, get sim() { return sim; }, results: () => lastRes, checks, TEMPLATES, fit,
   // 指定ワールド座標(mm)を中心に倍率 s(px/mm)で表示 / シミュレーションを sec 秒進めて描画
   look(x, y, s) { const r = cv.getBoundingClientRect(); view.s = s; view.tx = r.width / 2 - x * s; view.ty = r.height / 2 - y * s; renderAll(); },
   advance(sec) { if (!sim) sim = newSim(); for (let t = 0; t < sec; t += 0.1) sim.step(0.1); renderAll(); return sim.t; } };
 window.addEventListener("load", boot);
+window.addEventListener("hashchange", async () => {
+  const m = location.hash.match(/#d=([\w-]+)/); if (!m) return;
+  let d = null; try { d = await unpackDoc(m[1]); } catch (e) { d = null; }
+  history.replaceState(null, "", location.pathname + location.search);
+  if (!d) { toast("共有URLを読み込めませんでした(URLが途中で切れていないか確認してください)"); return; }
+  if (doc.objs.length) snapshot(); const u = undoS.slice(); setDoc(d); undoS = u; fit();
+  toast("共有URLの図を開きました(元に戻す で前の図に戻せます)");
+});
 })();
 
 </script>
@@ -3245,7 +3341,7 @@ function report(d, res, warns, sim, day) {
   const totalWalk = walkers.reduce((s, a) => s + a.perHourM, 0);
   const segs = [["work", "作業", "#e07b1f"], ["carry", "運搬歩行", "#2f9e62"], ["walk", "手ぶら歩行", "#9fd3b4"], ["handle", "積み降ろし", "#f3b77a"], ["charge", "充電", "#b9c3cc"], ["idle", "待ち", "#dde2e7"]];
   const q = [...warns];
-  if (!res) q.push("導線シミュレーション未実施(「1時間分を計算」を押すと歩行距離・稼働率が入ります)");
+  if (!res) q.push("導線シミュレーション未実施(「1日分を計算」を押すと歩行距離・稼働率が入ります)");
   q.push("各設備の自動運転の時間・人の作業時間・段取り替えの有無", "ワークの寸法・重さ・荷姿(何個を何に入れて運ぶか)", "通路の床(段差・スロープ・扉)と人・フォークリフトの往来", "生産数の目標(個/日・シフト)");
   const html = `<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>${esc(d.title || "工程スケッチ")} 検討シート</title>
 <style>
@@ -3306,7 +3402,7 @@ function report(d, res, warns, sim, day) {
   <h2>${res ? 5 : 3}. 次回までの確認事項</h2>
   <ul>${q.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
   <h2>メモ</h2><div class="memo" contenteditable="true">(打合せでの気づきをここに書けます)</div>
-  <p style="color:#8a96a3;font-size:10.5px;margin-top:14px">本シートは簡易モデル(満杯分たまったら運ぶ・設備は1個ずつ処理・段取り替え/休憩/故障は含まない)による概算です。図面データ(.json)は工程スケッチで開くと再編集できます。LexxPluss 工程スケッチで作成。</p>
+  <p style="color:#8a96a3;font-size:10.5px;margin-top:14px">本シートは簡易モデル(満杯分たまったら運ぶ・設備は1個ずつ処理・段取り替え/故障は含まない。休憩は1日の計算に含む)による概算です。図面データ(.json)は工程スケッチで開くと再編集できます。LexxPluss 工程スケッチで作成。</p>
 </div>
 <script type="application/json" id="ps-data">${JSON.stringify(Object.assign({ app: "lexxmoma-process-sketch" }, d)).replace(/</g, "\\u003c")}<\/script>
 </body></html>`;
@@ -3322,48 +3418,261 @@ window.PSX = { png, csv, report, tables, layoutSVG };
 
 </script>
 <script>
-/* Non-destructive, optional first-use guide. Stores preferences, never layout data. */
+/* 使い方ガイド: 画面の見かた(領域に番号) / 操作ツアー(スポットライト+吹き出し) / 「場所を見る」。
+   図のデータは変えない(選択・タブ・表示範囲だけ動かす)。保存するのは「起動時に表示するか」だけ。 */
 (function () {
   "use strict";
   const $ = s => document.querySelector(s), KEY = "ps.guide.startup.v1";
-  const steps = [
-    { title: "設備を選びましょう", text: "図の「加工」や「検査」をクリックしてください。右側に、その設備の設定が表示されます。", target: "#Lst", tip: "白紙から始める場合：左の部品を選び、図の置きたい場所をクリック。ひな形は「使い方」から選べます。" },
-    { title: "工程にかかる時間を入れましょう", text: "右の工程カードで「自動運転」または「人の作業」の秒数を変更し、入力欄の外をクリックしてください。", target: "#insp", tip: "自動運転＝人が離れても進む時間。人の作業＝人が付き添う時間。まだ不明なら仮の値で試せます。変更は「元に戻す」で戻せます。" },
-    { title: "1日にできる数を確かめましょう", text: "画面下の「1日分を計算」を押してください。結果では稼働時間・休憩・必要数を変更して再計算できます。", target: "#simCalc", tip: "「動かす」は人とモノの動きを見るボタンです。通路がない、設備に近づけないなどの警告が出たら、先に図を修正してください。" },
-    { title: "結果を共有しましょう", text: "「検討シートを作る」を押すと、図・条件・結果をまとめて確認できます。印刷画面からPDFにも保存できます。", target: "#btnReport", tip: "LexxMoMa導入を比べたいときは、結果の「任せる作業を選ぶ」へ。最初の結果が現状として残り、改善案との差を確認できます。" }
-  ];
-  let step = 0, active = false, marked = null, origin = null;
+  const UI = () => window.PSUI || {};
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   function store(value) { try { localStorage.setItem(KEY, value); } catch (_) {} }
-  const panel = document.createElement("section");
-  panel.id = "operationGuide"; panel.hidden = true; panel.setAttribute("aria-label", "使い方ガイド");
-  panel.innerHTML = `<div class="guide-head"><b id="guideCount"></b><button type="button" id="guideClose" aria-label="ガイドを閉じる">×</button></div><div aria-live="polite" aria-atomic="true"><h3 id="guideTitle"></h3><p id="guideText"></p><p class="hint" id="guideTip"></p></div><div class="guide-actions"><button class="btn" id="guideBack">戻る</button><button class="btn p" id="guideNext">次へ</button></div>`;
-  document.body.appendChild(panel);
-  function clear() { if (marked) marked.classList.remove("guide-highlight"); marked = null; }
-  function paint() {
-    clear(); panel.hidden = !active; if (!active) return;
-    const done = step === steps.length, current = steps[step];
-    $("#guideCount").textContent = done ? "案内はここまでです" : `使い方 ${step + 1} / ${steps.length}`;
-    $("#guideTitle").textContent = done ? "基本の流れを確認できました" : current.title;
-    $("#guideText").textContent = done ? "次は自分の工程に合わせて、設備・部品名・時間を変えてみてください。ガイドは「使い方」からいつでも再開できます。" : current.text;
-    $("#guideTip").textContent = done ? "実際の設備時間が不明な項目は、顧客と確認してから結果を判断してください。" : current.tip;
-    $("#guideBack").disabled = step === 0;
-    $("#guideNext").textContent = done ? "ガイドを閉じる" : "次へ";
-    if (!done) { marked = $(current.target); if (marked) marked.classList.add("guide-highlight"); }
+
+  // ---- ツアーで使う設備(選択中の設備 > 加工・組立 > 時間のある設備)
+  const objs = () => (UI().doc && UI().doc.objs) || [];
+  const timed = o => !!o && window.PS && PS.isTimed(o.type);
+  const selObj = () => objs().find(o => o.id === (UI().selectedId && UI().selectedId()));
+  function machine() {
+    const s = selObj(); if (timed(s)) return s;
+    return objs().find(o => o.type === "process" || o.type === "join") || objs().find(timed);
   }
-  function close() { active = false; paint(); if (origin && origin.isConnected) origin.focus(); }
-  function advance(index) { if (active && step === index) { step++; paint(); } }
-  $("#guideClose").onclick = close;
-  $("#guideBack").onclick = () => { step = Math.max(0, step - 1); paint(); };
-  $("#guideNext").onclick = () => { if (step === steps.length) close(); else { step++; paint(); } };
-  $("#startGuide").onclick = () => { origin = $("#btnHelp"); $("#help").hidden = true; active = true; step = 0; paint(); $("#guideNext").focus(); };
+  const nodeOf = o => o && document.querySelector(`#Lst [data-id="${o.id}"]`);
+  function ensureMachine() { const m = machine(); if (m && !timed(selObj())) UI().select(m.id); UI().switchTab("insp"); }
+  function ensureNothing() { UI().select(null); UI().switchTab("insp"); } // 矢印・寸法線を選んでいても外す
+  function ensureResult() { if ($("#res .concl")) UI().switchTab("res"); else $("#simCalc").click(); }
+  const timeBox = () => { const i = $('#insp [data-k="autoT"]'); return i && i.closest(".grid2"); };
+
+  // ---- 操作ツアー(each: target=光らせる所 / prep=表示の準備 / demo=代わりにやる / doneOn=できたと判定するイベント)
+  const TOUR = [
+    { title: "設備をクリックして選ぶ", place: "bottom",
+      target: () => nodeOf(machine()),
+      text: () => `光っている「${esc((machine() || {}).name || "設備")}」をクリックしてください。`,
+      why: "図の四角が設備です。選ぶと、右側にその設備の設定が出ます。",
+      demo: () => UI().select(machine().id), doneOn: "select" },
+    { title: "右に「工程カード」が出ます", place: "left", prep: ensureMachine,
+      target: () => $("#insp .pcard"),
+      text: () => "選んだ設備の中身を、3つの欄で書きます。",
+      list: ["<b>① 入れるもの</b> … 前の工程から、何が何個来るか", "<b>② 出すもの</b> … 何が何個できて、次はどこへ行くか", "<b>③ 時間</b> … 1回にかかる秒数"] },
+    { title: "③に時間を入れる", place: "left", prep: ensureMachine,
+      target: timeBox,
+      text: () => "「自動運転」か「人の作業」の秒数を書き換えて、Enter を押してください。",
+      why: "<b>自動運転</b> = 機械だけで進む時間(人は離れてよい)。<b>人の作業</b> = セット・取り出し・目視など、人が付いている時間。分からなければ仮の値のまま進めてかまいません。",
+      doneOn: "time" },
+    { title: "「1日分を計算」を押す", place: "top",
+      target: () => $("#simCalc"),
+      text: () => "画面下の緑のボタンを押してください。",
+      why: "稼働時間・休憩を含めた1日で、何個できるか・人が何時間働くかを計算します。横の「▶ 動かす」は、人とモノの動きをアニメーションで見るボタンです。",
+      demo: () => $("#simCalc").click(), doneOn: "calc" },
+    { title: "結果の見かた", place: "left", prep: ensureResult,
+      target: () => $("#res .concl") || $("#res"),
+      text: () => "右の「結果」に、1日の数字がまとまります。",
+      list: ["<b>1日にできる数</b> … 一番大きい数字。必要数を入れると、届くか・何個足りないかも出ます", "<b>人の作業時間</b> … 作業者が1日に働く合計", "少し下の <b>「LexxMoMa に任せる作業を選ぶ」</b> で、導入したときと比べられます"] },
+    { title: "「検討シートを作る」で持ち帰る", place: "bottom",
+      target: () => $("#btnReport"),
+      text: () => "右上の青いボタンを押すと、図・条件・結果が1枚にまとまります。",
+      why: "印刷画面から PDF でも保存できます。お客さまとの次の打ち合わせに持っていけます。",
+      doneOn: "report" }
+  ];
+
+  // ---- 「やりたいことから探す」(1つだけ光らせる)
+  const WHERE = [
+    { t: "部品を置く", target: () => $("#palette"), place: "right", prep: ensureNothing,
+      text: "置きたい部品をクリックしてから、図の上をクリックします(図へドラッグしても置けます)。" },
+    { t: "モノの流れをつなぐ", target: () => $('#tools [data-tool="connect"]'), place: "bottom",
+      text: "「流れをつなぐ」を押して、前の設備から次の設備へドラッグします。設備を選ぶと右端に出る青い ●→ をドラッグしてもつなげます。" },
+    { t: "工程の中身・時間を入れる", target: () => $("#insp .pcard"), place: "left", prep: ensureMachine,
+      text: "図の設備をクリックすると、右にこの「工程カード」が出ます。① 入れるもの ② 出すもの ③ 時間 を書きます。" },
+    { t: "通路(歩く所)を描く", target: () => $('#palette .pi[data-type="walk"]'), place: "right", prep: ensureNothing,
+      text: "これを選んで、図の上で角を順にクリックして囲みます。人・LexxMoMa は通路の中だけを歩きます。「立入禁止」も同じ描き方です。" },
+    { t: "図面・写真を下に敷く", target: () => $("#left .setbox"), place: "right",
+      text: "ここを開いて「画像を読み込む」→「縮尺を合わせる」(2点と実寸)。なぞると寸法の合った図になります。" },
+    { t: "稼働時間・休憩・必要数を変える", target: () => { const i = $('#insp [data-day="hours"]'); return i && i.closest(".grid2"); }, place: "left", prep: ensureNothing,
+      text: "図の何もない所をクリックすると、右に図全体の条件が出ます。計算後は「結果」の上の欄でも変えられます。" },
+    { t: "人とモノの動きを見る", target: () => $("#simPlay"), place: "top",
+      text: "「▶ 動かす」で、作業者が運ぶ・作業する様子を再生します。速さは横の「速さ」で変えられます。" },
+    { t: "LexxMoMa に任せたときと比べる", target: () => $("#lxOpen") || $("#res"), place: "left", prep: ensureResult,
+      text: "「1日分を計算」の後、結果のこのボタンで任せる作業を選ぶと、今の結果(現状)との差が出ます。" },
+    { t: "保存する・共有する", target: () => $("#btnFile"), place: "bottom",
+      text: "「ファイル」から、保存(.json)・共有URL・画像・表データを出せます。図はこのブラウザにも自動で残ります。" },
+    { t: "間違えた操作を戻す", target: () => $("#btnUndo"), place: "bottom",
+      text: "↶ で元に戻す(Ctrl+Z)、↷ でやり直す(Ctrl+Y)。" }
+  ];
+
+  // ---- 画面の見かた(領域と説明の置き場所)
+  const MAP = [
+    { el: "#left", n: 1, t: "部品", d: "設備・作業者・通路などを選んで図に置く", at: "in" },
+    { el: "#tools", n: 2, t: "図の道具", d: "選ぶ・流れをつなぐ・寸法を測る・全体を表示", at: "below" },
+    { el: "#cvWrap", n: 3, t: "工程の図", d: "四角=設備、矢印=モノの流れ、人の印=作業者、緑=通路", at: "in" },
+    { el: "#right", n: 4, t: "設定と結果", d: "選んだ設備の設定(工程カード)と、計算の結果", at: "in" },
+    { el: "#simbar", n: 5, t: "計算と再生", d: "1日分を計算する・人とモノの動きを見る", at: "above" },
+    { el: ["#btnTpl", "#btnHelp"], n: 6, t: "ひな形・保存・持ち帰り", d: "ひな形を選ぶ・元に戻す・ファイル・検討シート・使い方", at: "below", right: true }
+  ];
+
+  // ---- 部品
+  const spot = document.createElement("div"); spot.id = "gSpot"; spot.hidden = true;
+  const pop = document.createElement("section"); pop.id = "gPop"; pop.hidden = true;
+  pop.setAttribute("role", "dialog"); pop.setAttribute("aria-label", "使い方ガイド");
+  const map = document.createElement("div"); map.id = "gMap"; map.hidden = true;
+  document.body.append(spot, pop, map);
+
+  let steps = null, step = 0, done = false, raf = 0, origin = null, autoT = 0;
+
+  function rectOf(t) {
+    const els = (Array.isArray(t) ? t : [t]).map(s => typeof s === "string" ? $(s) : s).filter(Boolean);
+    if (!els.length) return null;
+    const rs = els.map(e => e.getBoundingClientRect()).filter(r => r.width || r.height);
+    if (!rs.length) return null;
+    const l = Math.min(...rs.map(r => r.left)), t2 = Math.min(...rs.map(r => r.top));
+    return { left: l, top: t2, right: Math.max(...rs.map(r => r.right)), bottom: Math.max(...rs.map(r => r.bottom)) };
+  }
+
+  // 吹き出しを対象の横に置く(入らなければ反対側 → 画面内に収める)
+  function place() {
+    if (!steps) return;
+    const s = steps[step], el = s && !done ? s.target() : null, r = el && rectOf(el);
+    const W = innerWidth, H = innerHeight, pad = 6, gap = 14;
+    if (r) {
+      const x = Math.max(2, r.left - pad), y = Math.max(2, r.top - pad);
+      Object.assign(spot.style, { left: x + "px", top: y + "px", width: Math.min(W - 4, r.right + pad) - x + "px", height: Math.min(H - 4, r.bottom + pad) - y + "px" });
+      spot.hidden = false; spot.classList.remove("none");
+    } else { spot.hidden = false; spot.classList.add("none"); Object.assign(spot.style, { left: W / 2 + "px", top: H / 2 + "px", width: "0px", height: "0px" }); }
+    const pw = pop.offsetWidth, ph = pop.offsetHeight;
+    let side = r ? s.place : "center", px, py;
+    const fits = { right: r && r.right + gap + pw < W, left: r && r.left - gap - pw > 0, bottom: r && r.bottom + gap + ph < H, top: r && r.top - gap - ph > 0 };
+    const opp = { right: "left", left: "right", top: "bottom", bottom: "top" };
+    if (r && !fits[side]) side = fits[opp[side]] ? opp[side] : ["bottom", "top", "left", "right"].find(k => fits[k]) || "inside";
+    if (side === "right") { px = r.right + gap; py = (r.top + r.bottom) / 2 - ph / 2; }
+    else if (side === "left") { px = r.left - gap - pw; py = (r.top + r.bottom) / 2 - ph / 2; }
+    else if (side === "bottom") { px = (r.left + r.right) / 2 - pw / 2; py = r.bottom + gap; }
+    else if (side === "top") { px = (r.left + r.right) / 2 - pw / 2; py = r.top - gap - ph; }
+    else if (side === "inside") { px = r.right - pw - 12; py = r.bottom - ph - 12; }
+    else { px = W / 2 - pw / 2; py = H / 2 - ph / 2; }
+    px = Math.max(8, Math.min(W - pw - 8, px)); py = Math.max(8, Math.min(H - ph - 8, py));
+    pop.style.left = px + "px"; pop.style.top = py + "px"; pop.dataset.side = side;
+    // 矢印は対象の中心を向ける
+    if (r) {
+      if (side === "left" || side === "right") pop.style.setProperty("--ay", Math.max(16, Math.min(ph - 16, (r.top + r.bottom) / 2 - py)) + "px");
+      else pop.style.setProperty("--ax", Math.max(16, Math.min(pw - 16, (r.left + r.right) / 2 - px)) + "px");
+    }
+  }
+  function loop() { place(); raf = requestAnimationFrame(loop); }
+
+  function paint() {
+    const tour = steps === TOUR, n = steps.length, s = steps[step];
+    if (done) {
+      pop.innerHTML = `<div class="g-head"><b>操作ツアー 完了</b><button type="button" class="g-x" aria-label="ガイドを閉じる">×</button></div>
+        <h3>基本の流れはここまでです</h3>
+        <p>次は、自分の工程に合わせて設備の名前・時間を書き換えてみてください。わからない操作は「?」→「やりたいことから探す」で場所を確かめられます。</p>
+        <p class="g-why">設備の時間が分からない項目は「仮の値」と表示されます。お客さまに確認してから結果を判断してください。</p>
+        <div class="g-acts"><button type="button" class="btn" data-g="help">やりたいことから探す</button><button type="button" class="btn p" data-g="close">閉じる</button></div>`;
+    } else {
+      const el = s.target(), finished = s.doneOn && s.ok;
+      pop.innerHTML = `<div class="g-head"><b>${tour ? `操作ツアー ${step + 1} / ${n}` : "ここで操作します"}</b><button type="button" class="g-x" aria-label="ガイドを閉じる">×</button></div>
+        ${tour ? `<div class="g-dots">${steps.map((_, i) => `<i class="${i < step ? "d" : i === step ? "c" : ""}"></i>`).join("")}</div>` : ""}
+        <h3>${esc(s.title || s.t)}</h3>
+        <p class="g-do">${el ? (typeof s.text === "function" ? s.text() : s.text) : "この画面では見つかりませんでした。図に設備・作業者があるか確かめてください(「ひな形」から始めると確実です)。"}</p>
+        ${s.list ? `<ul>${s.list.map(x => `<li>${x}</li>`).join("")}</ul>` : ""}
+        ${s.why ? `<p class="g-why">${s.why}</p>` : ""}
+        ${finished ? `<p class="g-ok">✓ できました</p>` : ""}
+        <div class="g-acts">${tour ? `<button type="button" class="btn" data-g="back" ${step ? "" : "disabled"}>戻る</button>` : "<span></span>"}
+          <span class="g-r">${tour && s.demo && !finished && el ? `<button type="button" class="btn ghost" data-g="demo">代わりにやる</button>` : ""}
+          ${tour && !el && !machine() ? `<button type="button" class="btn" data-g="sample">ひな形「直線ライン」で試す</button>` : ""}
+          <button type="button" class="btn p" data-g="${tour ? "next" : "close"}">${tour ? (step === n - 1 ? "完了" : finished || !s.doneOn ? "次へ" : "とばす") : "わかった"}</button></span></div>`;
+    }
+    place();
+    // 描き直しでボタンが入れ替わるので、キーボードで続けられるよう主ボタンへ戻す
+    if (pop.contains(document.activeElement) || document.activeElement === document.body) { const b = pop.querySelector(".g-acts .btn.p"); if (b) b.focus({ preventScroll: true }); }
+  }
+
+  function go(i) {
+    clearTimeout(autoT);
+    step = i; done = false;
+    const s = steps[step]; s.ok = false;
+    if (s.prep) s.prep();
+    const el = s.target();
+    if (el && el.scrollIntoView && !el.closest("#cv")) el.scrollIntoView({ block: "nearest", inline: "nearest" });
+    paint();
+  }
+  function start(list, i) {
+    origin = document.activeElement;
+    $("#help").hidden = true; closeMap();
+    steps = list; pop.hidden = false; document.body.classList.add("g-on");
+    if (list === TOUR) { if (!i && UI().selectedId()) UI().select(null); UI().fit(); } // 最初から: 自分でクリックして選ぶところから
+    go(i || 0);
+    cancelAnimationFrame(raf); loop();
+    const b = pop.querySelector('[data-g="next"],[data-g="close"]'); if (b) b.focus();
+  }
+  function close() {
+    const was = !!steps;
+    clearTimeout(autoT); cancelAnimationFrame(raf);
+    steps = null; pop.hidden = true; spot.hidden = true; if (map.hidden) document.body.classList.remove("g-on");
+    if (was && origin && origin.isConnected && !origin.closest("#help")) origin.focus({ preventScroll: true }); // 開いていた時だけ、元の場所へ
+  }
+  // 操作が済んだら「✓」を見せてから次へ進む
+  function hit(kind) {
+    if (!steps || done) return;
+    const s = steps[step];
+    if (s.doneOn !== kind || s.ok) return;
+    s.ok = true; paint();
+    autoT = setTimeout(() => { if (steps && steps[step] === s) { if (step < steps.length - 1) go(step + 1); else { done = true; paint(); } } }, 1100);
+  }
+
+  pop.addEventListener("click", e => {
+    const b = e.target.closest("[data-g],.g-x"); if (!b) return;
+    const k = b.classList.contains("g-x") ? "close" : b.dataset.g;
+    if (k === "close") close();
+    else if (k === "back") go(Math.max(0, step - 1));
+    else if (k === "next") { if (step < steps.length - 1) go(step + 1); else { clearTimeout(autoT); done = true; paint(); } }
+    else if (k === "demo") steps[step].demo();
+    else if (k === "sample") { const t = document.querySelector('[data-htpl="line"]'); if (t) t.click(); UI().fit(); go(0); }
+    else if (k === "help") { close(); $("#help").hidden = false; }
+  });
+
+  // ---- 画面の見かた
+  function openMap() {
+    close(); $("#help").hidden = true;
+    const box = MAP.map(m => {
+      const r = rectOf(m.el); if (!r) return "";
+      const w = r.right - r.left, h = r.bottom - r.top;
+      // 広い領域は中に、細い帯(道具・計算・右上のボタン)は上か下に説明を置く
+      const lw = m.at === "in" ? Math.max(160, Math.min(280, w - 16)) : 280;
+      let lx = m.at === "in" ? r.left + (w - lw) / 2 : r.left + 8, ly = m.at === "in" ? r.top + h * 0.3 : r.top;
+      if (m.at === "below") ly = r.bottom + 8; else if (m.at === "above") ly = r.top - 8;
+      if (m.right) lx = r.right - lw;
+      const cls = m.at === "above" ? "g-lab up" : "g-lab";
+      return `<div class="g-reg" style="left:${r.left}px;top:${r.top}px;width:${w}px;height:${h}px"><i class="g-n">${m.n}</i></div>
+        <div class="${cls}" style="left:${Math.max(8, Math.min(innerWidth - lw - 8, lx))}px;top:${ly}px;width:${lw}px"><i class="g-n">${m.n}</i><div><b>${m.t}</b><span>${m.d}</span></div></div>`;
+    }).join("");
+    map.innerHTML = box + `<div class="g-mapbar"><b>画面の見かた</b><span>どこかをクリックすると閉じます</span><button type="button" class="btn p" data-g="tour">操作ツアーを始める</button><button type="button" class="btn" data-g="mapclose">閉じる</button></div>`;
+    map.hidden = false; document.body.classList.add("g-on");
+    const b = map.querySelector('[data-g="tour"]'); if (b) b.focus();
+  }
+  function closeMap() { if (!map.hidden) { map.hidden = true; if (!steps) document.body.classList.remove("g-on"); } }
+  map.addEventListener("click", e => { const b = e.target.closest('[data-g="tour"]'); closeMap(); if (b) start(TOUR); });
+
+  // ---- 入口(使い方の窓・右パネル)。右パネルは描き直されるので document で受ける
+  $("#helpWhere").innerHTML = WHERE.map((w, i) => `<button type="button" class="btn" data-where="${i}"><span>${esc(w.t)}</span><small>場所を見る ›</small></button>`).join("");
+  document.addEventListener("click", e => {
+    const g = e.target.closest("[data-guide]");
+    if (g) { if (g.dataset.guide === "map") openMap(); else start(TOUR); return; }
+    const w = e.target.closest("[data-where]");
+    if (w) start([WHERE[+w.dataset.where]]);
+  });
   $("#guideOnStartup").onchange = e => store(e.target.checked ? "1" : "0");
-  window.addEventListener("ps:selection", e => { if (e.detail.timed) advance(0); });
-  document.addEventListener("change", e => { if (e.target.matches('#insp [data-k="autoT"], #insp [data-k="manT"]') && Number.isFinite(+e.target.value) && +e.target.value >= 0) advance(1); });
-  window.addEventListener("ps:calculated", () => advance(2));
-  window.addEventListener("ps:report", () => advance(3));
-  document.addEventListener("keydown", e => { if (e.key === "Escape" && active) close(); });
-  $("#btnHelp").addEventListener("click", close);
-  window.PSGuide = { init() { let show = true; try { show = localStorage.getItem(KEY) !== "0"; } catch (_) {} $("#guideOnStartup").checked = show; $("#help").hidden = !show; } };
+
+  // ---- 操作の検知
+  window.addEventListener("ps:selection", e => { if (e.detail.timed) hit("select"); });
+  // 入力の確定で右パネルが描き直される前に見るため、捕捉フェーズで受ける
+  document.addEventListener("change", e => { if (e.target.matches('#insp [data-k="autoT"], #insp [data-k="manT"]') && Number.isFinite(+e.target.value) && +e.target.value >= 0) hit("time"); }, true);
+  window.addEventListener("ps:calculated", () => hit("calc"));
+  window.addEventListener("ps:report", () => hit("report"));
+  document.addEventListener("keydown", e => { if (e.key !== "Escape") return; if (!map.hidden) closeMap(); else if (steps) close(); });
+  $("#btnHelp").addEventListener("click", () => { close(); closeMap(); });
+  window.addEventListener("resize", () => { if (!map.hidden) openMap(); });
+
+  window.PSGuide = {
+    init() { let show = true; try { show = localStorage.getItem(KEY) !== "0"; } catch (_) {} $("#guideOnStartup").checked = show; $("#help").hidden = !show; },
+    tour: i => start(TOUR, i), map: openMap, close
+  };
 })();
 
 </script>
