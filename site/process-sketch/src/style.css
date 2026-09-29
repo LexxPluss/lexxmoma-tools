@@ -244,19 +244,64 @@ details.setbox section h3 { margin-top: 6px; }
 .tplrow .btn b { display: block; color: var(--blue); }
 .tplrow .btn small { color: var(--sub); font-size: 11px; }
 
-/* Optional onboarding: no backdrop over editable canvas. */
-.guide-welcome { padding: 12px; background: #f0f6fa; border: 1px solid #c9dce9; margin: 10px 0 14px; border-radius: 8px; }
-.guide-welcome h3 { margin-top: 0; }
+/* 使い方ガイド(onboarding.js): 入口カード・スポットライト・吹き出し・画面の見かた */
+.guide-start { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0 6px; }
+.gcard { display: flex; flex-direction: column; gap: 4px; text-align: left; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 12px 14px; cursor: pointer; position: relative; }
+.gcard:hover { border-color: var(--blue); background: var(--soft); }
+.gcard b { font-size: 15px; color: var(--blue); }
+.gcard span { color: var(--ink); line-height: 1.55; }
+.gcard small { position: absolute; right: 12px; top: 12px; color: var(--sub); font-size: 11px; }
+.gcard.p { border: 2px solid var(--blue); background: #f0f6fa; }
+.modal h3 small { font-weight: 400; font-size: 11.5px; margin-left: 6px; }
+.where { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; margin: 6px 0 4px; }
+.where .btn { display: flex; justify-content: space-between; align-items: center; gap: 8px; text-align: left; white-space: normal; padding: 8px 10px; }
+.where .btn small { color: var(--blue); font-size: 11px; white-space: nowrap; }
 .guide-reference { margin-top: 14px; }
 .guide-reference summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
-#operationGuide { position: fixed; left: 16px; bottom: 80px; width: min(350px, calc(100vw - 32px)); max-height: calc(100vh - 110px); overflow: auto; z-index: 40; background: var(--panel); color: #263746; border: 2px solid #0068b7; border-radius: 10px; box-shadow: 0 6px 24px #20364b33; padding: 14px; }
-#operationGuide h3 { margin: 10px 0 8px; font-size: 16px; }
-#operationGuide p { line-height: 1.7; margin: 8px 0; }
-.guide-head,.guide-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.guide-head { color: #0068b7; }
-#guideClose { border: 0; background: transparent; font-size: 24px; cursor: pointer; min-width: 32px; }
-.guide-actions { margin-top: 12px; }
-.guide-highlight { outline: 3px solid #0068b7 !important; outline-offset: -3px; }
+.guide-startup { margin-top: 12px; }
+.gstart { background: #f0f6fa; border: 1px solid #c9dce9; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; }
+.gstart b { color: var(--blue); }
+.gstart p { margin: 4px 0 8px; line-height: 1.55; }
+.gstart .acts { display: flex; gap: 6px; flex-wrap: wrap; }
+@media (max-width: 560px) { .guide-start { grid-template-columns: 1fr; } }
+
+#gSpot { position: fixed; z-index: 90; pointer-events: none; border-radius: 8px; box-shadow: 0 0 0 9999px rgba(12,28,44,.55); outline: 3px solid #ffb400; outline-offset: 0; transition: left .18s, top .18s, width .18s, height .18s; animation: gPulse 1.6s ease-in-out infinite; }
+#gSpot.none { outline: 0; animation: none; }
+@keyframes gPulse { 0%,100% { outline-color: #ffb400; } 50% { outline-color: #ffe08a; } }
+#gPop { position: fixed; z-index: 95; width: min(340px, calc(100vw - 16px)); background: var(--panel); color: var(--ink); border-radius: 10px; box-shadow: 0 10px 32px rgba(0,0,0,.28); padding: 12px 14px 12px; line-height: 1.6; }
+#gPop::before { content: ""; position: absolute; width: 14px; height: 14px; background: var(--panel); transform: rotate(45deg); }
+#gPop[data-side="right"]::before { left: -7px; top: calc(var(--ay, 50%) - 7px); }
+#gPop[data-side="left"]::before { right: -7px; top: calc(var(--ay, 50%) - 7px); }
+#gPop[data-side="bottom"]::before { top: -7px; left: calc(var(--ax, 50%) - 7px); }
+#gPop[data-side="top"]::before { bottom: -7px; left: calc(var(--ax, 50%) - 7px); }
+#gPop[data-side="center"]::before, #gPop[data-side="inside"]::before { display: none; }
+#gPop h3 { margin: 6px 0 4px; font-size: 15.5px; }
+#gPop p { margin: 4px 0; }
+#gPop ul { margin: 4px 0; padding-left: 18px; }
+#gPop li { margin: 2px 0; }
+.g-head { display: flex; align-items: center; justify-content: space-between; color: var(--blue); font-size: 12px; }
+.g-x { border: 0; background: none; font-size: 22px; line-height: 1; cursor: pointer; color: var(--sub); padding: 0 2px; }
+.g-dots { display: flex; gap: 4px; margin-top: 4px; }
+.g-dots i { flex: 1; height: 4px; border-radius: 2px; background: var(--line); }
+.g-dots i.d { background: var(--green); }
+.g-dots i.c { background: var(--blue); }
+.g-do { font-weight: 600; }
+.g-why { color: var(--sub); font-size: 12px; }
+.g-ok { color: #1f8a4c; font-weight: 700; }
+.g-acts { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 10px; }
+.g-r { display: flex; gap: 6px; }
+
+#gMap { position: fixed; inset: 0; z-index: 90; background: rgba(12,28,44,.55); cursor: pointer; }
+.g-reg { position: absolute; border: 3px solid #ffb400; border-radius: 8px; box-sizing: border-box; background: rgba(255,180,0,.06); }
+.g-reg > .g-n { position: absolute; left: -3px; top: -3px; }
+.g-n { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #ffb400; color: #1d2733; font-style: normal; font-weight: 800; font-size: 14px; flex: none; }
+.g-lab { position: absolute; display: flex; gap: 8px; align-items: flex-start; background: var(--panel); color: var(--ink); border-radius: 8px; padding: 8px 10px; box-shadow: 0 6px 18px rgba(0,0,0,.25); line-height: 1.5; }
+.g-lab.up { transform: translateY(-100%); }
+.g-lab b { display: block; font-size: 13.5px; }
+.g-lab span { font-size: 12px; color: var(--sub); }
+.g-mapbar { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 10px; background: var(--panel); color: var(--ink); border-radius: 10px; padding: 10px 14px; box-shadow: 0 8px 24px rgba(0,0,0,.3); white-space: nowrap; }
+.g-mapbar b { font-size: 14px; color: var(--blue); }
+.g-mapbar span { color: var(--sub); font-size: 12px; }
 
 /* ===== ダークテーマ (assets/theme.js が <html data-theme="dark"> を付ける) =====
  * ライト表示は変えない。図(#cvWrap 内の SVG・時間カード・凡例)は「用紙」としてライトのまま残す。
@@ -298,7 +343,7 @@ details.setbox section h3 { margin-top: 6px; }
 :root[data-theme="dark"] details.adv { background: #1a232b; }
 :root[data-theme="dark"] .daybar { background: var(--soft); }
 :root[data-theme="dark"] .modal { background: rgba(0,0,0,.6); }
-:root[data-theme="dark"] .guide-welcome { background: #12314a; border-color: #24506f; }
-:root[data-theme="dark"] #operationGuide { color: var(--ink); border-color: var(--blue); box-shadow: 0 6px 24px rgba(0,0,0,.5); }
-:root[data-theme="dark"] .guide-head { color: var(--blue); }
-:root[data-theme="dark"] .guide-highlight { outline-color: var(--blue) !important; }
+:root[data-theme="dark"] .gcard.p, :root[data-theme="dark"] .gstart { background: #12314a; border-color: #24506f; }
+:root[data-theme="dark"] .gcard.p { border-color: var(--blue); }
+:root[data-theme="dark"] .g-ok { color: #8fdcae; }
+:root[data-theme="dark"] #gPop, :root[data-theme="dark"] .g-lab, :root[data-theme="dark"] .g-mapbar { box-shadow: 0 10px 32px rgba(0,0,0,.6); }
