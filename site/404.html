@@ -6,9 +6,9 @@
 <title>ページが見つかりません | LexxMoMa Tools</title>
 <link rel="icon" type="image/png" href="/assets/favicon.png">
 <script>
-// テーマ: LexxMoMa Tools 共通の設定(assets/theme.js と同じ localStorage "lx_theme")。既定は light
+// テーマ: LexxMoMa Tools 共通の設定(assets/theme.js と同じ localStorage "lx_theme")。未選択なら OS の設定に従う
 // 404 は任意のパスで表示されるため、相対パスの theme.js を読まずにここで適用する
-try { document.documentElement.setAttribute("data-theme", localStorage.getItem("lx_theme") === "dark" ? "dark" : "light"); } catch (e) { document.documentElement.setAttribute("data-theme", "light"); }
+(function () { var t = null; try { t = localStorage.getItem("lx_theme"); } catch (e) {} if (t !== "dark" && t !== "light") t = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"; document.documentElement.setAttribute("data-theme", t); })();
 </script>
 <style>
 :root{--bg:#f5f7fa;--panel:#fff;--text:#1f2933;--muted:#5b6b7b;--brand:#0068B7;--line:#d9e1ea}
