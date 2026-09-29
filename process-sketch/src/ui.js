@@ -28,9 +28,21 @@ const cv = $("#cv"), W = $("#world");
 
 // ===== 保存・読込 =====
 function save() { try { localStorage.setItem(STORE, JSON.stringify(doc)); } catch (e) { try { localStorage.setItem(STORE, JSON.stringify(Object.assign({}, doc, { bg: null }))); } catch (e2) { /* 保存不可の環境 */ } } }
+// 共有URL・.json・検討シートから来たデータは信用しない: id と色は形を確かめ、寸法などは数値にする(画面の HTML にそのまま入るため)
+const SAFE_ID = /^[\w-]{1,40}$/;
+const okId = v => v == null || v === "" || SAFE_ID.test(String(v));
+function cleanObj(o) {
+  const x = Object.assign({}, o);
+  for (const k of ["x", "y", "w", "h", "cap", "interval", "autoT", "manT", "swapT", "ngRate", "outQty", "speed", "dir"]) if (x[k] != null && x[k] !== "") x[k] = +x[k] || 0;
+  if (x.portW != null && x.portW !== "") x.portW = +x.portW || "";
+  if (x.color != null && !/^#[0-9a-f]{3,8}$/i.test(String(x.color))) delete x.color;
+  if (Array.isArray(x.pts)) x.pts = x.pts.map(p => ({ x: +(p && p.x) || 0, y: +(p && p.y) || 0 })); else delete x.pts;
+  if (!okId(x.op)) x.op = null;
+  return x;
+}
 function normalize(d) {
   const n = Object.assign(PS.newDoc(), d);
-  n.objs = (n.objs || []).filter(o => CAT[o.type]).map(o => {
+  n.objs = (n.objs || []).filter(o => o && CAT[o.type] && SAFE_ID.test(String(o.id))).map(cleanObj).map(o => {
     const x = Object.assign({ edited: [] }, JSON.parse(JSON.stringify(DEFAULTS[o.type] || {})), o);
     if (isStation(x.type)) PS.ensurePorts(x);
     PS.migrateObj(x);
@@ -38,8 +50,12 @@ function normalize(d) {
     if (isPoly(x.type)) { x.pts = x.pts || []; if (x.pts.length) PS.polyBBox(x); }
     return x;
   }).filter(o => !isPoly(o.type) || o.pts.length >= 3);
-  n.flows = (n.flows || []).filter(f => byId(n, f.from) && byId(n, f.to));
-  n.dims = n.dims || [];
+  n.flows = (n.flows || []).filter(f => f && SAFE_ID.test(String(f.id)) && byId(n, f.from) && byId(n, f.to));
+  for (const f of n.flows) { if (f.batch != null && f.batch !== "") f.batch = +f.batch || 1; if (!okId(f.agent)) f.agent = null; if (!okId(f.mover)) f.mover = null; if (Array.isArray(f.movers)) f.movers = f.movers.filter(v => SAFE_ID.test(String(v))); }
+  n.dims = (Array.isArray(n.dims) ? n.dims : []).filter(m => m && SAFE_ID.test(String(m.id))).map(m => Object.assign({}, m, { x1: +m.x1 || 0, y1: +m.y1 || 0, x2: +m.x2 || 0, y2: +m.y2 || 0 }));
+  const a0 = n.area || {}; n.area = { w: Math.max(1000, +a0.w || 20000), h: Math.max(1000, +a0.h || 12000) }; n.snap = +n.snap || 100;
+  if (n.bg && !/^data:image\/[\w.+-]+;base64,[\w+/=]+$/.test(String(n.bg.src || ""))) n.bg = null;
+  if (n.bg) for (const k of ["x", "y", "iw", "ih", "mmPerPx", "op"]) n.bg[k] = +n.bg[k] || 0;
   n.day = PS.dayOf(n.day);
   PS.autoOrient(n);
   return n;
@@ -932,6 +948,9 @@ window.addEventListener("keydown", e => {
   const inField = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
   if (e.key === "Escape") { setPlace(null); connectFrom = null; dimStart = null; calibPts = []; $("#calibBox").hidden = true; $("#help").hidden = true; closeMenus(); if (tool !== "select") setTool("select"); renderOverlay(); return; }
   if (inField) return;
+  // 使い方の窓・ガイドを見ている間は、元に戻す/やり直す以外の図のショートカットを使わない(Delete で設備が消える・Space でボタンが押せない等を防ぐ)
+  const undoKey = (e.ctrlKey || e.metaKey) && /^[zy]$/i.test(e.key);
+  if (!undoKey && (!$("#help").hidden || document.activeElement.closest("#gPop,#gMap"))) return;
   if (tool === "poly" && polyDraft) {
     if (e.key === "Enter") { e.preventDefault(); closePoly(); return; }
     if (e.key === "Backspace") { e.preventDefault(); polyDraft.pts.pop(); renderOverlay(); return; }
@@ -1003,14 +1022,10 @@ function docPanel() {
   const eq = doc.objs.filter(o => ["process", "join", "inspect", "bench"].includes(o.type)).length;
   const warns = checks();
   const ts = PS.timeSummary(doc);
-  return `<h2>はじめ方</h2>
-    <ol class="steps">
-      <li><b>置く</b>: 左の部品をクリック→図をクリック(「ひな形 ▾」からでもOK)</li>
-      <li><b>つなぐ</b>: 設備を選び、右の <span class="knob">●→</span> を次の設備へドラッグ</li>
-      <li><b>時間を入れる</b>: 設備を選び、工程カードの③に自動・人の秒数</li>
-      <li><b>計算する</b>: 下の「1日分を計算」→ 1日にできる数と人の時間</li>
-      <li><b>比べる</b>: 結果の「LexxMoMa に任せる作業を選ぶ」→ 検討シート</li>
-    </ol>
+  return `<div class="gstart"><b>初めての方へ</b>
+      <p>図の設備をクリックすると、ここにその設備の設定が出ます。何も選んでいない時は、図全体の条件が出ます。</p>
+      <div class="acts"><button class="btn p" data-guide="tour">操作ツアー(2分)</button><button class="btn" data-guide="map">画面の見かた</button></div></div>
+    <h2>図全体の条件</h2>
     ${ts.slow ? `<h4>工程の時間(計算前の目安)</h4><table class="t"><tr><th>一番長い設備</th><td>${esc(ts.slow.o.name)} ${fmt(ts.slow.ct)}秒/回</td></tr>${ts.path ? `<tr><th>1個が通る設備の時間</th><td>${fmt(ts.path.t)}秒</td></tr>` : ""}</table>` : ""}
     <h4>1日の条件</h4>
     <div class="grid2">
@@ -1113,7 +1128,7 @@ function processCard(o) {
     + `<div class="io-row"><input data-k="outName" value="${esc(o.outName)}" placeholder="空欄なら ${esc(outputName(doc, Object.assign({}, o, { outName: "" })))}"><span class="x2">×</span><input class="q" type="number" min="1" step="1" data-k="outQty" value="${PS.outQty(o)}"></div>`;
   for (const f of outs) { const b = byId(doc, f.to); h += `<div class="io-row"><span class="to">→ ${esc(b.name)}</span><button class="del" data-delflow="${f.id}" title="この流れを消す">×</button></div>`; }
   h += `<select class="add" data-addout="1"><option value="">＋ 次工程を追加…</option>${opts(dsts)}</select>`;
-  const a = +o.autoT || 0, m = +o.manT || 0, oq = o.type === "inspect" ? 1 : PS.outQty(o);
+  const a = +o.autoT || 0, m = +o.manT || 0, oq = o.type === "inspect" ? PS.inQty(o) : PS.outQty(o);
   h += `<div class="pc-h"><b>③</b> 時間(1回あたり)${tmpT ? '<i class="tag">仮の値</i>' : ""}</div>
     <div class="grid2">${field("自動運転 [秒]", inp("autoT", a, "number", `step="any" min="0"${tmpT ? ' class="tmp"' : ""}`))}${field("人の作業 [秒]", inp("manT", m, "number", `step="any" min="0"${tmpT ? ' class="tmp"' : ""}`))}</div>
     ${o.type !== "inspect" ? `<label class="chk"><input type="checkbox" data-k="parallel" ${o.parallel ? "checked" : ""}> 自動運転中に、人が次のセット・取り出しを同時に進められる(並行作業)</label>${o.parallel ? field("ワークの入れ替え時間 [秒](仕上がったワークと次のワークを入れ替える時間)", inp("swapT", +o.swapT || 0, "number", 'step="any" min="0"')) : ""}` : ""}
@@ -1145,7 +1160,8 @@ function flowPanel(f) {
 }
 function bindPanel(P) {
   P.querySelectorAll("[data-day]").forEach(el => el.addEventListener("change", () => {
-    doc.day[el.dataset.day] = +el.value || 0; doc.day = PS.dayOf(doc.day); save(); docVer++;
+    doc.day[el.dataset.day] = el.value; doc.day = PS.dayOf(doc.day); save(); docVer++;
+    el.value = el.dataset.day === "demand" && !doc.day.demand ? "" : doc.day[el.dataset.day]; // 範囲外は直した値を見せる
     const st = $("#resStale"); if (st) st.hidden = false;
   }));
   P.querySelectorAll("[data-k]").forEach(el => el.addEventListener("change", () => {
@@ -1248,6 +1264,8 @@ function checks() {
   }
   for (const o of doc.objs) if (o.needOp && PS.accessPoint(doc, g0, o, "op").off > 600) w.push(`「${o.name}」の作業する面の前に立てません`);
   if (doc.walkOnly !== false && !doc.objs.some(o => o.type === "walk") && doc.objs.some(o => isAgent(o.type))) w.push("通路(歩く所)が描かれていません。左の「通路(歩く所)」で囲むと、人はその中だけを歩きます");
+  const zero = eq.filter(o => PS.isTimed(o.type) && !(PS.cycleTime(o) > 0));
+  if (zero.length) w.push(`1回の時間が0秒の設備があります(入力漏れの可能性。1日の数が多く出ます): ${zero.map(o => o.name).join("、")}`);
   const tmp = eq.filter(o => !(o.edited || []).some(k => k === "autoT" || k === "manT"));
   if (tmp.length) w.push(`時間(自動運転/人の作業)が仮の値: ${tmp.map(o => o.name).join("、")}`);
   if (doc.bg && !doc.bg.calibrated) w.push("下絵の縮尺がまだ合わせられていません");
@@ -1385,7 +1403,7 @@ function dayHTML(r) {
   // 詳しく
   const res = r.main;
   h += `<details class="more"><summary>詳しく見る(1時間あたり・人と設備ごと)</summary>`;
-  h += `<table class="t"><tr><th>完成(人がいる時間)</th><td class="n">${fmt(res.perHour, 1)} 個/時</td></tr>
+  h += `<table class="t"><tr><th>完成(1日の平均)</th><td class="n">${fmt(res.perHour, 1)} 個/時</td></tr>
     ${r.brk ? `<tr><th>完成(人の休憩中)</th><td class="n">${fmt(r.brk.perHour, 1)} 個/時</td></tr>` : ""}
     <tr><th>リードタイム(搬入→搬出・概算)</th><td class="n">${res.leadTime ? (res.leadTime >= 120 ? fmt(res.leadTime / 60, 1) + " 分" : fmt(res.leadTime) + " 秒") : "-"}</td></tr>
     <tr><th>1個が通る設備の時間(最長ルート)</th><td class="n">${res.time.path ? fmt(res.time.path.t) + " 秒" : "-"}</td></tr></table>`;
@@ -1422,6 +1440,8 @@ function lxChooserHTML(r) {
     <div class="acts"><button class="btn g" id="lxApply">選んだ作業を LexxMoMa に任せて比べる</button></div>
     <p class="hint">LexxMoMa がいなければ1台置きます。前提: 走行 ${fmt((byId(doc, (doc.objs.find(o => o.type === "robot") || {}).id) || { speed: 1 }).speed, 1)} m/s、積み降ろし ${fmt((doc.objs.find(o => o.type === "robot") || { handle: 20 }).handle)} 秒/回(アームでのピック想定。LexxMoMa を選んで「詳しい設定」で変えられます)。作業が多すぎると LexxMoMa が詰まるので、その時は2台目を置いて担当を分けてください。</p></div>`;
 }
+// 図を変えた後の古い結果を「現状」にしない(変えていたら計算し直してから残す)
+function freshDay() { return lastDay && lastDay.ver === docVer ? lastDay : calcDay(); }
 function saveBaseline(r, name) {
   const snap = JSON.parse(JSON.stringify(Object.assign({}, doc, { bg: null, baseline: null })));
   doc.baseline = { name: name || "現状", at: Date.now(), m: PS.dayMetrics(r), doc: snap };
@@ -1430,23 +1450,24 @@ function saveBaseline(r, name) {
 function bindDay() {
   const q = id => document.getElementById(id);
   document.querySelectorAll("#res [data-day]").forEach(el => el.addEventListener("change", () => {
-    doc.day[el.dataset.day] = +el.value || 0; doc.day = PS.dayOf(doc.day); save(); docVer++;
+    doc.day[el.dataset.day] = el.value; doc.day = PS.dayOf(doc.day); save(); docVer++;
+    el.value = el.dataset.day === "demand" && !doc.day.demand ? "" : doc.day[el.dataset.day];
     const stl = q("resStale"); if (stl) stl.hidden = false;
   }));
   if (q("dayRecalc")) q("dayRecalc").onclick = () => calcDay();
   if (q("lxOpen")) q("lxOpen").onclick = () => { const b = q("lxBox"); b.hidden = !b.hidden; if (!b.hidden) b.scrollIntoView({ block: "nearest" }); };
-  if (q("blSave")) q("blSave").onclick = () => { saveBaseline(lastDay); showDay(); toast("この結果を「現状」として残しました。図や担当を変えて「1日分を計算」を押すと比べられます"); };
+  if (q("blSave")) q("blSave").onclick = () => { saveBaseline(freshDay()); showDay(); toast("この結果を「現状」として残しました。図や担当を変えて「1日分を計算」を押すと比べられます"); };
   if (q("blClear")) q("blClear").onclick = () => { doc.baseline = null; save(); showDay(); };
   if (q("blRestore")) q("blRestore").onclick = () => {
-    const bl = doc.baseline; const u = undoS.slice(); snapshot();
-    setDoc(Object.assign({}, bl.doc, { baseline: bl })); undoS = u.concat(undoS.slice(-1)); fit();
+    const bl = doc.baseline; snapshot(); const u = undoS.slice();
+    setDoc(Object.assign({}, bl.doc, { baseline: bl, bg: doc.bg })); undoS = u; fit(); // 下絵は現状の図に保存していないので今のものを使う
     toast(`「${bl.name}」の図に戻しました`);
   };
   if (q("resReport")) q("resReport").onclick = () => $("#btnReport").click();
   if (q("lxApply")) q("lxApply").onclick = () => {
     const picks = [...document.querySelectorAll("[data-lxt]:checked")].map(el => el.dataset.lxt.split(":"));
     if (!picks.length) { toast("任せる作業を1つ以上選んでください"); return; }
-    if (!doc.baseline) saveBaseline(lastDay);
+    if (!doc.baseline) saveBaseline(freshDay());
     let r = doc.objs.find(o => o.type === "robot");
     change(() => {
       if (!r) {
@@ -1479,7 +1500,7 @@ function bindResults() {
       }
       f.agent = r.id;
     });
-    toast(`「${flowName(f)}」を ${r.name} の担当にしました。もう一度「1時間分を計算」で比べられます`);
+    toast(`「${flowName(f)}」を ${r.name} の担当にしました。もう一度「1日分を計算」で比べられます`);
     track("sim/lexxmoma", "LexxMoMaに任せる");
     $("#simCalc").click();
   });
@@ -1709,20 +1730,37 @@ window.addEventListener("resize", () => renderAll());
 async function boot() {
   renderPalette(); initSplit();
   $("#legend").innerHTML = legendHTML();
-  let d = null;
+  let d = null, local = null, shared = false;
   const m = location.hash.match(/#d=([\w-]+)/);
-  if (m) { try { d = await unpackDoc(m[1]); history.replaceState(null, "", location.pathname + location.search); } catch (e) { d = null; } }
-  if (!d) { try { d = JSON.parse(localStorage.getItem(STORE) || "null"); } catch (e) { d = null; } }
+  if (m) { try { d = await unpackDoc(m[1]); shared = true; history.replaceState(null, "", location.pathname + location.search); } catch (e) { d = null; toast("共有URLを読み込めませんでした(URLが途中で切れていないか確認してください)"); } }
+  try { local = JSON.parse(localStorage.getItem(STORE) || "null"); } catch (e) { local = null; }
+  if (!d) d = local;
   if (!d) d = TEMPLATES.find(t => t.id === "line").build();
   setDoc(d); fit();
+  // 共有URLで開くと自動保存が上書きされるので、このブラウザで描いていた図を「元に戻す」で戻せるようにする
+  if (shared && local && local.objs && local.objs.length && JSON.stringify(normalize(local).objs) !== JSON.stringify(doc.objs)) {
+    undoS = [JSON.stringify(normalize(local))];
+    toast("共有URLの図を開きました。このブラウザで前に描いていた図は「元に戻す」で戻せます");
+  }
   window.PSGuide.init();
 }
 // レポート・書き出し(report.js)から使う描画関数
-window.PSUI = { staticSVG, bgSVG, agentSVG, agentColor, moverSVG, fmt, esc, flowName: f => flowName(f) };
+window.PSUI = { staticSVG, bgSVG, agentSVG, agentColor, moverSVG, fmt, esc, flowName: f => flowName(f),
+  // 使い方ガイド(onboarding.js)から使う: 図のデータは変えずに、選択・タブ・表示範囲だけを動かす
+  get doc() { return doc; }, selectedId: () => (sel && sel.k === "obj" ? sel.id : null),
+  select(id) { sel = id ? { k: "obj", id } : null; inspector(); renderAll(); }, switchTab, fit };
 // テスト用フック
 window.__ps = { get doc() { return doc; }, get day() { return lastDay; }, setDoc, addObj, addFlow, get sim() { return sim; }, results: () => lastRes, checks, TEMPLATES, fit,
   // 指定ワールド座標(mm)を中心に倍率 s(px/mm)で表示 / シミュレーションを sec 秒進めて描画
   look(x, y, s) { const r = cv.getBoundingClientRect(); view.s = s; view.tx = r.width / 2 - x * s; view.ty = r.height / 2 - y * s; renderAll(); },
   advance(sec) { if (!sim) sim = newSim(); for (let t = 0; t < sec; t += 0.1) sim.step(0.1); renderAll(); return sim.t; } };
 window.addEventListener("load", boot);
+window.addEventListener("hashchange", async () => {
+  const m = location.hash.match(/#d=([\w-]+)/); if (!m) return;
+  let d = null; try { d = await unpackDoc(m[1]); } catch (e) { d = null; }
+  history.replaceState(null, "", location.pathname + location.search);
+  if (!d) { toast("共有URLを読み込めませんでした(URLが途中で切れていないか確認してください)"); return; }
+  if (doc.objs.length) snapshot(); const u = undoS.slice(); setDoc(d); undoS = u; fit();
+  toast("共有URLの図を開きました(元に戻す で前の図に戻せます)");
+});
 })();

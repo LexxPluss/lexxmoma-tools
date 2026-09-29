@@ -19,8 +19,10 @@ const FN = {
 // demand=必要数(個/日, 0=未設定) / robotAvail=LexxMoMa の稼働率[%](充電などで止まる分を除く)
 function dayOf(d) {
   const x = Object.assign({ hours: 8, breakMin: 60, demand: 0, robotAvail: 95 }, (d && d.day) || d || {});
-  x.hours = Math.max(0.5, Math.min(24, +x.hours || 8)); x.breakMin = Math.max(0, Math.min(x.hours * 60, +x.breakMin || 0));
-  x.demand = Math.max(0, Math.round(+x.demand || 0)); x.robotAvail = Math.max(10, Math.min(100, +x.robotAvail || 100));
+  // 空欄・文字は既定値、数値は範囲に収める(0 を既定値に置き換えない)
+  const num = (v, def) => (v === "" || v == null || !Number.isFinite(+v) ? def : +v);
+  x.hours = Math.max(0.5, Math.min(24, num(x.hours, 8))); x.breakMin = Math.max(0, Math.min(x.hours * 60, num(x.breakMin, 0)));
+  x.demand = Math.max(0, Math.round(num(x.demand, 0))); x.robotAvail = Math.max(10, Math.min(100, num(x.robotAvail, 100)));
   return x;
 }
 // ===== 部品カタログ =====
@@ -104,6 +106,11 @@ function migrateObj(o) {
     if (o.outQty != null) o.outQty = Math.max(1, Math.round(+o.outQty || 1));
     o.inQty = o.inQty || {};
   }
+  // 負の値・文字は計算を止める(到着間隔が負だと無限ループ)ので、入力・読み込みのたびに下限をそろえる
+  if (o.interval != null) o.interval = Math.max(0, +o.interval || 0);
+  if (o.swapT != null) o.swapT = Math.max(0, +o.swapT || 0);
+  if (o.ngRate != null) o.ngRate = Math.max(0, Math.min(100, +o.ngRate || 0));
+  if (o.cap != null && !(+o.cap >= 1)) o.cap = (DEFAULTS[o.type] || {}).cap || 1; // 0・負・空欄 → 既定の容量
   return o;
 }
 // parallel=並行作業: 自動運転中に、人が次のワークのセット・取り出しを同時に進められる(ワークを置く場所が2つある設備)。
@@ -139,13 +146,18 @@ function outQty(o) { return Math.max(1, Math.round(+o.outQty || 1)); }
 function timeSummary(doc) {
   const timed = doc.objs.filter(o => isTimed(o.type));
   let slow = null;
-  for (const o of timed) { const t = cycleTime(o) / outQty(o); if (!slow || t > slow.t) slow = { o, t, ct: cycleTime(o) }; }
-  const memo = {};
+  for (const o of timed) { const t = cycleTime(o) / (o.type === "inspect" ? inQty(o) : outQty(o)); if (!slow || t > slow.t) slow = { o, t, ct: cycleTime(o) }; }
+  const memo = {}, onPath = new Set();
   const longest = (o, depth) => {
     if (memo[o.id]) return memo[o.id];
     if (depth > 40) return { t: 0, route: [o] };
+    onPath.add(o.id);
     let best = { t: 0, route: [] };
-    for (const f of doc.flows.filter(f2 => f2.to === o.id)) { const a = byId(doc, f.from); if (!a) continue; const r = longest(a, depth + 1); if (r.t > best.t || !best.route.length) best = r; }
+    for (const f of doc.flows.filter(f2 => f2.to === o.id)) {
+      const a = byId(doc, f.from); if (!a || onPath.has(a.id)) continue; // 往復・手戻りの矢印は1回だけ数える
+      const r = longest(a, depth + 1); if (r.t > best.t || !best.route.length) best = r;
+    }
+    onPath.delete(o.id);
     return (memo[o.id] = { t: best.t + cycleTime(o), route: [...best.route, o] });
   };
   let path = null;
@@ -585,7 +597,7 @@ Sim.prototype.stepStations = function (dt) {
   for (const id in this.st) {
     const s = this.st[id], o = s.o;
     if (o.type === "in") {
-      if (!o.interval) { const need = this.outCap(o) - s.outN; if (need > 0) { s.out[o.item] = (s.out[o.item] || 0) + need; s.outN += need; } }
+      if (!(o.interval > 0)) { const need = this.outCap(o) - s.outN; if (need > 0) { s.out[o.item] = (s.out[o.item] || 0) + need; s.outN += need; } }
       else { s.genT += dt; while (s.genT >= o.interval) { s.genT -= o.interval; if (s.outN < this.outCap(o)) { s.out[o.item] = (s.out[o.item] || 0) + 1; s.outN++; } } }
       continue;
     }
@@ -604,7 +616,7 @@ Sim.prototype.stepStations = function (dt) {
       } else { const u = Math.min(dt, s.autoLeft); s.autoLeft -= u; s.busyT += u; s.autoBusyT += u; }
       if (s.manLeft <= 1e-9 && s.autoLeft <= 1e-9) {
         s.busy = false; s.cycles++;
-        const nm = s.cur, n = o.type === "inspect" ? 1 : outQty(o);
+        const nm = s.cur, n = o.type === "inspect" ? inQty(o) : outQty(o); // 検査はモノを変えずに、入れた数だけ通す
         for (let k = 0; k < n; k++) {
           if (o.type === "inspect" && o.ngRate > 0 && this.rnd() * 100 < o.ngRate) s.ng++;
           else { s.out[nm] = (s.out[nm] || 0) + 1; s.outN++; }
@@ -924,7 +936,7 @@ function simulateDay(doc) {
   const peopleH = workers.reduce((n, a) => n + (a.ratio.work + a.ratio.walk + a.ratio.carry + a.ratio.handle) * day.hours, 0);
   const walkKm = workers.reduce((n, a) => n + a.distM / 1000, 0);
   const robotH = robots.reduce((n, a) => n + (a.ratio.work + a.ratio.walk + a.ratio.carry + a.ratio.handle) * day.hours, 0);
-  const perDay = main.done, takt = day.demand ? dayS / day.demand : null;
+  const perDay = main.done, takt = day.demand ? workS / day.demand : null; // タクト = 休憩を除いた稼働時間 ÷ 必要数
   return { sim, main, brk: null, day, perDay, workS, breakS, dayS, takt, peopleH, walkKm, robotH,
     breakStart: start, breakEnd: end, nWorkers: workers.length, nRobots: robots.length,
     met: day.demand ? perDay >= day.demand : null, short: day.demand ? Math.max(0, day.demand - perDay) : 0 };

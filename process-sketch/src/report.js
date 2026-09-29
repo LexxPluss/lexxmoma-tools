@@ -108,7 +108,7 @@ function report(d, res, warns, sim, day) {
   const totalWalk = walkers.reduce((s, a) => s + a.perHourM, 0);
   const segs = [["work", "作業", "#e07b1f"], ["carry", "運搬歩行", "#2f9e62"], ["walk", "手ぶら歩行", "#9fd3b4"], ["handle", "積み降ろし", "#f3b77a"], ["charge", "充電", "#b9c3cc"], ["idle", "待ち", "#dde2e7"]];
   const q = [...warns];
-  if (!res) q.push("導線シミュレーション未実施(「1時間分を計算」を押すと歩行距離・稼働率が入ります)");
+  if (!res) q.push("導線シミュレーション未実施(「1日分を計算」を押すと歩行距離・稼働率が入ります)");
   q.push("各設備の自動運転の時間・人の作業時間・段取り替えの有無", "ワークの寸法・重さ・荷姿(何個を何に入れて運ぶか)", "通路の床(段差・スロープ・扉)と人・フォークリフトの往来", "生産数の目標(個/日・シフト)");
   const html = `<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>${esc(d.title || "工程スケッチ")} 検討シート</title>
 <style>
@@ -169,7 +169,7 @@ function report(d, res, warns, sim, day) {
   <h2>${res ? 5 : 3}. 次回までの確認事項</h2>
   <ul>${q.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
   <h2>メモ</h2><div class="memo" contenteditable="true">(打合せでの気づきをここに書けます)</div>
-  <p style="color:#8a96a3;font-size:10.5px;margin-top:14px">本シートは簡易モデル(満杯分たまったら運ぶ・設備は1個ずつ処理・段取り替え/休憩/故障は含まない)による概算です。図面データ(.json)は工程スケッチで開くと再編集できます。LexxPluss 工程スケッチで作成。</p>
+  <p style="color:#8a96a3;font-size:10.5px;margin-top:14px">本シートは簡易モデル(満杯分たまったら運ぶ・設備は1個ずつ処理・段取り替え/故障は含まない。休憩は1日の計算に含む)による概算です。図面データ(.json)は工程スケッチで開くと再編集できます。LexxPluss 工程スケッチで作成。</p>
 </div>
 <script type="application/json" id="ps-data">${JSON.stringify(Object.assign({ app: "lexxmoma-process-sketch" }, d)).replace(/</g, "\\u003c")}</script>
 </body></html>`;
