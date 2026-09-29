@@ -9,7 +9,8 @@ Everything under `site/` is served as-is (no build step).
 site/                      ← published root (https://<org>.github.io/<repo>/)
 ├ index.html               ← landing page (edit the TOOLS array to add/change a tool)
 ├ 404.html
-├ assets/                  ← logo, favicon, analytics (track.js), shared theme + header (theme.js)
+├ assets/                  ← logo, favicon, analytics (track.js), shared theme + header (theme.js),
+│                            landing-page diorama (lexxmoma-stage.js)
 ├ library/                 ← LexxMoMa Tour
 ├ simulator/               ← Motion Simulator (2D)
 ├ process-sketch/          ← Process Sketch (beta)
@@ -67,9 +68,13 @@ Add one entry to `TOOLS` in `site/index.html`:
 
 | field | meaning |
 |---|---|
-| `status` | `web` (live), `beta`, `soon`, `plan`, `internal` |
-| `href` | relative path under `site/` (omit for `soon` / `plan`) |
-| `phase` | evaluation stages, e.g. `["検討","設計"]` |
-| `desc`, `points` | short description and optional bullet list |
+| `id`, `cat`, `icon` | analytics id, category label, icon key from `ICONS` |
+| `status` | `web` (runs in the browser), `local` (download), `plan` (coming soon) |
+| `href` | relative path under `site/` (omit for `plan`) |
+| `phases` | evaluation stages from `PHASES`, e.g. `["assess","design"]` |
+| `worries` | question tags from `WORRIES`; they drive the filter chips |
+| `desc`, `solves`, `ver` | description, one-line benefit, version (`ベータ版` shows the beta badge) |
+
+Phases with no tools are hidden automatically.
 
 Put the analytics tag before the tool's `</body>`: `<script src="../assets/track.js" data-tool="<id>"></script>`.
