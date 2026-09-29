@@ -1,0 +1,56 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Fail the deploy if any internal-only folder slipped into site/
+      - name: Check for internal-only files
+        run: |
+          bad=$(find site \( -name internal -o -name safety-navi -o -iname crx-eoat-tool -o -name .claude \
+                 -o -path 'site/robot-sier-map/scripts' -o -path 'site/robot-sier-map/data/raw' \) -print)
+          if [ -n "$bad" ]; then echo "Internal-only files found:"; echo "$bad"; exit 1; fi
+
+      # ROI Calculator and Process Sketch are published from dist/; make sure it was rebuilt from src/
+      - name: Check built tools are up to date
+        run: |
+          (cd site/lexxmoma-roi && python3 build.py)
+          (cd site/process-sketch && python3 build.py)
+          git diff --exit-code -- site/lexxmoma-roi/dist site/process-sketch/dist \
+            || { echo "dist/ is out of date: run python3 build.py and commit the result"; exit 1; }
+
+      - name: Run tool tests
+        run: |
+          node site/lexxmoma-roi/test/calc.test.js
+          node site/process-sketch/test/continuity.test.cjs
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
