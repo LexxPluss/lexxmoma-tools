@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>工程スケッチ</title>
+<meta name="description" content="工程のレイアウトと人・モノの流れを1分で描いて、導線を動かして確かめるツール">
+<script src="../../assets/theme.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header id="top" class="lx-hdr">
+  <div class="lx-title">
+  <a href="../../index.html" class="logo lx-brand" title="LexxMoMa Tools のトップへ"><img class="lx-logo" src="../../assets/lexxpluss-logo.png" alt="LexxPluss"><span class="lx-wordmark">LexxMoMa</span></a>
+  <div class="ttl"><b class="lx-tool">工程スケッチ <small class="beta">ベータ版</small></b><span>レイアウト × 人とモノの流れ</span></div>
+  </div>
+  <input id="docTitle" placeholder="工程名(例: 溶着〜検査ライン)" aria-label="工程名">
+  <input id="docCustomer" placeholder="お客さま名" aria-label="お客さま名" class="short">
+  <div class="sp"></div>
+  <div class="menu">
+    <button id="btnTpl" class="btn">ひな形 ▾</button>
+    <div class="drop" id="tplMenu"></div>
+  </div>
+  <button class="btn ic" id="btnUndo" title="元に戻す (Ctrl+Z)">↶</button>
+  <button class="btn ic" id="btnRedo" title="やり直す (Ctrl+Y)">↷</button>
+  <div class="menu">
+    <button class="btn" id="btnFile">ファイル ▾</button>
+    <div class="drop" id="fileMenu">
+      <button data-act="open">開く(.json / 検討シート.html)</button>
+      <button data-act="save">保存(.json・再編集用)</button>
+      <button data-act="share">共有URLをコピー</button>
+      <hr>
+      <button data-act="png">画像(PNG・100px/m)</button>
+      <button data-act="csv">表データ(CSV・Excel用)</button>
+      <hr>
+      <button data-act="new">新規(白紙)</button>
+    </div>
+  </div>
+  <button class="btn p" id="btnReport" title="次の検討に持っていく1枚">検討シートを作る</button>
+  <button class="btn ic" id="btnHelp" title="使い方">?</button>
+  <button type="button" class="lx-theme-btn" data-lx-theme-toggle aria-label="ライト / ダーク切替"></button>
+  <input type="file" id="fileOpen" accept=".json,.html,application/json,text/html" hidden>
+  <input type="file" id="fileBg" accept="image/*" hidden>
+</header>
+
+<main id="main">
+  <aside id="left">
+    <div id="palette"></div>
+    <details class="box setbox"><summary>図の設定(広さ・通路・下絵)</summary>
+    <section>
+      <h3>エリア</h3>
+      <div class="row2">
+        <label>幅 [m]<input type="number" id="areaW" step="0.5" min="2"></label>
+        <label>奥行 [m]<input type="number" id="areaH" step="0.5" min="2"></label>
+      </div>
+      <label class="chk"><input type="checkbox" id="optClear" checked> 選んだモノの通路幅を表示</label>
+      <label class="chk"><input type="checkbox" id="optWalkOnly" checked> 人・LexxMoMa は通路の中だけ歩く</label>
+    </section>
+    <section>
+      <h3>下絵(お客さまの図面・写真)</h3>
+      <button class="btn w" id="btnBg">画像を読み込む</button>
+      <div id="bgCtl" hidden>
+        <button class="btn w" id="btnCalib">縮尺を合わせる(2点+実寸)</button>
+        <label class="chk"><input type="checkbox" id="bgMove"> 下絵を動かす</label>
+        <label class="rng">濃さ<input type="range" id="bgOp" min="0.1" max="1" step="0.05"></label>
+        <button class="btn w ghost" id="btnBgDel">下絵を消す</button>
+      </div>
+      <p class="hint">図面を下に敷いてなぞると、寸法の合った絵になります。</p>
+    </section>
+    </details>
+  </aside>
+  <div class="split" id="splitL" title="ドラッグで幅を変える(ダブルクリックで元に戻す)"></div>
+
+  <section id="center">
+    <div id="tools">
+      <button class="tool on" data-tool="select" title="選ぶ・動かす (V)">↖ 選ぶ</button>
+      <button class="tool" data-tool="connect" title="モノの流れをつなぐ (C)">→ 流れをつなぐ</button>
+      <button class="tool" data-tool="dim" title="寸法を測る (M)">↔ 寸法</button>
+      <span class="sep"></span>
+      <button class="tool" id="btnFit" title="全体を表示 (F)">⤢ 全体</button>
+      <span id="modeHint"></span>
+    </div>
+    <div id="cvWrap">
+      <svg id="cv" xmlns="http://www.w3.org/2000/svg"><g id="world"><g id="Lbg"></g><g id="Lst"></g><g id="Ldyn"></g><g id="Lov"></g></g></svg>
+      <div id="calibBox" class="pop" hidden>
+        <div>2点間の実際の長さ</div>
+        <div class="row2"><input type="number" id="calibLen" placeholder="例 1800"><span>mm</span></div>
+        <div class="row2"><button class="btn p" id="calibOk">合わせる</button><button class="btn" id="calibNo">やめる</button></div>
+      </div>
+      <div id="toast" hidden></div>
+      <div id="timeCard" class="tcard" hidden></div>
+      <div id="legend" class="lgd" title="色は機能で分けています"></div>
+    </div>
+    <div id="simbar">
+      <button class="btn g big" id="simCalc" title="1日分(稼働時間・休憩を含む)を計算して結果を出す">1日分を計算</button>
+      <span class="sep"></span>
+      <button class="btn" id="simPlay" title="人とモノの動きを見る (Space)">▶ 動かす</button>
+      <button class="btn" id="simReset" title="最初に戻す">⟲</button>
+      <label>速さ <select id="simSpeed"><option value="1">×1</option><option value="5" selected>×5</option><option value="20">×20</option><option value="60">×60</option></select></label>
+      <span class="clock" id="simClock">0:00:00</span>
+      <span class="kpi" id="simKpi">完成 0 個</span>
+      <label class="chk" title="人の歩いた跡(スパゲッティ図)を残す"><input type="checkbox" id="optTrail" checked> 導線を残す</label>
+    </div>
+  </section>
+
+  <div class="split" id="splitR" title="ドラッグで幅を変える(ダブルクリックで元に戻す)"></div>
+  <aside id="right">
+    <div class="tabs"><button class="tab on" data-tab="insp">設定</button><button class="tab" data-tab="res">結果</button></div>
+    <div id="insp" class="pane"></div>
+    <div id="res" class="pane" hidden></div>
+  </aside>
+</main>
+
+<div id="help" class="modal" hidden>
+  <div class="card">
+    <button class="x" id="helpX" aria-label="閉じる">×</button>
+    <h2>工程スケッチの使い方(1分)</h2>
+    <p class="hint" style="margin-top:0">初めての方は、近い工程のひな形を選んで、名前と時間を書き換えるのが早道です(あとから右上の「ひな形 ▾」でも選べます)。</p>
+    <section class="guide-welcome">
+      <h3>まずは「名前と時間を変えて、結果を見る」から</h3>
+      <p>① 設備を選ぶ → ② 時間を入れる → ③ 1日分を計算 → ④ 検討シートを作る</p>
+      <button class="btn p" id="startGuide">画面を見ながら使い方を教わる</button>
+      <p class="hint">今の図を使って案内します。図が空の場合は、下の「直線ライン」から始めてください。</p>
+      <label class="chk"><input type="checkbox" id="guideOnStartup" checked> 次回も起動時に使い方を表示する</label>
+    </section>
+    <div id="helpTpl" class="tplrow"></div>
+    <details class="guide-reference"><summary>白紙から描く方法・細かい操作を見る</summary>
+    <ol>
+      <li><b>置く</b> … 左の部品をクリック→図の上をクリック(ドラッグでも可)。「ひな形」から始めると早いです。</li>
+      <li><b>つなぐ</b> … 設備を選ぶと右端に出る <span class="knob">●</span> を次の設備へドラッグ。モノの流れの矢印ができ、近くの作業者が運び手になります。</li>
+      <li><b>工程の中身を書く</b> … 設備を選ぶと右に「工程カード」。① 前工程から入れるもの(名前・数) ② 出すもの(名前・数)と次工程 ③ 時間(自動運転の秒・人の作業の秒)を入れます。</li>
+      <li><b>面を決める</b> … 設備の縁の <b style="color:#3EB370">入</b>(入れる面)・<b style="color:#0068B7">出</b>(取り出す面)・足あと(作業する面)は、つないだ相手の方向へ自動で向きます。変えたいときは印を<b>ドラッグして別の面で離す</b>だけ。「出」を「入」の上へ重ねると1つの「入出」口(同じ口で入れて取り出す)にまとまります(小さい設備で同じ面なら自動で1つ)。Shift+ドラッグで分けられます。</li>
+      <li><b>通路を描く</b> … 左の「通路(歩く所)」を選び、角をクリックしていくと多角形で囲めます。人・LexxMoMa は通路の中だけを歩きます(立ち位置=面の正面が通路に入るように)。「立入禁止」も同じ要領です。</li>
+      <li><b>動かす</b> … 下の「▶ 動かす」。作業者は面の正面に立ち、設備の方を向いて取り出し・投入・作業をします。向きを変えるにも時間がかかります(台車を押していると遅い)。歩いた跡(導線)が残ります。</li>
+      <li><b>計算して比べる</b> … 下の「1日分を計算」で、1日にできる数(必要数に届くか)と人の作業時間が出ます。結果の「LexxMoMa に任せる作業を選ぶ」で、運搬や設備の作業を LexxMoMa に任せたときと比べられます。1日の稼働時間・休憩・必要数は、何も選んでいない時の右の欄で入れます。</li>
+      <li><b>持っていく</b> … 「検討シートを作る」で、レイアウト図・設備一覧・流れ・歩行距離・自動化候補・確認事項を1枚に。</li>
+    </ol>
+    <h3>設備の考え方(細かくしすぎない)</h3>
+    <table class="mini">
+      <tr><th>加工</th><td>A → B</td><td>形が変わる(切る・曲げる・成形・塗る…)</td></tr>
+      <tr><th>溶接・接着・組立</th><td>A + B → C</td><td>2つ以上が1つになる。入ってくる矢印の数だけ部品を待つ</td></tr>
+      <tr><th>検査</th><td>A = A</td><td>モノは変わらない。NG率を入れると不良が抜ける</td></tr>
+      <tr><th>手作業台</th><td>A → B</td><td>人が付いている間だけ進む</td></tr>
+      <tr><th>仮置き・棚</th><td>ためる</td><td>中継・バッファ</td></tr>
+      <tr><th>台車・コンテナ</th><td>まとめて運ぶ</td><td>矢印の「運び方」で選ぶ。人が取りに行き、押して運び、置いて帰る</td></tr>
+    </table>
+    <h3>操作</h3>
+    <p class="keys"><kbd>ドラッグ</kbd>移動(何もない所で画面移動) <kbd>ホイール</kbd>拡大縮小 <kbd>R</kbd>90°回転 <kbd>Del</kbd>削除 <kbd>Ctrl+D</kbd>複製 <kbd>Ctrl+Z</kbd>元に戻す <kbd>矢印</kbd>100mm移動(Shiftで10mm) <kbd>Alt</kbd>押しながら動かすと吸着なし</p>
+    <p class="hint">通路幅の色は目安です: <span class="cl r">赤 800mm未満</span> <span class="cl a">黄 1,200mm未満</span> <span class="cl g">緑 1,200mm以上</span>(人のすれ違い・台車・LexxMoMaの走行を考える目安)。データはこのブラウザの中だけに保存され、外部へは送られません。</p>
+    </details>
+  </div>
+</div>
+
+<script src="core.js"></script>
+<script src="ui.js"></script>
+<script src="report.js"></script>
+<script src="onboarding.js"></script>
+<script src="../../assets/track.js" data-tool="sketch"></script>
+</body>
+</html>

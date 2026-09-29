@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8"><title>scene debug</title>
+<style>body{margin:0;background:#fff} canvas{display:block;width:100vw;height:320px}</style></head>
+<body>
+<canvas id="cv"></canvas>
+<script src="../src/calc.js"></script>
+<script src="../src/scene.js"></script>
+<script>
+// 3Dシーン単体の確認用（開発者向け）。?units=3&yaw=-0.5&pitch=0.3&dist=1200&tx=430&ty=130&tz=330&t=0
+const q = new URLSearchParams(location.search);
+const st = LXCALC.defaultState();
+st.base.capex.robot = 1200; st.base.capexQty.robot = Number(q.get('units') || 1);
+st.base.capex.camera = 100; st.base.capex.endEffector = 150; st.base.capex.integration = q.get('fence') === '0' ? '' : 300;
+const p = LXCALC.resolveInputs(st), r = LXCALC.compute(p);
+const sc = LXSCENE.create(document.getElementById('cv'), {});
+sc.update(p, r, st);
+sc.setView('after');
+['yaw','pitch','dist','tx','ty','tz'].forEach(k => { if (q.has(k)) sc.cam[k] = Number(q.get(k)); });
+window.sc = sc;
+</script>
+</body></html>

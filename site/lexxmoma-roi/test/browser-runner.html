@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8"><title>calc.test.js — ブラウザ実行</title>
+<style>body{font-family:Consolas,monospace;font-size:13px;padding:16px} .ok{color:#3EB370} .ng{color:#D93025} pre{white-space:pre-wrap}</style></head>
+<body>
+<h3>calc.test.js をブラウザで実行（Node.js が無い環境向けの簡易ランナー）</h3>
+<pre id="out">running…</pre>
+<script src="../src/calc.js"></script>
+<script src="../src/csv.js"></script>
+<script>
+// ---- node:test / node:assert/strict / fs / path の最小シム ----
+(function(){
+  const tests = [];
+  const out = document.getElementById('out');
+  const log = (m, cls) => { const s = document.createElement('div'); if (cls) s.className = cls; s.textContent = m; out.appendChild(s); };
+  const fail = (msg) => { throw new Error(msg); };
+  const eq = (a, b) => a === b || (Number.isNaN(a) && Number.isNaN(b));
+  const assert = {
+    ok(v, m) { if (!v) fail(m || 'assert.ok'); },
+    equal(a, b, m) { if (!eq(a, b)) fail((m ? m + ': ' : '') + `expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); },
+    match(s, re, m) { if (!re.test(s)) fail(m || `match failed: ${s}`); },
+    doesNotThrow(fn) { fn(); }
+  };
+  const fs = { readFileSync(p) { const x = new XMLHttpRequest(); x.open('GET', p, false); x.send(); if (x.status >= 400) fail('load ' + p); return x.responseText; } };
+  const path = { join(...a) { return a.join('/').replace(/\/\.\.\//g, '/../'); } };
+  window.__dirname = '.';
+  window.require = (n) => ({ 'node:test': (name, fn) => tests.push({ name, fn }), 'node:assert/strict': assert, fs, path,
+    '../src/calc.js': window.LXCALC, '../src/csv.js': window.LXCSV })[n];
+  window.__runTests = async function(){
+    out.textContent = '';
+    let pass = 0, failN = 0; const results = [];
+    for (const t of tests) {
+      try { await t.fn(); pass++; log('✔ ' + t.name, 'ok'); results.push({ name: t.name, ok: true }); }
+      catch (e) { failN++; log('✘ ' + t.name + '\n    ' + (e && e.message), 'ng'); results.push({ name: t.name, ok: false, error: String(e && e.message) }); }
+    }
+    log(`\n${pass} passed, ${failN} failed`, failN ? 'ng' : 'ok');
+    window.__testResults = { pass, fail: failN, results };
+    return window.__testResults;
+  };
+  window.addEventListener('load', () => window.__runTests());
+})();
+</script>
+<script src="calc.test.js"></script>
+</body></html>

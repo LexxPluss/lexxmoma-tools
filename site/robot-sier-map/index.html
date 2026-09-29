@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ロボットSIerデータベース</title>
+<meta name="description" content="AIロボットを導入したい製造メーカーが、工程×地域×ロボットで適切なSIerを地図から探し、絞り込み、比べるための公開ツール。協会名簿・メーカー公開リスト・公的事例集から自動収集した実在のSIerを掲載。">
+<link rel="icon" type="image/png" href="../assets/favicon.png">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+<script src="../assets/theme.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css">
+<link rel="stylesheet" href="css/style.css?v=2">
+</head>
+<body>
+<div id="app" class="app">
+
+  <!-- 左: 地図（主画面） -->
+  <main id="map" class="map" aria-label="SIerの所在地地図"></main>
+
+  <!-- 提供元ロゴ（左上） -->
+  <a class="brand" href="../index.html" aria-label="LexxMoMa Tools のトップへ戻る" title="LexxMoMa Tools のトップへ">
+    <img class="lx-logo" src="../assets/lexxpluss-logo.png" alt="LexxPluss">
+  </a>
+
+  <!-- 地図の凡例（常時表示・色の軸を切替） -->
+  <section class="legend" id="legend" aria-label="凡例">
+    <div class="legend-head">
+      <div class="seg" role="radiogroup" aria-label="色の意味">
+        <button type="button" class="seg-btn is-on" data-axis="industry" role="radio" aria-checked="true">色＝業種</button>
+        <button type="button" class="seg-btn" data-axis="listing" role="radio" aria-checked="false">色＝上場区分</button>
+      </div>
+      <button type="button" class="legend-toggle" id="legendToggle" aria-expanded="true" aria-controls="legendBody" title="凡例を折りたたむ">−</button>
+    </div>
+    <div class="legend-body" id="legendBody">
+      <ul class="legend-colors" id="legendColors"></ul>
+      <div class="legend-row">
+        <span class="legend-label">大きさ＝従業員数</span>
+        <div class="size-scale" id="sizeScale"></div>
+      </div>
+      <div class="legend-row">
+        <span class="legend-label">形＝上場区分</span>
+        <div class="shape-scale">
+          <span class="shape-item"><i class="mk circle" style="--d:12px;--c:var(--text-3)"></i>非上場</span>
+          <span class="shape-item"><i class="mk square" style="--d:12px;--c:var(--text-3)"></i>上場</span>
+          <span class="shape-item"><i class="mk circle unknown" style="--d:12px;--c:var(--text-3)"></i>従業員数 非公開</span>
+        </div>
+      </div>
+      <p class="legend-hint">凡例の業種を押すと、その業種だけを強調します。</p>
+    </div>
+  </section>
+
+  <!-- 地図とパネルの境界（ドラッグで幅を変える。ダブルクリックで既定幅） -->
+  <div class="panel-resizer" id="panelResizer" role="separator" aria-orientation="vertical" aria-label="パネルの幅を変える（ドラッグ）" title="ドラッグで幅を変更／ダブルクリックで既定幅" tabindex="0"></div>
+
+  <!-- 右: パネル（上: 検索と絞り込み / 中: 一覧 / 下: 詳細） -->
+  <aside id="panel" class="panel" aria-label="検索・絞り込み・一覧・詳細">
+    <button type="button" class="sheet-handle" id="sheetHandle" aria-label="パネルの高さを切り替える"><span></span></button>
+
+    <header class="panel-head">
+      <div class="panel-title">
+        <h1>ロボットSIerデータベース</h1>
+        <span class="badge badge-proto" title="協会名簿・メーカー公開リスト・自治体サイトなどの公開情報を自動収集して名寄せしたデータです。工程・業種は掲載元の分類を機械的に写像しており、掲載元に無い項目は空欄です">公開情報から自動収集</span>
+      </div>
+      <div class="head-btns">
+        <button type="button" class="dig-btn" id="digBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="digBook" title="発掘手帳（開いた会社が地図に色づきます）">
+          <svg class="dig-ico" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5c-3-2-7-2.6-10-1.5 3.5.4 6.6 2 8.6 4"/><path d="M18.5 9.5c2 3 2.6 7 1.5 10-.4-3.5-2-6.6-4-8.6"/><path d="M12.5 6.5l5 5"/><path d="M15 9L4 20"/></svg><span class="dig-num" id="digNum">0</span><span class="sr-only">社を発掘済み。発掘手帳を開く</span>
+        </button>
+        <button type="button" class="icon-btn" id="widthBtn" aria-label="パネルの幅を広げる／戻す" title="パネルの幅を広げる／戻す">⇔</button>
+        <button type="button" class="icon-btn" id="themeBtn" data-lx-theme-toggle aria-label="表示テーマを切り替える" title="表示テーマ: ライト">☀</button>
+      </div>
+    </header>
+
+    <!-- 発掘手帳（遊び要素）: 会社の詳細を開くと「発掘」になり、都道府県タイル地図が色づいて称号が上がる。記録はこのブラウザだけに保存 -->
+    <section class="dig-book" id="digBook" role="dialog" aria-label="発掘手帳" hidden>
+      <div class="dig-head">
+        <strong>発掘手帳</strong>
+        <button type="button" class="icon-btn" id="digClose" aria-label="発掘手帳を閉じる">×</button>
+      </div>
+      <div class="dig-rank">
+        <span class="dig-title" id="digTitle">これから掘る人</span>
+        <span class="dig-next" id="digNext"></span>
+        <div class="dig-bar" aria-hidden="true"><i id="digBar"></i></div>
+      </div>
+      <dl class="dig-stats">
+        <div><dt>発掘</dt><dd id="digStatAll">0</dd></div>
+        <div><dt>県を制覇</dt><dd id="digStatPref">0</dd></div>
+        <div><dt title="協会名簿・メーカーのSIerリストに載っていない、ウェブで発掘した地元の会社">💎 眠るSI</dt><dd id="digStatGem">0</dd></div>
+      </dl>
+      <div class="dig-map" id="digMap" aria-label="都道府県ごとの発掘状況（押すとその県で絞り込み）"></div>
+      <div class="dig-actions">
+        <button type="button" class="dig-act" id="digRandom">🎲 まだ見ぬ一社を掘る</button>
+        <button type="button" class="dig-act" id="digGem" aria-pressed="false">💎 眠るSIだけ表示</button>
+      </div>
+      <p class="dig-foot">記録はこのブラウザだけに保存されます。<button type="button" class="link-btn" id="digReset">記録を消す</button></p>
+    </section>
+
+    <section class="search">
+      <label class="sr-only" for="q">検索</label>
+      <div class="search-box">
+        <input id="q" type="search" placeholder="会社名・取引先名・自由文（例: 愛知 組立 FANUC）" autocomplete="off" enterkeyhint="search">
+        <button type="button" class="clear-btn" id="qClear" aria-label="検索語を消す" hidden>×</button>
+      </div>
+      <div class="interp" id="interp" aria-live="polite"></div>
+    </section>
+
+    <section class="filters" id="filters">
+      <div class="filters-head">
+        <button type="button" class="filters-toggle" id="filtersToggle" aria-expanded="false" aria-controls="filterGroups">
+          <span class="chev" aria-hidden="true">▸</span> 絞り込み <span class="count-badge" id="activeCount" hidden></span>
+        </button>
+        <button type="button" class="link-btn" id="resetBtn" hidden>すべて解除</button>
+      </div>
+      <div class="filter-groups" id="filterGroups" hidden></div>
+      <div class="active-chips" id="activeChips"></div>
+    </section>
+
+    <section class="results" id="results">
+      <div class="results-head">
+        <span class="result-count" id="count" aria-live="polite"></span>
+        <label class="sort">
+          <span class="sr-only">並べ替え</span>
+          <select id="sort">
+            <option value="employees">従業員数が多い順</option>
+            <option value="updated">更新日が新しい順</option>
+            <option value="distance">地図の中心から近い順</option>
+            <option value="name">会社名順</option>
+          </select>
+        </label>
+      </div>
+      <ul class="list" id="list"></ul>
+      <p class="empty" id="empty" hidden>条件に合う会社がありません。絞り込みを緩めるか、検索語を減らしてください。</p>
+    </section>
+
+    <section class="detail" id="detail" hidden aria-label="選択した会社の詳細">
+      <div class="detail-head">
+        <button type="button" class="link-btn" id="detailBack">← 一覧に戻る</button>
+        <button type="button" class="link-btn" id="detailLocate">地図で表示</button>
+        <button type="button" class="icon-btn" id="detailClose" aria-label="詳細を閉じる">×</button>
+      </div>
+      <div class="detail-body" id="detailBody"></div>
+    </section>
+
+    <footer class="panel-foot">
+      <span>データ: 協会名簿・メーカー公開リスト等から自動収集（出所は各社の詳細に記載）</span>
+    </footer>
+  </aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+<script src="data/taxonomy.js"></script>
+<script src="data/siers.js"></script>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<script src="js/app.js?v=2"></script>
+<script src="../assets/track.js" data-tool="sier"></script>
+</body>
+</html>
