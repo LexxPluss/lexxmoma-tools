@@ -183,14 +183,16 @@
   var hayCache = {};
   function haystack(c) {
     if (hayCache[c.id]) return hayCache[c.id];
-    var parts = [c.name, c.shortName, c.hq && c.hq.prefecture, c.hq && c.hq.city, c.hq && c.hq.address, c.description, c.website]
+    var parts = [c.name, c.shortName].concat(c.formerNames || []).concat([c.hq && c.hq.prefecture, c.hq && c.hq.city, c.hq && c.hq.address, c.description, c.website])
       .concat((c.clients || []).map(function (x) { return x.name; }))
       .concat((c.cases || []).map(function (x) { return x.title; }))
       .concat(c.products || [], c.certifications || [], c.makers || [], c.processes || [], c.robotTypes || [], c.industries || [],
         c.services || [], c.rawApplications || [], (c.maintenance && c.maintenance.areas) || [])
       .concat((c.branches || []).map(function (b) { return (b.prefecture || '') + (b.city || '') + (b.name || ''); }))
       .concat(((c.meta && c.meta.sources) || []).map(function (s) { return s.label; }));
-    hayCache[c.id] = parts.filter(Boolean).join(' ').toLowerCase();
+    // 社名は空白・中黒を除いた形でも引けるように（「ROBOTAC」で「株式会社ROBO TAC」を引く）
+    var names = [c.name].concat(c.formerNames || []).map(function (n) { return (n || '').replace(/[\s　・]/g, ''); });
+    hayCache[c.id] = parts.concat(names).filter(Boolean).join(' ').toLowerCase();
     return hayCache[c.id];
   }
   function matches(c, eff, free) {
@@ -610,6 +612,7 @@
       (c.listing && c.listing.status !== '不明' ? '<span class="badge">' + esc(c.listing.status) + (c.listing.market ? '・' + esc(c.listing.market) : '') + '</span>' : '') +
       (c.certifications || []).map(function (x) { return '<span class="badge">' + esc(x) + '</span>'; }).join('') + '</div>';
     html += '<h2 class="d-name">' + esc(c.name) + '</h2>';
+    if (c.formerNames && c.formerNames.length) html += '<p class="d-former muted">旧社名・名簿上の表記: ' + c.formerNames.map(esc).join('、') + '</p>';
     html += '<p class="d-addr">' + (hq.address ? esc(hq.address) : (hq.prefecture ? esc(hq.prefecture) + (hq.city ? ' ' + esc(hq.city) : '') + '<span class="muted">（番地未取得）</span>' : '<span class="muted">所在地 未取得</span>')) +
       (hq.precision && hq.precision !== 'address' ? '<br><span class="muted">地図上の位置は' + (hq.precision === 'prefecture' ? '県庁所在地' : hq.precision === 'city' ? '市区町村' : '町名') + 'で代替</span>' : '') + '</p>';
     if (c.description) html += '<p class="d-desc">' + esc(c.description) + '</p>';
