@@ -1920,12 +1920,16 @@ dialog p { color: var(--muted); font-size: 12px; margin: 0 0 8px; }
     $('#saveB').onclick = () => saveScenario('B');
     $('#clearAB').onclick = () => { state.scenarios = { A: null, B: null }; schedule(); toast('シナリオA/Bをクリアしました'); };
   }
+  // 利用計測(../../assets/track.js)。単体配布で track.js が無ければ何もしない
+  function track(ev, title) { try { if (window.lxTrack) window.lxTrack('tool/roi/' + ev, title); } catch (e) { /* 計測は任意 */ } }
+
   function saveScenario(key) {
     const p = C.resolveInputs(state), r = C.compute(p);
     if (r.error) { toast('初期投資を入力してから保存してください'); return; }
     state.scenarios[key] = C.snapshot(state, p, r);
     schedule();
     toast(`シナリオ${key}に保存しました`);
+    track('scenario_save', 'シナリオ保存');
   }
 
   // ============ 印刷用入力サマリー ============
@@ -2016,6 +2020,7 @@ dialog p { color: var(--muted); font-size: 12px; margin: 0 0 8px; }
   // ============ モード切替（値は失わない） ============
   function switchMode(mode) {
     if (mode === state.mode) return;
+    track('mode/' + mode, mode === 'detail' ? '精緻モードに切替' : 'ライトモードに切替');
     const p = C.resolveInputs(state);
     const d = state.detail, b = state.base;
     if (mode === 'detail') {
@@ -2074,18 +2079,21 @@ dialog p { color: var(--muted); font-size: 12px; margin: 0 0 8px; }
       const p = C.resolveInputs(state), r = C.compute(p); const now = new Date();
       CSV.download(CSV.buildCsv({ state, params: p, result: r, now }), CSV.fileName(state.scenarioName, now));
       toast('CSVをダウンロードしました');
+      track('csv', 'CSVダウンロード');
     });
     $('#btnSummary').addEventListener('click', async () => {
       const p = C.resolveInputs(state), r = C.compute(p);
       if (r.error) { toast('初期投資を入力してください'); return; }
       const ok = await copyText(C.summaryText(p, r));
       toast(ok ? 'サマリー文をコピーしました' : 'コピーできませんでした');
+      track('summary', 'サマリー文コピー');
     });
-    $('#btnPrint').addEventListener('click', () => { render(); window.print(); });
+    $('#btnPrint').addEventListener('click', () => { track('print', '印刷'); render(); window.print(); });
     $('#btnUrl').addEventListener('click', async () => {
       writeHash();
       const ok = await copyText(location.href);
       toast(ok ? 'URLをコピーしました（入力・シナリオA/B・しきい値を含みます）' : 'コピーできませんでした');
+      track('share_url', 'URLコピー');
     });
     $('#btnReset').addEventListener('click', () => {
       if (!confirm('入力を初期値に戻します。シナリオA/Bも消えます。よろしいですか？')) return;
@@ -2166,5 +2174,6 @@ dialog p { color: var(--muted); font-size: 12px; margin: 0 0 8px; }
 })();
 
 </script>
+<script src="../../assets/track.js" data-tool="roi"></script>
 </body>
 </html>
