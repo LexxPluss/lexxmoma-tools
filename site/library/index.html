@@ -534,7 +534,7 @@ const CATS = [
 ];
 const TYPE_LABEL = {pdf:"PDF", youtube:"動画", video:"動画", link:"Webページ", form:"投稿"};
 const B = window.lxBoard;
-const VIDEO_STAMP_SEC = 15;   // 動画はこの秒数見たらスタンプ
+const VIDEO_STAMP_SEC = 45;   // 動画はこの秒数見たらスタンプ
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const track = (p, t) => { try { window.lxTrack && lxTrack(p, t); } catch(e){} };
