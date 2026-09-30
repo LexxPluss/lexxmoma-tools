@@ -11,9 +11,8 @@ people/
               rules/phase1.yaml(シグナル規則)  requirements.txt  common.py
   manual/     レビュー・削除依頼・IR URL(Git 管理。manual/README.md)
   tests/      受入基準のテストとフィクスチャ(日本プラスト: 有報・適時開示 PDF・会社サイト)
-  raw/ data/ logs/   取得原本・平文・実行ログ(.gitignore。Actions では artifact に保存)
+  raw/ data/ logs/   取得原本・平文・実行ログ(.gitignore。リポジトリにはコミットしない)
 site/members/people-db/   閲覧 UI(index.html, app.js, style.css)と暗号化データ(data.enc.json / data.enc.js)
-.github/workflows/people-crawl.yml   定期収集とビルド
 ```
 
 ## セットアップ
@@ -28,7 +27,7 @@ pip install -r people/crawler/requirements.txt
 |---|---|
 | `PEOPLE_PW`(または `FACTORY_PW`) | 暗号化の共通パスワード。工場マップと同じ方式(PBKDF2-SHA256 310,000 回 → AES-256-GCM)。工場マップの平文が無い環境では企業マスタの復号にも使う |
 | `EDINET_API_KEY` | EDINET API v2 のサブスクリプションキー(SPEC §13-1: 会社アカウントで取得) |
-| `PEOPLE_CONTACT` | クローラの User-Agent に入れる連絡先(Actions の変数に設定。既定は https://lexxpluss.com/) |
+| `PEOPLE_CONTACT` | クローラの User-Agent に入れる連絡先(既定は https://lexxpluss.com/) |
 
 ## 手順(ローカル)
 
@@ -122,13 +121,10 @@ UI の「データ品質」タブに同じ指標と会社ごとのスコアが�
 - 文面に「削減人数」「置き換え」を使わない(テストで検出)。省人化は「省人化(再配置)」。
 - クロールは robots.txt を守り、1 ドメイン 1 リクエスト / 2 秒以上、User-Agent に社名と連絡先。
 
-## Actions(定期実行)
+## 実行のしかた(自動化はしていない)
 
-`.github/workflows/people-crawl.yml`: 毎日 06:00 JST に TDnet、毎週月曜 05:00 JST に会社サイト、毎月 1 日と 6/20〜7/10 は毎日 EDINET。
-`manual/` への push でもビルド。Secrets に `EDINET_API_KEY` と `PEOPLE_PW`(または `FACTORY_PW`)を登録する。
-ビルド結果(暗号化データだけ)は bot がブランチ `people-db/data-update` に push し、main 向けの PR を作る(main には直接コミットしない)。
-同じブランチの PR が開いていれば追加の push だけ。PR を確認してマージすると GitHub Pages に反映される。
-初回だけ、リポジトリ設定 Actions > General > Workflow permissions で「Allow GitHub Actions to create and approve pull requests」を有効にする。
+定期実行(GitHub Actions)は置いていない。収集したい情報を今後足していく前提で、必要なときに手元で上の手順を実行し、
+暗号化データ(`site/members/people-db/data.enc.*`)を更新して PR で出す。
 
 ## 未決事項(SPEC §13)と TODO(spec)
 

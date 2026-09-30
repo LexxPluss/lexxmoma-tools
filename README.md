@@ -20,7 +20,6 @@ site/                      ← published root (https://<org>.github.io/<repo>/)
 └ members/people-db/       ← 顧客人事データベース (internal, encrypted data; built from people/)
 people/                    ← 顧客人事データベースのクローラ・ビルド・手動投入 (see people/README.md; not published)
 .github/workflows/pages.yml ← deploys site/ on push to main
-.github/workflows/people-crawl.yml ← scheduled crawl + build for people/
 ```
 
 ## Preview locally
