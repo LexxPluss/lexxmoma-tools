@@ -6,7 +6,7 @@
  * GC_SITE が空のときは送信せず console に出すだけ (ローカル確認用)
  */
 (function(){
-  var GC_SITE = "";            // ← GoatCounter のサイトコード (例: "lexxmoma" → https://lexxmoma.goatcounter.com)
+  var GC_SITE = "masaya";      // GoatCounter のサイトコード → https://masaya.goatcounter.com (空にすると送信せず console に出すだけ)
   var me = document.currentScript;
   var tool = (me && me.getAttribute("data-tool")) || "unknown";
   var pagePath = tool === "hub" ? "hub" : "tool/" + tool;
