@@ -15,6 +15,8 @@
  *   featured : true でトップページ・ツアー冒頭のおすすめに出す(2〜3件まで)
  *   並び順 = 見学ルートの順番。準備中(src 空)のスポットはルートに「準備中」で表示され、スタンプの対象外
  *   thumb    : サムネイル画像の相対パス(任意。youtube は自動取得)
+ *   slides   : (video のみ・任意)動画で投影している資料を右横に小さく並べ、再生位置に合わせてページを切り替える
+ *              { dir: "slides/<id>/"(01.jpg, 02.jpg … を置く), at: [各ページが映り始める秒数…](ページ数と同じ個数), pdf: 元資料PDF(任意) }
  *   src や youtube が空の項目は「準備中」と表示され、開けません。
  */
 window.LIB_CONFIG = {
@@ -46,11 +48,14 @@ window.MATERIALS = [
     src: "files/lexxpluss-company-intro.pdf", thumb: "thumbs/company-intro.jpg", meta: "36ページ", updated: "2026-08",
   },
   {
-    // 動画は後日差し替え(videos/ に置いて src・thumb・meta を埋める)
     id: "company-video", cat: "video", type: "video", featured: true, spot: "会社紹介シアター", stamp: "🎬",
     title: "LexxPluss 会社紹介動画",
-    desc: "LexxPlussが目指すことと、事業・製品の全体像を映像でご紹介します。",
-    src: "", meta: "", updated: "",
+    desc: "代表が、LexxPlussが目指すことと事業・製品の全体像をご紹介します。動画で映している資料は、進行に合わせてページが切り替わり、クリックで拡大できます。",
+    src: "videos/company-video.mp4", thumb: "thumbs/company-video.jpg", meta: "4:49", updated: "2026-09",
+    slides: {
+      dir: "slides/company-video/", pdf: "files/lexxpluss-company-overview.pdf",
+      at: [0, 44, 82.5, 92.5, 105.5, 139, 155, 168.5, 185, 204.5, 228.5, 243, 265.5],
+    },
   },
   {
     // 動画は後日差し替え
