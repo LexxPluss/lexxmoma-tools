@@ -10,18 +10,15 @@
 <script src="../assets/theme.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css">
-<link rel="stylesheet" href="css/style.css?v=2">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=4">
 </head>
 <body>
 <div id="app" class="app">
 
   <!-- 左: 地図（主画面） -->
   <main id="map" class="map" aria-label="SIerの所在地地図"></main>
-
-  <!-- 提供元ロゴ（左上） -->
-  <a class="brand" href="../index.html" aria-label="LexxMoMa Tools のトップへ戻る" title="LexxMoMa Tools のトップへ">
-    <img class="lx-logo" src="../assets/lexxpluss-logo.png" alt="LexxPluss">
-  </a>
 
   <!-- 地図の凡例（常時表示・色の軸を切替） -->
   <section class="legend" id="legend" aria-label="凡例">
@@ -59,6 +56,7 @@
 
     <header class="panel-head">
       <div class="panel-title">
+        <a href="../index.html" aria-label="LexxMoMa Tools のトップへ戻る" title="LexxMoMa Tools のトップへ"><img class="lx-logo" src="../assets/lexxpluss-logo.png" alt="LexxPluss"></a>
         <h1>ロボットSIerデータベース</h1>
         <span class="badge badge-proto" title="協会名簿・メーカー公開リスト・自治体サイトなどの公開情報を自動収集して名寄せしたデータです。工程・業種は掲載元の分類を機械的に写像しており、掲載元に無い項目は空欄です">公開情報から自動収集</span>
       </div>
@@ -152,7 +150,7 @@
 <script src="data/taxonomy.js"></script>
 <script src="data/siers.js"></script>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-<script src="js/app.js?v=2"></script>
+<script src="js/app.js?v=3"></script>
 <script src="../assets/track.js" data-tool="sier"></script>
 </body>
 </html>

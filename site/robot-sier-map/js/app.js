@@ -321,7 +321,8 @@
     var pts = DATA.filter(hasPos).map(function (c) { return [c.hq.lat, c.hq.lng]; });
     if (!pts.length) return;
     var b = L.latLngBounds(pts);
-    var opts = { padding: [24, 24] };
+    // 右パネルは地図の上に浮いているので、その幅ぶんを避けて収める
+    var opts = { paddingTopLeft: [24, 24], paddingBottomRight: [Math.round(panel.getBoundingClientRect().width) + 36, 24] };
     if (isMobile()) opts = { paddingTopLeft: [16, 60], paddingBottomRight: [16, Math.round(window.innerHeight * 0.5) + 16] };
     map.fitBounds(b, opts);
   }
