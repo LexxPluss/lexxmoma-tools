@@ -1,0 +1,31 @@
+name: Sync site branch
+
+# Mirror the contents of site/ onto the `site` branch (files at the branch root),
+# keeping per-commit history via `git subtree split`.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - ".github/workflows/sync-site-branch.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-site-branch
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Split site/ and push to site branch
+        run: |
+          git subtree split --prefix=site -b site-split
+          git push origin site-split:refs/heads/site
