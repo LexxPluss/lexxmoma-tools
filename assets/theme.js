@@ -81,6 +81,20 @@
   st.textContent = CSS;
   (document.head || root).appendChild(st);
 
+  // アプリとして追加(PWA)・再訪問の案内: サイト直下の manifest.webmanifest を付け、assets/keep.js を読む
+  // (theme.js を読む全ページが対象。theme.js の URL からサイトのルートを求めるので階層は問わない)
+  var me = document.currentScript;
+  if (me && me.src && location.protocol !== "file:") {
+    var assets = me.src.replace(/[^\/]*$/, ""), head = document.head || root;
+    var addLink = function (rel, href) {
+      if (document.querySelector('link[rel="' + rel + '"]')) return;
+      var l = document.createElement("link"); l.rel = rel; l.href = href; head.appendChild(l);
+    };
+    addLink("manifest", assets + "../manifest.webmanifest");
+    addLink("apple-touch-icon", assets + "apple-touch-icon.png");
+    var ks = document.createElement("script"); ks.src = assets + "keep.js"; ks.defer = true; head.appendChild(ks);
+  }
+
   document.addEventListener("click", function (e) {
     var t = e.target && e.target.closest && e.target.closest("[data-lx-theme-toggle]");
     if (t) { e.preventDefault(); window.lxTheme.toggle(); }
