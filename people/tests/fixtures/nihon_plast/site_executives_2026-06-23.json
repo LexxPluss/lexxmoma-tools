@@ -1,0 +1,99 @@
+{
+ "date": "2026-06-23",
+ "url": "https://disclosure2dl.edinet-fsa.go.jp/searchdocument/pdf/S100YHRY.pdf",
+ "source_id": "S-yuho-E02216-650284",
+ "entries": [
+  {
+   "title": "代表取締役社長",
+   "name": "時田孝志",
+   "name_key": "時田孝志",
+   "is_outside": false
+  },
+  {
+   "title": "常務取締役",
+   "name": "渡辺和洋",
+   "name_key": "渡辺和洋",
+   "is_outside": false
+  },
+  {
+   "title": "常務取締役",
+   "name": "豊田剛志",
+   "name_key": "豊田剛志",
+   "is_outside": false
+  },
+  {
+   "title": "取締役",
+   "name": "上野正揮",
+   "name_key": "上野正揮",
+   "is_outside": false
+  },
+  {
+   "title": "取締役",
+   "name": "長谷川淳治",
+   "name_key": "長谷川淳治",
+   "is_outside": true
+  },
+  {
+   "title": "取締役",
+   "name": "林 高史",
+   "name_key": "林高史",
+   "is_outside": true
+  },
+  {
+   "title": "取締役",
+   "name": "佐藤りか",
+   "name_key": "佐藤りか",
+   "is_outside": true
+  },
+  {
+   "title": "常勤監査役",
+   "name": "森 昭彦",
+   "name_key": "森昭彦",
+   "is_outside": false
+  },
+  {
+   "title": "監査役",
+   "name": "伊東弘美",
+   "name_key": "伊東弘美",
+   "is_outside": true
+  },
+  {
+   "title": "監査役",
+   "name": "松田徹也",
+   "name_key": "松田徹也",
+   "is_outside": true
+  },
+  {
+   "title": "常務執行役員",
+   "name": "石川智張",
+   "name_key": "石川智張",
+   "is_outside": false
+  },
+  {
+   "title": "常務執行役員",
+   "name": "錦織和彦",
+   "name_key": "錦織和彦",
+   "is_outside": false
+  },
+  {
+   "title": "執行役員",
+   "name": "鈴木計克",
+   "name_key": "鈴木計克",
+   "is_outside": false
+  },
+  {
+   "title": "執行役員",
+   "name": "青木智彦",
+   "name_key": "青木智彦",
+   "is_outside": false
+  },
+  {
+   "title": "執行役員",
+   "name": "清弘正敏",
+   "name_key": "清弘正敏",
+   "is_outside": false
+  }
+ ],
+ "parse_ok": true,
+ "note": "テスト用フィクスチャ: 2026-06-23 の役員一覧は有報(S100YHRY)の a 表(提出日現在)から再構成したもので、会社サイトの実スナップショットではない"
+}

@@ -1,0 +1,57 @@
+[
+ {
+  "id": "S-yuho-E02216-650284",
+  "company_id": "E02216",
+  "kind": "yuho",
+  "title": "有価証券報告書 2026年3月期(S100YHRY)",
+  "date": "2026-06-23",
+  "url": "https://disclosure2dl.edinet-fsa.go.jp/searchdocument/pdf/S100YHRY.pdf",
+  "retrieved_at": "2026-09-30",
+  "raw_path": "tests/fixtures/nihon_plast/yuho_S100YHRY_officers.json",
+  "hash": "sha256:e64f12ba034c574d5e6b9d16f0f5a0d0701ae7e6184e588bd6edc6ba8a823d2f"
+ },
+ {
+  "id": "S-tdnet-E02216-78cade",
+  "company_id": "E02216",
+  "kind": "tdnet",
+  "title": "代表取締役および役員の異動に関するお知らせ",
+  "date": "2024-03-28",
+  "url": "https://ssl4.eir-parts.net/doc/7291/tdnet/2415027/00.pdf",
+  "retrieved_at": "2026-09-30",
+  "raw_path": "tests/fixtures/nihon_plast/tdnet_2024-03-28.pdf",
+  "hash": "sha256:85841c93c6938097da2789014bea2d079d6b836805401e839d50f5fed82f2003"
+ },
+ {
+  "id": "S-tdnet-E02216-d68eb5",
+  "company_id": "E02216",
+  "kind": "tdnet",
+  "title": "役員人事に関するお知らせ",
+  "date": "2026-03-30",
+  "url": "https://ssl4.eir-parts.net/doc/7291/tdnet/2782848/00.pdf",
+  "retrieved_at": "2026-09-30",
+  "raw_path": "tests/fixtures/nihon_plast/tdnet_2026-03-30.pdf",
+  "hash": "sha256:54cd90fc2f6ab4696997a3123cb01e172c913c5fd8f790b8f4410eeadb3614a3"
+ },
+ {
+  "id": "S-hp-E02216-bc1b87",
+  "company_id": "E02216",
+  "kind": "website",
+  "title": "役員構成(会社サイト)",
+  "date": "2026-09-30",
+  "url": "https://www.n-plast.co.jp/company/executive/",
+  "retrieved_at": "2026-09-30",
+  "raw_path": "tests/fixtures/nihon_plast/site_executives_2026-09-30.html",
+  "hash": "sha256:ad2ca06f360878f38d44c6c81c949080500e89212165aae706dc118526ade12f"
+ },
+ {
+  "id": "S-hp-E02216-b9de3b",
+  "company_id": "E02216",
+  "kind": "website",
+  "title": "会社概要・組織図(会社サイト)",
+  "date": "2026-09-30",
+  "url": "https://www.n-plast.co.jp/company/profile/",
+  "retrieved_at": "2026-09-30",
+  "raw_path": null,
+  "hash": null
+ }
+]

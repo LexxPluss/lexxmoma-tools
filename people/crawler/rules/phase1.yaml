@@ -1,0 +1,92 @@
+# 営業シグナル生成規則 Phase 1(SPEC §6)。条件(正規表現)と文面テンプレートは人が編集できる。
+# 語彙規則: 「削減」「置き換え」を使わない。省人化は「省人化(再配置)」と書く(ROI ツールと同じ)。
+# テンプレート変数: {name} {title} {prev_title} {unit} {units} {prev_unit} {from} {prev_from} {new_unit} {old_unit} {age} {term}
+rules:
+  - id: R1-seigi-promotion
+    name: 生技系昇格
+    level: high
+    is_speculative: false
+    when:
+      prev_title_regex: "生産技術|生技|工機|製造技術|設備"
+      min_rank: 本部長以上
+    title: "{name}氏が{title}に。生産技術系({prev_unit})の出身"
+    interpretation: "設備を内製・評価する部署の出身者が{unit}を統括。LexxMoMaを既存ラインへの組み込み要素(搬送・供給の自動化)として技術評価できる相手。"
+    verify_question: "「{prev_unit}時代に自動化設備の内製・導入を担当されたか」「現在、{unit}で設備投資の決裁はどこまで持たれているか」"
+
+  - id: R2-unit-split-dx
+    name: 組織改称・分離
+    level: high
+    is_speculative: true
+    when:
+      unit_regex: "デジタル|DX|ＤＸ|IT|ＩＴ|スマート"
+    templates:
+      split:   # 一人の兼務が 2 ユニットに分かれ、片方(DX 系)が専任化(concurrent_released)
+        title: "{old_unit}と{new_unit}が分離、{new_unit}のトップが専任化"
+        interpretation: "{new_unit}が{old_unit}から独立し、予算・権限が付いた可能性がある。所管範囲(工場のデジタル化か本社ITか)は未確認。"
+        verify_question: "「{new_unit}の所管は工場の設備・搬送のデジタル化を含むか」「{old_unit}側との予算の分け方はどうなっているか」"
+      rename:  # 組織改称(unit_renamed)で新名称が DX 系
+        title: "{old_unit}が{new_unit}に改称"
+        interpretation: "名称に「デジタル/DX」が入り、所管が IB(インダストリアルビジネス)企画からデジタル化全般へ広がった可能性がある。実際の所管範囲は未確認。"
+        verify_question: "「{new_unit}は工場側のデジタル化(設備・搬送・データ)も所管するか」「改称の狙いは何か」"
+
+  - id: R3-cost-concurrent
+    name: 原価・投資の兼務
+    level: mid
+    is_speculative: false
+    when:
+      main_unit_regex: "(開発|生産|製造|技術)本部"
+      concurrent_unit_regex: "原価|投資|経営企画"
+    title: "{name}氏({unit}長)が{prev_unit}を兼務"
+    interpretation: "設備投資が回収年数(原価)で見られる体制。提案は ROI ツールの語彙(回収年数・省人化(再配置)・稼働率)で語る。"
+    verify_question: "「投資判断の基準は回収年数か、それとも別の指標か」「{prev_unit}側で自動化投資の優先順位はどう決めているか」"
+
+  - id: R4-new-officer-background
+    name: 新任役員の前職
+    level: mid
+    is_speculative: true
+    when:
+      min_rank: 取締役以上
+      prev_kinds:
+        overseas: "取締役社長|社長|総経理|董事長|President|CEO"
+        plant: "工場長"
+        procurement: "購買|調達|資材"
+    templates:
+      overseas:
+        title: "{name}氏が{title}に。前職は海外子会社トップ({prev_unit})"
+        interpretation: "海外拠点で人手不足・人件費上昇を実感してきた可能性。国内工場の省人化(再配置)を「海外で見た課題」の文脈で語れる相手。"
+        verify_question: "「{prev_unit}で自動化・省人化(再配置)に取り組まれた経験はあるか」「国内でも同じ課題感を持たれているか」"
+      plant:
+        title: "{name}氏が{title}に。前職は工場長({prev_unit})"
+        interpretation: "現場の決裁と困りごとを直接知っている。工程単位の課題(搬送・段取り)から入れる相手。"
+        verify_question: "「{prev_unit}時代に一番人手を取られていた工程は何か」"
+      procurement:
+        title: "{name}氏が{title}に。前職は購買・調達({prev_unit})"
+        interpretation: "調達窓口を通る決裁ラインを把握している。相見積・仕様書の作法で進める提案が通りやすい可能性。"
+        verify_question: "「設備の購買は{unit}が窓口になるか、それとも生産技術側か」"
+
+  - id: R5-new-ceo
+    name: 代表交代
+    level: high
+    is_speculative: false
+    when:
+      event_type: new_ceo
+    title: "代表交代: {name}氏が代表取締役社長に({from})。出身は{prev_unit}系"
+    interpretation: "新社長の出身は{origin}({prev_unit})。トップ営業では{origin}の語彙(開発→製品競争力、生産→稼働・省人化(再配置)、営業→顧客要求、管理→投資回収)で語る。"
+    verify_question: "「就任後に打ち出した重点テーマ(中期計画の柱)は何か」「工場の自動化はその中でどの位置づけか」"
+
+  - id: R6-term-age
+    name: 任期・年齢
+    level: mid
+    is_speculative: true
+    when:
+      min_age: 65
+      term_years: 1
+      rank_regex: "取締役"
+    title: "{name}氏({title})は満{age}歳・任期{term}年"
+    interpretation: "次回の定時株主総会で交代の可能性がある。稟議のタイミング(総会前に決裁を取るか、新体制を待つか)の設計変数になる。"
+    verify_question: "「次期の体制について公表されている方針はあるか」(面談で直接は聞かない。IR 資料・総会招集通知で確認する)"
+
+vocabulary:
+  forbidden: ["削減人数", "置き換え"]
+  replace:
+    "省人化": "省人化(再配置)"

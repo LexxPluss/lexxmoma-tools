@@ -1,0 +1,9 @@
+{
+  "_説明": "各社サイトの役員一覧・会社概要(組織図)・IR ニュースの URL(SPEC §3.3)。キーは工場マップの略称か会社 ID。初回は候補を入れて人が確認する。",
+  "日本プラスト": {
+    "executives": "https://www.n-plast.co.jp/company/executive/",
+    "organization": "https://www.n-plast.co.jp/company/profile/",
+    "news": "https://www.n-plast.co.jp/ir/news/",
+    "_note": "IR ニュースは E-IR Parts(JS 描画)のため静的取得不可 → 適時開示は crawl_tdnet.py(JPX 一覧)で取る。組織図は画像のみ(needs_manual)。確認 2026-09-30"
+  }
+}

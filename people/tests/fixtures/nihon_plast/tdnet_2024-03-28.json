@@ -1,0 +1,247 @@
+{
+ "doc_date": "2024-03-28",
+ "effective": "2024-06",
+ "title": "代表取締役および役員の異動に関するお知らせ",
+ "items": [
+  {
+   "name": "時田 孝志",
+   "name_key": "時田孝志",
+   "new_title": "代表取締役社長",
+   "cur_title": "取締役開発本部長",
+   "unchanged": false,
+   "section": "(1)新任代表取締役",
+   "kind": "appointed"
+  },
+  {
+   "name": "永野 博久",
+   "name_key": "永野博久",
+   "new_title": "相談役",
+   "cur_title": "代表取締役社長",
+   "unchanged": false,
+   "section": "(2)退任代表取締役",
+   "kind": "resigned"
+  },
+  {
+   "name": "上野 正揮",
+   "name_key": "上野正揮",
+   "new_title": "取締役開発本部長",
+   "cur_title": "取締役生産本部長",
+   "unchanged": false,
+   "section": "取締役の職務の異動",
+   "kind": "changed"
+  },
+  {
+   "name": "広瀬 信",
+   "name_key": "広瀬信",
+   "new_title": "名誉会長",
+   "cur_title": "取締役会長",
+   "unchanged": false,
+   "section": "(2)退任取締役",
+   "kind": "resigned"
+  },
+  {
+   "name": "松田 徹也",
+   "name_key": "松田徹也",
+   "new_title": "非常勤監査役(社外)",
+   "cur_title": "",
+   "unchanged": false,
+   "section": "(1)新任監査役",
+   "kind": "appointed"
+  },
+  {
+   "name": "池田 修三",
+   "name_key": "池田修三",
+   "new_title": "",
+   "cur_title": "非常勤監査役(社外)",
+   "unchanged": false,
+   "section": "(2)退任監査役",
+   "kind": "resigned"
+  },
+  {
+   "name": "清弘 正敏",
+   "name_key": "清弘正敏",
+   "new_title": "執行役員生産本部長兼工機技術部長",
+   "cur_title": "工機技術部長",
+   "unchanged": false,
+   "section": "(1)新任執行役員",
+   "kind": "appointed"
+  },
+  {
+   "name": "時田 孝志",
+   "name_key": "時田孝志",
+   "new_title": "代表取締役社長",
+   "cur_title": "取締役開発本部長",
+   "unchanged": false,
+   "section": "取締役の体制(2024年6月下旬予定)",
+   "kind": "roster"
+  },
+  {
+   "name": "渡辺 和洋",
+   "name_key": "渡辺和洋",
+   "new_title": "常務取締役管理本部長",
+   "cur_title": "",
+   "unchanged": true,
+   "section": "取締役の体制(2024年6月下旬予定)",
+   "kind": "roster"
+  },
+  {
+   "name": "豊田 剛志",
+   "name_key": "豊田剛志",
+   "new_title": "常務取締役北米事業統括兼NAPM社長",
+   "cur_title": "",
+   "unchanged": true,
+   "section": "取締役の体制(2024年6月下旬予定)",
+   "kind": "roster"
+  },
+  {
+   "name": "上野 正揮",
+   "name_key": "上野正揮",
+   "new_title": "取締役開発本部長",
+   "cur_title": "取締役生産本部長",
+   "unchanged": false,
+   "section": "取締役の体制(2024年6月下旬予定)",
+   "kind": "roster"
+  },
+  {
+   "name": "長谷川 淳治",
+   "name_key": "長谷川淳治",
+   "new_title": "取締役(社外)",
+   "cur_title": "",
+   "unchanged": true,
+   "section": "取締役の体制(2024年6月下旬予定)",
+   "kind": "roster"
+  },
+  {
+   "name": "林 高史",
+   "name_key": "林高史",
+   "new_title": "取締役(社外)",
+   "cur_title": "",
+   "unchanged": true,
+   "section": "取締役の体制(2024年6月下旬予定)",
+   "kind": "roster"
+  },
+  {
+   "name": "佐藤 りか",
+   "name_key": "佐藤りか",
+   "new_title": "取締役(社外)",
+   "cur_title": "",
+   "unchanged": true,
+   "section": "取締役の体制(2024年6月下旬予定)",
+   "kind": "roster"
+  },
+  {
+   "name": "森 昭彦",
+   "name_key": "森昭彦",
+   "new_title": "常勤監査役",
+   "cur_title": "",
+   "unchanged": true,
+   "section": "監査役の体制(2024年6月下旬予定)",
+   "kind": "roster"
+  },
+  {
+   "name": "伊東 弘美",
+   "name_key": "伊東弘美",
+   "new_title": "非常勤監査役(社外)",
+   "cur_title": "",
+   "unchanged": true,
+   "section": "監査役の体制(2024年6月下旬予定)",
+   "kind": "roster"
+  },
+  {
+   "name": "松田 徹也",
+   "name_key": "松田徹也",
+   "new_title": "非常勤監査役(社外)",
+   "cur_title": "",
+   "unchanged": true,
+   "section": "監査役の体制(2024年6月下旬予定)",
+   "kind": "roster"
+  },
+  {
+   "name": "石川 智張",
+   "name_key": "石川智張",
+   "new_title": "常務執行役員営業本部長兼第二営業部長",
+   "cur_title": "",
+   "unchanged": true,
+   "section": "執行役員の体制(2024年6月下旬予定)",
+   "kind": "roster"
+  },
+  {
+   "name": "錦織 和彦",
+   "name_key": "錦織和彦",
+   "new_title": "常務執行役員購買本部長兼IB戦略室長",
+   "cur_title": "",
+   "unchanged": true,
+   "section": "執行役員の体制(2024年6月下旬予定)",
+   "kind": "roster"
+  },
+  {
+   "name": "鈴木 計克",
+   "name_key": "鈴木計克",
+   "new_title": "執行役員品質本部長兼品質保証部長",
+   "cur_title": "",
+   "unchanged": true,
+   "section": "執行役員の体制(2024年6月下旬予定)",
+   "kind": "roster"
+  },
+  {
+   "name": "青木 智彦",
+   "name_key": "青木智彦",
+   "new_title": "執行役員経営企画本部長兼経営企画室長",
+   "cur_title": "",
+   "unchanged": true,
+   "section": "執行役員の体制(2024年6月下旬予定)",
+   "kind": "roster"
+  },
+  {
+   "name": "清弘 正敏",
+   "name_key": "清弘正敏",
+   "new_title": "執行役員生産本部長兼工機技術部長",
+   "cur_title": "工機技術部長",
+   "unchanged": false,
+   "section": "執行役員の体制(2024年6月下旬予定)",
+   "kind": "roster"
+  }
+ ],
+ "careers": {
+  "時田孝志": {
+   "name": "時田 孝志",
+   "born": "1969-01",
+   "career": [
+    {
+     "date": "1990-08",
+     "text": "当社 入社",
+     "current": false,
+     "own": true
+    },
+    {
+     "date": "2016-06",
+     "text": "当社 安全開発部長",
+     "current": false,
+     "own": true
+    },
+    {
+     "date": "2019-06",
+     "text": "当社 執行役員 開発本部長 兼 安全開発部長",
+     "current": false,
+     "own": true
+    },
+    {
+     "date": "2022-06",
+     "text": "当社 取締役 開発本部長 兼 開発管理部長",
+     "current": false,
+     "own": true
+    },
+    {
+     "date": "2023-04",
+     "text": "当社 取締役 開発本部長",
+     "current": true,
+     "own": true
+    }
+   ]
+  }
+ },
+ "raw_text": "",
+ "parse_ok": true,
+ "source_id": "S-tdnet-E02216-78cade",
+ "url": "https://ssl4.eir-parts.net/doc/7291/tdnet/2415027/00.pdf"
+}
