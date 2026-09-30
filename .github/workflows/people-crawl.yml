@@ -2,6 +2,7 @@ name: People DB crawl & build
 
 # 顧客人事データベース(people/)の定期収集とビルド(SPEC §4 スケジュール)。
 # 必要な Secrets: EDINET_API_KEY(有報取得)、PEOPLE_PW(暗号化の共通パスワード。工場マップと同じなら FACTORY_PW を流用)
+# 更新は PR で出す: リポジトリ設定 Actions > General で「Allow GitHub Actions to create and approve pull requests」を有効にする
 # 収集原本(raw/)は Actions の artifact に残し、リポジトリにはコミットしない。
 on:
   schedule:
@@ -22,7 +23,8 @@ on:
         default: "registry,tdnet,sites,build"
 
 permissions:
-  contents: write
+  contents: write        # 更新用ブランチへの push
+  pull-requests: write   # 更新 PR の作成(main へは直接コミットしない)
 
 concurrency:
   group: people-db
@@ -101,12 +103,21 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
-      # 暗号化データだけをコミット(平文 data/ と raw/ は .gitignore)。
-      # TODO(spec): main へ直接コミットするか PR にするかは運用判断(README「運用」参照)
-      - name: Commit encrypted data
+      # 暗号化データだけを更新用ブランチにコミットし、PR を作る(平文 data/ と raw/ は .gitignore)。
+      # main には直接コミットしない。同じブランチの PR が開いていれば、そこに追加で push するだけ
+      - name: Open PR with encrypted data
         if: contains(steps.steps.outputs.steps, 'build')
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
+          BRANCH=people-db/data-update
           git config user.name "people-db-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add site/members/people-db/data.enc.json site/members/people-db/data.enc.js
-          git diff --cached --quiet && echo "no change" || git commit -m "people-db: update data ($(date +%F))" && git push
+          if git diff --cached --quiet; then echo "no change"; exit 0; fi
+          git checkout -B "$BRANCH"
+          git commit -m "people-db: update data ($(date +%F))"
+          git push -f origin "$BRANCH"
+          if [ -z "$(gh pr list --head "$BRANCH" --state open --json number -q '.[].number')" ]; then
+            gh pr create --base main --head "$BRANCH" --title "people-db: update data ($(date +%F))" --body "顧客人事データベースの定期収集で暗号化データ(site/members/people-db/data.enc.*)を更新しました。実行: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}。データ品質はアーティファクト people-logs と画面の「データ品質」タブで確認してください。"
+          fi

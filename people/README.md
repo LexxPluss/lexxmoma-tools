@@ -126,7 +126,9 @@ UI の「データ品質」タブに同じ指標と会社ごとのスコアが�
 
 `.github/workflows/people-crawl.yml`: 毎日 06:00 JST に TDnet、毎週月曜 05:00 JST に会社サイト、毎月 1 日と 6/20〜7/10 は毎日 EDINET。
 `manual/` への push でもビルド。Secrets に `EDINET_API_KEY` と `PEOPLE_PW`(または `FACTORY_PW`)を登録する。
-ビルド結果(暗号化データだけ)を bot が main にコミットする設計にしている。PR 経由にする場合はワークフロー末尾を変える。
+ビルド結果(暗号化データだけ)は bot がブランチ `people-db/data-update` に push し、main 向けの PR を作る(main には直接コミットしない)。
+同じブランチの PR が開いていれば追加の push だけ。PR を確認してマージすると GitHub Pages に反映される。
+初回だけ、リポジトリ設定 Actions > General > Workflow permissions で「Allow GitHub Actions to create and approve pull requests」を有効にする。
 
 ## 未決事項(SPEC §13)と TODO(spec)
 
