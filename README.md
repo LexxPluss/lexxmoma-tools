@@ -9,7 +9,9 @@ Everything under `site/` is served as-is (no build step).
 site/                      ← published root (https://<org>.github.io/<repo>/)
 ├ index.html               ← landing page (edit the TOOLS array to add/change a tool)
 ├ 404.html
-├ assets/                  ← logo, favicon, analytics (track.js), shared theme + header (theme.js),
+├ manifest.webmanifest     ← PWA manifest ("install as app"); linked from every page by theme.js
+├ assets/                  ← logo, favicon, PWA icons, analytics (track.js), shared theme + header (theme.js),
+│                            常連パス: bookmark + install stamps → name your LexxMoMa (keep.js, loaded by theme.js),
 │                            landing-page diorama (lexxmoma-stage.js)
 ├ library/                 ← LexxMoMa Tour
 ├ simulator/               ← Motion Simulator (2D)
