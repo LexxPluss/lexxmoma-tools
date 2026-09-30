@@ -24,3 +24,11 @@ site/lexxmoma-roi/SPEC.md
 site/lexxmoma-roi/CLAUDE.md
 __pycache__/
 *.pyc
+
+# 顧客人事データベース(people/): 取得原本・平文データ・実行ログはコミットしない
+people/raw/
+people/data/
+people/logs/
+
+# 社内限定の仕様書(公開リポジトリには置かない)
+people/SPEC.md

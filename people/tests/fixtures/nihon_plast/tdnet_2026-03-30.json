@@ -1,0 +1,210 @@
+{
+ "doc_date": "2026-03-30",
+ "effective": "2026-06",
+ "title": "役員人事に関するお知らせ",
+ "items": [
+  {
+   "name": "鈴木 良仁",
+   "name_key": "鈴木良仁",
+   "new_title": "取締役調達本部長兼調達部長",
+   "cur_title": "調達部長",
+   "unchanged": false,
+   "section": "新任予定取締役候補",
+   "kind": "appointed"
+  },
+  {
+   "name": "橋本 あかね",
+   "name_key": "橋本あかね",
+   "new_title": "取締役(社外)",
+   "cur_title": "",
+   "unchanged": true,
+   "section": "新任予定取締役候補",
+   "kind": "appointed"
+  },
+  {
+   "name": "長谷川 淳治",
+   "name_key": "長谷川淳治",
+   "new_title": "",
+   "cur_title": "取締役(社外)",
+   "unchanged": false,
+   "section": "2.退任予定取締役",
+   "kind": "resigned"
+  },
+  {
+   "name": "川島 高博",
+   "name_key": "川島高博",
+   "new_title": "非常勤監査役(社外監査役)",
+   "cur_title": "",
+   "unchanged": false,
+   "section": "3.新任予定監査役",
+   "kind": "appointed"
+  },
+  {
+   "name": "伊東 弘美",
+   "name_key": "伊東弘美",
+   "new_title": "",
+   "cur_title": "非常勤監査役(社外監査役)",
+   "unchanged": false,
+   "section": "4.退任予定監査役",
+   "kind": "resigned"
+  },
+  {
+   "name": "錦織 和彦",
+   "name_key": "錦織和彦",
+   "new_title": "常務執行役員デジタル戦略統括室長",
+   "cur_title": "常務執行役員調達本部長兼デジタル戦略統括室長",
+   "unchanged": false,
+   "section": "執行役員の異動",
+   "kind": "changed"
+  },
+  {
+   "name": "時田 孝志",
+   "name_key": "時田孝志",
+   "new_title": "代表取締役社長",
+   "cur_title": "",
+   "unchanged": true,
+   "section": "取締役の体制(2026年6月下旬予定)",
+   "kind": "roster"
+  },
+  {
+   "name": "渡辺 和洋",
+   "name_key": "渡辺和洋",
+   "new_title": "常務取締役管理本部長",
+   "cur_title": "",
+   "unchanged": true,
+   "section": "取締役の体制(2026年6月下旬予定)",
+   "kind": "roster"
+  },
+  {
+   "name": "豊田 剛志",
+   "name_key": "豊田剛志",
+   "new_title": "常務取締役北米事業統括兼NAPM社長",
+   "cur_title": "",
+   "unchanged": true,
+   "section": "取締役の体制(2026年6月下旬予定)",
+   "kind": "roster"
+  },
+  {
+   "name": "上野 正揮",
+   "name_key": "上野正揮",
+   "new_title": "取締役開発本部長兼原価管理部長",
+   "cur_title": "",
+   "unchanged": true,
+   "section": "取締役の体制(2026年6月下旬予定)",
+   "kind": "roster"
+  },
+  {
+   "name": "鈴木 良仁",
+   "name_key": "鈴木良仁",
+   "new_title": "取締役調達本部長兼調達部長",
+   "cur_title": "調達部長",
+   "unchanged": false,
+   "section": "取締役の体制(2026年6月下旬予定)",
+   "kind": "roster"
+  },
+  {
+   "name": "林 高史",
+   "name_key": "林高史",
+   "new_title": "取締役(社外)",
+   "cur_title": "",
+   "unchanged": true,
+   "section": "取締役の体制(2026年6月下旬予定)",
+   "kind": "roster"
+  },
+  {
+   "name": "佐藤 りか",
+   "name_key": "佐藤りか",
+   "new_title": "取締役(社外)",
+   "cur_title": "",
+   "unchanged": true,
+   "section": "取締役の体制(2026年6月下旬予定)",
+   "kind": "roster"
+  },
+  {
+   "name": "橋本 あかね",
+   "name_key": "橋本あかね",
+   "new_title": "取締役(社外)",
+   "cur_title": "",
+   "unchanged": true,
+   "section": "取締役の体制(2026年6月下旬予定)",
+   "kind": "roster"
+  },
+  {
+   "name": "森 昭彦",
+   "name_key": "森昭彦",
+   "new_title": "常勤監査役",
+   "cur_title": "",
+   "unchanged": true,
+   "section": "監査役の体制(2026年6月下旬予定)",
+   "kind": "roster"
+  },
+  {
+   "name": "松田 徹也",
+   "name_key": "松田徹也",
+   "new_title": "非常勤監査役(社外監査役)",
+   "cur_title": "",
+   "unchanged": true,
+   "section": "監査役の体制(2026年6月下旬予定)",
+   "kind": "roster"
+  },
+  {
+   "name": "川島 高博",
+   "name_key": "川島高博",
+   "new_title": "非常勤監査役(社外監査役)",
+   "cur_title": "",
+   "unchanged": true,
+   "section": "監査役の体制(2026年6月下旬予定)",
+   "kind": "roster"
+  },
+  {
+   "name": "石川 智張",
+   "name_key": "石川智張",
+   "new_title": "常務執行役員営業本部長",
+   "cur_title": "",
+   "unchanged": true,
+   "section": "執行役員の体制(2026年6月下旬予定)",
+   "kind": "roster"
+  },
+  {
+   "name": "錦織 和彦",
+   "name_key": "錦織和彦",
+   "new_title": "常務執行役員デジタル戦略統括室長",
+   "cur_title": "常務執行役員調達本部長兼デジタル戦略統括室長",
+   "unchanged": false,
+   "section": "執行役員の体制(2026年6月下旬予定)",
+   "kind": "roster"
+  },
+  {
+   "name": "鈴木 計克",
+   "name_key": "鈴木計克",
+   "new_title": "執行役員品質本部長",
+   "cur_title": "",
+   "unchanged": true,
+   "section": "執行役員の体制(2026年6月下旬予定)",
+   "kind": "roster"
+  },
+  {
+   "name": "青木 智彦",
+   "name_key": "青木智彦",
+   "new_title": "執行役員経営企画本部長兼経営企画室長",
+   "cur_title": "",
+   "unchanged": true,
+   "section": "執行役員の体制(2026年6月下旬予定)",
+   "kind": "roster"
+  },
+  {
+   "name": "清弘 正敏",
+   "name_key": "清弘正敏",
+   "new_title": "執行役員生産本部長兼アジア事業統括",
+   "cur_title": "",
+   "unchanged": true,
+   "section": "執行役員の体制(2026年6月下旬予定)",
+   "kind": "roster"
+  }
+ ],
+ "careers": {},
+ "raw_text": "",
+ "parse_ok": true,
+ "source_id": "S-tdnet-E02216-d68eb5",
+ "url": "https://ssl4.eir-parts.net/doc/7291/tdnet/2782848/00.pdf"
+}

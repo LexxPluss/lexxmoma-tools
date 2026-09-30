@@ -1,0 +1,104 @@
+{
+ "date": "2026-09-30",
+ "url": "https://www.n-plast.co.jp/company/executive/",
+ "source_id": "S-hp-E02216-bc1b87",
+ "entries": [
+  {
+   "title": "代表取締役社長",
+   "name": "時田孝志",
+   "name_key": "時田孝志",
+   "is_outside": false
+  },
+  {
+   "title": "常務取締役",
+   "name": "渡辺和洋",
+   "name_key": "渡辺和洋",
+   "is_outside": false
+  },
+  {
+   "title": "常務取締役",
+   "name": "豊田剛志",
+   "name_key": "豊田剛志",
+   "is_outside": false
+  },
+  {
+   "title": "取締役",
+   "name": "上野正揮",
+   "name_key": "上野正揮",
+   "is_outside": false
+  },
+  {
+   "title": "取締役",
+   "name": "鈴木良仁",
+   "name_key": "鈴木良仁",
+   "is_outside": false
+  },
+  {
+   "title": "取締役",
+   "name": "林 高史",
+   "name_key": "林高史",
+   "is_outside": true
+  },
+  {
+   "title": "取締役",
+   "name": "佐藤りか",
+   "name_key": "佐藤りか",
+   "is_outside": true
+  },
+  {
+   "title": "取締役",
+   "name": "橋本あかね",
+   "name_key": "橋本あかね",
+   "is_outside": true
+  },
+  {
+   "title": "常勤監査役",
+   "name": "森 昭彦",
+   "name_key": "森昭彦",
+   "is_outside": false
+  },
+  {
+   "title": "監査役",
+   "name": "松田徹也",
+   "name_key": "松田徹也",
+   "is_outside": true
+  },
+  {
+   "title": "監査役",
+   "name": "川島高博",
+   "name_key": "川島高博",
+   "is_outside": true
+  },
+  {
+   "title": "常務執行役員",
+   "name": "石川智張",
+   "name_key": "石川智張",
+   "is_outside": false
+  },
+  {
+   "title": "常務執行役員",
+   "name": "錦織和彦",
+   "name_key": "錦織和彦",
+   "is_outside": false
+  },
+  {
+   "title": "執行役員",
+   "name": "鈴木計克",
+   "name_key": "鈴木計克",
+   "is_outside": false
+  },
+  {
+   "title": "執行役員",
+   "name": "青木智彦",
+   "name_key": "青木智彦",
+   "is_outside": false
+  },
+  {
+   "title": "執行役員",
+   "name": "清弘正敏",
+   "name_key": "清弘正敏",
+   "is_outside": false
+  }
+ ],
+ "parse_ok": true
+}

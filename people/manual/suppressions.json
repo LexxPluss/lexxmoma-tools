@@ -1,0 +1,6 @@
+{
+  "_説明": "削除・訂正依頼(SPEC §9)。crawler/delete_person.py が書く。person_ids / names に載った人物はビルド時に全レコードを除く。log には氏名を残さない。",
+  "person_ids": [],
+  "names": [],
+  "log": []
+}

@@ -1,0 +1,3 @@
+{
+  "_説明": "シグナルのレビュー状態(SPEC §7.2)。UI の「レビューを書き出す」で落ちる JSON の内容をここに貼ってコミットする。形式: {\"<signal id>\": {\"status\": \"confirmed|hidden\", \"reviewed_by\": \"氏名\", \"comment\": \"…\", \"at\": \"YYYY-MM-DD\"}}"
+}

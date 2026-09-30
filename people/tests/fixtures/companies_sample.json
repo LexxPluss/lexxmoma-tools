@@ -1,0 +1,101 @@
+{
+ "builtAt": "2026-09-29",
+ "companies": [
+  {
+   "id": "c-8b997396",
+   "name": "トヨタ自動車",
+   "legal": "トヨタ自動車株式会社",
+   "industry": "自動車(完成車)",
+   "group": "トヨタ",
+   "parent": null,
+   "listed": "東証プライム",
+   "web": "https://global.toyota/jp/"
+  },
+  {
+   "id": "c-bf65b5a2",
+   "name": "本田技研工業",
+   "legal": "本田技研工業株式会社",
+   "industry": "自動車(完成車)",
+   "group": "ホンダ",
+   "parent": null,
+   "listed": "東証プライム",
+   "web": "https://global.honda/jp/"
+  },
+  {
+   "id": "c-d809fb5a",
+   "name": "日産自動車",
+   "legal": "日産自動車株式会社",
+   "industry": "自動車(完成車)",
+   "group": "日産",
+   "parent": null,
+   "listed": "東証プライム",
+   "web": "https://www.nissan-global.com/JP/"
+  },
+  {
+   "id": "c-cc9ad41d",
+   "name": "トヨタ車体",
+   "legal": "トヨタ車体株式会社",
+   "industry": "自動車(完成車)",
+   "group": "トヨタ",
+   "parent": "トヨタ自動車",
+   "listed": "非上場",
+   "web": "https://www.toyota-body.co.jp"
+  },
+  {
+   "id": "c-71493e8b",
+   "name": "ダイハツ工業",
+   "legal": "ダイハツ工業株式会社",
+   "industry": "自動車(完成車)",
+   "group": "トヨタ",
+   "parent": "トヨタ自動車",
+   "listed": "非上場",
+   "web": "https://www.daihatsu.com"
+  },
+  {
+   "id": "c-9281680b",
+   "name": "デンソー",
+   "legal": "株式会社デンソー",
+   "industry": "自動車部品",
+   "group": "トヨタ",
+   "parent": null,
+   "listed": "東証プライム",
+   "web": "https://www.denso.com/jp/ja/"
+  },
+  {
+   "id": "c-20c800e5",
+   "name": "アドヴィックス",
+   "legal": "株式会社アドヴィックス",
+   "industry": "自動車部品",
+   "group": "トヨタ",
+   "parent": null,
+   "listed": "非上場",
+   "web": "https://www.advics.co.jp/"
+  },
+  {
+   "id": "c-3dd8b340",
+   "name": "日本プラスト",
+   "legal": "日本プラスト株式会社",
+   "industry": "自動車部品",
+   "group": "日本プラスト",
+   "parent": null,
+   "listed": "東証スタンダード",
+   "web": "https://www.n-plast.co.jp"
+  }
+ ],
+ "factories": [
+  {
+   "id": "f-dd6514c584",
+   "cid": "c-cc9ad41d",
+   "oid": "c-cc9ad41d",
+   "name": "本社/富士松工場",
+   "pref": "愛知県"
+  },
+  {
+   "id": "f-59c030eeb9",
+   "cid": "c-3dd8b340",
+   "oid": "c-3dd8b340",
+   "name": "富士工場",
+   "pref": "静岡県"
+  }
+ ]
+}

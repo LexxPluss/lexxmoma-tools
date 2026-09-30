@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<title>顧客人事データベース | LexxPluss 社内</title>
+<link rel="icon" type="image/png" href="../../assets/favicon.png">
+<script src="../../assets/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=2">
+</head>
+<body>
+
+<!-- 入口(共通パスワード。工場マップと同じ方式) -->
+<div class="gate" id="gate">
+  <button type="button" class="lx-theme-btn" data-lx-theme-toggle aria-label="ライト / ダーク切替"></button>
+  <form class="gate-card" id="gateForm" autocomplete="off">
+    <a class="gate-home" href="../../index.html" title="LexxMoMa Tools のトップへ"><img class="lx-logo" src="../../assets/lexxpluss-logo.png" alt="LexxPluss"></a>
+    <h1>顧客人事データベース</h1>
+    <p>LexxPluss 社内メンバー向けのツールです。共通パスワードを入力してください。</p>
+    <label class="sr" for="pw">パスワード</label>
+    <input type="password" id="pw" placeholder="パスワード" autocomplete="current-password" required>
+    <label class="remember"><input type="checkbox" id="remember"> この端末で記憶する</label>
+    <button type="submit" id="gateBtn">開く</button>
+    <p class="gate-err" id="gateErr" role="alert"></p>
+    <a class="gate-back" href="../../index.html">LexxMoMa Tools に戻る</a>
+  </form>
+</div>
+
+<div class="app" id="app" hidden>
+  <div class="banner" role="note">社内限定 — 公開情報(有価証券報告書・適時開示・会社サイト)のみ。面談・名刺で得た情報は Notion 案件ページへ。社外に配布しない。</div>
+  <header class="hdr">
+    <div class="hdr-title">
+      <a href="../../index.html" title="LexxMoMa Tools のトップへ"><img class="lx-logo" src="../../assets/lexxpluss-logo.png" alt="LexxPluss"></a>
+      <h1>顧客人事データベース</h1><span class="tag">社内</span>
+    </div>
+    <nav class="tabs" id="mainTabs" role="tablist">
+      <button role="tab" class="on" data-view="companies">企業</button>
+      <button role="tab" data-view="news">新着</button>
+      <button role="tab" data-view="quality">データ品質</button>
+    </nav>
+    <span class="hdr-btns">
+      <a class="icon-btn link" href="../factory-map/index.html" id="toFactory" title="工場マップへ">🏭</a>
+      <button type="button" class="lx-theme-btn" data-lx-theme-toggle aria-label="ライト / ダーク切替"></button>
+      <button class="icon-btn" id="lock" type="button" title="ロックする(パスワードを忘れさせる)">🔒</button>
+    </span>
+  </header>
+
+  <main class="main" id="main">
+    <!-- 企業一覧 -->
+    <section class="view" id="view-companies">
+      <div class="toolbar">
+        <input type="search" id="q" placeholder="社名・人名・役職・本部名で検索(例: 生産技術 本部長)">
+        <select id="sortCo" aria-label="並べ替え">
+          <option value="prio">上場区分順(上場 → 親会社上場 → 非上場)</option>
+          <option value="event">直近イベントが新しい順</option>
+          <option value="name">会社名順</option>
+        </select>
+        <label class="chk"><input type="checkbox" id="onlyData" checked> 人事データのある会社だけ</label>
+      </div>
+      <div class="chips" id="indChips" role="group" aria-label="業種で絞り込み"></div>
+      <div class="res" id="coRes"></div>
+      <div class="list" id="coList"></div>
+    </section>
+
+    <!-- 企業詳細 -->
+    <section class="view" id="view-company" hidden>
+      <div class="d-bar"><button class="link-btn" id="back" type="button">← 企業一覧に戻る</button></div>
+      <div class="co-head" id="coHead"></div>
+      <nav class="subtabs" id="subTabs" role="tablist">
+        <button role="tab" class="on" data-sub="signals">営業シグナル</button>
+        <button role="tab" data-sub="lineage">役職の系譜</button>
+        <button role="tab" data-sub="units">組織ユニット</button>
+        <button role="tab" data-sub="people">人物一覧</button>
+      </nav>
+      <div id="subBody"></div>
+    </section>
+
+    <!-- 新着 -->
+    <section class="view" id="view-news" hidden>
+      <div class="toolbar">
+        <select id="daysFilter" aria-label="期間"><option value="30">過去30日</option><option value="90">過去90日</option><option value="365">過去1年</option></select>
+        <button class="btn" id="copySlack" type="button">Slackに送る文面をコピー</button>
+      </div>
+      <p class="muted">毎週月曜の営業定例用。取得日(detected_at)基準で並べています。Slack への投稿は行いません(Phase 3)。</p>
+      <div id="newsBody"></div>
+    </section>
+
+    <!-- データ品質 -->
+    <section class="view" id="view-quality" hidden>
+      <div id="qualityBody"></div>
+    </section>
+  </main>
+
+  <footer class="foot" id="foot"></footer>
+
+  <!-- 人物ドロワー(Esc で閉じる) -->
+  <div class="drawer-bg" id="drawerBg" hidden></div>
+  <aside class="drawer" id="drawer" hidden aria-modal="true" role="dialog">
+    <button class="icon-btn drawer-close" id="drawerClose" type="button" aria-label="閉じる">✕</button>
+    <div id="drawerBody"></div>
+  </aside>
+</div>
+
+<script src="../../assets/track.js" data-tool="people-db"></script>
+<script src="data.enc.js?v=2"></script>
+<script src="app.js?v=3"></script>
+</body>
+</html>

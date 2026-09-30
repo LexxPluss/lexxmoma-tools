@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<title>社内ツール | LexxPluss 社内</title>
+<link rel="icon" type="image/png" href="../assets/favicon.png">
+<script src="../assets/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--brand:#0068B7;--accent:#3EB370;--bg:#f5f7fa;--panel:#fff;--panel-2:#eef3f8;--line:#d9e1ea;--text:#1f2933;--muted:#5b6b7b;--faint:#8a99a8;--warn:#c98a00;
+  --shadow:0 2px 6px rgba(16,32,48,.08),0 12px 32px rgba(16,32,48,.10)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--brand:#5aa8e6;--accent:#5fcb8a;--bg:#0f1519;--panel:#171f26;--panel-2:#1e2831;--line:#2b3741;--text:#e7edf2;--muted:#a3b1bd;--faint:#6f7e8b;--warn:#f0b840;--shadow:0 2px 6px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.4)}}
+:root[data-theme="dark"]{--brand:#5aa8e6;--accent:#5fcb8a;--bg:#0f1519;--panel:#171f26;--panel-2:#1e2831;--line:#2b3741;--text:#e7edf2;--muted:#a3b1bd;--faint:#6f7e8b;--warn:#f0b840;--shadow:0 2px 6px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.4)}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:linear-gradient(160deg,var(--panel-2),var(--bg));color:var(--text);font-family:"Noto Sans JP",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14px;line-height:1.55;display:grid;place-items:center;min-height:100vh;padding:16px}
+.card{width:100%;max-width:640px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:28px 24px;box-shadow:var(--shadow);position:relative}
+.lx-theme-btn{position:absolute;top:16px;right:16px;background:var(--panel);color:var(--muted);border:1px solid var(--line)}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+h1{font-size:22px;margin:6px 0 0;display:flex;align-items:center;gap:8px}
+.tag{font-size:11px;font-weight:700;color:#fff;background:var(--warn);border-radius:6px;padding:1px 7px}
+p{margin:0;color:var(--muted);font-size:13px}
+.tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:18px 0 14px}
+.tool{display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);border-radius:12px;padding:16px;text-decoration:none;color:var(--text);background:var(--panel-2)}
+.tool:hover{border-color:var(--brand);box-shadow:0 0 0 2px color-mix(in srgb,var(--brand) 18%,transparent)}
+.tool .ic{font-size:26px}
+.tool b{font-size:16px}
+.tool span{font-size:12px;color:var(--muted)}
+.tool em{font-style:normal;font-size:12px;color:var(--brand);font-weight:600;margin-top:4px}
+.back{font-size:12px;color:var(--faint);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="card">
+  <button type="button" class="lx-theme-btn" data-lx-theme-toggle aria-label="ライト / ダーク切替"></button>
+  <div class="top"><a href="../index.html" title="LexxMoMa Tools のトップへ"><img class="lx-logo" src="../assets/lexxpluss-logo.png" alt="LexxPluss"></a></div>
+  <h1>社内ツール <span class="tag">社内</span></h1>
+  <p>LexxPluss 社内メンバー向け。どちらも社内の共通パスワードで開きます。</p>
+  <div class="tools">
+    <a class="tool" href="factory-map/index.html">
+      <span class="ic">🏭</span><b>工場マップ</b>
+      <span>485社・2,991工場を地図と一覧で。業種・グループ・地域で絞り込み、現在地の近くの工場を探せます。</span>
+      <em>開く →</em>
+    </a>
+    <a class="tool" href="people-db/index.html">
+      <span class="ic">👥</span><b>顧客人事データベース</b>
+      <span>役員・執行役員の在任履歴、組織の改称、直近の異動と営業シグナル。面談前日の 10 分で「誰が・いつから・何を」を把握。</span>
+      <em>開く →</em>
+    </a>
+  </div>
+  <a class="back" href="../index.html">← LexxMoMa Tools に戻る</a>
+</div>
+</body>
+</html>

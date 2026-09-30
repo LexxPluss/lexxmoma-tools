@@ -1,0 +1,43 @@
+{
+ "date": "2026-09-30",
+ "prev": "2026-06-23",
+ "prev_source_id": "S-yuho-E02216-650284",
+ "source_id": "S-hp-E02216-bc1b87",
+ "events": [
+  {
+   "type": "appointed",
+   "name": "鈴木良仁",
+   "name_key": "鈴木良仁",
+   "before": null,
+   "after": "取締役"
+  },
+  {
+   "type": "appointed",
+   "name": "橋本あかね",
+   "name_key": "橋本あかね",
+   "before": null,
+   "after": "取締役"
+  },
+  {
+   "type": "appointed",
+   "name": "川島高博",
+   "name_key": "川島高博",
+   "before": null,
+   "after": "監査役"
+  },
+  {
+   "type": "resigned",
+   "name": "長谷川淳治",
+   "name_key": "長谷川淳治",
+   "before": "取締役",
+   "after": null
+  },
+  {
+   "type": "resigned",
+   "name": "伊東弘美",
+   "name_key": "伊東弘美",
+   "before": "監査役",
+   "after": null
+  }
+ ]
+}
