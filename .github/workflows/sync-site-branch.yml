@@ -1,6 +1,6 @@
-name: Sync site branch
+name: Sync cloudways-deploy branch
 
-# Mirror the contents of site/ onto the `site` branch (files at the branch root),
+# Mirror the contents of site/ onto the `cloudways-deploy` branch (files at the branch root),
 # keeping per-commit history via `git subtree split`.
 on:
   push:
@@ -25,7 +25,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Split site/ and push to site branch
+      - name: Split site/ and push to cloudways-deploy branch
         run: |
           git subtree split --prefix=site -b site-split
-          git push origin site-split:refs/heads/site
+          git push origin site-split:refs/heads/cloudways-deploy
