@@ -3,15 +3,15 @@
 
 :root {
   color-scheme: light;
-  --surface-1: #fcfcfb;
-  --surface-2: #f3f3f0;
-  --page: #f9f9f7;
-  --text-1: #0b0b0b;
-  --text-2: #52514e;
-  --text-3: #898781;
-  --hairline: #e1e0d9;
-  --axis: #c3c2b7;
-  --border: rgba(11, 11, 11, 0.10);
+  --surface-1: #ffffff;
+  --surface-2: #eef3f8;
+  --page: #f5f7fa;
+  --text-1: #1f2933;
+  --text-2: #5b6b7b;
+  --text-3: #8a99a8;
+  --hairline: #d9e1ea;
+  --axis: #c3cdd8;
+  --border: rgba(16, 32, 48, 0.10);
   --accent: #0068b7;
   --accent-soft: rgba(0, 104, 183, 0.10);
   --ok: #006300;
@@ -25,9 +25,9 @@
   --s7: #4a3aa7;
   --s8: #e34948;
   --s-other: #898781;
-  --ring: #fcfcfb;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 6px 20px rgba(0, 0, 0, 0.08);
-  --radius: 10px;
+  --ring: #ffffff;
+  --shadow: 0 2px 6px rgba(16, 32, 48, .08), 0 12px 32px rgba(16, 32, 48, .10);
+  --radius: 12px;
   --panel-w: 430px;
   --sheet-h: 50dvh;
 }
@@ -35,17 +35,17 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --surface-1: #1a1a19;
-    --surface-2: #232322;
-    --page: #0d0d0d;
-    --text-1: #ffffff;
-    --text-2: #c3c2b7;
-    --text-3: #898781;
-    --hairline: #2c2c2a;
-    --axis: #383835;
+    --surface-1: #171f26;
+    --surface-2: #1e2831;
+    --page: #0f1519;
+    --text-1: #e7edf2;
+    --text-2: #a3b1bd;
+    --text-3: #6f7e8b;
+    --hairline: #2b3741;
+    --axis: #3a4854;
     --border: rgba(255, 255, 255, 0.10);
-    --accent: #4d9fe3;
-    --accent-soft: rgba(77, 159, 227, 0.16);
+    --accent: #5aa8e6;
+    --accent-soft: rgba(90, 168, 230, 0.16);
     --ok: #0ca30c;
     --ok-soft: rgba(12, 163, 12, 0.16);
     --s1: #3987e5;
@@ -56,23 +56,23 @@
     --s6: #008300;
     --s7: #9085e9;
     --s8: #e66767;
-    --ring: #1a1a19;
+    --ring: #171f26;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.5);
   }
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --surface-1: #1a1a19;
-  --surface-2: #232322;
-  --page: #0d0d0d;
-  --text-1: #ffffff;
-  --text-2: #c3c2b7;
-  --text-3: #898781;
-  --hairline: #2c2c2a;
-  --axis: #383835;
+  --surface-1: #171f26;
+  --surface-2: #1e2831;
+  --page: #0f1519;
+  --text-1: #e7edf2;
+  --text-2: #a3b1bd;
+  --text-3: #6f7e8b;
+  --hairline: #2b3741;
+  --axis: #3a4854;
   --border: rgba(255, 255, 255, 0.10);
-  --accent: #4d9fe3;
-  --accent-soft: rgba(77, 159, 227, 0.16);
+  --accent: #5aa8e6;
+  --accent-soft: rgba(90, 168, 230, 0.16);
   --ok: #0ca30c;
   --ok-soft: rgba(12, 163, 12, 0.16);
   --s1: #3987e5;
@@ -83,7 +83,7 @@
   --s6: #008300;
   --s7: #9085e9;
   --s8: #e66767;
-  --ring: #1a1a19;
+  --ring: #171f26;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.5);
 }
 
@@ -91,9 +91,9 @@
 *, *::before, *::after { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
 body {
-  font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Yu Gothic UI", Meiryo, sans-serif;
+  font-family: "Noto Sans JP", system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Yu Gothic UI", Meiryo, sans-serif;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.55;
   color: var(--text-1);
   background: var(--page);
   -webkit-font-smoothing: antialiased;
@@ -104,19 +104,20 @@ a { color: var(--accent); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 .app {
-  position: relative;
-  height: 100dvh;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 6px var(--panel-w);
+  position: fixed;
+  inset: 0;
 }
+/* 右パネルは地図の上に浮かせる（工場マップと同じ）。幅つまみはパネルの左端 */
 .panel-resizer {
-  cursor: col-resize; background: var(--hairline); position: relative; z-index: 901; touch-action: none;
+  position: absolute; top: 12px; bottom: 12px; right: calc(var(--panel-w) + 6px); width: 12px; z-index: 901;
+  cursor: col-resize; touch-action: none;
 }
-.panel-resizer:hover, .panel-resizer.is-active, .panel-resizer:focus-visible { background: var(--accent); outline: none; }
+.panel-resizer:hover, .panel-resizer.is-active, .panel-resizer:focus-visible { outline: none; }
 .panel-resizer::after {
-  content: ""; position: absolute; top: 50%; left: 1px; width: 4px; height: 36px; margin-top: -18px; border-radius: 2px;
-  background: var(--axis);
+  content: ""; position: absolute; top: 50%; left: 4px; width: 4px; height: 44px; margin-top: -22px; border-radius: 3px;
+  background: var(--hairline);
 }
+.panel-resizer:hover::after, .panel-resizer.is-active::after, .panel-resizer:focus-visible::after { background: var(--accent); }
 .app.is-resizing { cursor: col-resize; user-select: none; }
 .app.is-resizing .map { pointer-events: none; }
 .head-btns { display: flex; gap: 6px; flex: 0 0 auto; }
@@ -124,7 +125,9 @@ a { color: var(--accent); }
 .leaflet-control-layers-toggle { background-color: var(--surface-1) !important; }
 
 /* ---------------------------------------------------------------- 地図 */
-.map { height: 100%; min-height: 0; background: var(--surface-2); }
+.map { position: absolute; inset: 0; background: var(--surface-2); }
+/* 右側の地図切替・帰属表示はパネルの左に避ける */
+.map .leaflet-top.leaflet-right, .map .leaflet-bottom.leaflet-right { right: calc(var(--panel-w) + 24px); }
 .leaflet-container { background: var(--surface-2); font: inherit; }
 .leaflet-bar { border: 1px solid var(--hairline) !important; box-shadow: var(--shadow) !important; border-radius: 8px !important; overflow: hidden; }
 .leaflet-bar a { background: var(--surface-1) !important; color: var(--text-1) !important; border-bottom-color: var(--hairline) !important; }
@@ -184,7 +187,7 @@ a { color: var(--accent); }
 /* ---------------------------------------------------------------- 凡例 */
 .legend {
   /* 左上（ズームボタンの下）。日本海側は点が無く、九州・沖縄を隠さない */
-  position: absolute; left: 12px; top: 150px; z-index: 800;
+  position: absolute; left: 12px; top: 12px; z-index: 800;
   width: 260px; max-width: calc(100% - 24px);
   background: color-mix(in srgb, var(--surface-1) 94%, transparent);
   border: 1px solid var(--hairline); border-radius: var(--radius);
@@ -221,25 +224,28 @@ a { color: var(--accent); }
 
 /* ---------------------------------------------------------------- 右パネル */
 .panel {
-  position: relative; z-index: 900;
-  display: flex; flex-direction: column; min-height: 0;
+  position: absolute; z-index: 900; top: 12px; right: 12px; bottom: 12px; width: var(--panel-w); max-width: calc(100% - 24px);
+  display: flex; flex-direction: column; min-height: 0; overflow: hidden;
   background: var(--surface-1);
-  border-left: 1px solid var(--hairline);
+  border: 1px solid var(--hairline); border-radius: var(--radius); box-shadow: var(--shadow);
 }
 .sheet-handle { display: none; }
 .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 16px 6px; }
-.panel-title { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.panel-title h1 { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: .01em; }
+.panel-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.panel-title .lx-logo { display: block; }
+.panel-title h1 { margin: 0; font-size: 16px; font-weight: 700; white-space: nowrap; }
+.panel-head { align-items: flex-start; }
 .badge {
   display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 11px; line-height: 1.5;
   background: var(--surface-2); color: var(--text-2); border: 1px solid var(--hairline);
 }
-.badge-proto { background: rgba(237, 161, 0, 0.14); color: #7a5200; border-color: rgba(237, 161, 0, 0.35); }
-:root[data-theme="dark"] .badge-proto { color: #f2c04f; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .badge-proto { color: #f2c04f; } }
+/* 工場マップの「社内」タグと同じ琥珀色の塗り */
+.badge-proto { background: #c98a00; color: #fff; border-color: transparent; font-weight: 700; border-radius: 6px; }
+:root[data-theme="dark"] .badge-proto { background: #f0b840; color: #1f2933; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .badge-proto { background: #f0b840; color: #1f2933; } }
 .icon-btn {
-  width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--hairline);
-  background: var(--surface-1); cursor: pointer; font-size: 16px; line-height: 1; flex: 0 0 auto;
+  width: 32px; height: 30px; border-radius: 8px; border: 1px solid var(--hairline);
+  background: var(--surface-2); cursor: pointer; font-size: 16px; line-height: 1; flex: 0 0 auto;
 }
 .icon-btn:hover { background: var(--surface-2); }
 .link-btn { border: 0; background: none; color: var(--accent); cursor: pointer; padding: 4px 6px; border-radius: 6px; font-size: 13px; }
@@ -250,7 +256,7 @@ a { color: var(--accent); }
 .search-box { position: relative; }
 .search-box input {
   width: 100%; height: 40px; padding: 0 36px 0 12px;
-  border: 1px solid var(--hairline); border-radius: 8px;
+  border: 1px solid var(--hairline); border-radius: 9px;
   background: var(--surface-2); color: var(--text-1); font: inherit;
 }
 .search-box input:focus { outline: 2px solid var(--accent); outline-offset: -1px; background: var(--surface-1); }
@@ -295,11 +301,11 @@ a { color: var(--accent); }
   padding: 3px 10px; font-size: 12px; cursor: pointer; color: var(--text-1); line-height: 1.5;
 }
 .chip:hover { background: var(--surface-2); }
-.chip.is-on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.chip.is-on { border-color: var(--text-1); background: var(--text-1); color: var(--surface-1); font-weight: 600; }
 .chip.is-derived { border-style: dashed; }
 .chip:disabled { opacity: 0.38; cursor: default; }
 .chip .n { color: var(--text-3); font-variant-numeric: tabular-nums; font-weight: 400; }
-.chip.is-on .n { color: var(--accent); }
+.chip.is-on .n { color: inherit; opacity: .7; }
 .chip .x { margin-left: 2px; color: var(--text-3); }
 .pref-select {
   width: 100%; height: 34px; margin-bottom: 8px; padding: 0 10px;
@@ -390,11 +396,10 @@ a { color: var(--accent); }
 
 /* ---------------------------------------------------------------- 携帯端末: 地図を全面、パネルは下から引き上げるシート */
 @media (max-width: 767px) {
-  .app { grid-template-columns: 1fr; }
   .panel-resizer, .head-btns #widthBtn { display: none; }
-  .map { position: fixed; inset: 0; height: 100dvh; }
+  .map .leaflet-top.leaflet-right, .map .leaflet-bottom.leaflet-right { right: 0; }
   .panel {
-    position: fixed; left: 0; right: 0; bottom: 0;
+    position: fixed; left: 0; right: 0; top: auto; bottom: 0; width: auto; max-width: none;
     height: var(--sheet-h);
     border-left: 0; border-top: 1px solid var(--hairline);
     border-radius: 16px 16px 0 0;
@@ -430,11 +435,9 @@ table.fs th { text-align: left; font-weight: 500; color: var(--text-2); padding:
 table.fs td { padding: 3px 0; color: var(--text-1); overflow-wrap: anywhere; }
 table.fs tr + tr th, table.fs tr + tr td { border-top: 1px solid var(--border); }
 
-/* 提供元ロゴ（左上）。ズームボタンはその下へずらす */
-.brand { position: absolute; left: 12px; top: 12px; z-index: 801; display: flex; align-items: center; padding: 4px;
-  background: color-mix(in srgb, var(--surface-1) 94%, transparent); border: 1px solid var(--hairline); border-radius: var(--radius); box-shadow: var(--shadow); }
-.map .leaflet-top.leaflet-left { top: 62px; }
-@media (max-width: 767px) { .map .leaflet-top.leaflet-left { top: 56px; } }
+/* ズームボタンは左下（工場マップと同じ） */
+.map .leaflet-top.leaflet-left { top: auto; bottom: 12px; }
+@media (max-width: 767px) { .map .leaflet-top.leaflet-left { display: none; } }
 table.fs .evidence { font-size: 11px; color: var(--text-3); margin-top: 2px; }
 table.fs .evidence a { color: var(--text-3); text-decoration: underline dotted; }
 
