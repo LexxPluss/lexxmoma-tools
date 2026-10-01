@@ -31,6 +31,18 @@ p{margin:0;color:var(--muted);font-size:13px}
 .tool span{font-size:12px;color:var(--muted)}
 .tool em{font-style:normal;font-size:12px;color:var(--brand);font-weight:600;margin-top:4px}
 .back{font-size:12px;color:var(--faint);text-decoration:none}
+.unlock{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin:18px 0 0;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--panel-2)}
+.unlock input[type=password]{flex:1 1 200px;min-width:0;font:inherit;font-size:16px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--text)}
+.unlock input[type=password]:focus{outline:2px solid var(--brand);outline-offset:1px}
+.unlock button{font:inherit;font-weight:700;border-radius:10px;padding:9px 16px;cursor:pointer;background:var(--brand);color:#fff;border:0}
+.unlock button:disabled{opacity:.6;cursor:wait}
+.unlock label{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.unlock .err{flex-basis:100%;margin:0;color:#d6496e;font-size:13px}
+.unlock .err:empty{display:none}
+.unlocked{display:flex;align-items:center;gap:10px;margin:18px 0 0;padding:10px 14px;border-radius:12px;background:color-mix(in srgb,var(--accent) 12%,var(--panel));color:var(--text);font-size:13px}
+.unlocked span{flex:1}
+.unlocked button{font:inherit;font-size:12px;border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:8px;padding:5px 10px;cursor:pointer}
+[hidden]{display:none!important}
 </style>
 </head>
 <body>
@@ -38,7 +50,14 @@ p{margin:0;color:var(--muted);font-size:13px}
   <button type="button" class="lx-theme-btn" data-lx-theme-toggle aria-label="ライト / ダーク切替"></button>
   <div class="top"><a href="../index.html" title="LexxMoMa Tools のトップへ"><img class="lx-logo" src="../assets/lexxpluss-logo.png" alt="LexxPluss"></a></div>
   <h1>社内ツール <span class="tag">社内</span></h1>
-  <p>LexxPluss 社内メンバー向け。どちらも社内の共通パスワードで開きます。</p>
+  <p>LexxPluss 社内メンバー向け。共通パスワードをここで 1 回入れれば、どのツールもそのまま開けます。</p>
+  <form class="unlock" id="unlock" autocomplete="off">
+    <input type="password" id="pw" placeholder="共通パスワード" aria-label="共通パスワード" autocomplete="current-password" required>
+    <button type="submit" id="unlockBtn">ロック解除</button>
+    <label><input type="checkbox" id="remember"> この端末で記憶する</label>
+    <p class="err" id="unlockErr" role="alert"></p>
+  </form>
+  <div class="unlocked" id="unlocked" hidden><span>🔓 ロック解除済み — 下のツールはパスワードなしで開けます。</span><button type="button" id="lock">ロックする</button></div>
   <div class="tools">
     <a class="tool" href="factory-map/index.html">
       <span class="ic">🏭</span><b>工場マップ</b>
@@ -54,5 +73,36 @@ p{margin:0;color:var(--muted);font-size:13px}
   <a class="back" href="../index.html">← LexxMoMa Tools に戻る</a>
 </div>
 <script src="../assets/track.js" data-tool="members"></script>
+<script src="members-auth.js?v=1"></script>
+<script>
+// 共通の入口: パスワードは工場マップのデータで確かめてから、この端末に置く(各ツールはそれで自分のデータを復号する)
+(function () {
+  'use strict';
+  var $ = function (s) { return document.getElementById(s); };
+  function b64(s) { var b = atob(s), u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }
+  function check(pw) {
+    return fetch('factory-map/data.enc.json', { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw new Error('data'); return r.json(); }).then(function (enc) {
+      return crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']).then(function (base) {
+        return crypto.subtle.deriveKey({ name: 'PBKDF2', hash: 'SHA-256', salt: b64(enc.salt), iterations: enc.iter }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+      }).then(function (key) { return crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(enc.iv) }, key, b64(enc.ct)); });
+    });
+  }
+  function show() { var on = !!lxMembers.password(); $('unlock').hidden = on; $('unlocked').hidden = !on; }
+  function fail(msg) { $('unlockErr').textContent = msg; $('unlockBtn').disabled = false; $('unlockBtn').textContent = 'ロック解除'; }
+  if (!window.crypto || !crypto.subtle) fail('このブラウザでは開けません(https で開いてください)。');
+  $('unlock').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var pw = $('pw').value; if (!pw) return;
+    $('unlockBtn').disabled = true; $('unlockBtn').textContent = '確認中…'; $('unlockErr').textContent = '';
+    check(pw).then(function () {
+      $('pw').value = ''; lxMembers.save(pw, $('remember').checked); fail(''); show();
+    }).catch(function (err) {
+      fail(err && err.message === 'data' ? 'データを読み込めませんでした。時間をおいて再度お試しください。' : 'パスワードが違います。');
+    });
+  });
+  $('lock').addEventListener('click', function () { lxMembers.forget(); show(); });
+  show();
+})();
+</script>
 </body>
 </html>
