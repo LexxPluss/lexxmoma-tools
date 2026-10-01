@@ -62,17 +62,25 @@
     $('#gateBtn').disabled = true; $('#gateBtn').textContent = '確認中…'; $('#gateErr').textContent = '';
     loadEnc().then(function (enc) {
       return deriveKey(pw, enc).then(function (key) {
-        return decrypt(key, enc).then(function (data) { $('#pw').value = ''; return saveKey(key, enc.salt, $('#remember').checked).then(function () { start(data); }); });
+        return decrypt(key, enc).then(function (data) { $('#pw').value = ''; if (window.lxMembers) window.lxMembers.save(pw, $('#remember').checked); return saveKey(key, enc.salt, $('#remember').checked).then(function () { start(data); }); });
       });
     }).catch(function (err) {
       var m = err && err.message;
       showGateError(m === 'data' ? 'データを読み込めませんでした。時間をおいて再度お試しください。' : m === 'nozip' ? 'このブラウザでは開けません(最新の Chrome / Safari / Edge で開いてください)。' : 'パスワードが違います。');
     });
   });
+  // 社内ツール共通の入口(members-auth.js)で入れたパスワードがあれば、それで開く
+  function viaShared(enc) {
+    var pw = window.lxMembers && window.lxMembers.password();
+    if (!pw) return;
+    return deriveKey(pw, enc).then(function (key) {
+      return decrypt(key, enc).then(function (data) { return saveKey(key, enc.salt, window.lxMembers.remembered()).then(function () { start(data); }); });
+    });
+  }
   loadEnc().then(function (enc) {
     return storedKey().then(function (s) {
-      if (!s || s.salt !== enc.salt) { forgetKey(); return; }
-      return decrypt(s.key, enc).then(start).catch(forgetKey);
+      if (!s || s.salt !== enc.salt) { forgetKey(); return viaShared(enc); }
+      return decrypt(s.key, enc).then(start, function () { forgetKey(); return viaShared(enc); });
     });
   }).catch(function () { /* 入口のまま */ });
 
@@ -118,7 +126,7 @@
       if (state.inds[i]) track('member/people-db/industry', i);
     });
     $('#back').addEventListener('click', function () { go('companies', null); });
-    $('#lock').addEventListener('click', function () { forgetKey(); location.hash = ''; location.reload(); });
+    $('#lock').addEventListener('click', function () { forgetKey(); if (window.lxMembers) window.lxMembers.forget(); location.hash = ''; location.reload(); });
     $('#daysFilter').addEventListener('change', function () { state.days = +this.value; renderNews(); });
     $('#copySlack').addEventListener('click', copySlack);
     $('#drawerClose').addEventListener('click', closeDrawer);
