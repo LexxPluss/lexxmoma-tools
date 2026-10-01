@@ -1525,32 +1525,30 @@ const TEMPLATES = [
       ["in", 1200, 2500, { item: "A" }], ["part", 1200, 7500, { item: "B" }], ["join", 6500, 5000, { name: "溶接1", autoT: 60, manT: 20, outName: "C" }], ["inspect", 11000, 5000],
       ["out", 16500, 5000], ["cart", 13500, 7000], ["worker", 4000, 5000], ["worker", 11000, 6600]],
       [[1, 3], [2, 3], [3, 4], [4, 5, { mover: 6 }]]) },
-  { id: "weldcell", t: "成形 → 溶着セル(2台・並行作業)", d: "大型成形機の取出し → 落下台 → 人が溶着機へセット → 検査 → 台車で出荷", build: () => {
-    // 工程: ①成形機から落下台へ自動払い出し ②遮音材を溶着機にセット ③落下台の成形品を溶着機にセット
-    //       (溶着機は並行作業: 自動溶着の間に人が次のセット・取り出し) ④取り出して検査 ⑤台車に載せて出荷
-    // 寸法: 溶着機 W4.5m×D3.5m ×2、機械間のセル 5m×4.2m、右の通路 3m、溶着機の開口 2.8m。時間はすべて仮の値
-    const weld = (y, face, n) => ["join", 9700, y, { w: 4500, h: 3500, name: "超音波溶着機" + n, outName: "溶着品", autoT: 70, manT: 25, parallel: true, swapT: 5, portW: 2800,
-      ports: { in: face, out: face, op: face }, portAuto: { in: false, out: false, op: false }, portShared: true, portOff: { in: 0, out: 0 } }];
-    const d = tpl(15600, 15000, [
-      ["walk", 0, 0, { name: "通路・作業エリア", pts: [{ x: 7200, y: 4500 }, { x: 12200, y: 4500 }, { x: 12200, y: 300 }, { x: 15300, y: 300 }, { x: 15300, y: 14800 }, { x: 6800, y: 14800 }, { x: 6800, y: 12500 }, { x: 12200, y: 12500 }, { x: 12200, y: 8700 }, { x: 7200, y: 8700 }] }],
-      ["wall", 3400, 7300, { w: 6800, h: 13000, name: "大型成形機(既存)" }],
-      ["in", 7100, 6600, { w: 600, h: 900, name: "成形取出機", item: "成形品", interval: 60, ports: { out: "E" }, portAuto: { out: false } }],
-      ["buffer", 7800, 6600, { w: 800, h: 1000, name: "落下台", cap: 4, ports: { in: "W", out: "E" }, portAuto: { in: false, out: false } }],
-      ["part", 7800, 5100, { w: 800, h: 900, name: "遮音材置場(上)", item: "遮音材", boxed: true, ports: { out: "E" }, portAuto: { out: false } }],
-      ["part", 7800, 8100, { w: 800, h: 900, name: "遮音材置場(下)", item: "遮音材", boxed: true, ports: { out: "E" }, portAuto: { out: false } }],
-      weld(2750, "S", 1), weld(10450, "N", 2),
-      ["inspect", 9400, 5900, { w: 1000, h: 700, name: "検査治具1", manT: 20 }],
-      ["inspect", 9400, 7300, { w: 1000, h: 700, name: "検査治具2", manT: 20 }],
-      ["buffer", 11200, 6600, { w: 1000, h: 1800, name: "仮置台", cap: 20 }],
-      ["cart", 13300, 5200, { name: "台車1", cap: 10 }], ["cart", 13300, 8000, { name: "台車2(入れ替え用)", cap: 10 }],
-      ["out", 14600, 11500, { w: 1200, h: 1500, name: "出荷(通路へ)" }],
-      ["worker", 9000, 5100, { dir: -90, name: "作業者(上)" }], ["worker", 9000, 8100, { dir: 90, name: "作業者(下)" }],
-      ["note", 7700, 7380, { w: 1300, h: 240, text: "① 自動払い出し" }],
-      ["note", 11500, 5050, { w: 1300, h: 240, text: "②③ セット ④ 取り出し" }],
-      ["note", 11500, 8150, { w: 1300, h: 240, text: "②③ セット ④ 取り出し" }],
-      ["note", 13700, 9500, { w: 1300, h: 260, text: "⑤ 台車で出荷" }]],
-      [[2, 3, { auto: 1 }], [3, 6], [4, 6], [3, 7], [5, 7], [6, 8], [7, 9], [8, 10], [9, 10], [10, 13, { mover: 11 }]]);
-    // 時間・容量は資料に記載が無いため仮の値(「(仮)」表示・確認事項に出す)
+  { id: "cell2", t: "2台持ちセル(並行作業)", d: "自動搬入 → 仮置き → 人が2台の組立機へセット → 検査 → 台車で出荷", build: () => {
+    // 一般的なサンプル: ①コンベヤで自動搬入 → 仮置台 ②部品Bとワークを組立機にセット
+    //   (組立機は並行作業: 自動運転の間に人が次のセット・取り出し) ③取り出して検査 ④完成品置台 → 台車で出荷
+    // 寸法・時間はすべて例の値
+    const asm = (x, n) => ["join", x, 2500, { w: 3000, h: 2500, name: "組立機" + n, outName: "製品C", autoT: 60, manT: 20, parallel: true, swapT: 5, portW: 2000,
+      ports: { in: "S", out: "S", op: "S" }, portAuto: { in: false, out: false, op: false }, portShared: true, portOff: { in: 0, out: 0 } }];
+    const d = tpl(16000, 11000, [
+      ["walk", 0, 0, { name: "通路・作業エリア", pts: [{ x: 300, y: 3900 }, { x: 15700, y: 3900 }, { x: 15700, y: 10700 }, { x: 300, y: 10700 }] }],
+      ["in", 1000, 6000, { name: "搬入コンベヤ", item: "ワークA", interval: 60, ports: { out: "E" }, portAuto: { out: false } }],
+      ["buffer", 2600, 6000, { w: 800, h: 1000, name: "仮置台", cap: 4, ports: { in: "W", out: "E" }, portAuto: { in: false, out: false } }],
+      ["part", 7000, 5400, { w: 800, h: 800, name: "部品B置場", item: "部品B", boxed: true, ports: { out: "S" }, portAuto: { out: false } }],
+      asm(4500, 1), asm(9500, 2),
+      ["inspect", 4500, 7400, { w: 1000, h: 700, name: "検査台1", manT: 20 }],
+      ["inspect", 9500, 7400, { w: 1000, h: 700, name: "検査台2", manT: 20 }],
+      ["buffer", 12400, 6000, { w: 1000, h: 1800, name: "完成品置台", cap: 20 }],
+      ["cart", 14000, 5000, { name: "台車1", cap: 10 }], ["cart", 14000, 7000, { name: "台車2(入れ替え用)", cap: 10 }],
+      ["out", 14800, 9700, { w: 1200, h: 1200, name: "出荷" }],
+      ["worker", 4500, 4800, { dir: -90, name: "作業者1" }], ["worker", 9500, 4800, { dir: -90, name: "作業者2" }],
+      ["note", 1800, 7000, { w: 1300, h: 240, text: "① 自動搬入" }],
+      ["note", 7000, 4100, { w: 1300, h: 240, text: "② セット・取り出し" }],
+      ["note", 7000, 8200, { w: 1300, h: 240, text: "③ 検査" }],
+      ["note", 13600, 8700, { w: 1300, h: 260, text: "④ 台車で出荷" }]],
+      [[1, 2, { auto: 1 }], [2, 4], [3, 4], [2, 5], [3, 5], [4, 6], [5, 7], [6, 8], [7, 8], [8, 11, { mover: 9 }]]);
+    // 時間・容量は例の値(「(仮)」表示・確認事項に出す)
     for (const o of d.objs) o.edited = (o.edited || []).filter(k => k !== "autoT" && k !== "manT");
     return d;
   } },

@@ -566,7 +566,7 @@ Sim.prototype.stepParallel = function (s, dt) {
       s.backCur = s.frontCur; s.backLeft = auto; s.frontCur = null; s.frontState = null;
     }
   }
-  // 奥で溶着が終わったモノは、次のセットが無くても人が手前へ回して取り出す扱い(最後の1個が残らないように)
+  // 奥で自動運転が終わったモノは、次のセットが無くても人が手前へ回して取り出す扱い(最後の1個が残らないように)
   if (s.backCur && s.backLeft <= 1e-9 && !s.frontState && !(s.indexLeft > 0) && !this.ready(s)) {
     const n = outQty(o); for (let k = 0; k < n; k++) { s.out[s.backCur] = (s.out[s.backCur] || 0) + 1; s.outN++; } s.cycles++; s.backCur = null;
   }
