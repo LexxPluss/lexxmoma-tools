@@ -63,6 +63,7 @@
       return deriveKey(pw, enc).then(function (key) {
         return decrypt(key, enc).then(function (data) {
           $('#pw').value = '';
+          if (window.lxMembers) window.lxMembers.save(pw, $('#remember').checked);
           return saveKey(key, enc.salt, $('#remember').checked).then(function () { start(data); });
         });
       });
@@ -71,11 +72,20 @@
     });
   });
 
-  // 記憶済みの鍵があれば入口を飛ばす(データ更新で鍵が変わっていたら入口を出す)
+  // 社内ツール共通の入口(members-auth.js)で入れたパスワードがあれば、それで開く
+  function viaShared(enc) {
+    var pw = window.lxMembers && window.lxMembers.password();
+    if (!pw) return;
+    return deriveKey(pw, enc).then(function (key) {
+      return decrypt(key, enc).then(function (data) { return saveKey(key, enc.salt, window.lxMembers.remembered()).then(function () { start(data); }); });
+    });
+  }
+
+  // 記憶済みの鍵 → 共通の入口のパスワード の順で入口を飛ばす(どちらも合わなければ入口を出す)
   loadEnc().then(function (enc) {
     return storedKey().then(function (s) {
-      if (!s || s.salt !== enc.salt) { forgetKey(); return; }
-      return decrypt(s.key, enc).then(start).catch(forgetKey);
+      if (!s || s.salt !== enc.salt) { forgetKey(); return viaShared(enc); }
+      return decrypt(s.key, enc).then(start, function () { forgetKey(); return viaShared(enc); });
     });
   }).catch(function () { /* 入口のまま */ });
 
@@ -178,7 +188,7 @@
     $('#sort').addEventListener('change', function () { state.sort = this.value; renderList(); });
     setSort();
     $('#back').addEventListener('click', function () { state.focus = null; closeDetail(); render(); });
-    $('#lock').addEventListener('click', function () { forgetKey(); location.reload(); });
+    $('#lock').addEventListener('click', function () { forgetKey(); if (window.lxMembers) window.lxMembers.forget(); location.reload(); });
     $('#locate').addEventListener('click', locate);
     $('#legend').innerHTML = '<b>業種</b>' + D.industries.filter(function (i) { return cnt[i]; }).map(function (i) {
       return '<span><i style="background:' + indColor(i) + '"></i>' + esc(i) + '</span>'; }).join('') + '<small>円の大きさ = 従業員数</small>';

@@ -19,7 +19,7 @@
   <form class="gate-card" id="gateForm" autocomplete="off">
     <a class="gate-home" href="../../index.html" title="LexxMoMa Tools のトップへ"><img class="lx-logo" src="../../assets/lexxpluss-logo.png" alt="LexxPluss"></a>
     <h1>顧客人事データベース</h1>
-    <p>LexxPluss 社内メンバー向けのツールです。共通パスワードを入力してください。</p>
+    <p>LexxPluss 社内メンバー向けのツールです。共通パスワードを入力してください(ここで入れると他の社内ツールも開けます)。</p>
     <label class="sr" for="pw">パスワード</label>
     <input type="password" id="pw" placeholder="パスワード" autocomplete="current-password" required>
     <label class="remember"><input type="checkbox" id="remember"> この端末で記憶する</label>
@@ -44,7 +44,7 @@
     <span class="hdr-btns">
       <a class="icon-btn link" href="../factory-map/index.html" id="toFactory" title="工場マップへ">🏭</a>
       <button type="button" class="lx-theme-btn" data-lx-theme-toggle aria-label="ライト / ダーク切替"></button>
-      <button class="icon-btn" id="lock" type="button" title="ロックする(パスワードを忘れさせる)">🔒</button>
+      <button class="icon-btn" id="lock" type="button" title="ロックする(社内ツールすべてのパスワードを忘れさせる)">🔒</button>
     </span>
   </header>
 
@@ -106,6 +106,7 @@
 
 <script src="../../assets/track.js" data-tool="people-db"></script>
 <script src="data.enc.js?v=2"></script>
-<script src="app.js?v=3"></script>
+<script src="../members-auth.js?v=1"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>
