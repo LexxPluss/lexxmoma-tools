@@ -1,4 +1,4 @@
-/* ui.js — 工程スケッチの画面(描画・操作・パネル・シミュレーション再生) */
+/* ui.js — 工程シミュレーター(2D)の画面(描画・操作・パネル・シミュレーション再生) */
 "use strict";
 (function () {
 const { CAT, GROUPS, DEFAULTS, PROP_LABEL, isStation, isAgent, isMovable, isPoly, byId, rectOf, dist, outputName } = PS;
@@ -1598,7 +1598,7 @@ $("#btnTpl").onclick = e => { e.stopPropagation(); const o = $("#tplMenu").class
 $("#btnFile").onclick = e => { e.stopPropagation(); const o = $("#fileMenu").classList.contains("open"); closeMenus(); if (!o) $("#fileMenu").classList.add("open"); };
 document.addEventListener("click", e => { if (!e.target.closest(".menu")) closeMenus(); });
 $("#fileMenu").querySelectorAll("[data-act]").forEach(b => b.onclick = () => { closeMenus(); fileAct(b.dataset.act); });
-function fname(ext) { const base = [doc.customer, doc.title || "工程スケッチ"].filter(Boolean).join("_").replace(/[\\/:*?"<>|\s]+/g, "_"); const d = new Date(); return `${base}_${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}.${ext}`; }
+function fname(ext) { const base = [doc.customer, doc.title || "工程シミュレーター(2D)"].filter(Boolean).join("_").replace(/[\\/:*?"<>|\s]+/g, "_"); const d = new Date(); return `${base}_${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}.${ext}`; }
 function download(name, blob) { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); }
 async function fileAct(a) {
   if (a === "open") $("#fileOpen").click();
@@ -1648,7 +1648,7 @@ function syncHeader() {
   $("#areaW").value = doc.area.w / 1000; $("#areaH").value = doc.area.h / 1000;
   $("#optWalkOnly").checked = doc.walkOnly !== false;
   $("#bgCtl").hidden = !doc.bg; if (doc.bg) $("#bgOp").value = doc.bg.op;
-  document.title = (doc.title ? doc.title + " — " : "") + "工程スケッチ";
+  document.title = (doc.title ? doc.title + " — " : "") + "工程シミュレーター(2D)";
 }
 $("#docTitle").onchange = e => { doc.title = e.target.value; save(); syncHeader(); };
 $("#docCustomer").onchange = e => { doc.customer = e.target.value; save(); };

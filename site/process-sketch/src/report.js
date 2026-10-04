@@ -23,8 +23,8 @@ function layoutSVG(d, S, sim, opt) {
   if (opt.band) {
     const y = d.area.h * S + m * 2 + 10;
     const bar = 5000 * S; // 5m
-    band = `<g font-family="sans-serif"><text x="${m}" y="${y + 18}" font-size="16" font-weight="700" fill="#1d2733">${esc(d.title || "工程スケッチ")}${d.customer ? `  /  ${esc(d.customer)}` : ""}</text>
-      <text x="${m}" y="${y + 40}" font-size="12" fill="#5d6b7a">エリア ${fmt(d.area.w)} × ${fmt(d.area.h)} mm ・ 縮尺 ${fmt(S * 1000)} px/m ・ ${today()} ・ LexxPluss 工程スケッチ</text>
+    band = `<g font-family="sans-serif"><text x="${m}" y="${y + 18}" font-size="16" font-weight="700" fill="#1d2733">${esc(d.title || "工程シミュレーター(2D)")}${d.customer ? `  /  ${esc(d.customer)}` : ""}</text>
+      <text x="${m}" y="${y + 40}" font-size="12" fill="#5d6b7a">エリア ${fmt(d.area.w)} × ${fmt(d.area.h)} mm ・ 縮尺 ${fmt(S * 1000)} px/m ・ ${today()} ・ LexxPluss 工程シミュレーター(2D)</text>
       <rect x="${W - m - bar}" y="${y + 10}" width="${bar}" height="6" fill="#1d2733"/><rect x="${W - m - bar / 2}" y="${y + 10}" width="${bar / 2}" height="6" fill="#fff" stroke="#1d2733"/>
       <text x="${W - m - bar}" y="${y + 32}" font-size="11" fill="#1d2733">0</text><text x="${W - m}" y="${y + 32}" font-size="11" text-anchor="end" fill="#1d2733">5 m</text></g>`;
   }
@@ -72,7 +72,7 @@ function tables(d, res) {
 function csv(d, res) {
   const t = tables(d, res), rows = [];
   const q = v => { const s = v == null ? "" : String(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
-  rows.push(["工程スケッチ", d.title || "", d.customer || "", today()]);
+  rows.push(["工程シミュレーター(2D)", d.title || "", d.customer || "", today()]);
   rows.push(["エリア幅mm", d.area.w, "エリア奥行mm", d.area.h]);
   rows.push([]);
   rows.push(["[設備・配置]"]);
@@ -110,7 +110,7 @@ function report(d, res, warns, sim, day) {
   const q = [...warns];
   if (!res) q.push("導線シミュレーション未実施(「1日分を計算」を押すと歩行距離・稼働率が入ります)");
   q.push("各設備の自動運転の時間・人の作業時間・段取り替えの有無", "ワークの寸法・重さ・荷姿(何個を何に入れて運ぶか)", "通路の床(段差・スロープ・扉)と人・フォークリフトの往来", "生産数の目標(個/日・シフト)");
-  const html = `<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>${esc(d.title || "工程スケッチ")} 検討シート</title>
+  const html = `<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>${esc(d.title || "工程シミュレーター(2D)")} 検討シート</title>
 <style>
   @page { size: A4 landscape; margin: 10mm; }
   body { font-family: "Noto Sans JP","Hiragino Sans","Yu Gothic UI",Meiryo,sans-serif; color:#1d2733; margin:0; background:#f3f6f9; font-size:12px; }
@@ -131,7 +131,7 @@ function report(d, res, warns, sim, day) {
 </style></head><body>
 <div class="tool"><b>検討シート</b><span style="opacity:.8">印刷またはPDF保存して、次回の打合せ・見積り検討にお使いください</span><span style="flex:1"></span><button onclick="print()">印刷 / PDF保存</button></div>
 <div class="page">
-  <h1>${esc(d.title || "工程スケッチ")} — 工程レイアウト検討シート</h1>
+  <h1>${esc(d.title || "工程シミュレーター(2D)")} — 工程レイアウト検討シート</h1>
   <div class="meta">${d.customer ? `お客さま: <b>${esc(d.customer)}</b> ・ ` : ""}作成日 ${today()}${d.author ? ` ・ 作成 ${esc(d.author)}` : ""} ・ エリア ${fmt(d.area.w / 1000, 1)} × ${fmt(d.area.h / 1000, 1)} m</div>
   <div class="fig">${svg}</div>
   <div class="legend" style="margin-top:6px">色は機能で分けています: ${["make", "check", "stock", "move", "person", "goods"].map(k => `<span><i style="background:${PS.FN[k].c}"></i>${PS.FN[k].t}</span>`).join("")}<br>矢印=モノの流れ(橙=人が運ぶ、緑=LexxMoMa、灰破線=自動搬送、赤点線=運び手未定)・設備の縁の「入」=入れる面/「出」=取り出す面/「入出」=同じ口で出し入れ/足あと=作業する面・緑の破線=通路/赤斜線=立入禁止${sim ? "・細線=人の導線(スパゲッティ図)" : ""}・寸法は mm</div>
@@ -169,7 +169,7 @@ function report(d, res, warns, sim, day) {
   <h2>${res ? 5 : 3}. 次回までの確認事項</h2>
   <ul>${q.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
   <h2>メモ</h2><div class="memo" contenteditable="true">(打合せでの気づきをここに書けます)</div>
-  <p style="color:#8a96a3;font-size:10.5px;margin-top:14px">本シートは簡易モデル(満杯分たまったら運ぶ・設備は1個ずつ処理・段取り替え/故障は含まない。休憩は1日の計算に含む)による概算です。図面データ(.json)は工程スケッチで開くと再編集できます。LexxPluss 工程スケッチで作成。</p>
+  <p style="color:#8a96a3;font-size:10.5px;margin-top:14px">本シートは簡易モデル(満杯分たまったら運ぶ・設備は1個ずつ処理・段取り替え/故障は含まない。休憩は1日の計算に含む)による概算です。図面データ(.json)は工程シミュレーター(2D)で開くと再編集できます。LexxPluss 工程シミュレーター(2D)で作成。</p>
 </div>
 <script type="application/json" id="ps-data">${JSON.stringify(Object.assign({ app: "lexxmoma-process-sketch" }, d)).replace(/</g, "\\u003c")}</script>
 </body></html>`;
