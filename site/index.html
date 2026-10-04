@@ -362,7 +362,7 @@ const TOOLS = [
     icon:"grid", href:"simulator/lexxmoma-2d.html"
   },
   {
-    id:"sketch", cat:"LAYOUT", name:"工程スケッチ",
+    id:"sketch", cat:"SIMULATION", name:"工程シミュレーター(2D)",
     desc:"設備と作業者を置いてつなぎ、工程図を作成。人とモノの動きや生産数をシミュレーションし、LexxMoMa導入前後を比較できます。",
     solves:"<b>工程図と導入前後の比較</b>を打合せで共有する。",
     phases:["assess","design"], worries:["layout","cycle"], status:"web", ver:"ベータ版",
@@ -387,12 +387,6 @@ const TOOLS = [
     solves:"<b>導入コストと期待効果</b>を数字で比較する。",
     phases:["assess","deploy"], worries:["roi"], status:"web", ver:"v1",
     icon:"yen", href:"lexxmoma-roi/dist/lexxmoma_roi.html"
-  },
-  {
-    id:"layout", cat:"SIMULATION", name:"現場レイアウト検討",
-    desc:"図面や採寸値をもとに、通路幅・旋回スペース・充電位置を検討するツール。LexxMoMaを配置し、走行できるスペースがあるか確認する予定です。",
-    solves:"<b>配置場所と走行スペース</b>を検討する。",
-    phases:["assess","design"], worries:["layout","cycle"], status:"plan", ver:"計画中", icon:"grid"
   },
   {
     id:"parts", cat:"MAINTENANCE", name:"サービスパーツカタログ",
