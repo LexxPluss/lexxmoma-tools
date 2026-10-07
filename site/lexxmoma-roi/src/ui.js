@@ -552,19 +552,14 @@
     $('#scenarioName').addEventListener('input', e => { state.scenarioName = e.target.value; schedule(); });
 
     // アクション
-    $('#btnCsv').addEventListener('click', () => {
-      const p = C.resolveInputs(state), r = C.compute(p); const now = new Date();
-      CSV.download(CSV.buildCsv({ state, params: p, result: r, now }), CSV.fileName(state.scenarioName, now));
-      toast('CSVをダウンロードしました');
-      track('csv', 'CSVダウンロード');
+    $('#btnXlsx').addEventListener('click', () => {
+      const now = new Date();
+      download(XLSX.buildXlsx(state, { now }), CSV.fileName(state.scenarioName, now), XLSX.MIME);
+      toast('Excel をダウンロードしました');
+      track('xlsx', 'Excelダウンロード');
     });
-    $('#btnTemplate').addEventListener('click', () => {
-      CSV.download(XLSX.buildXlsx(C.defaultState()), XLSX.FILE_NAME, XLSX.MIME);
-      toast('Excel 入力シートをダウンロードしました');
-      track('xlsx_template', 'Excel入力シート');
-    });
-    $('#btnCsvLoad').addEventListener('click', () => $('#csvFile').click());
-    $('#csvFile').addEventListener('change', e => {
+    $('#btnLoad').addEventListener('click', () => $('#loadFile').click());
+    $('#loadFile').addEventListener('change', e => {
       const f = e.target.files && e.target.files[0];
       e.target.value = '';                   // 同じファイルを続けて選んでも change が出るように
       if (f) loadFile(f);
@@ -626,7 +621,7 @@
 
   async function loadFile(file) {
     const isXlsx = /\.xlsx$/i.test(file.name);
-    if (!isXlsx && !/\.csv$/i.test(file.name)) { toast(/\.xls$/i.test(file.name) ? '.xls 形式は読めません。Excel で .xlsx として保存してください' : 'CSV（.csv）か Excel（.xlsx）ファイルを選んでください'); return; }
+    if (!isXlsx && !/\.csv$/i.test(file.name)) { toast(/\.xls$/i.test(file.name) ? '.xls 形式は読めません。Excel で .xlsx として保存してください' : 'Excel（.xlsx）ファイルを選んでください'); return; }
     let res;
     try {
       const buf = await file.arrayBuffer();
@@ -637,6 +632,16 @@
     syncHeader(); renderInputs(); applyLayout(); render();
     toast(`${isXlsx ? 'Excel' : 'CSV'}を読み込みました（${res.applied}項目${res.skipped ? `・読み取れない行 ${res.skipped}` : ''}）`);
     track(isXlsx ? 'xlsx_import' : 'csv_import', isXlsx ? 'Excel読み込み' : 'CSV読み込み');
+  }
+
+  /** ブラウザでのダウンロード（Blob + a[download]） */
+  function download(data, filename, type) {
+    const blob = new Blob([data], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   async function copyText(text) {

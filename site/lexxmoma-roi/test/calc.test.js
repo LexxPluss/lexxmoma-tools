@@ -114,32 +114,26 @@ test('9. NPV：割引率5% の値が手計算と一致（enableNPV=trueのみ）
   assert.equal(typeof C.compute(C.resolveInputs(s)).npv, 'number');
 });
 
-test('10. CSV：BOM・CRLF・4セクション・カンマ含むシナリオ名のクォート', () => {
+test('10. Excel：ファイル名・出力日時・A/B 保存時は「シナリオ比較」シート', async () => {
+  assert.equal(CSV.fileName('2直/案:A', new Date(2026, 8, 24)), 'LexxMoMa_ROI_2直_案_A_20260924.xlsx');
+  assert.equal(CSV.fileName('', new Date(2026, 8, 24)), 'LexxMoMa_ROI_無題_20260924.xlsx');
   const s = lightState({ opexAnnual: 150 });
   s.base.capex.robot = 2000; s.base.capex.camera = 200; s.base.capex.endEffector = 100; s.base.capex.integration = 300;
-  s.scenarioName = '2直,案';
   const p = C.resolveInputs(s), r = C.compute(p);
-  s.scenarios.A = C.snapshot(s, p, r);
-  s.scenarios.B = C.snapshot(s, p, r);
-  const csv = CSV.buildCsv({ state: s, params: p, result: r, now: new Date(2026, 8, 24, 14, 30) });
-  assert.ok(csv.startsWith('﻿'), 'BOM');
-  assert.ok(csv.includes('\r\n'), 'CRLF');
-  assert.equal(/[^\r]\n/.test(csv), false, 'LF単独が無い');
-  for (const sec of ['[サマリー]', '[入力一覧]', '[年次表]', '[シナリオ比較]']) assert.ok(csv.includes(sec + '\r\n'), sec);
-  assert.ok(csv.includes('シナリオ名,"2直,案",'), 'カンマ含む名前がクォート');
-  assert.ok(csv.includes('出力日時,2026/09/24 14:30,'));
-  assert.ok(csv.includes('投資回収年数,2.4,年'));
-  assert.ok(csv.includes('年,年間省人効果,年間ランニング費,年間純効果,累積キャッシュフロー\r\n0,0,0,0,-2600\r\n1,1200,150,1050,-1550\r\n2,1236,150,1086,-464\r\n'));
-  // A/B 未保存なら3セクション
-  s.scenarios.B = null;
-  const csv3 = CSV.buildCsv({ state: s, params: p, result: r, now: new Date() });
-  assert.equal(csv3.includes('[シナリオ比較]'), false);
-  // ファイル名
-  assert.equal(CSV.fileName('2直/案:A', new Date(2026, 8, 24)), 'LexxMoMa_ROI_2直_案_A_20260924.csv');
-  assert.equal(CSV.fileName('', new Date(2026, 8, 24)), 'LexxMoMa_ROI_無題_20260924.csv');
-  // RFC4180 エスケープ
-  assert.equal(CSV.esc('a"b'), '"a""b"');
-  assert.equal(CSV.esc('x\ny'), '"x\ny"');
+  const dec = new TextDecoder();
+  const sheetsOf = async st => {
+    const z = await XLSX.unzip(XLSX.buildXlsx(st, { now: new Date(2026, 8, 24, 14, 30) }));
+    return { wb: dec.decode(z['xl/workbook.xml']), s1: dec.decode(z['xl/worksheets/sheet1.xml']), s2: z['xl/worksheets/sheet2.xml'] && dec.decode(z['xl/worksheets/sheet2.xml']) };
+  };
+  let x = await sheetsOf(s);
+  assert.ok(x.s1.includes('出力 2026/09/24 14:30'));
+  assert.equal(x.s2, undefined, 'A/B 未保存なら1シート');
+  s.scenarioName = '2直案'; s.scenarios.A = C.snapshot(s, p, r);
+  x = await sheetsOf(s);
+  assert.ok(x.wb.includes('name="入力・計算"') && x.wb.includes('name="シナリオ比較"'));
+  assert.ok(x.s2.includes('シナリオ A/B 比較') && x.s2.includes('2直案') && x.s2.includes('未保存'));
+  assert.ok(x.s2.includes(`<v>${r.paybackYears}</v>`), '投資回収年数（保存時点の値）');
+  assert.ok(/<row r="\d+" hidden="1">/.test(x.s1), 'A/B の保存データは非表示行');
 });
 
 test('数量：初期投資は 単価×数量。空欄数量は1、ライト/精緻とも合計に反映', () => {
@@ -162,7 +156,7 @@ test('数量：初期投資は 単価×数量。空欄数量は1、ライト/精
   s.mode = 'detail'; s.detail.capex.si = 200; s.detail.capexQty.si = 3; s.detail.capex.safety = 50; s.detail.capexQty.safety = '';
   p = C.resolveInputs(s);
   assert.equal(p.capex.integration, 650);
-  // CSV に単価・数量・金額の行が出る
+  // 入力一覧（印刷サマリー）に単価・数量・金額の行が出る
   const rows = CSV.inputRows(s, p).map(r => r.join('|'));
   assert.ok(rows.includes('初期投資 機体（単価）|1000|万円'));
   assert.ok(rows.includes('初期投資 機体（数量）|2|台'));
@@ -170,7 +164,7 @@ test('数量：初期投資は 単価×数量。空欄数量は1、ライト/精
   assert.ok(rows.includes('初期投資 SI・ティーチング（金額）|600|万円'));
 });
 
-test('語彙ルール：UI・CSV・サマリーに禁止語が無い', () => {
+test('語彙ルール：UI・Excel・サマリーに禁止語が無い', () => {
   const fs = require('fs'), path = require('path');
   const banned = ['削減人数', '人員削減', '余剰人員', 'ペイバック', '機体価格'];
   for (const f of ['index.html', 'ui.js', 'csv.js', 'calc.js', 'xlsx.js']) {
@@ -187,7 +181,7 @@ test('価格系の初期値が空白', () => {
   for (const k of Object.keys(s.detail.opex)) assert.equal(s.detail.opex[k], '');
 });
 
-test('CSV読み込み：出力CSV → 状態が完全に復元される（ライト・精緻・A/B・しきい値）', () => {
+test('Excel：保存 → 読み込みで状態が完全に復元される（ライト・精緻・A/B・しきい値・不正値）', async () => {
   const s = lightState({ opexAnnual: 150 });
   s.base.capex.robot = 2000; s.base.capexQty.robot = 2; s.base.capex.integration = 300.5;
   s.scenarioName = '2直,"本命"案';
@@ -199,14 +193,11 @@ test('CSV読み込み：出力CSV → 状態が完全に復元される（ライ
   s.scenarios.A = C.snapshot(s, p, r);
   for (const mode of ['light', 'detail']) {
     s.mode = mode;
-    const p2 = C.resolveInputs(s), r2 = C.compute(p2);
-    const csv = CSV.buildCsv({ state: s, params: p2, result: r2, now: new Date(2026, 9, 7) });
-    assert.ok(csv.includes('[読み込み用データ]\r\n項目,値,単位,対象,キー\r\n'));
-    const cur = C.defaultState(); cur.ui.inputWidth = 600;
-    const res = CSV.importState(csv, cur);
-    assert.equal(res.format, 'data');
+    const cur = C.defaultState(); cur.ui.inputWidth = 600; cur.scenarios.B = { name: 'old', result: {}, series: [] };
+    const res = await XLSX.importXlsx(XLSX.buildXlsx(s, { now: new Date() }), cur);
+    assert.equal(res.format, 'xlsx');
     assert.equal(res.skipped, 0);
-    const want = C.deepClone(s); want.ui.inputWidth = 600;
+    const want = C.deepClone(s); want.ui.inputWidth = 600;   // ファイルに A/B があれば A/B ごと置き換え
     assert.deepEqual(res.state, want, mode);
   }
 });
@@ -243,13 +234,21 @@ test('CSV読み込み：文字コード（UTF-8 BOM / BOMなし / Shift_JIS）�
   assert.equal(CSV.decodeBytes(sjis), 'シナリオ名,２直案');
 });
 
-test('CSV読み込み：旧形式（[読み込み用データ]なし）は [入力一覧] の項目名から復元', () => {
+/** 以前のツールが出力していた CSV（読み込みに使う [サマリー] と [入力一覧] の部分） */
+function legacyCsv(s) {
+  const p = C.resolveInputs(s);
+  const q = v => (/[",\r\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v));
+  const L = ['[サマリー]', '項目,値,単位', '出力日時,2026/09/24 14:30,', `モード,${p.mode === 'detail' ? '精緻' : 'ライト'},`, `シナリオ名,${q(s.scenarioName)},`, '',
+    '[入力一覧]', '項目,値,単位', ...CSV.inputRows(s, p).map(r => r.map(q).join(',')), '', '[年次表]', '年,年間省人効果,年間ランニング費,年間純効果,累積キャッシュフロー', '0,0,0,0,-1'];
+  return '\uFEFF' + L.join('\r\n') + '\r\n';
+}
+
+test('CSV読み込み：以前のツールが出力した CSV は [入力一覧] の項目名から復元', () => {
   const s = lightState({ opexAnnual: 150 });
   s.base.capex.robot = 2000; s.base.capexQty.robot = 2; s.base.capex.integration = 300;
   s.scenarioName = '旧CSV';
-  let p = C.resolveInputs(s), r = C.compute(p);
-  const strip = csv => csv.slice(0, csv.indexOf('[読み込み用データ]'));
-  let res = CSV.importState(strip(CSV.buildCsv({ state: s, params: p, result: r })), null);
+  let r = C.compute(C.resolveInputs(s));
+  let res = CSV.importState(legacyCsv(s), null);
   assert.equal(res.format, 'legacy');
   assert.equal(res.state.scenarioName, '旧CSV');
   assert.equal(res.state.base.capex.robot, 2000);
@@ -258,8 +257,8 @@ test('CSV読み込み：旧形式（[読み込み用データ]なし）は [入�
   assert.equal(C.compute(C.resolveInputs(res.state)).paybackYears, r.paybackYears);
   // 精緻：合計を直接入力していたら override に戻る。自動合計なら null のまま
   s.mode = 'detail'; s.detail.capex.si = 200; s.detail.override.opex = 80;
-  p = C.resolveInputs(s); r = C.compute(p);
-  res = CSV.importState(strip(CSV.buildCsv({ state: s, params: p, result: r })), null);
+  r = C.compute(C.resolveInputs(s));
+  res = CSV.importState(legacyCsv(s), null);
   assert.equal(res.state.mode, 'detail');
   assert.equal(res.state.detail.capex.si, 200);
   assert.equal(res.state.detail.override.opex, 80);
@@ -268,7 +267,7 @@ test('CSV読み込み：旧形式（[読み込み用データ]なし）は [入�
   assert.equal(C.compute(C.resolveInputs(res.state)).paybackYears, r.paybackYears);
 });
 
-test('Excel入力シート：初期値の .xlsx を読み戻すと初期値。全入力項目がシートにある', async () => {
+test('Excel：初期値の .xlsx を読み戻すと初期値。全入力項目がシートにある', async () => {
   const keys = XLSX.GROUPS.flatMap(g => g[1]);
   const fieldKeys = CSV.FIELDS.filter(f => f[4] !== 'json').map(f => f[0]);
   assert.deepEqual(keys.slice().sort(), fieldKeys.slice().sort());
@@ -280,7 +279,7 @@ test('Excel入力シート：初期値の .xlsx を読み戻すと初期値。�
   assert.deepEqual(res.state, C.defaultState());
 });
 
-test('Excel入力シート：値入りの状態が往復する（A/Bは現在のものを残す）', async () => {
+test('Excel：A/B を含まないファイルなら現在の A/B を残す', async () => {
   const s = C.defaultState();
   s.mode = 'detail'; s.scenarioName = 'A&B <案>';
   s.base.capex.robot = 1800.5; s.base.capexQty.robot = 2; s.detail.capex.si = 250; s.detail.capexQty.si = '';

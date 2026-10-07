@@ -13,8 +13,8 @@
   'use strict';
 
   const MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-  const FILE_NAME = 'LexxMoMa_ROI_入力シート.xlsx';
   const SHEET_NAME = '入力・計算';
+  const SHEET2_NAME = 'シナリオ比較';
 
   // ============ ZIP（書き込み：STORE / 読み込み：STORE・DEFLATE） ============
   const CRC_TABLE = (() => {
@@ -92,7 +92,7 @@
   function colLetter(i) { return String.fromCharCode(65 + i); }   // 0→A（A〜M しか使わない）
 
   // スタイル番号（styles.xml の cellXfs の並びと一致させる）
-  const S = { title: 1, note: 2, head: 3, group: 4, label: 5, inNum: 6, inText: 7, unit: 8, resTitle: 9, big: 10, man: 11, thead: 12, tman: 13, tyear: 14, dec: 15, msg: 16, labelSub: 17, pct: 18, footer: 19, resLabel: 20, int: 21 };
+  const S = { title: 1, note: 2, head: 3, group: 4, label: 5, inNum: 6, inText: 7, unit: 8, resTitle: 9, big: 10, man: 11, thead: 12, tman: 13, tyear: 14, dec: 15, msg: 16, labelSub: 17, pct: 18, footer: 19, resLabel: 20, int: 21, stamp: 22 };
   const PRIMARY = 'FF0068B7';
   const STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
@@ -116,7 +116,7 @@
 <borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border>
 <border><left style="thin"><color rgb="FFD9DEE3"/></left><right style="thin"><color rgb="FFD9DEE3"/></right><top style="thin"><color rgb="FFD9DEE3"/></top><bottom style="thin"><color rgb="FFD9DEE3"/></bottom><diagonal/></border></borders>
 <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-<cellXfs count="22">
+<cellXfs count="23">
 <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
 <xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>
 <xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
@@ -139,6 +139,7 @@
 <xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment vertical="top"/></xf>
 <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
 <xf numFmtId="1" fontId="6" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
 </cellXfs>
 <cellStyles count="1"><cellStyle name="標準" xfId="0" builtinId="0"/></cellStyles>
 <dxfs count="2">
@@ -172,24 +173,61 @@
     return v;
   }
 
-  /** 状態 → .xlsx（Uint8Array）。テンプレートは C.defaultState() を渡す */
-  function buildXlsx(state) {
-    const meta = {}; CSV.FIELDS.forEach(f => { meta[f[0]] = { label: f[1], unit: f[2], scope: f[3], type: f[4] }; });
-    const rows = {};                         // 行番号 → { 列番号: xml }
-    const heights = {};
-    const merges = [], validations = [], numericRefs = [];
+  /** 1シート分のセルを溜める入れ物 */
+  function newSheet() {
+    const rows = {}, heights = {}, hidden = {}, merges = [];   // rows: 行番号 → { 列番号: xml }
     const put = (r, c, xml) => { (rows[r] = rows[r] || {})[c] = xml; };
     const ref = (c, r) => colLetter(c) + r;
-    const str = (c, r, s, st) => put(r, c, `<c r="${ref(c, r)}" s="${st || 0}" t="inlineStr"><is><t xml:space="preserve">${xmlEsc(s)}</t></is></c>`);
-    const numc = (c, r, n, st) => put(r, c, `<c r="${ref(c, r)}" s="${st || 0}"><v>${n}</v></c>`);
-    const blank = (c, r, st) => put(r, c, `<c r="${ref(c, r)}" s="${st || 0}"/>`);
-    const fml = (c, r, f, st, isStr) => put(r, c, `<c r="${ref(c, r)}" s="${st || 0}"${isStr ? ' t="str"' : ''}><f>${xmlEsc(f)}</f></c>`);
+    return {
+      heights, hidden, merges,
+      str: (c, r, s, st) => put(r, c, `<c r="${ref(c, r)}" s="${st || 0}" t="inlineStr"><is><t xml:space="preserve">${xmlEsc(s)}</t></is></c>`),
+      numc: (c, r, n, st) => put(r, c, `<c r="${ref(c, r)}" s="${st || 0}"><v>${n}</v></c>`),
+      blank: (c, r, st) => put(r, c, `<c r="${ref(c, r)}" s="${st || 0}"/>`),
+      fml: (c, r, f, st, isStr) => put(r, c, `<c r="${ref(c, r)}" s="${st || 0}"${isStr ? ' t="str"' : ''}><f>${xmlEsc(f)}</f></c>`),
+      xml(o) {                                // o: { cols:[[列番号, 幅, 非表示?]], view, extra, landscape }
+        const last = Math.max(0, ...Object.keys(rows).map(Number), ...Object.keys(heights).map(Number));
+        let data = '';
+        for (let r = 1; r <= last; r++) {
+          const cells = rows[r]; if (!cells && !heights[r]) continue;
+          const ht = heights[r] ? ` ht="${heights[r]}" customHeight="1"` : '';
+          data += `<row r="${r}"${ht}${hidden[r] ? ' hidden="1"' : ''}>` + Object.keys(cells || {}).map(Number).sort((a, b) => a - b).map(c => cells[c]).join('') + '</row>';
+        }
+        const cols = o.cols.map(([i, w, hid]) => `<col min="${i}" max="${i}" width="${w}" customWidth="1"${hid ? ' hidden="1"' : ''}/>`).join('');
+        return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheetPr><tabColor rgb="${PRIMARY}"/></sheetPr>
+<sheetViews>${o.view}</sheetViews>
+<sheetFormatPr defaultRowHeight="16"/>
+<cols>${cols}</cols>
+<sheetData>${data}</sheetData>
+${merges.length ? `<mergeCells count="${merges.length}">${merges.map(m => `<mergeCell ref="${m}"/>`).join('')}</mergeCells>` : ''}
+${o.extra || ''}
+<pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.3" footer="0.3"/>
+<pageSetup paperSize="9" orientation="${o.landscape ? 'landscape' : 'portrait'}" fitToHeight="0"/>
+</worksheet>`;
+      }
+    };
+  }
+
+  /**
+   * 状態 → .xlsx（Uint8Array）
+   * - シート1「入力・計算」：入力欄＋ Excel の数式による計算結果。シナリオA/Bは非表示行に保存データ（読み込み用）
+   * - シート2「シナリオ比較」：A/B が保存されているときだけ（保存時点の値）
+   * @param {object} o { now: Date }（出力日時。省略時は表示しない）
+   */
+  function buildXlsx(state, o) {
+    const now = o && o.now;
+    const meta = {}; CSV.FIELDS.forEach(f => { meta[f[0]] = { label: f[1], unit: f[2], scope: f[3], type: f[4] }; });
+    const sh = newSheet();
+    const { str, numc, blank, fml, heights, merges } = sh;
+    const validations = [], numericRefs = [];
 
     // ---- 左：入力（A 項目 / B 値 / C 単位 / D 使うモード / E キー（非表示）） ----
     str(0, 1, 'LexxMoMa 費用対効果（ROI）計算シート', S.title);
     heights[1] = 26;
+    if (now) { str(2, 1, '出力 ' + CSV.fmtDateTime(now), S.stamp); merges.push('C1:D1'); }
     str(0, 2, '黄色のセルに入力してください（金額の単位は万円）。「使うモード」がライト／精緻の行は、B4 のモードで計算するときだけ使われます。'
-      + 'このファイルは ROI 計算ツールの「CSV・Excel読み込み」でそのまま読み込めます（E列のキーは変更しないでください）。', S.note);
+      + 'このファイルは ROI 計算ツールの「Excel読み込み」でそのまま読み込めます（E列のキーは変更しないでください）。', S.note);
     merges.push('A2:D2'); heights[2] = 54;
     const HEAD = 3;
     ['項目', '値', '単位', '使うモード', 'キー'].forEach((h, i) => str(i, HEAD, h, S.head));
@@ -213,7 +251,13 @@
         r++;
       });
     });
-    const lastInputRow = r - 1;
+    // シナリオA/Bの保存データ（非表示行。読み込みで A/B を復元する）
+    ['scenarios.A', 'scenarios.B'].forEach(key => {
+      const v = key.split('.').reduce((x, k) => (x == null ? undefined : x[k]), state);
+      if (!v) return;
+      str(0, r, meta[key].label, S.labelSub); str(1, r, JSON.stringify(v), 0); str(4, r, key, 0);
+      sh.hidden[r] = true; r++;
+    });
     if (numericRefs.length) validations.push(`<dataValidation type="decimal" operator="greaterThanOrEqual" allowBlank="1" showErrorMessage="1" errorStyle="warning" errorTitle="数値を確認してください" error="0以上の数値を入力してください" sqref="${numericRefs.join(' ')}"><formula1>0</formula1></dataValidation>`);
 
     // ---- 右：計算結果（G 項目 / H 値 / I 単位）と年次表（G〜K、L・M は非表示の補助列） ----
@@ -287,42 +331,71 @@
       + `<cfRule type="expression" dxfId="1" priority="2" stopIfTrue="1"><formula>${xmlEsc(`AND(ISNUMBER(H3),H3<=${thY})`)}</formula></cfRule>`
       + `</conditionalFormatting>`;
 
-    const lastRow = Math.max(lastInputRow, foot);
-    let sheetRows = '';
-    for (let rr = 1; rr <= lastRow; rr++) {
-      const cells = rows[rr]; if (!cells && !heights[rr]) continue;
-      const ht = heights[rr] ? ` ht="${heights[rr]}" customHeight="1"` : '';
-      sheetRows += `<row r="${rr}"${ht}>` + Object.keys(cells || {}).map(Number).sort((a, b) => a - b).map(c => cells[c]).join('') + '</row>';
-    }
-    const cols = [[1, 54], [2, 14], [3, 9], [4, 10], [5, 30, true], [6, 3], [7, 38], [8, 16], [9, 16], [10, 14], [11, 18], [12, 10, true], [13, 10, true]]
-      .map(([i, w, hidden]) => `<col min="${i}" max="${i}" width="${w}" customWidth="1"${hidden ? ' hidden="1"' : ''}/>`).join('');
-    const sheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-<sheetPr><tabColor rgb="${PRIMARY}"/></sheetPr>
-<sheetViews><sheetView workbookViewId="0" showGridLines="0" zoomScale="100"><pane ySplit="${HEAD}" topLeftCell="A${HEAD + 1}" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft" activeCell="B${HEAD + 2}" sqref="B${HEAD + 2}"/></sheetView></sheetViews>
-<sheetFormatPr defaultRowHeight="16"/>
-<cols>${cols}</cols>
-<sheetData>${sheetRows}</sheetData>
-<mergeCells count="${merges.length}">${merges.map(m => `<mergeCell ref="${m}"/>`).join('')}</mergeCells>
-${cf}
-<dataValidations count="${validations.length}">${validations.join('')}</dataValidations>
-<pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.3" footer="0.3"/>
-<pageSetup paperSize="9" orientation="landscape" fitToHeight="0"/>
-</worksheet>`;
+    const sheet1 = sh.xml({
+      cols: [[1, 54], [2, 14], [3, 9], [4, 10], [5, 30, true], [6, 3], [7, 38], [8, 16], [9, 16], [10, 14], [11, 18], [12, 10, true], [13, 10, true]],
+      view: `<sheetView workbookViewId="0" showGridLines="0" zoomScale="100"><pane ySplit="${HEAD}" topLeftCell="A${HEAD + 1}" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft" activeCell="B${HEAD + 2}" sqref="B${HEAD + 2}"/></sheetView>`,
+      extra: cf + `<dataValidations count="${validations.length}">${validations.join('')}</dataValidations>`,
+      landscape: true
+    });
+    const sheets = [{ name: SHEET_NAME, xml: sheet1 }];
+    const A = state.scenarios && state.scenarios.A, B = state.scenarios && state.scenarios.B;
+    if (A || B) sheets.push({ name: SHEET2_NAME, xml: compareSheet(A, B) });
 
     const files = [
       { name: '[Content_Types].xml', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>` },
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${sheets.map((x, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>` },
       { name: '_rels/.rels', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>` },
       { name: 'xl/workbook.xml', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><bookViews><workbookView/></bookViews><sheets><sheet name="${SHEET_NAME}" sheetId="1" r:id="rId1"/></sheets><calcPr calcId="191029" fullCalcOnLoad="1"/></workbook>` },
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><bookViews><workbookView/></bookViews><sheets>${sheets.map((x, i) => `<sheet name="${x.name}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('')}</sheets><calcPr calcId="191029" fullCalcOnLoad="1"/></workbook>` },
       { name: 'xl/_rels/workbook.xml.rels', data: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>` },
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((x, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('')}<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>` },
       { name: 'xl/styles.xml', data: STYLES },
-      { name: 'xl/worksheets/sheet1.xml', data: sheet }
+      ...sheets.map((x, i) => ({ name: `xl/worksheets/sheet${i + 1}.xml`, data: x.xml }))
     ];
     return zipStore(files);
+  }
+
+  /** シート2：シナリオ A/B 比較（保存時点の値。Excel 上では再計算しない） */
+  function compareSheet(A, B) {
+    const sh = newSheet();
+    const { str, numc } = sh;
+    str(0, 1, 'シナリオ A/B 比較', S.title); sh.heights[1] = 26;
+    str(0, 2, 'ROI 計算ツールで「シナリオA／Bに保存」した時点の値です（このシートは再計算しません。入力を変えて試すときは「入力・計算」シートで）。', S.footer);
+    let r = 4;
+    ['項目', 'シナリオA', 'シナリオB', '単位'].forEach((h, i) => str(i, r, h, S.head)); r++;
+    const pb = x => x.result.error ? '—' : (x.result.paybackYears === null ? '未回収' : x.result.paybackYears);
+    const ROWS = [
+      ['シナリオ名', x => x.name || '無題', '', 'text'],
+      ['モード', x => (x.mode === 'detail' ? '精緻' : 'ライト'), '', 'text'],
+      ['1人あたり年間人件費＋管理費', x => x.inputs.laborCostPerPerson, '万円/年', S.man],
+      ['直数', x => x.inputs.shifts, '直', S.int],
+      ['1直あたり省人化（再配置）人数（実効）', x => x.inputs.effectivePersonsPerShift, '人', S.dec],
+      ['人件費上昇率', x => x.inputs.wageGrowth, '%/年', S.pct],
+      ['初期投資 合計', x => x.inputs.capexTotal, '万円', S.man],
+      ['年間ランニング費', x => x.inputs.opexAnnual, '万円/年', S.man],
+      ['評価期間', x => x.inputs.years, '年', S.int],
+      ['初年度 年間省人効果', x => x.result.annualSaving0, '万円/年', S.man],
+      ['投資回収年数', pb, '年', S.pct],
+      ['累積効果（評価期間末）', x => x.result.cumFinal, '万円', S.man],
+      ['NPV（精緻・NPV=ON のとき）', x => (x.result.npv === null || x.result.npv === undefined ? '—' : x.result.npv), '万円', S.man]
+    ];
+    const cell = (c, x, f, st) => {
+      if (!x) { str(c, r, '未保存', S.unit); return; }
+      const v = f(x);
+      if (st === 'text' || typeof v !== 'number') str(c, r, String(v), st === 'text' ? S.resLabel : S.unit);
+      else numc(c, r, v, st);
+    };
+    ROWS.forEach(([label, f, unit, st]) => { str(0, r, label, S.resLabel); cell(1, A, f, st); cell(2, B, f, st); str(3, r, unit, S.unit); r++; });
+    r++;
+    str(0, r, '累積キャッシュフロー（万円）', S.resTitle); r++;
+    ['年', 'シナリオA', 'シナリオB'].forEach((h, i) => str(i, r, h, S.thead)); r++;
+    const N = Math.max(A ? A.series.length : 0, B ? B.series.length : 0);
+    for (let y = 0; y < N; y++, r++) {
+      numc(0, r, y, S.tyear);
+      [A, B].forEach((x, k) => { const p = x && x.series[y]; if (p) numc(k + 1, r, p.cum, S.tman); else sh.blank(k + 1, r, S.tman); });
+    }
+    return sh.xml({ cols: [[1, 40], [2, 18], [3, 18], [4, 10]], view: '<sheetView workbookViewId="0" showGridLines="0"/>' });
   }
 
   // ============ 読み込み ============
@@ -394,5 +467,5 @@ ${cf}
     return res;
   }
 
-  return { MIME, FILE_NAME, SHEET_NAME, GROUPS, buildXlsx, zipStore, unzip, crc32, readSheetRows, importXlsx };
+  return { MIME, SHEET_NAME, SHEET2_NAME, GROUPS, buildXlsx, zipStore, unzip, crc32, readSheetRows, importXlsx };
 });

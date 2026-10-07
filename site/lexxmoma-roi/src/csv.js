@@ -1,5 +1,6 @@
 /* LexxMoMa 費用対効果 簡易計算ツール — csv.js
- * CSV生成（UTF-8 BOM・CRLF・RFC4180）とダウンロード。生成部はDOM非依存。 */
+ * 入力項目の定義（FIELDS）・入力一覧（印刷サマリー用）・読み込み（Excel の行データ／CSV）。DOM非依存。
+ * 出力は Excel（xlsx.js）に統一。CSV は本ツールが以前出力したファイルの読み込みのみ対応する。 */
 (function (root, factory) {
   'use strict';
   const calc = (typeof module === 'object' && module.exports) ? require('./calc.js') : root.LXCALC;
@@ -9,27 +10,18 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (C) {
   'use strict';
 
-  const BOM = '﻿';
-  const CRLF = '\r\n';
-
-  function esc(v) {
-    const s = v === null || v === undefined ? '' : String(v);
-    return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-  }
-  function row(cells) { return cells.map(esc).join(','); }
   function pad2(n) { return String(n).padStart(2, '0'); }
   function fmtDateTime(d) {
     return `${d.getFullYear()}/${pad2(d.getMonth() + 1)}/${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
   }
   function yyyymmdd(d) { return `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}`; }
   function int(x) { return C.roundInt(x); }
-  function pb(y) { return y === null || y === undefined ? '' : C.fmtYears(y); }
 
-  /** ファイル名：LexxMoMa_ROI_{シナリオ名 or 無題}_{YYYYMMDD}.csv */
-  function fileName(scenarioName, date) {
+  /** ファイル名：LexxMoMa_ROI_{シナリオ名 or 無題}_{YYYYMMDD}.{ext}（既定 xlsx） */
+  function fileName(scenarioName, date, ext) {
     const raw = (scenarioName || '').trim() || '無題';
     const safe = raw.replace(/[\\/:*?"<>|\r\n\t]/g, '_');
-    return `LexxMoMa_ROI_${safe}_${yyyymmdd(date || new Date())}.csv`;
+    return `LexxMoMa_ROI_${safe}_${yyyymmdd(date || new Date())}.${ext || 'xlsx'}`;
   }
 
   /** 入力一覧（モードに応じて全入力）：[項目, 値, 単位] の配列 */
@@ -96,72 +88,8 @@
     return rows;
   }
 
-  /** シナリオ比較の行（A/B両方保存時のみ使用） */
-  function compareRows(A, B) {
-    const v = (s, f) => (s ? f(s) : '');
-    return [
-      ['シナリオ名', v(A, s => s.name || '無題'), v(B, s => s.name || '無題')],
-      ['モード', v(A, s => s.mode === 'detail' ? '精緻' : 'ライト'), v(B, s => s.mode === 'detail' ? '精緻' : 'ライト')],
-      ['1人あたり年間人件費＋管理費', v(A, s => int(s.inputs.laborCostPerPerson)), v(B, s => int(s.inputs.laborCostPerPerson))],
-      ['直数', v(A, s => s.inputs.shifts), v(B, s => s.inputs.shifts)],
-      ['1直あたり省人化（再配置）人数', v(A, s => C.fmtDec(s.inputs.effectivePersonsPerShift, 3)), v(B, s => C.fmtDec(s.inputs.effectivePersonsPerShift, 3))],
-      ['人件費上昇率', v(A, s => C.fmtDec(s.inputs.wageGrowth, 2)), v(B, s => C.fmtDec(s.inputs.wageGrowth, 2))],
-      ['初期投資 合計', v(A, s => int(s.inputs.capexTotal)), v(B, s => int(s.inputs.capexTotal))],
-      ['年間ランニング費', v(A, s => int(s.inputs.opexAnnual)), v(B, s => int(s.inputs.opexAnnual))],
-      ['評価期間', v(A, s => s.inputs.years), v(B, s => s.inputs.years)],
-      ['初年度 年間省人効果', v(A, s => int(s.result.annualSaving0)), v(B, s => int(s.result.annualSaving0))],
-      ['投資回収年数', v(A, s => pb(s.result.paybackYears)), v(B, s => pb(s.result.paybackYears))],
-      ['累積効果', v(A, s => int(s.result.cumFinal)), v(B, s => int(s.result.cumFinal))]
-    ];
-  }
-
-  /**
-   * CSV本文を生成（BOM付き・CRLF）
-   * @param {object} o { state, params, result, now }
-   */
-  function buildCsv(o) {
-    const { state, params: p, result: r } = o;
-    const now = o.now || new Date();
-    const L = [];
-    // [サマリー]
-    L.push('[サマリー]');
-    L.push(row(['項目', '値', '単位']));
-    L.push(row(['出力日時', fmtDateTime(now), '']));
-    L.push(row(['モード', p.mode === 'detail' ? '精緻' : 'ライト', '']));
-    L.push(row(['シナリオ名', state.scenarioName || '', '']));
-    L.push(row(['投資回収年数', r.error ? '' : pb(r.paybackYears), '年']));
-    L.push(row(['初年度 年間省人効果', int(r.annualSaving0), '万円']));
-    L.push(row([`${r.years}年累積効果`, int(r.cumFinal), '万円']));
-    L.push(row(['初期投資 合計', int(r.capexTotal), '万円']));
-    L.push(row(['年間ランニング費', int(r.opexAnnual), '万円']));
-    if (r.npv !== null && r.npv !== undefined) L.push(row(['NPV', int(r.npv), '万円']));
-    L.push('');
-    // [入力一覧]
-    L.push('[入力一覧]');
-    L.push(row(['項目', '値', '単位']));
-    inputRows(state, p).forEach(x => L.push(row(x)));
-    L.push('');
-    // [年次表]
-    L.push('[年次表]');
-    L.push(row(['年', '年間省人効果', '年間ランニング費', '年間純効果', '累積キャッシュフロー']));
-    r.series.forEach(s => L.push(row([s.year, int(s.saving), int(s.opex), int(s.net), int(s.cum)])));
-    // [シナリオ比較]
-    const A = state.scenarios && state.scenarios.A, B = state.scenarios && state.scenarios.B;
-    if (A && B) {
-      L.push('');
-      L.push('[シナリオ比較]');
-      L.push(row(['項目', 'シナリオA', 'シナリオB']));
-      compareRows(A, B).forEach(x => L.push(row(x)));
-    }
-    // [読み込み用データ]（CSV読み込みで入力を復元するための全項目）
-    L.push('');
-    dataSection(state).forEach(x => L.push(x));
-    return BOM + L.join(CRLF) + CRLF;
-  }
-
-  // ============ 読み込み用データ（CSV ⇄ 状態） ============
-  const DATA_SECTION = '[読み込み用データ]';
-  const DATA_HEAD = ['項目', '値', '単位', '対象', 'キー'];
+  // ============ 入力項目の定義と読み込み ============
+  const DATA_SECTION = '[読み込み用データ]';     // 読み込み用の行データの目印（Excel 入力シートはこの形に変換して渡す）
   /** [キー, 項目, 単位, 対象, 型]。型：num（既定）/ text / mode / bool / override（空欄=自動合計）/ json */
   const CAPEX_LABELS = { robot: '機体', camera: 'カメラ・ビジョン', endEffector: 'エンドエフェクタ', integration: '導入・周辺費用（SI・安全対策・レイアウト）',
     si: 'SI・ティーチング', safety: '安全対策・柵', layout: 'レイアウト変更', training: '教育', spares: '予備品' };
@@ -213,19 +141,12 @@
     ['scenarios.B', 'シナリオB（保存データ・編集不可）', '', '共通', 'json']
   ];
 
-  function getPath(obj, path) { return path.split('.').reduce((o, k) => (o == null ? undefined : o[k]), obj); }
   function setPath(obj, path, val) {
     const ks = path.split('.'); let o = obj;
     for (let i = 0; i < ks.length - 1; i++) { if (o[ks[i]] == null || typeof o[ks[i]] !== 'object') o[ks[i]] = {}; o = o[ks[i]]; }
     o[ks[ks.length - 1]] = val;
   }
 
-  function formatValue(v, type) {
-    if (type === 'mode') return v === 'detail' ? '精緻' : 'ライト';
-    if (type === 'bool') return v ? 'ON' : 'OFF';
-    if (type === 'json') return v ? JSON.stringify(v) : '';
-    return v === null || v === undefined ? '' : String(v);
-  }
   /** CSVセルの文字列 → 状態値。読めない値は undefined（その行は無視） */
   function parseValue(s, type) {
     const t = String(s === undefined ? '' : s).trim();
@@ -239,16 +160,6 @@
     if (t === '') return type === 'override' ? null : '';
     const n = Number(t.replace(/,/g, ''));
     return Number.isFinite(n) ? n : t;      // 不正値はそのまま保持し、入力欄の警告色で知らせる
-  }
-
-  /** [読み込み用データ] セクションの行（CSV文字列の配列）。シナリオA/Bは保存されているときだけ */
-  function dataSection(state) {
-    const L = [DATA_SECTION, row(DATA_HEAD)];
-    FIELDS.forEach(([key, label, unit, scope, type]) => {
-      if (type === 'json' && !getPath(state, key)) return;
-      L.push(row([label, formatValue(getPath(state, key), type), unit, scope, key]));
-    });
-    return L;
   }
 
   /** RFC4180 のCSVを行×セルの配列に分解（BOM・CRLF/LF・クォート内の改行に対応） */
@@ -352,7 +263,7 @@
         Object.keys(totals).forEach(k => { if (Math.abs(totals[k] - derived[k]) >= 0.5) d.override[k] = totals[k]; });
       }
     } else {
-      return { error: 'このツールで出力したCSV、または入力テンプレートを選んでください' };
+      return { error: 'このツールで出力した Excel／CSV ファイルを選んでください' };
     }
     if (!applied) return { error: '読み込める項目がありませんでした' };
     if (current) {
@@ -362,16 +273,5 @@
     return { state: s, applied, skipped, format };
   }
 
-  /** ブラウザでのダウンロード（Blob + a[download]） */
-  function download(data, filename, type) {
-    const blob = new Blob([data], { type: type || 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = filename;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
-
-  return { BOM, CRLF, esc, row, fileName, inputRows, compareRows, buildCsv, download, fmtDateTime, yyyymmdd,
-    DATA_SECTION, FIELDS, dataSection, parseCsv, decodeBytes, importState };
+  return { fileName, inputRows, fmtDateTime, yyyymmdd, DATA_SECTION, FIELDS, parseCsv, decodeBytes, importState };
 });
