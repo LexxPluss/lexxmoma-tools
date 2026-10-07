@@ -4,6 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const C = require('../src/calc.js');
 const CSV = require('../src/csv.js');
+const XLSX = require('../src/xlsx.js');
 
 function lightState(over) {
   const s = C.defaultState();
@@ -172,7 +173,7 @@ test('数量：初期投資は 単価×数量。空欄数量は1、ライト/精
 test('語彙ルール：UI・CSV・サマリーに禁止語が無い', () => {
   const fs = require('fs'), path = require('path');
   const banned = ['削減人数', '人員削減', '余剰人員', 'ペイバック', '機体価格'];
-  for (const f of ['index.html', 'ui.js', 'csv.js', 'calc.js']) {
+  for (const f of ['index.html', 'ui.js', 'csv.js', 'calc.js', 'xlsx.js']) {
     const txt = fs.readFileSync(path.join(__dirname, '..', 'src', f), 'utf8');
     for (const w of banned) assert.equal(txt.includes(w), false, `${f} に「${w}」`);
   }
@@ -223,17 +224,10 @@ test('CSV読み込み：CSVにA/Bが無ければ現在のA/Bを残す。未知�
   assert.ok(CSV.importState('', cur).error);
 });
 
-test('入力テンプレート：初期値・価格は空白・A/Bなし。キー列を消しても項目名で読める', () => {
-  const csv = CSV.buildTemplateCsv();
-  assert.ok(csv.startsWith('\uFEFF'));
-  assert.equal(/[^\r]\n/.test(csv), false, 'LF単独が無い');
-  assert.ok(csv.includes('初期投資 機体（単価）,,万円,共通,base.capex.robot\r\n'));
-  assert.equal(csv.includes('scenarios.A'), false);
-  const res = CSV.importState(csv, null);
-  assert.deepEqual(res.state, C.defaultState());
-  // Excel で「値」を埋め、キー列を削除して保存したケース（3桁区切りも可）
-  const edited = '[読み込み用データ]\r\n項目,値,単位\r\n"初期投資 機体（単価）","1,200",万円\r\nモード（ライト／精緻）,精緻,\r\nNPVを表示（ON／OFF）,ON,\r\n';
+test('CSV読み込み：キー列を消しても項目名で読める・3桁区切り・見出し行は無視', () => {
+  const edited = '[読み込み用データ]\r\n項目,値,単位\r\n■ 初期投資,,\r\n"初期投資 機体（単価）","1,200",万円\r\nモード（ライト／精緻）,精緻,\r\nNPVを表示（ON／OFF）,ON,\r\n';
   const r2 = CSV.importState(edited, null);
+  assert.equal(r2.skipped, 0);
   assert.equal(r2.state.base.capex.robot, 1200);
   assert.equal(r2.state.mode, 'detail');
   assert.equal(r2.state.detail.fin.enableNPV, true);
@@ -272,4 +266,64 @@ test('CSV読み込み：旧形式（[読み込み用データ]なし）は [入�
   assert.equal(res.state.detail.override.labor, null);
   assert.equal(res.state.detail.override.integration, null);
   assert.equal(C.compute(C.resolveInputs(res.state)).paybackYears, r.paybackYears);
+});
+
+test('Excel入力シート：初期値の .xlsx を読み戻すと初期値。全入力項目がシートにある', async () => {
+  const keys = XLSX.GROUPS.flatMap(g => g[1]);
+  const fieldKeys = CSV.FIELDS.filter(f => f[4] !== 'json').map(f => f[0]);
+  assert.deepEqual(keys.slice().sort(), fieldKeys.slice().sort());
+  const bytes = XLSX.buildXlsx(C.defaultState());
+  assert.equal(bytes[0], 0x50); assert.equal(bytes[1], 0x4B);           // PK
+  const res = await XLSX.importXlsx(bytes, null);
+  assert.equal(res.format, 'xlsx');
+  assert.equal(res.skipped, 0);
+  assert.deepEqual(res.state, C.defaultState());
+});
+
+test('Excel入力シート：値入りの状態が往復する（A/Bは現在のものを残す）', async () => {
+  const s = C.defaultState();
+  s.mode = 'detail'; s.scenarioName = 'A&B <案>';
+  s.base.capex.robot = 1800.5; s.base.capexQty.robot = 2; s.detail.capex.si = 250; s.detail.capexQty.si = '';
+  s.detail.override.opex = 77; s.detail.fin.enableNPV = true; s.thresholds.yellow = 3.5;
+  const cur = C.defaultState(); cur.scenarios.B = { name: 'keep', result: {}, series: [] };
+  const res = await XLSX.importXlsx(XLSX.buildXlsx(s), cur);
+  const want = C.deepClone(s); want.scenarios = cur.scenarios;
+  assert.deepEqual(res.state, want);
+});
+
+test('Excel読み込み：deflate 圧縮・共有文字列（ふりがな付き）のシートを読める', async () => {
+  // Excel が保存し直したファイルを模擬：sharedStrings + deflate
+  const sheet = '<worksheet><sheetData>'
+    + '<row r="3"><c r="A3" t="s"><v>0</v></c><c r="B3" t="s"><v>1</v></c><c r="E3" t="s"><v>2</v></c></row>'
+    + '<row r="4"><c r="A4" t="s"><v>3</v></c><c r="B4" t="s"><v>4</v></c><c r="E4" t="s"><v>5</v></c></row>'
+    + '<row r="5"><c r="B5"><v>3</v></c><c r="E5" t="inlineStr"><is><t>base.shifts</t></is></c><c r="H5"><f>1+1</f><v>2</v></c></row>'
+    + '</sheetData></worksheet>';
+  const sst = '<sst>' + ['項目', '値', 'キー', 'シナリオ名'].map(t => `<si><t>${t}</t></si>`).join('')
+    + '<si><r><t>本命</t></r><r><t>&amp;案</t></r><rPh sb="0" eb="2"><t>ホンメイ</t></rPh></si><si><t>scenarioName</t></si></sst>';
+  const files = {
+    'xl/workbook.xml': '<workbook><sheets><sheet name="入力・計算" sheetId="1" r:id="rId9"/></sheets></workbook>',
+    'xl/_rels/workbook.xml.rels': '<Relationships><Relationship Id="rId9" Type="x" Target="worksheets/sheetX.xml"/></Relationships>',
+    'xl/sharedStrings.xml': sst, 'xl/worksheets/sheetX.xml': sheet
+  };
+  const enc = new TextEncoder(), parts = [], central = []; let off = 0;
+  for (const [name, text] of Object.entries(files)) {
+    const raw = enc.encode(text);
+    const comp = new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer());
+    const nm = enc.encode(name);
+    const lh = new DataView(new ArrayBuffer(30)); lh.setUint32(0, 0x04034b50, true); lh.setUint16(8, 8, true);
+    lh.setUint32(18, comp.length, true); lh.setUint32(22, raw.length, true); lh.setUint16(26, nm.length, true);
+    parts.push(new Uint8Array(lh.buffer), nm, comp);
+    const ch = new DataView(new ArrayBuffer(46)); ch.setUint32(0, 0x02014b50, true); ch.setUint16(10, 8, true);
+    ch.setUint32(20, comp.length, true); ch.setUint32(24, raw.length, true); ch.setUint16(28, nm.length, true); ch.setUint32(42, off, true);
+    central.push(new Uint8Array(ch.buffer), nm);
+    off += 30 + nm.length + comp.length;
+  }
+  const cd = central.reduce((a, b) => a + b.length, 0);
+  const end = new DataView(new ArrayBuffer(22)); end.setUint32(0, 0x06054b50, true); end.setUint16(10, 4, true); end.setUint32(12, cd, true); end.setUint32(16, off, true);
+  const zip = new Uint8Array(await new Blob(parts.concat(central, [new Uint8Array(end.buffer)])).arrayBuffer());
+  const res = await XLSX.importXlsx(zip, null);
+  assert.equal(res.error, undefined);
+  assert.equal(res.state.scenarioName, '本命&案');
+  assert.equal(res.state.base.shifts, 3);
+  assert.equal(res.applied, 2);
 });

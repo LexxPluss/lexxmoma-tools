@@ -73,9 +73,9 @@
 
 <div class="actions">
   <button type="button" class="btn primary" id="btnCsv">CSVダウンロード</button>
-  <button type="button" class="btn" id="btnCsvLoad" title="このツールで出力したCSV・入力テンプレートから入力を復元します（ファイルを画面にドロップしても読み込めます）">CSV読み込み</button>
-  <button type="button" class="btn ghost" id="btnTemplate" title="初期値の入力フォーマット（価格欄は空白）。Excel で値を入れて保存し「CSV読み込み」で反映できます">入力テンプレート（CSV）</button>
-  <input type="file" id="csvFile" accept=".csv,text/csv" hidden>
+  <button type="button" class="btn" id="btnCsvLoad" title="このツールで出力したCSV・Excel入力シートから入力を復元します（ファイルを画面にドロップしても読み込めます）">CSV・Excel読み込み</button>
+  <button type="button" class="btn ghost" id="btnTemplate" title="初期値の入力シート（価格欄は空白）。Excel だけで投資回収年数まで計算でき、保存したファイルはこのツールでも読み込めます">入力シート（Excel）</button>
+  <input type="file" id="csvFile" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
   <span class="sep" aria-hidden="true"></span>
   <button type="button" class="btn" id="btnSummary">サマリー文をコピー</button>
   <button type="button" class="btn" id="btnPrint">印刷</button>
@@ -104,6 +104,7 @@
 
 <script src="calc.js"></script>
 <script src="csv.js"></script>
+<script src="xlsx.js"></script>
 <script src="scene.js"></script>
 <script src="ui.js"></script>
 <script src="../../assets/track.js" data-tool="roi"></script>

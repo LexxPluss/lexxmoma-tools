@@ -155,7 +155,7 @@
     }
     // [読み込み用データ]（CSV読み込みで入力を復元するための全項目）
     L.push('');
-    dataSection(state, true).forEach(x => L.push(x));
+    dataSection(state).forEach(x => L.push(x));
     return BOM + L.join(CRLF) + CRLF;
   }
 
@@ -241,27 +241,14 @@
     return Number.isFinite(n) ? n : t;      // 不正値はそのまま保持し、入力欄の警告色で知らせる
   }
 
-  /** [読み込み用データ] セクションの行（CSV文字列の配列）。withScenarios=false ならシナリオA/Bを含めない */
-  function dataSection(state, withScenarios) {
+  /** [読み込み用データ] セクションの行（CSV文字列の配列）。シナリオA/Bは保存されているときだけ */
+  function dataSection(state) {
     const L = [DATA_SECTION, row(DATA_HEAD)];
     FIELDS.forEach(([key, label, unit, scope, type]) => {
-      if (type === 'json' && !(withScenarios && getPath(state, key))) return;
+      if (type === 'json' && !getPath(state, key)) return;
       L.push(row([label, formatValue(getPath(state, key), type), unit, scope, key]));
     });
     return L;
-  }
-
-  const TEMPLATE_FILE = 'LexxMoMa_ROI_入力テンプレート.csv';
-  /** 入力テンプレート：初期値の [読み込み用データ] と使い方（価格欄は空白） */
-  function buildTemplateCsv() {
-    const L = [
-      '[使い方]',
-      row(['「値」列を編集して保存し、ツールの「CSV読み込み」で読み込むと入力欄に反映されます。']),
-      row(['「キー」列は変更しないでください。不要な行は削除してもかまいません（無い行は初期値になります）。']),
-      row(['金額の単位は万円です。「対象」がライト／精緻の行は、そのモードの計算にのみ使われます。']),
-      ''
-    ].concat(dataSection(C.defaultState(), false));
-    return BOM + L.join(CRLF) + CRLF;
   }
 
   /** RFC4180 のCSVを行×セルの配列に分解（BOM・CRLF/LF・クォート内の改行に対応） */
@@ -315,14 +302,14 @@
   const TYPE_OF = Object.create(null); FIELDS.forEach(f => { TYPE_OF[f[0]] = f[4]; });
 
   /**
-   * CSV文字列 → 新しい状態
+   * CSV文字列（または行×セルの配列。Excel 入力シートの読み込みで使う） → 新しい状態
    * - [読み込み用データ] があればキー列で復元（無い行は初期値）
    * - 無ければ旧形式として [サマリー] / [入力一覧] の項目名から復元
    * - CSVにシナリオA/Bが無ければ current の A/B と画面レイアウトを引き継ぐ
    * @returns {{state, applied:number, skipped:number, format:'data'|'legacy'} | {error:string}}
    */
-  function importState(text, current) {
-    const secs = sections(parseCsv(text));
+  function importState(input, current) {
+    const secs = sections(Array.isArray(input) ? input : parseCsv(input));
     const s = C.defaultState();
     let applied = 0, skipped = 0, format;
     const put = (key, raw) => {
@@ -336,8 +323,10 @@
       const head = rows[0] && rows[0].map(c => String(c).trim());
       const iKey = head ? head.indexOf('キー') : -1, iVal = head ? head.indexOf('値') : -1;
       const byLabel = Object.create(null); FIELDS.forEach(f => { byLabel[f[1]] = f[0]; });
-      rows.slice(iKey >= 0 ? 1 : 0).forEach(r => {
+      rows.slice(iKey >= 0 || iVal >= 0 ? 1 : 0).forEach(r => {
         const k = iKey >= 0 ? String(r[iKey] || '').trim() : '';
+        const val = String(r[iVal >= 0 ? iVal : 1] || '').trim();
+        if (!k && !val) return;              // 見出し行（■ 人件費 など）
         const key = (k in TYPE_OF) ? k : byLabel[String(r[0] || '').trim()];   // キー列が無ければ項目名で照合
         if (!key) { skipped++; return; }
         put(key, r[iVal >= 0 ? iVal : 1]);
@@ -374,8 +363,8 @@
   }
 
   /** ブラウザでのダウンロード（Blob + a[download]） */
-  function download(text, filename) {
-    const blob = new Blob([text], { type: 'text/csv;charset=utf-8' });
+  function download(data, filename, type) {
+    const blob = new Blob([data], { type: type || 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = filename;
@@ -384,5 +373,5 @@
   }
 
   return { BOM, CRLF, esc, row, fileName, inputRows, compareRows, buildCsv, download, fmtDateTime, yyyymmdd,
-    DATA_SECTION, FIELDS, TEMPLATE_FILE, dataSection, buildTemplateCsv, parseCsv, decodeBytes, importState };
+    DATA_SECTION, FIELDS, dataSection, parseCsv, decodeBytes, importState };
 });

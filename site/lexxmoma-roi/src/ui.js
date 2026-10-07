@@ -2,7 +2,7 @@
  * DOM・イベント・描画。計算式はここに書かない（calc.js を呼ぶ）。 */
 (function () {
   'use strict';
-  const C = window.LXCALC, CSV = window.LXCSV;
+  const C = window.LXCALC, CSV = window.LXCSV, XLSX = window.LXXLSX;
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
   const COLORS = { primary: '#0068B7', accent: '#3EB370', yellow: '#F2B705', grey: '#9AA0A6', text: '#1F2933', muted: '#5F6B7A', border: '#D9DEE3', warn: '#D93025', track: '#EEF1F4', bg: '#fff' };
@@ -559,15 +559,15 @@
       track('csv', 'CSVダウンロード');
     });
     $('#btnTemplate').addEventListener('click', () => {
-      CSV.download(CSV.buildTemplateCsv(), CSV.TEMPLATE_FILE);
-      toast('入力テンプレートをダウンロードしました');
-      track('csv_template', '入力テンプレートCSV');
+      CSV.download(XLSX.buildXlsx(C.defaultState()), XLSX.FILE_NAME, XLSX.MIME);
+      toast('Excel 入力シートをダウンロードしました');
+      track('xlsx_template', 'Excel入力シート');
     });
     $('#btnCsvLoad').addEventListener('click', () => $('#csvFile').click());
     $('#csvFile').addEventListener('change', e => {
       const f = e.target.files && e.target.files[0];
       e.target.value = '';                   // 同じファイルを続けて選んでも change が出るように
-      if (f) loadCsvFile(f);
+      if (f) loadFile(f);
     });
     // 画面へのドラッグ＆ドロップでも読み込む
     const hasFiles = e => e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files');
@@ -577,7 +577,7 @@
       if (!hasFiles(e)) return;
       e.preventDefault(); document.body.classList.remove('dropping');
       const f = e.dataTransfer.files[0];
-      if (f) loadCsvFile(f);
+      if (f) loadFile(f);
     });
     $('#btnSummary').addEventListener('click', async () => {
       const p = C.resolveInputs(state), r = C.compute(p);
@@ -624,16 +624,19 @@
     });
   }
 
-  async function loadCsvFile(file) {
-    if (!/\.csv$/i.test(file.name) && !/csv/i.test(file.type)) { toast('CSVファイル（.csv）を選んでください'); return; }
+  async function loadFile(file) {
+    const isXlsx = /\.xlsx$/i.test(file.name);
+    if (!isXlsx && !/\.csv$/i.test(file.name)) { toast(/\.xls$/i.test(file.name) ? '.xls 形式は読めません。Excel で .xlsx として保存してください' : 'CSV（.csv）か Excel（.xlsx）ファイルを選んでください'); return; }
     let res;
-    try { res = CSV.importState(CSV.decodeBytes(await file.arrayBuffer()), state); }
-    catch (e) { res = { error: 'ファイルを読み込めませんでした' }; }
+    try {
+      const buf = await file.arrayBuffer();
+      res = isXlsx ? await XLSX.importXlsx(buf, state) : CSV.importState(CSV.decodeBytes(buf), state);
+    } catch (e) { res = { error: (e && e.message) || 'ファイルを読み込めませんでした' }; }
     if (res.error) { toast(res.error); return; }
     state = res.state;
     syncHeader(); renderInputs(); applyLayout(); render();
-    toast(`CSVを読み込みました（${res.applied}項目${res.skipped ? `・読み取れない行 ${res.skipped}` : ''}）`);
-    track('csv_import', 'CSV読み込み');
+    toast(`${isXlsx ? 'Excel' : 'CSV'}を読み込みました（${res.applied}項目${res.skipped ? `・読み取れない行 ${res.skipped}` : ''}）`);
+    track(isXlsx ? 'xlsx_import' : 'csv_import', isXlsx ? 'Excel読み込み' : 'CSV読み込み');
   }
 
   async function copyText(text) {

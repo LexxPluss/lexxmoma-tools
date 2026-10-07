@@ -6,6 +6,7 @@
 <pre id="out">running…</pre>
 <script src="../src/calc.js"></script>
 <script src="../src/csv.js"></script>
+<script src="../src/xlsx.js"></script>
 <script>
 // ---- node:test / node:assert/strict / fs / path の最小シム ----
 (function(){
@@ -28,7 +29,7 @@
   const path = { join(...a) { return a.join('/').replace(/\/\.\.\//g, '/../'); } };
   window.__dirname = '.';
   window.require = (n) => ({ 'node:test': (name, fn) => tests.push({ name, fn }), 'node:assert/strict': assert, fs, path,
-    '../src/calc.js': window.LXCALC, '../src/csv.js': window.LXCSV })[n];
+    '../src/calc.js': window.LXCALC, '../src/csv.js': window.LXCSV, '../src/xlsx.js': window.LXXLSX })[n];
   window.__runTests = async function(){
     out.textContent = '';
     let pass = 0, failN = 0; const results = [];
