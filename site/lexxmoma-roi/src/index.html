@@ -72,7 +72,10 @@
 </main>
 
 <div class="actions">
-  <button type="button" class="btn primary" id="btnCsv">CSVダウンロード</button>
+  <button type="button" class="btn primary" id="btnXlsx" title="現在の入力・計算結果・シナリオA/Bを Excel で保存します。Excel 単体でも回収年数まで計算でき、このツールで読み込み直せます">Excelダウンロード</button>
+  <button type="button" class="btn" id="btnLoad" title="このツールで保存した Excel（以前の CSV も可）から入力を復元します（ファイルを画面にドロップしても読み込めます）">Excel読み込み</button>
+  <input type="file" id="loadFile" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" hidden>
+  <span class="sep" aria-hidden="true"></span>
   <button type="button" class="btn" id="btnSummary">サマリー文をコピー</button>
   <button type="button" class="btn" id="btnPrint">印刷</button>
   <button type="button" class="btn" id="btnUrl">URLをコピー</button>
@@ -100,6 +103,7 @@
 
 <script src="calc.js"></script>
 <script src="csv.js"></script>
+<script src="xlsx.js"></script>
 <script src="scene.js"></script>
 <script src="ui.js"></script>
 <script src="../../assets/track.js" data-tool="roi"></script>
