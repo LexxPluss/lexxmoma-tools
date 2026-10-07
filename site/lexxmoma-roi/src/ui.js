@@ -558,6 +558,27 @@
       toast('CSVをダウンロードしました');
       track('csv', 'CSVダウンロード');
     });
+    $('#btnTemplate').addEventListener('click', () => {
+      CSV.download(CSV.buildTemplateCsv(), CSV.TEMPLATE_FILE);
+      toast('入力テンプレートをダウンロードしました');
+      track('csv_template', '入力テンプレートCSV');
+    });
+    $('#btnCsvLoad').addEventListener('click', () => $('#csvFile').click());
+    $('#csvFile').addEventListener('change', e => {
+      const f = e.target.files && e.target.files[0];
+      e.target.value = '';                   // 同じファイルを続けて選んでも change が出るように
+      if (f) loadCsvFile(f);
+    });
+    // 画面へのドラッグ＆ドロップでも読み込む
+    const hasFiles = e => e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files');
+    window.addEventListener('dragover', e => { if (!hasFiles(e)) return; e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; document.body.classList.add('dropping'); });
+    window.addEventListener('dragleave', e => { if (!e.relatedTarget) document.body.classList.remove('dropping'); });
+    window.addEventListener('drop', e => {
+      if (!hasFiles(e)) return;
+      e.preventDefault(); document.body.classList.remove('dropping');
+      const f = e.dataTransfer.files[0];
+      if (f) loadCsvFile(f);
+    });
     $('#btnSummary').addEventListener('click', async () => {
       const p = C.resolveInputs(state), r = C.compute(p);
       if (r.error) { toast('初期投資を入力してください'); return; }
@@ -601,6 +622,18 @@
       if (location.hash === cur) return;
       loadFromHash(); syncHeader(); renderInputs(); applyLayout(); render();
     });
+  }
+
+  async function loadCsvFile(file) {
+    if (!/\.csv$/i.test(file.name) && !/csv/i.test(file.type)) { toast('CSVファイル（.csv）を選んでください'); return; }
+    let res;
+    try { res = CSV.importState(CSV.decodeBytes(await file.arrayBuffer()), state); }
+    catch (e) { res = { error: 'ファイルを読み込めませんでした' }; }
+    if (res.error) { toast(res.error); return; }
+    state = res.state;
+    syncHeader(); renderInputs(); applyLayout(); render();
+    toast(`CSVを読み込みました（${res.applied}項目${res.skipped ? `・読み取れない行 ${res.skipped}` : ''}）`);
+    track('csv_import', 'CSV読み込み');
   }
 
   async function copyText(text) {

@@ -17,6 +17,10 @@
   const assert = {
     ok(v, m) { if (!v) fail(m || 'assert.ok'); },
     equal(a, b, m) { if (!eq(a, b)) fail((m ? m + ': ' : '') + `expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); },
+    deepEqual(a, b, m) { const j = x => JSON.stringify(x, (k, v) => (v && typeof v === 'object' && !Array.isArray(v)) ? Object.keys(v).sort().reduce((o, kk) => (o[kk] = v[kk], o), {}) : v);
+      if (j(a) !== j(b)) fail((m ? m + ': ' : '') + `deepEqual
+  expected ${j(b)}
+  got      ${j(a)}`); },
     match(s, re, m) { if (!re.test(s)) fail(m || `match failed: ${s}`); },
     doesNotThrow(fn) { fn(); }
   };

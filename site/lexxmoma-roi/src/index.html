@@ -73,6 +73,10 @@
 
 <div class="actions">
   <button type="button" class="btn primary" id="btnCsv">CSVダウンロード</button>
+  <button type="button" class="btn" id="btnCsvLoad" title="このツールで出力したCSV・入力テンプレートから入力を復元します（ファイルを画面にドロップしても読み込めます）">CSV読み込み</button>
+  <button type="button" class="btn ghost" id="btnTemplate" title="初期値の入力フォーマット（価格欄は空白）。Excel で値を入れて保存し「CSV読み込み」で反映できます">入力テンプレート（CSV）</button>
+  <input type="file" id="csvFile" accept=".csv,text/csv" hidden>
+  <span class="sep" aria-hidden="true"></span>
   <button type="button" class="btn" id="btnSummary">サマリー文をコピー</button>
   <button type="button" class="btn" id="btnPrint">印刷</button>
   <button type="button" class="btn" id="btnUrl">URLをコピー</button>

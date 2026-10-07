@@ -185,3 +185,91 @@ test('価格系の初期値が空白', () => {
   for (const k of Object.keys(s.detail.capex)) assert.equal(s.detail.capex[k], '');
   for (const k of Object.keys(s.detail.opex)) assert.equal(s.detail.opex[k], '');
 });
+
+test('CSV読み込み：出力CSV → 状態が完全に復元される（ライト・精緻・A/B・しきい値）', () => {
+  const s = lightState({ opexAnnual: 150 });
+  s.base.capex.robot = 2000; s.base.capexQty.robot = 2; s.base.capex.integration = 300.5;
+  s.scenarioName = '2直,"本命"案';
+  s.thresholds.green = 1.5;
+  s.detail.wage.base = 480; s.detail.capex.si = 120; s.detail.capexQty.si = '';
+  s.detail.override.opex = 99; s.detail.fin.enableNPV = true;
+  s.base.wageGrowth = 'abc';               // 不正値は不正値のまま戻る（警告表示用）
+  const p = C.resolveInputs(s), r = C.compute(p);
+  s.scenarios.A = C.snapshot(s, p, r);
+  for (const mode of ['light', 'detail']) {
+    s.mode = mode;
+    const p2 = C.resolveInputs(s), r2 = C.compute(p2);
+    const csv = CSV.buildCsv({ state: s, params: p2, result: r2, now: new Date(2026, 9, 7) });
+    assert.ok(csv.includes('[読み込み用データ]\r\n項目,値,単位,対象,キー\r\n'));
+    const cur = C.defaultState(); cur.ui.inputWidth = 600;
+    const res = CSV.importState(csv, cur);
+    assert.equal(res.format, 'data');
+    assert.equal(res.skipped, 0);
+    const want = C.deepClone(s); want.ui.inputWidth = 600;
+    assert.deepEqual(res.state, want, mode);
+  }
+});
+
+test('CSV読み込み：CSVにA/Bが無ければ現在のA/Bを残す。未知の行・読めない値は数えて無視', () => {
+  const cur = C.defaultState(); cur.scenarios.A = { name: 'x', result: {}, series: [] };
+  const csv = '[読み込み用データ]\r\n項目,値,単位,対象,キー\r\n直数,3,直,共通,base.shifts\r\nモード,どれか,,共通,mode\r\n謎,1,,,foo.bar\r\n';
+  const res = CSV.importState(csv, cur);
+  assert.equal(res.state.base.shifts, 3);
+  assert.equal(res.state.mode, 'light');
+  assert.equal(res.applied, 1);
+  assert.equal(res.skipped, 2);
+  assert.equal(res.state.scenarios.A.name, 'x');
+  assert.ok(CSV.importState('a,b\r\n1,2', cur).error);
+  assert.ok(CSV.importState('', cur).error);
+});
+
+test('入力テンプレート：初期値・価格は空白・A/Bなし。キー列を消しても項目名で読める', () => {
+  const csv = CSV.buildTemplateCsv();
+  assert.ok(csv.startsWith('\uFEFF'));
+  assert.equal(/[^\r]\n/.test(csv), false, 'LF単独が無い');
+  assert.ok(csv.includes('初期投資 機体（単価）,,万円,共通,base.capex.robot\r\n'));
+  assert.equal(csv.includes('scenarios.A'), false);
+  const res = CSV.importState(csv, null);
+  assert.deepEqual(res.state, C.defaultState());
+  // Excel で「値」を埋め、キー列を削除して保存したケース（3桁区切りも可）
+  const edited = '[読み込み用データ]\r\n項目,値,単位\r\n"初期投資 機体（単価）","1,200",万円\r\nモード（ライト／精緻）,精緻,\r\nNPVを表示（ON／OFF）,ON,\r\n';
+  const r2 = CSV.importState(edited, null);
+  assert.equal(r2.state.base.capex.robot, 1200);
+  assert.equal(r2.state.mode, 'detail');
+  assert.equal(r2.state.detail.fin.enableNPV, true);
+});
+
+test('CSV読み込み：文字コード（UTF-8 BOM / BOMなし / Shift_JIS）を判別', () => {
+  const text = '[読み込み用データ]\r\n項目,値,単位,対象,キー\r\nシナリオ名,２直案,,共通,scenarioName\r\n';
+  const utf8 = new TextEncoder().encode('\uFEFF' + text);
+  assert.equal(CSV.decodeBytes(utf8), text);
+  assert.equal(CSV.decodeBytes(new TextEncoder().encode(text)), text);
+  // 「シナリオ名」「２直案」を Shift_JIS で
+  const sjis = Uint8Array.from([0x83, 0x56, 0x83, 0x69, 0x83, 0x8A, 0x83, 0x49, 0x96, 0xBC, 0x2C, 0x82, 0x51, 0x92, 0xBC, 0x88, 0xC4]);
+  assert.equal(CSV.decodeBytes(sjis), 'シナリオ名,２直案');
+});
+
+test('CSV読み込み：旧形式（[読み込み用データ]なし）は [入力一覧] の項目名から復元', () => {
+  const s = lightState({ opexAnnual: 150 });
+  s.base.capex.robot = 2000; s.base.capexQty.robot = 2; s.base.capex.integration = 300;
+  s.scenarioName = '旧CSV';
+  let p = C.resolveInputs(s), r = C.compute(p);
+  const strip = csv => csv.slice(0, csv.indexOf('[読み込み用データ]'));
+  let res = CSV.importState(strip(CSV.buildCsv({ state: s, params: p, result: r })), null);
+  assert.equal(res.format, 'legacy');
+  assert.equal(res.state.scenarioName, '旧CSV');
+  assert.equal(res.state.base.capex.robot, 2000);
+  assert.equal(res.state.base.capexQty.robot, 2);
+  assert.equal(res.state.base.opexAnnual, 150);
+  assert.equal(C.compute(C.resolveInputs(res.state)).paybackYears, r.paybackYears);
+  // 精緻：合計を直接入力していたら override に戻る。自動合計なら null のまま
+  s.mode = 'detail'; s.detail.capex.si = 200; s.detail.override.opex = 80;
+  p = C.resolveInputs(s); r = C.compute(p);
+  res = CSV.importState(strip(CSV.buildCsv({ state: s, params: p, result: r })), null);
+  assert.equal(res.state.mode, 'detail');
+  assert.equal(res.state.detail.capex.si, 200);
+  assert.equal(res.state.detail.override.opex, 80);
+  assert.equal(res.state.detail.override.labor, null);
+  assert.equal(res.state.detail.override.integration, null);
+  assert.equal(C.compute(C.resolveInputs(res.state)).paybackYears, r.paybackYears);
+});
