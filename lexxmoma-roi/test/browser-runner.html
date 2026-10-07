@@ -6,6 +6,7 @@
 <pre id="out">running…</pre>
 <script src="../src/calc.js"></script>
 <script src="../src/csv.js"></script>
+<script src="../src/xlsx.js"></script>
 <script>
 // ---- node:test / node:assert/strict / fs / path の最小シム ----
 (function(){
@@ -17,6 +18,10 @@
   const assert = {
     ok(v, m) { if (!v) fail(m || 'assert.ok'); },
     equal(a, b, m) { if (!eq(a, b)) fail((m ? m + ': ' : '') + `expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); },
+    deepEqual(a, b, m) { const j = x => JSON.stringify(x, (k, v) => (v && typeof v === 'object' && !Array.isArray(v)) ? Object.keys(v).sort().reduce((o, kk) => (o[kk] = v[kk], o), {}) : v);
+      if (j(a) !== j(b)) fail((m ? m + ': ' : '') + `deepEqual
+  expected ${j(b)}
+  got      ${j(a)}`); },
     match(s, re, m) { if (!re.test(s)) fail(m || `match failed: ${s}`); },
     doesNotThrow(fn) { fn(); }
   };
@@ -24,7 +29,7 @@
   const path = { join(...a) { return a.join('/').replace(/\/\.\.\//g, '/../'); } };
   window.__dirname = '.';
   window.require = (n) => ({ 'node:test': (name, fn) => tests.push({ name, fn }), 'node:assert/strict': assert, fs, path,
-    '../src/calc.js': window.LXCALC, '../src/csv.js': window.LXCSV })[n];
+    '../src/calc.js': window.LXCALC, '../src/csv.js': window.LXCSV, '../src/xlsx.js': window.LXXLSX })[n];
   window.__runTests = async function(){
     out.textContent = '';
     let pass = 0, failN = 0; const results = [];
