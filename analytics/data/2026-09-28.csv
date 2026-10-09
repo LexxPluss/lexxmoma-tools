@@ -1,0 +1,51 @@
+path,title,visits
+/hub,LexxMoMa Tools,41
+tool/sier/open,ロボットSIerデータベース,13
+/tool/sier,ロボットSIerデータベース,13
+/tool/members,社内ツール | LexxPluss 社内,10
+/tool/sim2d,LexxMoMa 動作シミュレーター,9
+tool/sim2d/open,LexxMoMa 動作シミュレーター(2D),9
+/tool/sketch,工程スケッチ,9
+member/factory-map/open,工場マップを開いた,8
+/tool/factory-map,工場マップ | LexxPluss 社内,8
+tool/sketch/open,工程スケッチ,8
+/tool/tour,LexxMoMa 見学ツアー,8
+member/factory-map/factory,アマダ 富士宮事業所,7
+member/factory-map/news,ポリプラスチックス富士工場 (静岡県富士市) ポリプラスチックス富士工場,6
+member/factory-map/company,Astemo,5
+member/people-db/open,顧客人事DBを開いた,5
+/tool/people-db,顧客人事データベース | LexxPluss 社内,5
+hub/robot/pet,LexxMoMaをなでた,5
+tool/tour/open,LexxMoMa 見学ツアー(会社紹介・紹介動画・実機映像),4
+pass/close,<em>(no title)</em>,4
+pass/open,<em>(no title)</em>,4
+/tool/roi,LexxMoMa 費用対効果（ROI）計算ツール,4
+tool/roi/open,費用対効果（ROI）計算ツール,3
+hub/phase/assess,効果を試算する,3
+hub/phase/know,知る・興味を持つ,3
+lib/open/company-intro,LexxPluss 会社紹介資料,2
+tool/sketch/sim/play,動かす,2
+member/people-db/company,SUBARU,2
+tool/sketch/tpl/join,合流セル(溶接・組立),2
+tool/sketch/tpl/cell2,2台持ちセル(並行作業),2
+hub/phase/deploy,導入を進める,2
+member/factory-map/people,小糸製作所,2
+member/factory-map/near,現在地の近く,2
+keep/dismiss,<em>(no title)</em>,1
+keep/shown,<em>(no title)</em>,1
+hub/tour/navTour,見学ツアーへ,1
+lib/stamp/company-intro,LexxPluss 会社紹介資料,1
+tool/roi/mode/detail,精緻モードに切替,1
+lib/open/lexxmoma-demo,LexxMoMa 実機デモ動画(11分),1
+hub/tour/thScreen,見学ツアーへ,1
+tool/sketch/add/join,溶接・接着・組立,1
+member/people-db/industry,自動車(完成車),1
+hub/worry/roi,いくらで元が取れる?,1
+tool/eoat/interest,エンドエフェクタ設計ツール,1
+tool/sketch/tpl/weldcell,成形 → 溶着セル(2台・並行作業),1
+hub/phase/design,工程を設計する,1
+hub/phase/operate,運用・拡大する,1
+lib/open/company-video,LexxPluss 会社紹介動画,1
+hub/tour/thGo,見学ツアーへ,1
+pass/app,アプリとして開いた,1
+pass/installed,<em>(no title)</em>,1
