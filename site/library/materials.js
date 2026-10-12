@@ -5,7 +5,9 @@
  *   id       : 英数字の一意なID(直リンク #m=<id> や計測に使う。公開後は変えない)
  *   cat      : "company" 会社紹介 / "product" 製品資料 / "video" 動画 / "case" 導入事例 / "other" その他
  *   type     : "pdf"     … src に PDF の相対パス(files/ に置く) or URL
- *              "youtube" … youtube に動画ID(限定公開推奨。URL の v= の後ろ11文字)
+ *              "youtube" … youtube に動画の URL または ID(限定公開推奨)。実際に再生した時間を数えてスタンプ
+ *                          full: { youtube, label, meta } を付けると「完全版」に切り替えられる(既定はダイジェスト版=youtube)
+ *                          stampSec: スタンプまでの再生秒数(省略時は 45 秒)
  *              "video"   … src に mp4 の相対パス(videos/ に置く) or URL(GitHub Pages は1ファイル100MBまで)
  *                          thumb にサムネイル画像を指定すると一覧・再生前に表示
  *              "link"    … src に外部ページURL(新しいタブで開く)
@@ -58,11 +60,14 @@ window.MATERIALS = [
     },
   },
   {
-    // 動画は後日差し替え
-    id: "lexxmoma-intro", cat: "video", type: "video", featured: true, spot: "LexxMoMaシアター", stamp: "🎥",
+    // オンラインデモの収録を編集した 2 本(YouTube 限定公開)。URL を貼るだけで OK。空のあいだは「準備中」
+    id: "lexxmoma-intro", cat: "video", type: "youtube", featured: true, spot: "LexxMoMaシアター", stamp: "🎥",
     title: "LexxMoMa 紹介動画",
-    desc: "自走するロボットアーム LexxMoMa の特長と、現場での使われ方をご紹介します。",
-    src: "", meta: "", updated: "",
+    desc: "オンラインデモの収録を編集した紹介動画です。まずは 18 分のダイジェスト版をどうぞ。細かくご覧になりたい方は、プレーヤー下の切り替えで 50 分の完全版もご覧いただけます。",
+    youtube: "https://youtu.be/nPIcaTse-fY",                                   // ダイジェスト版(18分)の URL or ID ← 既定で再生
+    meta: "18分", updated: "2026-10",
+    stampSec: 120,                                 // 2 分見たらスタンプ(ダイジェスト・完全版どちらで見ても合算)
+    full: { youtube: "https://youtu.be/DKb-eEYIYGk", label: "完全版", meta: "50分" },   // 完全版(50分)の URL or ID
   },
   {
     id: "lexxmoma-demo", cat: "video", type: "video", spot: "実機見学エリア", stamp: "🤖",
