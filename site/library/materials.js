@@ -74,6 +74,7 @@ window.MATERIALS = [
     title: "LexxMoMa 実機デモ動画(11分)",
     desc: "ラボ内での動作映像。走行しながらアームを動かす「シンクロ動作」で、移動と作業を同時にこなす様子をご覧いただけます。",
     src: "videos/lexxmoma-mobile-manipulator.mp4", thumb: "thumbs/lexxmoma-demo.jpg", meta: "11:34", updated: "2025-07",
+    stampSec: 15,                                  // 15 秒見たらスタンプ
   },
   {
     // お客さまに情報を入力していただくスポット(仕様は後日確定。現在は枠のみ)
