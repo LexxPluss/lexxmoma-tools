@@ -1,5 +1,6 @@
 /* 社内ツール共通の入口 — 共通パスワードを 1 回入れれば、社内ツール(工場マップ・顧客人事DB)をまとめて開ける。
- * members/index.html か各ツールの入口で入れたパスワードをこの端末に置き、各ツールはそれで自分のデータを復号する
+ * パスワードを入れる場所は members/index.html だけ。ここで入れたパスワードをこの端末に置き、各ツールはそれで自分のデータを復号する
+ * (未入力・合わないときは toEntry() で入口へ送り、解除後に元のツールへ戻す)
  * (データごとに salt が違うので、鍵ではなくパスワードを共有する。データが更新されても入れ直し不要)。
  * 保存先: sessionStorage(このタブの間)、「この端末で記憶する」なら localStorage にも。ロックは全ツール共通。
  */
@@ -13,5 +14,10 @@
   function forget() {
     try { [PW].concat(TOOL_KEYS).forEach(function (k) { sessionStorage.removeItem(k); localStorage.removeItem(k); }); } catch (e) { /* noop */ }
   }
-  window.lxMembers = { password: password, remembered: remembered, save: save, forget: forget };
+  // 入口へ移動(解除したらこのツールに戻れるよう ?next= にツールのフォルダと # を付ける)
+  function toEntry() {
+    var m = location.pathname.match(/\/([\w-]+)\/(index\.html)?$/);
+    location.replace('../index.html' + (m ? '?next=' + encodeURIComponent(m[1] + '/index.html' + location.hash) : ''));
+  }
+  window.lxMembers = { password: password, remembered: remembered, save: save, forget: forget, toEntry: toEntry };
 })();

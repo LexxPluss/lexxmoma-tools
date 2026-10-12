@@ -48,46 +48,32 @@
   }
   function forgetKey() { try { sessionStorage.removeItem(KEY_STORE); localStorage.removeItem(KEY_STORE); } catch (e) { /* noop */ } }
 
-  function showGateError(msg) { $('#gateErr').textContent = msg; $('#gateBtn').disabled = false; $('#gateBtn').textContent = '開く'; }
+  function gateMsg(msg) { $('#gateMsg').textContent = msg; }
 
-  if (!window.crypto || !crypto.subtle) {
-    showGateError('このブラウザでは開けません(https で開いてください)。');
-  }
-
-  $('#gateForm').addEventListener('submit', function (e) {
-    e.preventDefault();
-    var pw = $('#pw').value;
-    if (!pw) return;
-    $('#gateBtn').disabled = true; $('#gateBtn').textContent = '確認中…'; $('#gateErr').textContent = '';
-    loadEnc().then(function (enc) {
-      return deriveKey(pw, enc).then(function (key) {
-        return decrypt(key, enc).then(function (data) {
-          $('#pw').value = '';
-          if (window.lxMembers) window.lxMembers.save(pw, $('#remember').checked);
-          return saveKey(key, enc.salt, $('#remember').checked).then(function () { start(data); });
-        });
-      });
-    }).catch(function (err) {
-      showGateError(err && err.message === 'data' ? 'データを読み込めませんでした。時間をおいて再度お試しください。' : 'パスワードが違います。');
-    });
-  });
-
-  // 社内ツール共通の入口(members-auth.js)で入れたパスワードがあれば、それで開く
+  // 社内ツール共通の入口(members-auth.js)で入れたパスワードで開く。まだ入れていなければ入口へ送る(パスワードを入れる場所は入口だけ)
   function viaShared(enc) {
-    var pw = window.lxMembers && window.lxMembers.password();
-    if (!pw) return;
+    var pw = window.lxMembers.password();
+    if (!pw) { window.lxMembers.toEntry(); return; }
     return deriveKey(pw, enc).then(function (key) {
       return decrypt(key, enc).then(function (data) { return saveKey(key, enc.salt, window.lxMembers.remembered()).then(function () { start(data); }); });
     });
   }
 
-  // 記憶済みの鍵 → 共通の入口のパスワード の順で入口を飛ばす(どちらも合わなければ入口を出す)
-  loadEnc().then(function (enc) {
-    return storedKey().then(function (s) {
-      if (!s || s.salt !== enc.salt) { forgetKey(); return viaShared(enc); }
-      return decrypt(s.key, enc).then(start, function () { forgetKey(); return viaShared(enc); });
+  // 記憶済みの鍵 → 共通の入口のパスワード の順で開く(どちらも合わなければ入口へ)
+  if (!window.crypto || !crypto.subtle) {
+    gateMsg('このブラウザでは開けません(https で開いてください)。');
+  } else {
+    loadEnc().then(function (enc) {
+      return storedKey().then(function (s) {
+        if (!s || s.salt !== enc.salt) { forgetKey(); return viaShared(enc); }
+        return decrypt(s.key, enc).then(start, function () { forgetKey(); return viaShared(enc); });
+      });
+    }).catch(function (err) {
+      if (err && err.message === 'data') return gateMsg('データを読み込めませんでした。時間をおいて再度お試しください。');
+      if (err && err.name === 'OperationError') { window.lxMembers.forget(); window.lxMembers.toEntry(); return; }  // 共通パスワードが変わった → 入れ直してもらう
+      gateMsg('開けませんでした。ページを読み込み直してください。');
     });
-  }).catch(function () { /* 入口のまま */ });
+  }
 
   // ---------------------------------------------------------------- 本体
   var D, COS = {}, FAS = [], GROUPS = {}, map, layer, markers = {};
@@ -188,7 +174,7 @@
     $('#sort').addEventListener('change', function () { state.sort = this.value; renderList(); });
     setSort();
     $('#back').addEventListener('click', function () { state.focus = null; closeDetail(); render(); });
-    $('#lock').addEventListener('click', function () { forgetKey(); if (window.lxMembers) window.lxMembers.forget(); location.reload(); });
+    $('#lock').addEventListener('click', function () { forgetKey(); window.lxMembers.forget(); window.lxMembers.toEntry(); });
     $('#locate').addEventListener('click', locate);
     $('#legend').innerHTML = '<b>業種</b>' + D.industries.filter(function (i) { return cnt[i]; }).map(function (i) {
       return '<span><i style="background:' + indColor(i) + '"></i>' + esc(i) + '</span>'; }).join('') + '<small>円の大きさ = 従業員数</small>';
