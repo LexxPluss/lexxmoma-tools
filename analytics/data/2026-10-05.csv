@@ -1,0 +1,66 @@
+path,title,visits
+/hub,LexxMoMa Tools,76
+tool/sim2d/open,LexxMoMa 動作シミュレーター(2D),23
+/tool/sier,ロボットSIerデータベース,21
+/tool/tour,LexxMoMa 見学ツアー,20
+/tool/roi,LexxMoMa 費用対効果（ROI）計算ツール,20
+tool/sier/open,ロボットSIerデータベース,19
+tool/roi/open,費用対効果（ROI）計算ツール,18
+/tool/sketch,工程スケッチ,14
+tool/tour/open,LexxMoMa 見学ツアー(会社紹介・紹介動画・実機映像),11
+tool/sketch/open,工程スケッチ,11
+lib/open/company-intro,LexxPluss 会社紹介資料,10
+lib/open/lexxmoma-demo,LexxMoMa 実機デモ動画(11分),10
+lib/stamp/company-intro,LexxPluss 会社紹介資料,7
+hub/tour/thScreen,見学ツアーへ,7
+hub/robot/pet,LexxMoMaをなでた,7
+keep/shown,<em>(no title)</em>,6
+hub/phase/know,知る・興味を持つ,6
+lib/stamp/lexxmoma-demo,LexxMoMa 実機デモ動画(11分),5
+tool/roi/mode/detail,精緻モードに切替,5
+tool/sketch/sim/play,動かす,5
+lib/open/company-video,LexxPluss 会社紹介動画,5
+hub/tour/thGo,見学ツアーへ,5
+tool/sketch/sim/calc,1日分を計算,4
+hub/phase/design,工程を設計する,4
+member/factory-map/company,Astemo,4
+member/factory-map/open,工場マップを開いた,4
+/tool/factory-map,工場マップ | LexxPluss 社内,4
+/tool/members,社内ツール | LexxPluss 社内,4
+hub/phase/assess,効果を試算する,4
+keep/standalone,<em>(no title)</em>,3
+tool/roi/mode/light,ライトモードに切替,3
+tool/sketch/add/process,加工,3
+lib/stamp/company-video,LexxPluss 会社紹介動画,3
+keep/dismiss,<em>(no title)</em>,3
+hub/phase/deploy,導入を進める,3
+member/factory-map/factory,アマダ 富士宮事業所,3
+tool/sketch/add/cart,台車,2
+hub/worry/cycle,うちの工程で何秒かかる?,2
+lib/cert,修了証を表示,2
+lib/open/your-info,あなたの現場での使い道を教えてください,2
+tool/sketch/tpl/join,合流セル(溶接・組立),2
+hub/phase/operate,運用・拡大する,2
+/tool/sim2d,LexxMoMa 動作シミュレーター,2
+tool/sketch/add/part,部品置き場,1
+tool/sketch/add/wall,壁・柱・既存設備,1
+tool/sketch/add/robot,LexxMoMa,1
+tool/sketch/poly/nogo,立入禁止,1
+tool/sketch/add/in,搬入口,1
+hub/worry/grip,このワークは掴めるのか?,1
+member/factory-map/gmode,group,1
+lib/slide-zoom/company-video,1ページ目を拡大,1
+member/factory-map/industry,自動車(完成車),1
+lib/board/sky/scatter,散らばらせる,1
+lib/board/sky,全画面で眺める,1
+tool/sketch/tpl/line,直線ライン,1
+hub/worry/equip,電源・エアはどう積む?,1
+tool/parts/interest,サービスパーツカタログ,1
+lib/complete,見学ツアー修了,1
+lib/stamp/your-info,あなたの現場での使い道を教えてください,1
+lib/board/post,"feed,assy,inspect,pack",1
+hub/tour/navTour,見学ツアーへ,1
+tool/sketch/add/join,溶接・接着・組立,1
+tool/eoat/interest,エンドエフェクタ設計ツール,1
+tool/sketch/tpl/cell2,2台持ちセル(並行作業),1
+pass/app,アプリとして開いた,1
