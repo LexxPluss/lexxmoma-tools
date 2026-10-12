@@ -10,24 +10,20 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
 
-<!-- 入口(共通パスワード) -->
+<!-- 入口(パスワードは社内ツールの入口 members/index.html で入れる。未入力ならそこへ移動) -->
 <div class="gate" id="gate">
   <button type="button" class="lx-theme-btn" data-lx-theme-toggle aria-label="ライト / ダーク切替"></button>
-  <form class="gate-card" id="gateForm" autocomplete="off">
+  <div class="gate-card">
     <a class="gate-home" href="../../index.html" title="LexxMoMa Tools のトップへ"><img class="lx-logo" src="../../assets/lexxpluss-logo.png" alt="LexxPluss"></a>
     <h1>工場マップ</h1>
-    <p>LexxPluss 社内メンバー向けのツールです。共通パスワードを入力してください(ここで入れると他の社内ツールも開けます)。</p>
-    <label class="sr" for="pw">パスワード</label>
-    <input type="password" id="pw" placeholder="パスワード" autocomplete="current-password" required>
-    <label class="remember"><input type="checkbox" id="remember"> この端末で記憶する</label>
-    <button type="submit" id="gateBtn">開く</button>
-    <p class="gate-err" id="gateErr" role="alert"></p>
+    <p id="gateMsg" role="status">開いています…</p>
+    <p class="gate-note">LexxPluss 社内メンバー向けのツールです。パスワードは<a href="../index.html">社内ツールの入口</a>で入れます。</p>
     <a class="gate-back" href="../../index.html">LexxMoMa Tools に戻る</a>
-  </form>
+  </div>
 </div>
 
 <div class="app" id="app" hidden>
@@ -80,7 +76,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="../../assets/track.js" data-tool="factory-map"></script>
 <script src="data.enc.js?v=4"></script>
-<script src="../members-auth.js?v=1"></script>
-<script src="app.js?v=6"></script>
+<script src="../members-auth.js?v=2"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>

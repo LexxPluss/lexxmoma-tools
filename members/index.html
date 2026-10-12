@@ -50,7 +50,7 @@ p{margin:0;color:var(--muted);font-size:13px}
   <button type="button" class="lx-theme-btn" data-lx-theme-toggle aria-label="ライト / ダーク切替"></button>
   <div class="top"><a href="../index.html" title="LexxMoMa Tools のトップへ"><img class="lx-logo" src="../assets/lexxpluss-logo.png" alt="LexxPluss"></a></div>
   <h1>社内ツール <span class="tag">社内</span></h1>
-  <p>LexxPluss 社内メンバー向け。共通パスワードをここで 1 回入れれば、どのツールもそのまま開けます。</p>
+  <p>LexxPluss 社内メンバー向け。共通パスワードはここで 1 回だけ入れます。入れればどのツールもそのまま開けます。</p>
   <form class="unlock" id="unlock" autocomplete="off">
     <input type="password" id="pw" placeholder="共通パスワード" aria-label="共通パスワード" autocomplete="current-password" required>
     <button type="submit" id="unlockBtn">ロック解除</button>
@@ -73,7 +73,7 @@ p{margin:0;color:var(--muted);font-size:13px}
   <a class="back" href="../index.html">← LexxMoMa Tools に戻る</a>
 </div>
 <script src="../assets/track.js" data-tool="members"></script>
-<script src="members-auth.js?v=1"></script>
+<script src="members-auth.js?v=2"></script>
 <script>
 // 共通の入口: パスワードは工場マップのデータで確かめてから、この端末に置く(各ツールはそれで自分のデータを復号する)
 (function () {
@@ -87,6 +87,10 @@ p{margin:0;color:var(--muted);font-size:13px}
       }).then(function (key) { return crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(enc.iv) }, key, b64(enc.ct)); });
     });
   }
+  // 各ツールから送られてきたとき(?next=)は、解除後にそのツールへ戻す。行き先は社内ツールのフォルダだけに限る
+  var next = new URLSearchParams(location.search).get('next');
+  if (next && !/^(factory-map|people-db)\/index\.html(#[\w\-\/=&%.]*)?$/.test(next)) next = null;
+  if (next) $('pw').focus();
   function show() { var on = !!lxMembers.password(); $('unlock').hidden = on; $('unlocked').hidden = !on; }
   function fail(msg) { $('unlockErr').textContent = msg; $('unlockBtn').disabled = false; $('unlockBtn').textContent = 'ロック解除'; }
   if (!window.crypto || !crypto.subtle) fail('このブラウザでは開けません(https で開いてください)。');
@@ -95,7 +99,9 @@ p{margin:0;color:var(--muted);font-size:13px}
     var pw = $('pw').value; if (!pw) return;
     $('unlockBtn').disabled = true; $('unlockBtn').textContent = '確認中…'; $('unlockErr').textContent = '';
     check(pw).then(function () {
-      $('pw').value = ''; lxMembers.save(pw, $('remember').checked); fail(''); show();
+      $('pw').value = ''; lxMembers.save(pw, $('remember').checked);
+      if (next) { location.replace(next); return; }
+      fail(''); show();
     }).catch(function (err) {
       fail(err && err.message === 'data' ? 'データを読み込めませんでした。時間をおいて再度お試しください。' : 'パスワードが違います。');
     });

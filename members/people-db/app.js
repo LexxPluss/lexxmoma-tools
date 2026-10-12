@@ -53,36 +53,33 @@
     });
   }
   function forgetKey() { try { sessionStorage.removeItem(KEY_STORE); localStorage.removeItem(KEY_STORE); } catch (e) { /* noop */ } }
-  function showGateError(msg) { $('#gateErr').textContent = msg; $('#gateBtn').disabled = false; $('#gateBtn').textContent = '開く'; }
-  if (!window.crypto || !crypto.subtle) showGateError('このブラウザでは開けません(https で開いてください)。');
+  function gateMsg(msg) { $('#gateMsg').textContent = msg; }
 
-  $('#gateForm').addEventListener('submit', function (e) {
-    e.preventDefault();
-    var pw = $('#pw').value; if (!pw) return;
-    $('#gateBtn').disabled = true; $('#gateBtn').textContent = '確認中…'; $('#gateErr').textContent = '';
-    loadEnc().then(function (enc) {
-      return deriveKey(pw, enc).then(function (key) {
-        return decrypt(key, enc).then(function (data) { $('#pw').value = ''; if (window.lxMembers) window.lxMembers.save(pw, $('#remember').checked); return saveKey(key, enc.salt, $('#remember').checked).then(function () { start(data); }); });
-      });
-    }).catch(function (err) {
-      var m = err && err.message;
-      showGateError(m === 'data' ? 'データを読み込めませんでした。時間をおいて再度お試しください。' : m === 'nozip' ? 'このブラウザでは開けません(最新の Chrome / Safari / Edge で開いてください)。' : 'パスワードが違います。');
-    });
-  });
-  // 社内ツール共通の入口(members-auth.js)で入れたパスワードがあれば、それで開く
+  // 社内ツール共通の入口(members-auth.js)で入れたパスワードで開く。まだ入れていなければ入口へ送る(パスワードを入れる場所は入口だけ)
   function viaShared(enc) {
-    var pw = window.lxMembers && window.lxMembers.password();
-    if (!pw) return;
+    var pw = window.lxMembers.password();
+    if (!pw) { window.lxMembers.toEntry(); return; }
     return deriveKey(pw, enc).then(function (key) {
       return decrypt(key, enc).then(function (data) { return saveKey(key, enc.salt, window.lxMembers.remembered()).then(function () { start(data); }); });
     });
   }
-  loadEnc().then(function (enc) {
-    return storedKey().then(function (s) {
-      if (!s || s.salt !== enc.salt) { forgetKey(); return viaShared(enc); }
-      return decrypt(s.key, enc).then(start, function () { forgetKey(); return viaShared(enc); });
+
+  // 記憶済みの鍵 → 共通の入口のパスワード の順で開く(どちらも合わなければ入口へ)
+  if (!window.crypto || !crypto.subtle) {
+    gateMsg('このブラウザでは開けません(https で開いてください)。');
+  } else {
+    loadEnc().then(function (enc) {
+      return storedKey().then(function (s) {
+        if (!s || s.salt !== enc.salt) { forgetKey(); return viaShared(enc); }
+        return decrypt(s.key, enc).then(start, function () { forgetKey(); return viaShared(enc); });
+      });
+    }).catch(function (err) {
+      if (err && err.message === 'data') return gateMsg('データを読み込めませんでした。時間をおいて再度お試しください。');
+      if (err && err.message === 'nozip') return gateMsg('このブラウザでは開けません(最新の Chrome / Safari / Edge で開いてください)。');
+      if (err && err.name === 'OperationError') { window.lxMembers.forget(); window.lxMembers.toEntry(); return; }  // 共通パスワードが変わった → 入れ直してもらう
+      gateMsg('開けませんでした。ページを読み込み直してください。');
     });
-  }).catch(function () { /* 入口のまま */ });
+  }
 
   // ---------------------------------------------------------------- 本体
   var D, CO = {}, P = {}, U = {}, S = {}, T_BY_CO = {}, P_BY_CO = {}, E_BY_CO = {}, SG_BY_CO = {}, U_BY_CO = {};
@@ -126,7 +123,7 @@
       if (state.inds[i]) track('member/people-db/industry', i);
     });
     $('#back').addEventListener('click', function () { go('companies', null); });
-    $('#lock').addEventListener('click', function () { forgetKey(); if (window.lxMembers) window.lxMembers.forget(); location.hash = ''; location.reload(); });
+    $('#lock').addEventListener('click', function () { forgetKey(); window.lxMembers.forget(); location.hash = ''; window.lxMembers.toEntry(); });
     $('#daysFilter').addEventListener('change', function () { state.days = +this.value; renderNews(); });
     $('#copySlack').addEventListener('click', copySlack);
     $('#drawerClose').addEventListener('click', closeDrawer);
