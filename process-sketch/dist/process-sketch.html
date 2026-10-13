@@ -356,6 +356,18 @@ details.setbox section h3 { margin-top: 6px; }
 :root[data-theme="dark"] .gcard.p { border-color: var(--blue); }
 :root[data-theme="dark"] .g-ok { color: #8fdcae; }
 :root[data-theme="dark"] #gPop, :root[data-theme="dark"] .g-lab, :root[data-theme="dark"] .g-mapbar { box-shadow: 0 10px 32px rgba(0,0,0,.6); }
+/* 作業の順番(決めた順番で動く) */
+.rt-step { border: 1px solid var(--line); border-radius: 6px; padding: 3px 5px; margin: 4px 0; background: var(--panel); }
+.rt-step .io-row { margin: 2px 0; }
+.rt-no { flex: 0 0 auto; font-weight: 700; color: #e07b1f; font-size: 14px; }
+.io-row select.rt-k { flex: 0 0 64px; }
+.rt-to { font-size: 11.5px; color: var(--sub); flex: 1; }
+.rtres td:first-child { color: #e07b1f; font-weight: 700; }
+.rtres tr.hi td { background: #fff4e5; }
+.rtres tr.hi small { color: #b8620a; }
+.rtres tr.sum th, .rtres tr.sum td { border-top: 2px solid var(--line); }
+:root[data-theme="dark"] .rtres tr.hi td { background: #3a2a14; }
+:root[data-theme="dark"] .rtres tr.hi small { color: #f3b77a; }
 
 </style>
 </head>
@@ -952,7 +964,20 @@ function Sim(doc, opt) {
     const ops = doc.objs.filter(s => isStation(s.type) && s.needOp && s.op === o.id);
     this.ag.push({ o, x: o.x, y: o.y, h: (o.dir == null ? -90 : +o.dir) * Math.PI / 180, act: "", pose: "", home: { x: o.x, y: o.y }, flows, ops, plan: [], cur: null,
                    carry: 0, carryName: "", holding: null, trail: [{ x: o.x, y: o.y }], distMm: 0,
-                   tm: { walk: 0, carry: 0, work: 0, handle: 0, idle: 0, charge: 0 }, rr: 0, atStation: null });
+                   tm: { walk: 0, carry: 0, work: 0, handle: 0, idle: 0, charge: 0 }, rr: 0, atStation: null,
+                   hands: [], ri: 0, rt: routineOn(o) ? newRoutineStat(o.routine.length) : null });
+  }
+  // 決めた順番で動く人・ロボット: 手順の参照先と、手順に入っていない担当
+  for (const a of this.ag) {
+    if (!a.rt) continue;
+    const R = a.o.routine;
+    R.forEach((s, i) => {
+      if ((s.k === "pick" || s.k === "place") && !doc.flows.some(f => f.id === s.f)) this.warn.push(`「${a.o.name}」の手順${i + 1}: 運ぶ流れが見つかりません`);
+      if (s.k === "work" && !byId(doc, s.st)) this.warn.push(`「${a.o.name}」の手順${i + 1}: 作業する設備が見つかりません`);
+    });
+    for (const f of a.flows) if (f.mode !== "auto" && !(R.some(s => s.k === "pick" && s.f === f.id) && R.some(s => s.k === "place" && s.f === f.id)))
+      this.warn.push(`「${a.o.name}」が運ぶ「${(byId(doc, f.from) || {}).name}→${(byId(doc, f.to) || {}).name}」が手順に入っていません(取る・置くの両方が必要)`);
+    for (const o of a.ops) if (+o.manT > 0 && !R.some(s => s.k === "work" && s.st === o.id)) this.warn.push(`「${a.o.name}」が付く「${o.name}」の作業が手順に入っていません`);
   }
   this.fs = {};
   for (const f of doc.flows) this.fs[f.id] = { trips: 0, items: 0, distMm: 0 };
@@ -1055,7 +1080,8 @@ Sim.prototype.stepParallel = function (s, dt) {
   let active = false;
   if (s.backLeft > 0) { const u = Math.min(dt, s.backLeft); s.backLeft -= u; s.autoBusyT += u; active = true; }
   if (s.frontState === "set") {
-    if (man <= 0 || this.opPresent(o)) { const u = Math.min(dt, s.manLeft); s.manLeft -= u; s.manBusyT += u; active = true; }
+    if (s.drive) active = true; // 決めた順番で動く人が作業を進めている(時間はその人の側で進める)
+    else if (man <= 0 || this.opPresent(o)) { const u = Math.min(dt, s.manLeft); s.manLeft -= u; s.manBusyT += u; active = true; }
     else s.waitOpT += dt;
     if (s.manLeft <= 1e-9) { s.manLeft = 0; s.frontState = "ready"; }
   } else if (!s.frontState && !(s.indexLeft > 0)) {
@@ -1088,6 +1114,16 @@ Sim.prototype.opPresent = function (o) {
   const a = this.ag.find(a2 => a2.o.id === o.op);
   return !!(a && !this.workerPaused(a) && a.atStation === o.id);
 };
+// 1サイクル終わり: 出来たモノを取り出す側へ
+Sim.prototype.finishCycle = function (s) {
+  const o = s.o; s.busy = false; s.cycles++;
+  const nm = s.cur, n = o.type === "inspect" ? inQty(o) : outQty(o); // 検査はモノを変えずに、入れた数だけ通す
+  for (let k = 0; k < n; k++) {
+    if (o.type === "inspect" && o.ngRate > 0 && this.rnd() * 100 < o.ngRate) s.ng++;
+    else { s.out[nm] = (s.out[nm] || 0) + 1; s.outN++; }
+  }
+  s.cur = null;
+};
 Sim.prototype.fillBoxes = function () {
   for (const id in this.mv) {
     const m = this.mv[id];
@@ -1117,18 +1153,11 @@ Sim.prototype.stepStations = function (dt) {
     // 1サイクル = 人の作業(manT, 作業者が面の前にいる間だけ進む) → 自動運転(autoT, 人は離れてよい)
     if (s.busy) {
       if (s.manLeft > 0) {
-        if (this.opPresent(o)) { const u = Math.min(dt, s.manLeft); s.manLeft -= u; s.busyT += u; s.manBusyT += u; }
+        if (s.drive) { /* 決めた順番で動く人が作業を進めている(時間はその人の側で進める) */ }
+        else if (this.opPresent(o)) { const u = Math.min(dt, s.manLeft); s.manLeft -= u; s.busyT += u; s.manBusyT += u; }
         else s.waitOpT += dt;
       } else { const u = Math.min(dt, s.autoLeft); s.autoLeft -= u; s.busyT += u; s.autoBusyT += u; }
-      if (s.manLeft <= 1e-9 && s.autoLeft <= 1e-9) {
-        s.busy = false; s.cycles++;
-        const nm = s.cur, n = o.type === "inspect" ? inQty(o) : outQty(o); // 検査はモノを変えずに、入れた数だけ通す
-        for (let k = 0; k < n; k++) {
-          if (o.type === "inspect" && o.ngRate > 0 && this.rnd() * 100 < o.ngRate) s.ng++;
-          else { s.out[nm] = (s.out[nm] || 0) + 1; s.outN++; }
-        }
-        s.cur = null;
-      }
+      if (s.manLeft <= 1e-9 && s.autoLeft <= 1e-9) this.finishCycle(s);
       continue;
     }
     const man = +o.manT || 0, auto = +o.autoT || 0;
@@ -1161,8 +1190,9 @@ Sim.prototype.plan = function (a) {
   a.atStation = null;
   if (a.o.type === "robot" && this.day.robotAvail < 100) {
     const pause = (1 - this.day.robotAvail / 100) * CHARGE_CYCLE, ph = this.t % CHARGE_CYCLE;
-    if (ph < pause) { a.plan = [{ k: "go", to: a.home }, { k: "charge", t: pause - ph }]; return; }
+    if (ph < pause) { a.plan = [{ k: "go", to: a.home }, { k: "charge", t: pause - ph }]; if (a.rt) a.rt.dirty = true; return; }
   }
+  if (a.rt) { this.planRoutine(a); return; }
   // 1) 担当設備の作業(始められる/作業中)
   for (const o of a.ops) {
     const s = this.st[o.id];
@@ -1242,6 +1272,81 @@ Sim.prototype.boxTasks = function (a, f, boxes, cands) {
   const empty = free.find(m => m.load === 0 && !(m.at === f.from && m.role === "src"));
   if (empty && !srcHas) cands.push({ f, box: empty, kind: "return", score: 2.5 });
 };
+// ===== 決めた順番で動く(作業手順) =====
+// 次の手順の計画を立てる。担当でなくなった手順(LexxMoMa に任せた運搬・作業など)は飛ばす
+Sim.prototype.planRoutine = function (a) {
+  const doc = this.doc, g = this.g, R = a.o.routine, rt = a.rt, now = this.tNow != null ? this.tNow : this.t;
+  for (let n = 0; n <= R.length; n++) {
+    if (rt.stepI != null) rt.cur[rt.stepI] = (rt.cur[rt.stepI] || 0) + (now - rt.stepT0);
+    const i = a.ri % R.length;
+    if (i === 0 && rt.stepI != null) { // 1周した(休憩・充電・立ち上がりの周は平均に入れない)
+      if (!rt.dirty) { rt.laps++; rt.lapT += now - rt.lapT0; R.forEach((_, k) => { rt.sum[k] += rt.cur[k] || 0; }); }
+      rt.dirty = false;
+    }
+    if (i === 0) { rt.cur = []; rt.lapT0 = now; a.lapNo = (a.lapNo || 0) + 1; }
+    a.ri = i + 1; rt.stepI = i; rt.stepT0 = now;
+    const s = R[i];
+    if (!this.stepActive(a, i)) continue;
+    const tSet = stepT(s.t), plan = [];
+    const f = s.f ? doc.flows.find(x => x.id === s.f) : null;
+    if (s.k === "go") {
+      const loc = routineLoc(doc, g, R, i + 1), nx = R[(i + 1) % R.length];
+      a.flowNow = a.hands.length ? a.hands[a.hands.length - 1].f : nx && nx.k === "pick" ? nx.f : null; // 歩いた距離を運ぶ流れに数える
+      plan.push(tSet == null ? { k: "go", to: loc } : { k: "tgo", to: loc, T: tSet });
+      if (tSet == null) plan.push({ k: "face", ang: loc.face });
+    } else {
+      const loc = stepLoc(doc, g, s);
+      if (loc && dist(a, loc) > 50) plan.push({ k: "go", to: loc }, { k: "face", ang: loc.face });
+      if (s.k === "pick") { a.flowNow = f.id; plan.push({ k: "rpick", f: f.id, t: tSet, i }); }
+      else if (s.k === "place") plan.push({ k: "rplace", f: f.id, t: tSet, i });
+      else if (s.k === "work") plan.push({ k: "rwork", st: s.st, i });
+      else plan.push({ k: "rother", t: tSet || 0, name: stepLabel(doc, s) });
+    }
+    a.plan = plan;
+    return;
+  }
+  a.plan = [{ k: "idle", t: 1 }]; // 1周すべて飛ばした(担当が無い)
+};
+// この手順を今の担当として行うか
+Sim.prototype.stepActive = function (a, i) {
+  const doc = this.doc, R = a.o.routine, s = R[i], me = a.o.id;
+  if (s.k === "pick" || s.k === "place") { const f = doc.flows.find(x => x.id === s.f); return !!f && f.mode !== "auto" && f.agent === me && !!this.st[f.from] && !!this.st[f.to]; }
+  if (s.k === "work") { const o = byId(doc, s.st); return !!o && !!this.st[o.id] && isTimed(o.type) && o.op === me && +o.manT > 0; }
+  if (s.k === "go") { // 行き先(次の、場所のある手順)が行われるときだけ歩く
+    for (let k = 1; k < R.length; k++) { const j = (i + k) % R.length; if (R[j].k === "go" || !stepLoc(doc, this.g, R[j])) continue; return this.stepActive(a, j); }
+    return false;
+  }
+  const ev = Math.max(1, Math.round(+s.every || 1)); // その他: ◯周に1回(台車の入れ替えなど)
+  return ev <= 1 || (a.lapNo || 1) % ev === 0;
+};
+// 今は無いが、待てば取り出す側にモノが出てくるか(自分が後の手順でしか動かせない設備なら出てこない)
+Sim.prototype.willProduce = function (s, a) {
+  const o = s.o, me = a.o.id;
+  if (o.type === "in") return +o.interval > 0;
+  if (o.type === "part") return false;
+  if (o.type === "buffer") return this.othersFeed(o, a);
+  if (o.parallel) return s.indexLeft > 0 || (!!s.backCur && s.frontState === "ready");
+  if (s.busy) return !(s.manLeft > 0 && o.op === me);
+  return this.ready(s) ? !(+o.manT > 0 && o.op === me) : this.othersFeed(o, a);
+};
+// ほかの人・ロボット・自動搬送がこの設備へモノを運んでくるか
+Sim.prototype.othersFeed = function (o, a) {
+  return this.doc.flows.some(f => f.to === o.id && (f.mode === "auto" || (f.agent && f.agent !== a.o.id)));
+};
+// 手順の中で待った時間を数え、長すぎたら警告して飛ばす
+Sim.prototype.waitTooLong = function (a, c, dt) {
+  c.w = (c.w || 0) + dt;
+  if (c.w <= WAIT_MAX) return false;
+  const R = a.o.routine, w = `「${a.o.name}」の手順${c.i + 1}「${stepLabel(this.doc, R[c.i])}」で${WAIT_MAX / 60}分以上待ったため飛ばしました(手順の順番を確認してください)`;
+  if (c.i != null && !this.warn.includes(w)) this.warn.push(w);
+  return true;
+};
+Sim.prototype.syncCarry = function (a) {
+  a.carry = a.hands.reduce((n, h) => n + h.n, 0);
+  a.carryName = a.hands.length ? a.hands[a.hands.length - 1].name : "";
+};
+const WAIT_MAX = 300; // [秒] 手順の中でこれ以上待ったら飛ばして警告(行き詰まり防止)
+function newRoutineStat(n) { return { cur: [], sum: new Array(n).fill(0), laps: 0, lapT: 0, lapT0: 0, stepI: null, stepT0: 0, dirty: true }; }
 // 体の向き: 目標方向との差が大きいときはその場で向きを変えてから歩く(人 240°/s、台車を押すと 90°/s、LexxMoMa 180°/s)
 const TURN_BIG = 0.6; // [rad] ≒35° これ以上ずれていたら立ち止まって向きを変える
 function angDiff(a, b) { let d = a - b; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return d; }
@@ -1268,11 +1373,11 @@ Sim.prototype.workerPaused = function (a) {
 };
 Sim.prototype.stepAgents = function (dt) {
   for (const a of this.ag) {
-    if (this.workerPaused(a)) { a.tm.idle += dt; a.act = "休憩"; continue; }
+    if (this.workerPaused(a)) { a.tm.idle += dt; a.act = "休憩"; if (a.rt) a.rt.dirty = true; continue; }
     let budget = dt;
     let guard = 0;
     while (budget > 1e-9 && guard++ < 30) {
-      if (!a.cur) { if (!a.plan.length) this.plan(a); a.cur = a.plan.shift(); if (!a.cur) break; a.cur.t0 = null; }
+      if (!a.cur) { if (!a.plan.length) { this.tNow = this.t + (dt - budget); this.plan(a); } a.cur = a.plan.shift(); if (!a.cur) break; a.cur.t0 = null; }
       const c = a.cur, speed = Math.max(0.1, +a.o.speed || 1) * 1000 * (a.holding && a.holding.o.type === "cart" ? 0.85 : 1);
       const kind = (a.carry > 0 || a.holding) ? "carry" : "walk";
       a.pose = "";
@@ -1340,6 +1445,93 @@ Sim.prototype.stepAgents = function (dt) {
         if (c.t0 === null) c.t0 = c.t;
         const use = Math.min(budget, c.t0); c.t0 -= use; budget -= use; a.tm.charge += use;
         if (c.t0 <= 1e-9) a.cur = null;
+      } else if (c.k === "tgo") { // 時間を決めた移動: 経路をちょうどその時間で歩く(向き替えも含めた実測値として扱う)
+        if (!c.path) {
+          const route = findPath(this.g, { x: a.x, y: a.y }, c.to);
+          if (!route.ok && dist(a, c.to) > CELL) {
+            a.act = "通行不可"; a.tm.idle += budget; budget = 0;
+            const warning = `${a.o.name}: 通れる経路がないため作業を停止しています。通路と立ち位置を確認してください`;
+            if (!this.warn.includes(warning)) this.warn.push(warning);
+            break;
+          }
+          c.path = route.ok ? route.pts.slice(1) : [{ x: c.to.x, y: c.to.y }]; c.left = c.T;
+          let L = 0, p0 = a; for (const p of c.path) { L += dist(p0, p); p0 = p; }
+          c.v = c.T > 0 ? L / c.T : Infinity;
+        }
+        a.act = kind === "carry" ? "運搬" : "移動";
+        const use = Math.min(budget, c.left);
+        let mv = c.v === Infinity ? Infinity : c.v * use;
+        while (mv > 1e-9 && c.path.length) {
+          const p = c.path[0], d = dist(a, p);
+          if (d < 1e-6) { c.path.shift(); continue; }
+          a.h = Math.atan2(p.y - a.y, p.x - a.x);
+          const m = Math.min(d, mv);
+          a.x += (p.x - a.x) / d * m; a.y += (p.y - a.y) / d * m; a.distMm += m; mv -= m; if (a.flowNow) this.fs[a.flowNow].distMm += m;
+          if (m >= d - 1e-6) { a.x = p.x; a.y = p.y; c.path.shift(); a.trail.push({ x: a.x, y: a.y, c: kind }); }
+        }
+        c.left -= use; budget -= use; a.tm[kind] += use;
+        if (c.left <= 1e-9) { a.x = c.to.x; a.y = c.to.y; if (c.to.face != null) a.h = c.to.face; a.cur = null; }
+        this.placeHeld(a, !a.cur);
+      } else if (c.k === "rpick") { // 手順: 取る(無ければ、出てくるまで待つ。出てこないなら飛ばす)
+        const f = this.doc.flows.find(x => x.id === c.f), src = f && this.st[f.from];
+        if (!src) { a.cur = null; continue; }
+        if (c.t0 === null) {
+          if (src.outN < 1) {
+            if (this.willProduce(src, a) && !this.waitTooLong(a, c, budget)) { a.act = "待ち"; a.tm.idle += budget; budget = 0; }
+            else a.cur = null;
+            continue;
+          }
+          c.got = this.takeOut(src, Math.max(1, +f.batch || 1));
+          c.t0 = c.t != null ? c.t : Math.max(0, +a.o.handle || 0);
+        }
+        a.act = "取り出し"; a.pose = "reach";
+        const use = Math.min(budget, c.t0); c.t0 -= use; budget -= use; a.tm.handle += use;
+        if (c.t0 <= 1e-9) { a.hands.push({ f: f.id, n: c.got.n, name: c.got.name }); this.syncCarry(a); a.flowNow = f.id; a.cur = null; }
+      } else if (c.k === "rplace") { // 手順: 置く(持っていなければ飛ばす。置けるまで待つ)
+        const f = this.doc.flows.find(x => x.id === c.f), h = a.hands.find(x => x.f === c.f);
+        if (!f || !h) { a.cur = null; continue; }
+        if (c.t0 === null) {
+          if (!this.canAccept(f.to, h.n, f.id)) {
+            if (!this.waitTooLong(a, c, budget)) { a.act = "待ち"; a.tm.idle += budget; budget = 0; } else a.cur = null;
+            continue;
+          }
+          c.t0 = c.t != null ? c.t : Math.max(0, +a.o.handle || 0);
+        }
+        a.act = "投入"; a.pose = "reach";
+        const use = Math.min(budget, c.t0); c.t0 -= use; budget -= use; a.tm.handle += use;
+        if (c.t0 <= 1e-9) {
+          a.hands.splice(a.hands.indexOf(h), 1); this.syncCarry(a);
+          this.deliver(f.to, f.id, h.name, h.n); this.fs[f.id].trips++; this.fs[f.id].items += h.n;
+          a.flowNow = a.hands.length ? a.hands[a.hands.length - 1].f : null; a.cur = null;
+        }
+      } else if (c.k === "rwork") { // 手順: 設備の人の作業。設備を始めて、人の作業時間だけその場にいる
+        const s = this.st[c.st], o = s && s.o;
+        if (!s) { a.cur = null; continue; }
+        if (!c.started) { // 待っている間は作業する面の前にいない扱い(設備が勝手に始まらないように)
+          if (o.parallel) { if (!s.frontState && !(s.indexLeft > 0) && this.ready(s)) { s.frontCur = this.consume(s); s.frontState = "set"; s.manLeft = +o.manT || 0; c.started = true; } }
+          else if (!s.busy && this.ready(s)) { s.cur = this.consume(s); s.busy = true; s.manLeft = +o.manT || 0; s.autoLeft = +o.autoT || 0; c.started = true; }
+          if (!c.started) {
+            const later = o.parallel ? (s.indexLeft > 0 || !!s.frontState) : s.busy || this.othersFeed(o, a);
+            if (later && !this.waitTooLong(a, c, budget)) { a.act = "待ち"; a.tm.idle += budget; budget = 0; } else { a.atStation = null; a.cur = null; }
+            continue;
+          }
+        }
+        a.atStation = c.st; s.drive = a.o.id; a.act = "作業"; a.pose = "reach";
+        const use = Math.min(budget, s.manLeft); s.manLeft -= use; s.manBusyT += use; if (!o.parallel) s.busyT += use;
+        budget -= use; a.tm.work += use;
+        if (s.manLeft <= 1e-9) {
+          s.manLeft = 0; s.drive = null; a.atStation = null; a.cur = null;
+          if (o.parallel) s.frontState = "ready";
+          else { // 残りの時間は自動運転へ。終われば次の手順ですぐ取れるように出来たモノを出す
+            const u2 = Math.min(budget, s.autoLeft); s.autoLeft -= u2; s.autoBusyT += u2; s.busyT += u2;
+            if (s.autoLeft <= 1e-9) this.finishCycle(s);
+          }
+        }
+      } else if (c.k === "rother") { // 手順: その他(時間だけの作業。台車の入れ替え・確認など)
+        a.act = c.name; a.pose = "reach";
+        if (c.t0 === null) c.t0 = c.t;
+        const use = Math.min(budget, c.t0); c.t0 -= use; budget -= use; a.tm.work += use;
+        if (c.t0 <= 1e-9) a.cur = null;
       } else if (c.k === "load" || c.k === "unload" || c.k === "idle") {
         a.act = { load: "取り出し", unload: "投入", idle: "待ち" }[c.k]; if (c.k !== "idle") a.pose = "reach";
         if (c.t0 === null) c.t0 = c.k === "idle" ? c.t : Math.max(0, +a.o.handle || 0);
@@ -1379,7 +1571,10 @@ Sim.prototype.resetStats = function () {
     s.busyT = s.manBusyT = s.autoBusyT = s.waitOpT = s.starveT = s.blockT = 0; s.cycles = 0; s.ng = 0;
     if (s.o.type === "out") { s.done = {}; s.doneN = 0; }
   }
-  for (const a of this.ag) { for (const k in a.tm) a.tm[k] = 0; a.distMm = 0; a.turnT = 0; a.trail = [{ x: a.x, y: a.y }]; }
+  for (const a of this.ag) {
+    for (const k in a.tm) a.tm[k] = 0; a.distMm = 0; a.turnT = 0; a.trail = [{ x: a.x, y: a.y }];
+    if (a.rt) Object.assign(a.rt, { sum: a.rt.sum.map(() => 0), laps: 0, lapT: 0, dirty: true });
+  }
   for (const id in this.fs) this.fs[id] = { trips: 0, items: 0, distMm: 0 };
   this.wipInt = 0; this.t0 = this.t;
 };
@@ -1396,7 +1591,10 @@ Sim.prototype.results = function () {
   const agents = this.ag.map(a => {
     const tot = Object.values(a.tm).reduce((x, y) => x + y, 0) || 1;
     return { id: a.o.id, name: a.o.name, type: a.o.type, distM: a.distMm / 1000, perHourM: a.distMm / 1000 / T * 3600, turnPerH: (a.turnT || 0) / T * 3600,
-             ratio: { walk: a.tm.walk / tot, carry: a.tm.carry / tot, work: a.tm.work / tot, handle: a.tm.handle / tot, idle: a.tm.idle / tot, charge: (a.tm.charge || 0) / tot } };
+             ratio: { walk: a.tm.walk / tot, carry: a.tm.carry / tot, work: a.tm.work / tot, handle: a.tm.handle / tot, idle: a.tm.idle / tot, charge: (a.tm.charge || 0) / tot },
+             routine: a.rt ? { laps: a.rt.laps, lapAvg: a.rt.laps ? a.rt.lapT / a.rt.laps : null,
+               steps: a.o.routine.map((s, k) => ({ k: s.k, label: stepLabel(doc, s), set: stepPlanT(doc, a.o, s), t: +s.t || 0, every: s.k === "other" ? Math.max(1, Math.round(+s.every || 1)) : 1,
+                 avg: a.rt.laps ? a.rt.sum[k] / a.rt.laps : null })) } : null };
   });
   const stations = Object.values(this.st).filter(s => !["in", "out", "part", "buffer"].includes(s.o.type)).map(s => ({
     id: s.o.id, name: s.o.name, type: s.o.type, util: s.busyT / T, manUtil: s.manBusyT / T, autoUtil: s.autoBusyT / T, waitOp: s.waitOpT / T,
@@ -1422,6 +1620,43 @@ Sim.prototype.results = function () {
   return { simSec: T, done: doneN, perHour: doneN / T * 3600, pitch: doneN ? T / doneN : null, leadTime: doneN ? avgWip / (doneN / T) : null, avgWip,
            agents, stations, flows, bottleneck, warn: this.warn.slice(), time: timeSummary(doc) };
 };
+
+// ===== 作業手順(決めた順番)の部品 =====
+// o.routine = [{ k, f: 流れid(取る・置く), st: 設備id(作業), at: 作業する場所(任意。離れたスイッチなど), t: 秒(空欄=自動), name: 作業内容 }]
+const ROUTINE_KINDS = { go: "移動", pick: "取る", place: "置く", work: "作業", other: "その他" };
+const routineOn = o => !!(o && o.routineOn && Array.isArray(o.routine) && o.routine.length);
+const stepT = v => (v === "" || v == null || isNaN(+v)) ? null : Math.max(0, +v);
+// 手順を行う位置(取る=取り出す面、置く=入れる面、作業=作業する面 or 指定の場所)。その他は場所を指定したときだけ
+function stepLoc(doc, g, s) {
+  if (s.k === "pick" || s.k === "place") {
+    const f = doc.flows.find(x => x.id === s.f), o = f && byId(doc, s.k === "pick" ? f.from : f.to);
+    return o ? accessPoint(doc, g, o, s.k === "pick" ? "out" : "in") : null;
+  }
+  if (s.k === "work" || s.k === "other") { const o = byId(doc, s.at || (s.k === "work" ? s.st : null)); return o ? accessPoint(doc, g, o, "op") : null; }
+  return null;
+}
+// 移動の行き先 = i 番目から見て最初の、場所のある手順(移動・場所の無いその他は飛ばす)の位置
+function routineLoc(doc, g, R, i) {
+  for (let k = 0; k < R.length; k++) { const s = R[(i + k) % R.length]; if (s.k === "go") continue; const p = stepLoc(doc, g, s); if (p) return p; }
+  return null;
+}
+function stepLabel(doc, s) {
+  if (s.name) return s.name;
+  const f = s.f && doc.flows.find(x => x.id === s.f), a = f && byId(doc, f.from), b = f && byId(doc, f.to), nm = id => (byId(doc, id) || {}).name || "?";
+  if (s.k === "pick") return a ? `${outputName(doc, a)}を取る(${a.name})` : "取る";
+  if (s.k === "place") return a && b ? `${outputName(doc, a)}を置く(${b.name})` : "置く";
+  if (s.k === "work") return `${nm(s.st)}で作業`;
+  if (s.k === "go") return "次の場所へ移動";
+  return "その他の作業";
+}
+// 入力した(または自動で決まる)時間。null = 距離から計算
+function stepPlanT(doc, ag, s) {
+  if (s.k === "work") { const o = byId(doc, s.st); return o ? +o.manT || 0 : 0; }
+  const t = stepT(s.t);
+  if (s.k === "pick" || s.k === "place") return t != null ? t : Math.max(0, +ag.handle || 0);
+  if (s.k === "other") return (t || 0) / Math.max(1, Math.round(+s.every || 1)); // ◯周に1回は1周あたりに割る
+  return t;
+}
 
 // ===== 1日分の計算 =====
 // 人がいる時間(稼働時間-休憩)と、人の休憩中(ロボット・自動設備だけが動く)をそれぞれ1時間ずつ測り、1日に換算する
@@ -1456,7 +1691,8 @@ function dayMetrics(r) {
 G.PS = { FN, CAT, dayOf, simulateDay, dayMetrics, GROUPS, DEFAULTS, PROP_LABEL, isStation, isAgent, isMovable, newDoc, makeObj, autoName, nextItemName,
          byId, rectOf, dist, outputName, buildGrid, findPath, accessPoint, Sim, uid, CELL,
          isPoly, SIDES, SIDE_LABEL, ROLE_LABEL, portRoles, sharedPort, SHARE_LEN, ensurePorts, portPoint, face, sideToward, autoOrient, rotatePorts,
-         inPoly, polyBBox, polyArea, STAND, angDiff, PACKS, packOf, packMap, isTimed, migrateObj, cycleTime, inQty, outQty, timeSummary };
+         inPoly, polyBBox, polyArea, STAND, angDiff, PACKS, packOf, packMap, isTimed, migrateObj, cycleTime, inQty, outQty, timeSummary,
+         ROUTINE_KINDS, routineOn, stepLoc, routineLoc, stepLabel, stepPlanT };
 if (typeof module !== "undefined") module.exports = G.PS;
 })(typeof window !== "undefined" ? window : globalThis);
 
@@ -1502,6 +1738,17 @@ function cleanObj(o) {
   if (x.color != null && !/^#[0-9a-f]{3,8}$/i.test(String(x.color))) delete x.color;
   if (Array.isArray(x.pts)) x.pts = x.pts.map(p => ({ x: +(p && p.x) || 0, y: +(p && p.y) || 0 })); else delete x.pts;
   if (!okId(x.op)) x.op = null;
+  if (x.routine != null) {
+    x.routine = (Array.isArray(x.routine) ? x.routine : []).filter(st => st && PS.ROUTINE_KINDS[st.k]).slice(0, 200).map(st => {
+      const r = { k: st.k };
+      for (const k of ["f", "st", "at"]) if (st[k] && SAFE_ID.test(String(st[k]))) r[k] = String(st[k]);
+      if (st.t != null && st.t !== "" && !isNaN(+st.t)) r.t = Math.max(0, +st.t);
+      if (st.name) r.name = String(st.name).slice(0, 60);
+      if (st.every) r.every = Math.max(1, Math.round(+st.every || 1));
+      return r;
+    });
+    x.routineOn = !!x.routineOn;
+  }
   return x;
 }
 function normalize(d) {
@@ -1574,8 +1821,10 @@ function stationSub(d, o) {
   if (o.type === "buffer") return `最大 ${o.cap} 個`;
   return "";
 }
+const fmtS = v => fmt(v, Number.isInteger(Math.round(+v * 10) / 10) ? 0 : 1); // 秒: 小数があれば1桁まで
 function timeLabel(o) {
   if (!PS.isTimed(o.type)) return "";
+  const fmt = fmtS;
   const a = +o.autoT || 0, m = +o.manT || 0, parts = [];
   if (a) parts.push(`自動 ${fmt(a)}秒`);
   if (m) parts.push(`人 ${fmt(m)}秒`);
@@ -2017,6 +2266,7 @@ function renderOverlay() {
         g += `<rect data-h="${h}" x="${hx - px(5)}" y="${hy - px(5)}" width="${px(10)}" height="${px(10)}" fill="#fff" stroke="#0068B7" stroke-width="${px(1.5)}" style="cursor:${h === "nw" || h === "se" ? "nwse" : "nesw"}-resize"/>`;
     }
     if ($("#optClear").checked && !["zone", "note"].includes(o.type) && !isPoly(o.type)) g += clearanceSVG(o, S);
+    if (isAgent(o.type) && PS.routineOn(o)) g += routineSVG(o, S);
     if (isStation(o.type)) g += standSVG(o, S);
     if (isStation(o.type) && o.type !== "out") {
       const kx = r.x1 + px(16), ky = o.y;
@@ -2046,6 +2296,24 @@ function renderOverlay() {
     g += `<g opacity=".55" style="pointer-events:none">${isAgent(placeType) ? agentSVG(doc, tmp, tmp.x, tmp.y, S) : isMovable(placeType) ? moverSVG(tmp, tmp.x, tmp.y, 0, "", S) : objSVG(doc, tmp, S)}</g>`;
   }
   $("#Lov").innerHTML = g;
+}
+// 決めた順番で動く人を選んだとき: 手順の場所に番号(①②…)を出し、順に点線でつなぐ
+function routineSVG(o, S) {
+  const px = k => k / S, g0 = PS.buildGrid(doc), col = agentColor(doc, o.id), R = o.routine;
+  const pts = [], at = {};
+  R.forEach((s, i) => {
+    if (s.k === "go") return;
+    const p = PS.stepLoc(doc, g0, s); if (!p) return;
+    const key = Math.round(p.x / 100) + "," + Math.round(p.y / 100), n = at[key] = (at[key] || 0) + 1;
+    pts.push({ x: p.x, y: p.y, i, n });
+  });
+  let g = "";
+  if (pts.length > 1) g += `<polyline points="${[...pts, pts[0]].map(p => p.x + "," + p.y).join(" ")}" fill="none" stroke="${col}" stroke-opacity=".55" stroke-width="${px(1.6)}" stroke-dasharray="${px(5)} ${px(4)}"/>`;
+  for (const p of pts) {
+    const r = px(9), cx = p.x + (p.n - 1) * r * 2.1, cy = p.y - px(16);
+    g += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#fff" stroke="${col}" stroke-width="${px(1.5)}"/>` + txt(cx, cy, String(p.i + 1), px(11), { b: 1, fill: col });
+  }
+  return `<g style="pointer-events:none">${g}</g>`;
 }
 // 選んだ設備の「作業者が立つ位置」: 取る/置く/作業。立てない場所なら赤
 function standSVG(o, S) {
@@ -2544,6 +2812,7 @@ function objPanel(o) {
     h += `<h4>運ぶ担当の流れ</h4>` + (fl.length ? `<div class="list">${fl.map(f => `<label><input type="checkbox" data-assign="${f.id}" ${f.agent === o.id ? "checked" : ""}> ${esc(flowName(f))}${f.agent && f.agent !== o.id ? ` <span class="muted">(${esc((byId(doc, f.agent) || {}).name)})</span>` : ""}</label>`).join("")}</div>` : `<p class="muted">まだ流れがありません</p>`);
     const ops = doc.objs.filter(s => s.needOp);
     if (ops.length) h += `<h4>付いて作業する設備</h4><div class="list">${ops.map(s => `<label><input type="checkbox" data-op="${s.id}" ${s.op === o.id ? "checked" : ""}> ${esc(s.name)}</label>`).join("")}</div>`;
+    h += routinePanel(o);
     if (o.type === "robot") h += `<p class="hint">LexxMoMa の初期値: 車体 750×600mm、走行 1.0 m/s(最大1.5)、積み降ろし 20 秒/回(アームでのピック想定)。実際の値は案件ごとに確認してください。</p>`;
   }
   if (isMovable(o.type)) {
@@ -2592,7 +2861,7 @@ function processCard(o) {
     + `<div class="io-row"><input data-k="outName" value="${esc(o.outName)}" placeholder="空欄なら ${esc(outputName(doc, Object.assign({}, o, { outName: "" })))}"><span class="x2">×</span><input class="q" type="number" min="1" step="1" data-k="outQty" value="${PS.outQty(o)}"></div>`;
   for (const f of outs) { const b = byId(doc, f.to); h += `<div class="io-row"><span class="to">→ ${esc(b.name)}</span><button class="del" data-delflow="${f.id}" title="この流れを消す">×</button></div>`; }
   h += `<select class="add" data-addout="1"><option value="">＋ 次工程を追加…</option>${opts(dsts)}</select>`;
-  const a = +o.autoT || 0, m = +o.manT || 0, oq = o.type === "inspect" ? PS.inQty(o) : PS.outQty(o);
+  const a = +o.autoT || 0, m = +o.manT || 0, oq = o.type === "inspect" ? PS.inQty(o) : PS.outQty(o), fmt = fmtS;
   h += `<div class="pc-h"><b>③</b> 時間(1回あたり)${tmpT ? '<i class="tag">仮の値</i>' : ""}</div>
     <div class="grid2">${field("自動運転 [秒]", inp("autoT", a, "number", `step="any" min="0"${tmpT ? ' class="tmp"' : ""}`))}${field("人の作業 [秒]", inp("manT", m, "number", `step="any" min="0"${tmpT ? ' class="tmp"' : ""}`))}</div>
     ${o.type !== "inspect" ? `<label class="chk"><input type="checkbox" data-k="parallel" ${o.parallel ? "checked" : ""}> 自動運転中に、人が次のセット・取り出しを同時に進められる(並行作業)</label>${o.parallel ? field("ワークの入れ替え時間 [秒](仕上がったワークと次のワークを入れ替える時間)", inp("swapT", +o.swapT || 0, "number", 'step="any" min="0"')) : ""}` : ""}
@@ -2604,6 +2873,52 @@ function processCard(o) {
   return h + `</div>`;
 }
 function flowName(f) { const a = byId(doc, f.from), b = byId(doc, f.to); return `${a ? a.name : "?"} → ${b ? b.name : "?"}`; }
+// 作業の順番(決めた順番で動く): 現場の作業手順表(①取る ②移動 ③置く…)をそのまま入れて再現する
+const CIRC = n => n <= 20 ? String.fromCharCode(0x2460 + n - 1) : `(${n})`;
+function routinePanel(o) {
+  const R = o.routine || [];
+  let h = `<h4>作業の順番</h4><label class="chk"><input type="checkbox" data-rton="1" ${o.routineOn ? "checked" : ""}> 決めた順番で動く(現場の作業手順どおり)</label>`;
+  if (!o.routineOn) return h + `<p class="hint">いまは「詰まった設備の払い出し > 材料切れの設備への供給」の優先順で、自分で次の仕事を選んで動きます。作業手順表がある工程は、オンにして手順を入れると、その順番・時間どおりに動きます。</p>`;
+  const flows = doc.flows.filter(f => f.mode !== "auto"), sts = doc.objs.filter(x => PS.isTimed(x.type));
+  const places = doc.objs.filter(x => !isAgent(x.type) && !isPoly(x.type) && !isMovable(x.type));
+  const opt = (v, t, cur) => `<option value="${v}" ${v === cur ? "selected" : ""}>${esc(t)}</option>`;
+  h += `<div class="rt">`;
+  R.forEach((s, i) => {
+    const kinds = Object.entries(PS.ROUTINE_KINDS).map(([k, t]) => opt(k, t, s.k)).join("");
+    let ref = "";
+    if (s.k === "pick" || s.k === "place") ref = `<select data-rt="f"><option value="">(流れを選ぶ)</option>${flows.map(f => opt(f.id, (s.k === "pick" ? "取る: " : "置く: ") + flowName(f), s.f)).join("")}</select>`;
+    else if (s.k === "work") ref = `<select data-rt="st"><option value="">(設備を選ぶ)</option>${sts.map(x => opt(x.id, x.name, s.st)).join("")}</select>`;
+    else if (s.k === "go") ref = `<span class="rt-to">→ 次の手順の場所へ</span>`;
+    else ref = `<input class="q" data-rt="every" type="number" min="1" step="1" value="${Math.max(1, +s.every || 1)}" title="何周に1回行うか"><span class="rt-to">周に1回</span>`;
+    const isWork = s.k === "work", st = isWork ? byId(doc, s.st) : null;
+    const tv = isWork ? (st ? +st.manT || 0 : "") : (s.t == null ? "" : s.t);
+    const ph = s.k === "go" ? "距離" : s.k === "pick" || s.k === "place" ? fmt(+o.handle || 0, 1) : "0";
+    const at = isWork || s.k === "other" ? `<select data-rt="at" title="作業する場所">${opt("", isWork ? "設備の作業する面で" : "その場で", s.at || "")}${places.filter(x => x.id !== s.st).map(x => opt(x.id, "場所: " + (x.name || x.text || CAT[x.type].label), s.at)).join("")}</select>` : "";
+    h += `<div class="rt-step" data-i="${i}">
+      <div class="io-row"><span class="rt-no">${CIRC(i + 1)}</span><select data-rt="k" class="rt-k">${kinds}</select>${ref}</div>
+      <div class="io-row"><input data-rt="name" value="${esc(s.name || "")}" placeholder="${esc(PS.stepLabel(doc, Object.assign({}, s, { name: "" })))}">
+        <input class="q" type="number" data-rt="t" value="${tv}" placeholder="${ph}" step="any" min="0" title="${isWork ? "設備の「人の作業」時間(設備側と同じ値)" : "空欄なら自動"}"><span class="x2">秒</span>
+        <button class="del" data-rtmv="-1" title="上へ">↑</button><button class="del" data-rtmv="1" title="下へ">↓</button><button class="del" data-rtdel="1" title="この手順を消す">×</button></div>
+      ${at ? `<div class="io-row">${at}</div>` : ""}</div>`;
+  });
+  h += `</div><div class="acts"><button class="btn" data-rtadd="1">＋ 手順を追加</button><button class="btn" data-rtauto="1" title="いま担当している運搬と設備の作業から、取る→置く→作業の順に並べます">いまの担当から作る</button></div>`;
+  const ts = R.map(s => PS.stepPlanT(doc, o, s)), sum = ts.reduce((n, t) => n + (t || 0), 0), autoN = ts.filter(t => t == null).length;
+  h += `<div class="tsum">入力した時間の合計 <b>${fmt(sum, 1)}秒</b>/周${autoN ? `(距離から計算する移動 ${autoN}つ を除く)` : ""}</div>`;
+  h += `<p class="hint">上から順に繰り返します。<b>移動</b>は次の手順の場所まで歩きます(秒を入れるとその時間で歩く・空欄なら距離と歩く速さから計算)。<b>取る・置く</b>の空欄は積み降ろし時間。<b>作業</b>の秒は設備の「人の作業」時間です。移動を入れずに場所が変わるときは、距離から歩く時間を足します。モノが無い・置けない・設備が動いている間は待ちます。LexxMoMa に任せた運搬・作業の手順は飛ばします。</p>`;
+  return h;
+}
+// いまの担当(運ぶ流れ・付く設備)から手順のたたき台を作る: 材料側の流れから順に 取る→置く→(置いた先の作業)
+function routineFromDuties(o) {
+  const mine = doc.flows.filter(f => f.mode !== "auto" && f.agent === o.id);
+  const depth = id => { let d = 0, cur = id; const seen = new Set(); for (;;) { const f = doc.flows.find(x => x.to === cur && !seen.has(x.id)); if (!f) return d; seen.add(f.id); cur = f.from; d++; } };
+  const R = [];
+  for (const f of mine.sort((a, b) => depth(a.from) - depth(b.from))) {
+    R.push({ k: "pick", f: f.id }, { k: "place", f: f.id });
+    const b = byId(doc, f.to); if (b && PS.isTimed(b.type) && b.op === o.id && +b.manT > 0 && !R.some(s => s.k === "work" && s.st === b.id)) R.push({ k: "work", st: b.id });
+  }
+  for (const b of doc.objs) if (PS.isTimed(b.type) && b.op === o.id && +b.manT > 0 && !R.some(s => s.k === "work" && s.st === b.id)) R.push({ k: "work", st: b.id });
+  return R;
+}
 function flowPanel(f) {
   const a = byId(doc, f.from), b = byId(doc, f.to);
   const ags = doc.objs.filter(o => isAgent(o.type)), mvs = doc.objs.filter(o => isMovable(o.type));
@@ -2699,6 +3014,40 @@ function bindPanel(P) {
     const o = selObj(), s = byId(doc, el.dataset.op);
     change(() => { s.op = el.checked ? o.id : (s.op === o.id ? null : s.op); });
   }));
+  // 作業の順番
+  const rtStep = el => { const o = selObj(), i = +el.closest(".rt-step").dataset.i; return [o, o.routine[i], i]; };
+  P.querySelectorAll("[data-rton]").forEach(el => el.onchange = () => {
+    const o = selObj();
+    change(() => { o.routineOn = el.checked; if (el.checked && !(o.routine || []).length) o.routine = routineFromDuties(o); });
+  });
+  P.querySelectorAll("[data-rt]").forEach(el => el.onchange = () => {
+    const [o, s] = rtStep(el), k = el.dataset.rt, v = el.value;
+    change(() => {
+      if (k === "k") { s.k = v; delete s.f; delete s.st; delete s.at; delete s.every; if (v === "work") delete s.t; }
+      else if (k === "f") { s.f = v || null; const f = doc.flows.find(x => x.id === v); if (f) f.agent = o.id; } // 手順に入れた運搬はこの人の担当にする
+      else if (k === "st") { s.st = v || null; const b = byId(doc, v); if (b) b.op = o.id; }
+      else if (k === "at") { if (v) s.at = v; else delete s.at; }
+      else if (k === "every") s.every = Math.max(1, Math.round(+v || 1));
+      else if (k === "name") s.name = v.trim().slice(0, 60);
+      else if (k === "t") {
+        if (s.k === "work") { const b = byId(doc, s.st); if (b) { b.manT = Math.max(0, +v || 0); if (!b.edited.includes("manT")) b.edited.push("manT"); } }
+        else s.t = v === "" ? null : Math.max(0, +v || 0);
+      }
+    });
+  });
+  P.querySelectorAll("[data-rtmv]").forEach(el => el.onclick = () => {
+    const [o, , i] = rtStep(el), j = i + +el.dataset.rtmv;
+    if (j < 0 || j >= o.routine.length) return;
+    change(() => { const R = o.routine; [R[i], R[j]] = [R[j], R[i]]; });
+  });
+  P.querySelectorAll("[data-rtdel]").forEach(el => el.onclick = () => { const [o, , i] = rtStep(el); change(() => { o.routine.splice(i, 1); }); });
+  P.querySelectorAll("[data-rtadd]").forEach(el => el.onclick = () => { const o = selObj(); change(() => { (o.routine = o.routine || []).push({ k: "go" }); }); });
+  P.querySelectorAll("[data-rtauto]").forEach(el => el.onclick = () => {
+    const o = selObj(), R = routineFromDuties(o);
+    if (!R.length) { toast("この人が担当している運搬・作業がありません。先に流れや設備の担当を決めてください"); return; }
+    if ((o.routine || []).length && !confirm("いまの手順を、担当から作った手順に置き換えます。よろしいですか?")) return;
+    change(() => { o.routine = R; });
+  });
   P.querySelectorAll("[data-act]").forEach(el => el.onclick = () => {
     const a = el.dataset.act;
     if (a === "del") delSel();
@@ -2719,6 +3068,14 @@ function checks() {
   for (const o of doc.objs) if (o.type === "join" && doc.flows.filter(f => f.to === o.id).length < 2) w.push(`「${o.name}」(A+B→C)に入る流れが1本以下です`);
   for (const f of doc.flows) if (f.mode !== "auto" && !f.agent) w.push(`「${flowName(f)}」の運び手が未定です`);
   for (const o of doc.objs) if (o.needOp && !o.op) w.push(`「${o.name}」に付く作業者が未定です`);
+  for (const o of doc.objs) if (isAgent(o.type) && o.routineOn) {
+    const R = o.routine || [];
+    if (!R.length) w.push(`「${o.name}」の作業の順番に手順がありません`);
+    R.forEach((s, i) => {
+      if ((s.k === "pick" || s.k === "place") && !doc.flows.some(f => f.id === s.f)) w.push(`「${o.name}」の手順${i + 1}: 運ぶ流れを選んでください`);
+      if (s.k === "work" && !byId(doc, s.st)) w.push(`「${o.name}」の手順${i + 1}: 作業する設備を選んでください`);
+    });
+  }
   const g0 = PS.buildGrid(doc);
   for (const f of doc.flows) {
     if (f.mode === "auto") continue;
@@ -2821,6 +3178,21 @@ function resultsHTML(res, prev) {
   h += `<p class="hint">簡易モデルです: 人は「満杯分たまったら運ぶ」、設備は「材料があれば1個ずつ加工」。段取り替え・休憩・故障は含みません。</p>`;
   return h;
 }
+// 決めた順番で動く人の1周: 入力した時間と、シミュレーションでかかった時間(待ち・自動で足した移動を含む)
+function routineResHTML(res) {
+  let h = "";
+  for (const a of res.agents) {
+    const rt = a.routine; if (!rt) continue;
+    if (!rt.laps) { h += `<div class="warn">「${esc(a.name)}」は手順を1周できませんでした。手順の順番・担当を確認してください</div>`; continue; }
+    const setSum = rt.steps.reduce((n, s) => n + (s.set || 0), 0);
+    h += `<h4>${esc(a.name)} の作業手順(1周)</h4><table class="t rtres"><tr><th>No</th><th>作業内容</th><th class="n">入力</th><th class="n">シミュ</th></tr>
+      ${rt.steps.map((s, i) => { const d = s.avg - (s.set == null ? s.avg : s.set), hi = Math.abs(d) >= 0.3;
+        return `<tr${hi ? ' class="hi"' : ""}><td>${CIRC(i + 1)}</td><td>${esc(s.label)}${hi ? `<br><small>${d > 0 ? `+${fmt(d, 1)}秒(${s.k === "go" || s.k === "work" || s.k === "other" ? "待ち" : "歩く・待ち"})` : `${fmt(d, 1)}秒`}</small>` : ""}</td><td class="n">${s.set == null ? "距離" : fmt(s.set, 1)}${s.every > 1 ? `<br><small>${fmt(s.t, 1)}秒を${s.every}周に1回</small>` : ""}</td><td class="n">${fmt(s.avg, 1)}</td></tr>`; }).join("")}
+      <tr class="sum"><th></th><th>合計(1周)</th><td class="n">${fmt(setSum, 1)}</td><td class="n"><b>${fmt(rt.lapAvg, 1)}</b></td></tr></table>
+      <p class="hint">シミュ = 実際にかかった時間の平均(${fmt(rt.laps)}周。立ち上がり・休憩をまたいだ周は除く)。入力より長い手順は、移動を入れずに場所が変わった分の歩き(距離から計算)や、モノ・設備の待ちが入っています。</p>`;
+  }
+  return h;
+}
 const SEGS = [["work", "作業", "#e07b1f"], ["carry", "運んで歩く", "#2f9e62"], ["walk", "手ぶらで歩く", "#9fd3b4"], ["handle", "積み降ろし", "#f3b77a"], ["charge", "充電", "#b9c3cc"], ["idle", "待ち", "#dde2e7"]];
 function num(v, d) { return v == null ? "-" : fmt(v, d); }
 function dayHTML(r) {
@@ -2843,6 +3215,7 @@ function dayHTML(r) {
     <div><small>LexxMoMa の稼働</small><b>${r.nRobots ? fmt(r.robotH, 1) : "-"}</b><small>${r.nRobots ? `時間/日(${r.nRobots}台)` : "未導入"}</small></div>
   </div>`;
   const bn = r.main.bottleneck;
+  h += routineResHTML(r.main);
   if (bn) h += `<p style="margin:6px 0">全体の速さを決めているのは <b>${esc(bn.name)}</b>(${bn.supply ? "材料が入ってくる速さ。ここより後ろを速くしても1日の数は増えません" : `${bn.kind}・稼働 ${fmt(bn.util * 100)}%`})。</p>`;
   if (bl) {
     const b = bl.m, row = (t, k, dgt, unit, better) => {
@@ -3325,6 +3698,12 @@ function csv(d, res) {
     for (const a of res.agents) rows.push([a.name, a.type === "robot" ? "LexxMoMa" : "作業者", Math.round(a.perHourM), ...["work", "carry", "walk", "handle", "idle"].map(k => Math.round(a.ratio[k] * 100))]);
     rows.push(["設備", "稼働%", "待ち%", "詰まり%", "サイクル数", "NG"]);
     for (const s of res.stations) rows.push([s.name, Math.round(s.util * 100), Math.round(s.starve * 100), Math.round(s.block * 100), s.cycles, s.ng]);
+    for (const a of res.agents) if (a.routine && a.routine.laps) {
+      rows.push([]);
+      rows.push([`[作業手順] ${a.name}`, "1周の平均秒", a.routine.lapAvg.toFixed(1)]);
+      rows.push(["No", "作業内容", "入力秒", "シミュ秒(平均)"]);
+      a.routine.steps.forEach((s, i) => rows.push([i + 1, s.label, s.set == null ? "" : s.set.toFixed(1), s.avg.toFixed(1)]));
+    }
   }
   return new Blob(["﻿" + rows.map(r => r.map(q).join(",")).join("\r\n")], { type: "text/csv" });
 }
@@ -3389,6 +3768,10 @@ function report(d, res, warns, sim, day) {
   <table style="margin-top:8px"><tr><th>人・ロボット</th><th>歩行 m/時</th><th>向き替え 分/時</th><th>時間の使い方</th>${segs.map(s => `<th>${s[1]}</th>`).join("")}</tr>
   ${res.agents.map(a => `<tr><td>${esc(a.name)}</td><td class="n">${fmt(a.perHourM)}</td><td class="n">${fmt(a.turnPerH / 60, 1)}</td><td><div class="bar">${segs.map(([k, , c]) => `<i style="width:${(a.ratio[k] || 0) * 100}%;background:${c}"></i>`).join("")}</div></td>${segs.map(([k]) => `<td class="n">${fmt((a.ratio[k] || 0) * 100)}%</td>`).join("")}</tr>`).join("")}</table>
   ${res.stations.length ? `<table style="margin-top:6px"><tr><th>設備</th><th>1回 秒</th><th>自動</th><th>人</th><th>人待ち</th><th>待ち(材料が来ない)</th><th>詰まり(運ばれない)</th><th>NG</th></tr>${res.stations.map(s => `<tr><td>${esc(s.name)}</td><td class="n">${fmt(s.ct)}</td><td class="n">${fmt(s.autoUtil * 100)}%</td><td class="n">${fmt(s.manUtil * 100)}%</td><td class="n">${fmt(s.waitOp * 100)}%</td><td class="n">${fmt(s.starve * 100)}%</td><td class="n">${fmt(s.block * 100)}%</td><td class="n">${s.ng}</td></tr>`).join("")}</table>` : ""}
+  ${res.agents.filter(a => a.routine && a.routine.laps).map(a => `<h2 style="font-size:13px">${esc(a.name)} の作業手順(決めた順番・1周)</h2>
+  <table><tr><th>No</th><th>作業内容</th><th>入力 秒</th><th>シミュレーション 秒(平均)</th></tr>
+  ${a.routine.steps.map((s, i) => `<tr><td class="n">${i + 1}</td><td>${esc(s.label)}</td><td class="n">${s.set == null ? "距離から計算" : fmt(s.set, 1)}</td><td class="n">${fmt(s.avg, 1)}</td></tr>`).join("")}
+  <tr><th></th><th>合計(1周)</th><td class="n">${fmt(a.routine.steps.reduce((n, s) => n + (s.set || 0), 0), 1)}</td><td class="n"><b>${fmt(a.routine.lapAvg, 1)}</b></td></tr></table>`).join("")}
   <h2>2. 自動化(LexxMoMa)の検討候補</h2>
   ${cands.length ? cands.map((c, i) => `<div class="cand"><b>候補${i + 1}: ${esc(c.from)} → ${esc(c.to)}</b>(${esc(c.item)}) ・ 片道 ${fmt(c.oneWayM, 1)} m ・ ${fmt(c.tripsPerH, 1)} 回/時 ・ 歩行 ${fmt(c.distPerHM)} m/時 ・ いまの担当 ${esc(c.agent)}</div>`).join("") + `<p style="color:#5d6b7a">歩行距離が長く回数の多い運搬ほど、人が付加価値作業に戻れる効果が大きくなります。ピック・プレースを伴う場合はワーク形状とハンドの確認が必要です。</p>` : "<p>対象となる人の運搬がありません。</p>"}` : ""}
   <h2 class="brk">${res ? 3 : 1}. 設備・配置</h2>

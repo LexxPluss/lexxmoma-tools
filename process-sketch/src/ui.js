@@ -38,6 +38,17 @@ function cleanObj(o) {
   if (x.color != null && !/^#[0-9a-f]{3,8}$/i.test(String(x.color))) delete x.color;
   if (Array.isArray(x.pts)) x.pts = x.pts.map(p => ({ x: +(p && p.x) || 0, y: +(p && p.y) || 0 })); else delete x.pts;
   if (!okId(x.op)) x.op = null;
+  if (x.routine != null) {
+    x.routine = (Array.isArray(x.routine) ? x.routine : []).filter(st => st && PS.ROUTINE_KINDS[st.k]).slice(0, 200).map(st => {
+      const r = { k: st.k };
+      for (const k of ["f", "st", "at"]) if (st[k] && SAFE_ID.test(String(st[k]))) r[k] = String(st[k]);
+      if (st.t != null && st.t !== "" && !isNaN(+st.t)) r.t = Math.max(0, +st.t);
+      if (st.name) r.name = String(st.name).slice(0, 60);
+      if (st.every) r.every = Math.max(1, Math.round(+st.every || 1));
+      return r;
+    });
+    x.routineOn = !!x.routineOn;
+  }
   return x;
 }
 function normalize(d) {
@@ -110,8 +121,10 @@ function stationSub(d, o) {
   if (o.type === "buffer") return `最大 ${o.cap} 個`;
   return "";
 }
+const fmtS = v => fmt(v, Number.isInteger(Math.round(+v * 10) / 10) ? 0 : 1); // 秒: 小数があれば1桁まで
 function timeLabel(o) {
   if (!PS.isTimed(o.type)) return "";
+  const fmt = fmtS;
   const a = +o.autoT || 0, m = +o.manT || 0, parts = [];
   if (a) parts.push(`自動 ${fmt(a)}秒`);
   if (m) parts.push(`人 ${fmt(m)}秒`);
@@ -553,6 +566,7 @@ function renderOverlay() {
         g += `<rect data-h="${h}" x="${hx - px(5)}" y="${hy - px(5)}" width="${px(10)}" height="${px(10)}" fill="#fff" stroke="#0068B7" stroke-width="${px(1.5)}" style="cursor:${h === "nw" || h === "se" ? "nwse" : "nesw"}-resize"/>`;
     }
     if ($("#optClear").checked && !["zone", "note"].includes(o.type) && !isPoly(o.type)) g += clearanceSVG(o, S);
+    if (isAgent(o.type) && PS.routineOn(o)) g += routineSVG(o, S);
     if (isStation(o.type)) g += standSVG(o, S);
     if (isStation(o.type) && o.type !== "out") {
       const kx = r.x1 + px(16), ky = o.y;
@@ -582,6 +596,24 @@ function renderOverlay() {
     g += `<g opacity=".55" style="pointer-events:none">${isAgent(placeType) ? agentSVG(doc, tmp, tmp.x, tmp.y, S) : isMovable(placeType) ? moverSVG(tmp, tmp.x, tmp.y, 0, "", S) : objSVG(doc, tmp, S)}</g>`;
   }
   $("#Lov").innerHTML = g;
+}
+// 決めた順番で動く人を選んだとき: 手順の場所に番号(①②…)を出し、順に点線でつなぐ
+function routineSVG(o, S) {
+  const px = k => k / S, g0 = PS.buildGrid(doc), col = agentColor(doc, o.id), R = o.routine;
+  const pts = [], at = {};
+  R.forEach((s, i) => {
+    if (s.k === "go") return;
+    const p = PS.stepLoc(doc, g0, s); if (!p) return;
+    const key = Math.round(p.x / 100) + "," + Math.round(p.y / 100), n = at[key] = (at[key] || 0) + 1;
+    pts.push({ x: p.x, y: p.y, i, n });
+  });
+  let g = "";
+  if (pts.length > 1) g += `<polyline points="${[...pts, pts[0]].map(p => p.x + "," + p.y).join(" ")}" fill="none" stroke="${col}" stroke-opacity=".55" stroke-width="${px(1.6)}" stroke-dasharray="${px(5)} ${px(4)}"/>`;
+  for (const p of pts) {
+    const r = px(9), cx = p.x + (p.n - 1) * r * 2.1, cy = p.y - px(16);
+    g += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#fff" stroke="${col}" stroke-width="${px(1.5)}"/>` + txt(cx, cy, String(p.i + 1), px(11), { b: 1, fill: col });
+  }
+  return `<g style="pointer-events:none">${g}</g>`;
 }
 // 選んだ設備の「作業者が立つ位置」: 取る/置く/作業。立てない場所なら赤
 function standSVG(o, S) {
@@ -1080,6 +1112,7 @@ function objPanel(o) {
     h += `<h4>運ぶ担当の流れ</h4>` + (fl.length ? `<div class="list">${fl.map(f => `<label><input type="checkbox" data-assign="${f.id}" ${f.agent === o.id ? "checked" : ""}> ${esc(flowName(f))}${f.agent && f.agent !== o.id ? ` <span class="muted">(${esc((byId(doc, f.agent) || {}).name)})</span>` : ""}</label>`).join("")}</div>` : `<p class="muted">まだ流れがありません</p>`);
     const ops = doc.objs.filter(s => s.needOp);
     if (ops.length) h += `<h4>付いて作業する設備</h4><div class="list">${ops.map(s => `<label><input type="checkbox" data-op="${s.id}" ${s.op === o.id ? "checked" : ""}> ${esc(s.name)}</label>`).join("")}</div>`;
+    h += routinePanel(o);
     if (o.type === "robot") h += `<p class="hint">LexxMoMa の初期値: 車体 750×600mm、走行 1.0 m/s(最大1.5)、積み降ろし 20 秒/回(アームでのピック想定)。実際の値は案件ごとに確認してください。</p>`;
   }
   if (isMovable(o.type)) {
@@ -1128,7 +1161,7 @@ function processCard(o) {
     + `<div class="io-row"><input data-k="outName" value="${esc(o.outName)}" placeholder="空欄なら ${esc(outputName(doc, Object.assign({}, o, { outName: "" })))}"><span class="x2">×</span><input class="q" type="number" min="1" step="1" data-k="outQty" value="${PS.outQty(o)}"></div>`;
   for (const f of outs) { const b = byId(doc, f.to); h += `<div class="io-row"><span class="to">→ ${esc(b.name)}</span><button class="del" data-delflow="${f.id}" title="この流れを消す">×</button></div>`; }
   h += `<select class="add" data-addout="1"><option value="">＋ 次工程を追加…</option>${opts(dsts)}</select>`;
-  const a = +o.autoT || 0, m = +o.manT || 0, oq = o.type === "inspect" ? PS.inQty(o) : PS.outQty(o);
+  const a = +o.autoT || 0, m = +o.manT || 0, oq = o.type === "inspect" ? PS.inQty(o) : PS.outQty(o), fmt = fmtS;
   h += `<div class="pc-h"><b>③</b> 時間(1回あたり)${tmpT ? '<i class="tag">仮の値</i>' : ""}</div>
     <div class="grid2">${field("自動運転 [秒]", inp("autoT", a, "number", `step="any" min="0"${tmpT ? ' class="tmp"' : ""}`))}${field("人の作業 [秒]", inp("manT", m, "number", `step="any" min="0"${tmpT ? ' class="tmp"' : ""}`))}</div>
     ${o.type !== "inspect" ? `<label class="chk"><input type="checkbox" data-k="parallel" ${o.parallel ? "checked" : ""}> 自動運転中に、人が次のセット・取り出しを同時に進められる(並行作業)</label>${o.parallel ? field("ワークの入れ替え時間 [秒](仕上がったワークと次のワークを入れ替える時間)", inp("swapT", +o.swapT || 0, "number", 'step="any" min="0"')) : ""}` : ""}
@@ -1140,6 +1173,52 @@ function processCard(o) {
   return h + `</div>`;
 }
 function flowName(f) { const a = byId(doc, f.from), b = byId(doc, f.to); return `${a ? a.name : "?"} → ${b ? b.name : "?"}`; }
+// 作業の順番(決めた順番で動く): 現場の作業手順表(①取る ②移動 ③置く…)をそのまま入れて再現する
+const CIRC = n => n <= 20 ? String.fromCharCode(0x2460 + n - 1) : `(${n})`;
+function routinePanel(o) {
+  const R = o.routine || [];
+  let h = `<h4>作業の順番</h4><label class="chk"><input type="checkbox" data-rton="1" ${o.routineOn ? "checked" : ""}> 決めた順番で動く(現場の作業手順どおり)</label>`;
+  if (!o.routineOn) return h + `<p class="hint">いまは「詰まった設備の払い出し > 材料切れの設備への供給」の優先順で、自分で次の仕事を選んで動きます。作業手順表がある工程は、オンにして手順を入れると、その順番・時間どおりに動きます。</p>`;
+  const flows = doc.flows.filter(f => f.mode !== "auto"), sts = doc.objs.filter(x => PS.isTimed(x.type));
+  const places = doc.objs.filter(x => !isAgent(x.type) && !isPoly(x.type) && !isMovable(x.type));
+  const opt = (v, t, cur) => `<option value="${v}" ${v === cur ? "selected" : ""}>${esc(t)}</option>`;
+  h += `<div class="rt">`;
+  R.forEach((s, i) => {
+    const kinds = Object.entries(PS.ROUTINE_KINDS).map(([k, t]) => opt(k, t, s.k)).join("");
+    let ref = "";
+    if (s.k === "pick" || s.k === "place") ref = `<select data-rt="f"><option value="">(流れを選ぶ)</option>${flows.map(f => opt(f.id, (s.k === "pick" ? "取る: " : "置く: ") + flowName(f), s.f)).join("")}</select>`;
+    else if (s.k === "work") ref = `<select data-rt="st"><option value="">(設備を選ぶ)</option>${sts.map(x => opt(x.id, x.name, s.st)).join("")}</select>`;
+    else if (s.k === "go") ref = `<span class="rt-to">→ 次の手順の場所へ</span>`;
+    else ref = `<input class="q" data-rt="every" type="number" min="1" step="1" value="${Math.max(1, +s.every || 1)}" title="何周に1回行うか"><span class="rt-to">周に1回</span>`;
+    const isWork = s.k === "work", st = isWork ? byId(doc, s.st) : null;
+    const tv = isWork ? (st ? +st.manT || 0 : "") : (s.t == null ? "" : s.t);
+    const ph = s.k === "go" ? "距離" : s.k === "pick" || s.k === "place" ? fmt(+o.handle || 0, 1) : "0";
+    const at = isWork || s.k === "other" ? `<select data-rt="at" title="作業する場所">${opt("", isWork ? "設備の作業する面で" : "その場で", s.at || "")}${places.filter(x => x.id !== s.st).map(x => opt(x.id, "場所: " + (x.name || x.text || CAT[x.type].label), s.at)).join("")}</select>` : "";
+    h += `<div class="rt-step" data-i="${i}">
+      <div class="io-row"><span class="rt-no">${CIRC(i + 1)}</span><select data-rt="k" class="rt-k">${kinds}</select>${ref}</div>
+      <div class="io-row"><input data-rt="name" value="${esc(s.name || "")}" placeholder="${esc(PS.stepLabel(doc, Object.assign({}, s, { name: "" })))}">
+        <input class="q" type="number" data-rt="t" value="${tv}" placeholder="${ph}" step="any" min="0" title="${isWork ? "設備の「人の作業」時間(設備側と同じ値)" : "空欄なら自動"}"><span class="x2">秒</span>
+        <button class="del" data-rtmv="-1" title="上へ">↑</button><button class="del" data-rtmv="1" title="下へ">↓</button><button class="del" data-rtdel="1" title="この手順を消す">×</button></div>
+      ${at ? `<div class="io-row">${at}</div>` : ""}</div>`;
+  });
+  h += `</div><div class="acts"><button class="btn" data-rtadd="1">＋ 手順を追加</button><button class="btn" data-rtauto="1" title="いま担当している運搬と設備の作業から、取る→置く→作業の順に並べます">いまの担当から作る</button></div>`;
+  const ts = R.map(s => PS.stepPlanT(doc, o, s)), sum = ts.reduce((n, t) => n + (t || 0), 0), autoN = ts.filter(t => t == null).length;
+  h += `<div class="tsum">入力した時間の合計 <b>${fmt(sum, 1)}秒</b>/周${autoN ? `(距離から計算する移動 ${autoN}つ を除く)` : ""}</div>`;
+  h += `<p class="hint">上から順に繰り返します。<b>移動</b>は次の手順の場所まで歩きます(秒を入れるとその時間で歩く・空欄なら距離と歩く速さから計算)。<b>取る・置く</b>の空欄は積み降ろし時間。<b>作業</b>の秒は設備の「人の作業」時間です。移動を入れずに場所が変わるときは、距離から歩く時間を足します。モノが無い・置けない・設備が動いている間は待ちます。LexxMoMa に任せた運搬・作業の手順は飛ばします。</p>`;
+  return h;
+}
+// いまの担当(運ぶ流れ・付く設備)から手順のたたき台を作る: 材料側の流れから順に 取る→置く→(置いた先の作業)
+function routineFromDuties(o) {
+  const mine = doc.flows.filter(f => f.mode !== "auto" && f.agent === o.id);
+  const depth = id => { let d = 0, cur = id; const seen = new Set(); for (;;) { const f = doc.flows.find(x => x.to === cur && !seen.has(x.id)); if (!f) return d; seen.add(f.id); cur = f.from; d++; } };
+  const R = [];
+  for (const f of mine.sort((a, b) => depth(a.from) - depth(b.from))) {
+    R.push({ k: "pick", f: f.id }, { k: "place", f: f.id });
+    const b = byId(doc, f.to); if (b && PS.isTimed(b.type) && b.op === o.id && +b.manT > 0 && !R.some(s => s.k === "work" && s.st === b.id)) R.push({ k: "work", st: b.id });
+  }
+  for (const b of doc.objs) if (PS.isTimed(b.type) && b.op === o.id && +b.manT > 0 && !R.some(s => s.k === "work" && s.st === b.id)) R.push({ k: "work", st: b.id });
+  return R;
+}
 function flowPanel(f) {
   const a = byId(doc, f.from), b = byId(doc, f.to);
   const ags = doc.objs.filter(o => isAgent(o.type)), mvs = doc.objs.filter(o => isMovable(o.type));
@@ -1235,6 +1314,40 @@ function bindPanel(P) {
     const o = selObj(), s = byId(doc, el.dataset.op);
     change(() => { s.op = el.checked ? o.id : (s.op === o.id ? null : s.op); });
   }));
+  // 作業の順番
+  const rtStep = el => { const o = selObj(), i = +el.closest(".rt-step").dataset.i; return [o, o.routine[i], i]; };
+  P.querySelectorAll("[data-rton]").forEach(el => el.onchange = () => {
+    const o = selObj();
+    change(() => { o.routineOn = el.checked; if (el.checked && !(o.routine || []).length) o.routine = routineFromDuties(o); });
+  });
+  P.querySelectorAll("[data-rt]").forEach(el => el.onchange = () => {
+    const [o, s] = rtStep(el), k = el.dataset.rt, v = el.value;
+    change(() => {
+      if (k === "k") { s.k = v; delete s.f; delete s.st; delete s.at; delete s.every; if (v === "work") delete s.t; }
+      else if (k === "f") { s.f = v || null; const f = doc.flows.find(x => x.id === v); if (f) f.agent = o.id; } // 手順に入れた運搬はこの人の担当にする
+      else if (k === "st") { s.st = v || null; const b = byId(doc, v); if (b) b.op = o.id; }
+      else if (k === "at") { if (v) s.at = v; else delete s.at; }
+      else if (k === "every") s.every = Math.max(1, Math.round(+v || 1));
+      else if (k === "name") s.name = v.trim().slice(0, 60);
+      else if (k === "t") {
+        if (s.k === "work") { const b = byId(doc, s.st); if (b) { b.manT = Math.max(0, +v || 0); if (!b.edited.includes("manT")) b.edited.push("manT"); } }
+        else s.t = v === "" ? null : Math.max(0, +v || 0);
+      }
+    });
+  });
+  P.querySelectorAll("[data-rtmv]").forEach(el => el.onclick = () => {
+    const [o, , i] = rtStep(el), j = i + +el.dataset.rtmv;
+    if (j < 0 || j >= o.routine.length) return;
+    change(() => { const R = o.routine; [R[i], R[j]] = [R[j], R[i]]; });
+  });
+  P.querySelectorAll("[data-rtdel]").forEach(el => el.onclick = () => { const [o, , i] = rtStep(el); change(() => { o.routine.splice(i, 1); }); });
+  P.querySelectorAll("[data-rtadd]").forEach(el => el.onclick = () => { const o = selObj(); change(() => { (o.routine = o.routine || []).push({ k: "go" }); }); });
+  P.querySelectorAll("[data-rtauto]").forEach(el => el.onclick = () => {
+    const o = selObj(), R = routineFromDuties(o);
+    if (!R.length) { toast("この人が担当している運搬・作業がありません。先に流れや設備の担当を決めてください"); return; }
+    if ((o.routine || []).length && !confirm("いまの手順を、担当から作った手順に置き換えます。よろしいですか?")) return;
+    change(() => { o.routine = R; });
+  });
   P.querySelectorAll("[data-act]").forEach(el => el.onclick = () => {
     const a = el.dataset.act;
     if (a === "del") delSel();
@@ -1255,6 +1368,14 @@ function checks() {
   for (const o of doc.objs) if (o.type === "join" && doc.flows.filter(f => f.to === o.id).length < 2) w.push(`「${o.name}」(A+B→C)に入る流れが1本以下です`);
   for (const f of doc.flows) if (f.mode !== "auto" && !f.agent) w.push(`「${flowName(f)}」の運び手が未定です`);
   for (const o of doc.objs) if (o.needOp && !o.op) w.push(`「${o.name}」に付く作業者が未定です`);
+  for (const o of doc.objs) if (isAgent(o.type) && o.routineOn) {
+    const R = o.routine || [];
+    if (!R.length) w.push(`「${o.name}」の作業の順番に手順がありません`);
+    R.forEach((s, i) => {
+      if ((s.k === "pick" || s.k === "place") && !doc.flows.some(f => f.id === s.f)) w.push(`「${o.name}」の手順${i + 1}: 運ぶ流れを選んでください`);
+      if (s.k === "work" && !byId(doc, s.st)) w.push(`「${o.name}」の手順${i + 1}: 作業する設備を選んでください`);
+    });
+  }
   const g0 = PS.buildGrid(doc);
   for (const f of doc.flows) {
     if (f.mode === "auto") continue;
@@ -1357,6 +1478,21 @@ function resultsHTML(res, prev) {
   h += `<p class="hint">簡易モデルです: 人は「満杯分たまったら運ぶ」、設備は「材料があれば1個ずつ加工」。段取り替え・休憩・故障は含みません。</p>`;
   return h;
 }
+// 決めた順番で動く人の1周: 入力した時間と、シミュレーションでかかった時間(待ち・自動で足した移動を含む)
+function routineResHTML(res) {
+  let h = "";
+  for (const a of res.agents) {
+    const rt = a.routine; if (!rt) continue;
+    if (!rt.laps) { h += `<div class="warn">「${esc(a.name)}」は手順を1周できませんでした。手順の順番・担当を確認してください</div>`; continue; }
+    const setSum = rt.steps.reduce((n, s) => n + (s.set || 0), 0);
+    h += `<h4>${esc(a.name)} の作業手順(1周)</h4><table class="t rtres"><tr><th>No</th><th>作業内容</th><th class="n">入力</th><th class="n">シミュ</th></tr>
+      ${rt.steps.map((s, i) => { const d = s.avg - (s.set == null ? s.avg : s.set), hi = Math.abs(d) >= 0.3;
+        return `<tr${hi ? ' class="hi"' : ""}><td>${CIRC(i + 1)}</td><td>${esc(s.label)}${hi ? `<br><small>${d > 0 ? `+${fmt(d, 1)}秒(${s.k === "go" || s.k === "work" || s.k === "other" ? "待ち" : "歩く・待ち"})` : `${fmt(d, 1)}秒`}</small>` : ""}</td><td class="n">${s.set == null ? "距離" : fmt(s.set, 1)}${s.every > 1 ? `<br><small>${fmt(s.t, 1)}秒を${s.every}周に1回</small>` : ""}</td><td class="n">${fmt(s.avg, 1)}</td></tr>`; }).join("")}
+      <tr class="sum"><th></th><th>合計(1周)</th><td class="n">${fmt(setSum, 1)}</td><td class="n"><b>${fmt(rt.lapAvg, 1)}</b></td></tr></table>
+      <p class="hint">シミュ = 実際にかかった時間の平均(${fmt(rt.laps)}周。立ち上がり・休憩をまたいだ周は除く)。入力より長い手順は、移動を入れずに場所が変わった分の歩き(距離から計算)や、モノ・設備の待ちが入っています。</p>`;
+  }
+  return h;
+}
 const SEGS = [["work", "作業", "#e07b1f"], ["carry", "運んで歩く", "#2f9e62"], ["walk", "手ぶらで歩く", "#9fd3b4"], ["handle", "積み降ろし", "#f3b77a"], ["charge", "充電", "#b9c3cc"], ["idle", "待ち", "#dde2e7"]];
 function num(v, d) { return v == null ? "-" : fmt(v, d); }
 function dayHTML(r) {
@@ -1379,6 +1515,7 @@ function dayHTML(r) {
     <div><small>LexxMoMa の稼働</small><b>${r.nRobots ? fmt(r.robotH, 1) : "-"}</b><small>${r.nRobots ? `時間/日(${r.nRobots}台)` : "未導入"}</small></div>
   </div>`;
   const bn = r.main.bottleneck;
+  h += routineResHTML(r.main);
   if (bn) h += `<p style="margin:6px 0">全体の速さを決めているのは <b>${esc(bn.name)}</b>(${bn.supply ? "材料が入ってくる速さ。ここより後ろを速くしても1日の数は増えません" : `${bn.kind}・稼働 ${fmt(bn.util * 100)}%`})。</p>`;
   if (bl) {
     const b = bl.m, row = (t, k, dgt, unit, better) => {
