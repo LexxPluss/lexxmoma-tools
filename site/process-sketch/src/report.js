@@ -94,6 +94,12 @@ function csv(d, res) {
     for (const a of res.agents) rows.push([a.name, a.type === "robot" ? "LexxMoMa" : "作業者", Math.round(a.perHourM), ...["work", "carry", "walk", "handle", "idle"].map(k => Math.round(a.ratio[k] * 100))]);
     rows.push(["設備", "稼働%", "待ち%", "詰まり%", "サイクル数", "NG"]);
     for (const s of res.stations) rows.push([s.name, Math.round(s.util * 100), Math.round(s.starve * 100), Math.round(s.block * 100), s.cycles, s.ng]);
+    for (const a of res.agents) if (a.routine && a.routine.laps) {
+      rows.push([]);
+      rows.push([`[作業手順] ${a.name}`, "1周の平均秒", a.routine.lapAvg.toFixed(1)]);
+      rows.push(["No", "作業内容", "入力秒", "シミュ秒(平均)"]);
+      a.routine.steps.forEach((s, i) => rows.push([i + 1, s.label, s.set == null ? "" : s.set.toFixed(1), s.avg.toFixed(1)]));
+    }
   }
   return new Blob(["﻿" + rows.map(r => r.map(q).join(",")).join("\r\n")], { type: "text/csv" });
 }
@@ -158,6 +164,10 @@ function report(d, res, warns, sim, day) {
   <table style="margin-top:8px"><tr><th>人・ロボット</th><th>歩行 m/時</th><th>向き替え 分/時</th><th>時間の使い方</th>${segs.map(s => `<th>${s[1]}</th>`).join("")}</tr>
   ${res.agents.map(a => `<tr><td>${esc(a.name)}</td><td class="n">${fmt(a.perHourM)}</td><td class="n">${fmt(a.turnPerH / 60, 1)}</td><td><div class="bar">${segs.map(([k, , c]) => `<i style="width:${(a.ratio[k] || 0) * 100}%;background:${c}"></i>`).join("")}</div></td>${segs.map(([k]) => `<td class="n">${fmt((a.ratio[k] || 0) * 100)}%</td>`).join("")}</tr>`).join("")}</table>
   ${res.stations.length ? `<table style="margin-top:6px"><tr><th>設備</th><th>1回 秒</th><th>自動</th><th>人</th><th>人待ち</th><th>待ち(材料が来ない)</th><th>詰まり(運ばれない)</th><th>NG</th></tr>${res.stations.map(s => `<tr><td>${esc(s.name)}</td><td class="n">${fmt(s.ct)}</td><td class="n">${fmt(s.autoUtil * 100)}%</td><td class="n">${fmt(s.manUtil * 100)}%</td><td class="n">${fmt(s.waitOp * 100)}%</td><td class="n">${fmt(s.starve * 100)}%</td><td class="n">${fmt(s.block * 100)}%</td><td class="n">${s.ng}</td></tr>`).join("")}</table>` : ""}
+  ${res.agents.filter(a => a.routine && a.routine.laps).map(a => `<h2 style="font-size:13px">${esc(a.name)} の作業手順(決めた順番・1周)</h2>
+  <table><tr><th>No</th><th>作業内容</th><th>入力 秒</th><th>シミュレーション 秒(平均)</th></tr>
+  ${a.routine.steps.map((s, i) => `<tr><td class="n">${i + 1}</td><td>${esc(s.label)}</td><td class="n">${s.set == null ? "距離から計算" : fmt(s.set, 1)}</td><td class="n">${fmt(s.avg, 1)}</td></tr>`).join("")}
+  <tr><th></th><th>合計(1周)</th><td class="n">${fmt(a.routine.steps.reduce((n, s) => n + (s.set || 0), 0), 1)}</td><td class="n"><b>${fmt(a.routine.lapAvg, 1)}</b></td></tr></table>`).join("")}
   <h2>2. 自動化(LexxMoMa)の検討候補</h2>
   ${cands.length ? cands.map((c, i) => `<div class="cand"><b>候補${i + 1}: ${esc(c.from)} → ${esc(c.to)}</b>(${esc(c.item)}) ・ 片道 ${fmt(c.oneWayM, 1)} m ・ ${fmt(c.tripsPerH, 1)} 回/時 ・ 歩行 ${fmt(c.distPerHM)} m/時 ・ いまの担当 ${esc(c.agent)}</div>`).join("") + `<p style="color:#5d6b7a">歩行距離が長く回数の多い運搬ほど、人が付加価値作業に戻れる効果が大きくなります。ピック・プレースを伴う場合はワーク形状とハンドの確認が必要です。</p>` : "<p>対象となる人の運搬がありません。</p>"}` : ""}
   <h2 class="brk">${res ? 3 : 1}. 設備・配置</h2>

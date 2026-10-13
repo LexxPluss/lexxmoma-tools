@@ -347,3 +347,15 @@ details.setbox section h3 { margin-top: 6px; }
 :root[data-theme="dark"] .gcard.p { border-color: var(--blue); }
 :root[data-theme="dark"] .g-ok { color: #8fdcae; }
 :root[data-theme="dark"] #gPop, :root[data-theme="dark"] .g-lab, :root[data-theme="dark"] .g-mapbar { box-shadow: 0 10px 32px rgba(0,0,0,.6); }
+/* 作業の順番(決めた順番で動く) */
+.rt-step { border: 1px solid var(--line); border-radius: 6px; padding: 3px 5px; margin: 4px 0; background: var(--panel); }
+.rt-step .io-row { margin: 2px 0; }
+.rt-no { flex: 0 0 auto; font-weight: 700; color: #e07b1f; font-size: 14px; }
+.io-row select.rt-k { flex: 0 0 64px; }
+.rt-to { font-size: 11.5px; color: var(--sub); flex: 1; }
+.rtres td:first-child { color: #e07b1f; font-weight: 700; }
+.rtres tr.hi td { background: #fff4e5; }
+.rtres tr.hi small { color: #b8620a; }
+.rtres tr.sum th, .rtres tr.sum td { border-top: 2px solid var(--line); }
+:root[data-theme="dark"] .rtres tr.hi td { background: #3a2a14; }
+:root[data-theme="dark"] .rtres tr.hi small { color: #f3b77a; }
