@@ -47,7 +47,7 @@ window.MATERIALS = [
     id: "company-intro", cat: "company", type: "pdf", featured: true, spot: "受付", stamp: "🏢",
     title: "LexxPluss 会社紹介資料",
     desc: "会社概要と沿革、インダストリアルヒューマノイド事業(LexxMoMa)とトランスポーテーション事業(LexxTug・Lexx500)、導入実績をまとめた基本資料です。",
-    src: "files/lexxpluss-company-intro.pdf", thumb: "thumbs/company-intro.jpg", meta: "36ページ", updated: "2026-08",
+    src: "files/lexxpluss-company-intro.pdf", thumb: "thumbs/company-intro.jpg", meta: "39ページ", updated: "2026-10",
   },
   {
     id: "company-video", cat: "video", type: "video", featured: true, spot: "会社紹介シアター", stamp: "🎬",
