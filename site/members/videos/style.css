@@ -1,0 +1,88 @@
+/* 共有動画(社内) — 工場マップ・顧客人事DBと同じ配色・部品 */
+:root{
+  --brand:#0068B7; --brand-2:#005596; --accent:#3EB370;
+  --bg:#f5f7fa; --panel:#ffffff; --panel-2:#eef3f8; --line:#d9e1ea;
+  --text:#1f2933; --muted:#5b6b7b; --faint:#8a99a8; --warn:#c98a00; --danger:#d6496e;
+  --shadow:0 2px 6px rgba(16,32,48,.08),0 12px 32px rgba(16,32,48,.10); --r:12px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --brand:#5aa8e6; --brand-2:#8cc4f0; --accent:#5fcb8a;
+    --bg:#0f1519; --panel:#171f26; --panel-2:#1e2831; --line:#2b3741;
+    --text:#e7edf2; --muted:#a3b1bd; --faint:#6f7e8b; --warn:#f0b840; --danger:#f07a9a;
+    --shadow:0 2px 6px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"]{
+  --brand:#5aa8e6; --brand-2:#8cc4f0; --accent:#5fcb8a;
+  --bg:#0f1519; --panel:#171f26; --panel-2:#1e2831; --line:#2b3741;
+  --text:#e7edf2; --muted:#a3b1bd; --faint:#6f7e8b; --warn:#f0b840; --danger:#f07a9a;
+  --shadow:0 2px 6px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--text);font-family:"Noto Sans JP",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14px;line-height:1.55}
+a{color:var(--brand)}
+button{font:inherit;color:inherit}
+code{font-size:12px;background:var(--panel-2);padding:1px 4px;border-radius:4px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+[hidden]{display:none !important}
+.muted{color:var(--muted);font-size:12px}
+.faint{color:var(--faint)}
+
+/* 入口 */
+.gate{position:fixed;inset:0;display:grid;place-items:center;padding:16px;background:linear-gradient(160deg,var(--panel-2),var(--bg));z-index:20}
+.gate-card{width:100%;max-width:380px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:28px 24px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:12px}
+.gate-home{align-self:flex-start;display:block}
+.gate .lx-theme-btn{position:absolute;top:16px;right:16px;background:var(--panel);color:var(--muted);border:1px solid var(--line);border-radius:8px;padding:0}
+.gate h1{margin:6px 0 0;font-size:22px}
+.gate p{margin:0;color:var(--muted);font-size:13px}
+.gate p a{color:var(--brand)}
+.gate-note{font-size:12px!important}
+.gate-back{font-size:12px;color:var(--faint);text-decoration:none;align-self:center}
+
+/* 骨組み */
+.app{min-height:100vh;display:flex;flex-direction:column}
+.banner{background:var(--warn);color:#1f2933;font-size:12px;font-weight:600;text-align:center;padding:5px 12px}
+.hdr{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:8px 16px;background:var(--panel);border-bottom:3px solid var(--brand)}
+.hdr-title{display:flex;align-items:center;gap:8px}
+.hdr-title h1{font-size:17px;margin:0;white-space:nowrap}
+.tag{font-size:11px;font-weight:700;color:#fff;background:var(--warn);border-radius:6px;padding:1px 7px;text-decoration:none}
+a.tag:hover{filter:brightness(1.1);box-shadow:0 0 0 2px color-mix(in srgb,var(--warn) 30%,transparent)}
+.hdr-btns{margin-left:auto;display:flex;gap:6px;align-items:center}
+.icon-btn{border:1px solid var(--line);background:var(--panel-2);border-radius:8px;width:32px;height:30px;cursor:pointer;display:inline-grid;place-items:center;text-decoration:none;color:inherit}
+.hdr .lx-theme-btn{width:32px;height:30px;background:var(--panel-2);border-color:var(--line);color:var(--muted)}
+.main{flex:1;width:100%;max-width:1100px;margin:0 auto;padding:14px 16px 32px}
+.foot{padding:10px 16px;border-top:1px solid var(--line);font-size:11px;color:var(--faint);text-align:center}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+.toolbar input[type=search]{flex:1 1 260px;font:inherit;font-size:14px;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--text);min-width:0}
+.res{font-size:12px;color:var(--muted);margin:2px 0 8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 8px}
+.chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:4px 12px;font-size:12px;cursor:pointer;color:var(--text)}
+.chip.on{border-color:var(--text);background:var(--text);color:var(--panel)}
+.link-btn{border:0;background:none;color:var(--brand);cursor:pointer;padding:0;font-size:13px}
+
+/* 再生中 */
+.stage{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px;margin-bottom:22px;scroll-margin-top:70px}
+.player{position:relative;aspect-ratio:16/9;background:#000;border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+.player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.now h2{font-size:18px;margin:0 0 4px}
+.now p{margin:0 0 8px;white-space:pre-wrap}
+.now-links{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:13px}
+@media (max-width:800px){.stage{grid-template-columns:1fr}}
+
+/* 一覧 */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.card{display:flex;flex-direction:column;gap:6px;text-decoration:none;color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:8px 8px 12px}
+.card:hover{border-color:var(--brand);box-shadow:0 0 0 2px color-mix(in srgb,var(--brand) 18%,transparent)}
+.card b{font-size:14px;line-height:1.4;padding:0 4px}
+.card .meta{font-size:12px;color:var(--muted);padding:0 4px}
+.thumb{position:relative;display:block;aspect-ratio:16/9;border-radius:8px;overflow:hidden;background:var(--panel-2)}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb i{position:absolute;right:8px;bottom:8px;font-style:normal;font-size:12px;color:#fff;background:rgba(0,0,0,.65);border-radius:6px;padding:2px 8px}
+
+/* 空の一覧 */
+.empty{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:56px 16px;border:2px dashed var(--line);border-radius:var(--r);background:var(--panel);color:var(--muted)}
+.empty .ic{font-size:40px}
+.empty b{font-size:16px;color:var(--text)}
+.empty p{margin:0;font-size:13px}
