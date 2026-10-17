@@ -56,6 +56,17 @@
     });
   }
 
+  // 復号できなかったとき: 共通パスワードで工場マップが開けるなら、動画一覧のほうが別のパスワードで作られている
+  // (入口へ戻すと入れ直しを繰り返すだけになるので、ここで止めて知らせる)。工場マップも開けなければ入れ直してもらう
+  function checkShared() {
+    var pw = window.lxMembers.password();
+    return fetch('../factory-map/data.enc.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).then(function (fm) {
+      return deriveKey(pw, fm).then(function (k) { return decrypt(k, fm); });
+    }).then(function () {
+      gateMsg('動画一覧が共通パスワードと違うパスワードで作られているため開けません。管理者に一覧の作り直しを依頼してください。');
+    }, function () { window.lxMembers.forget(); window.lxMembers.toEntry(); });
+  }
+
   if (!window.crypto || !crypto.subtle) {
     gateMsg('このブラウザでは開けません(https で開いてください)。');
   } else {
@@ -67,7 +78,8 @@
       });
     }).catch(function (err) {
       if (err && err.message === 'data') return gateMsg('データを読み込めませんでした。時間をおいて再度お試しください。');
-      if (err && err.name === 'OperationError') { window.lxMembers.forget(); window.lxMembers.toEntry(); return; }  // 共通パスワードが変わった → 入れ直してもらう
+      if (err && err.name === 'OperationError') return checkShared();
+
       gateMsg('開けませんでした。ページを読み込み直してください。');
     });
   }
