@@ -20,7 +20,7 @@
  */
 window.QUOTE_CONFIG = {
   updated: "2026-10",
-  bodyPrice: 11800000,       // LexxMoMa 本体標準価格(税別)。確定値に合わせて更新する
+  bodyPrice: 11800000,       // LexxMoMa 本体標準価格(税別)。2026-10-21 に確定
   dayRate: 96000,            // エンジニア工数 1 人日の単価(税別)
   taxRate: 0.1,
   // 見積依頼の送信先(Google Apps Script の Web アプリ URL)。空ならテストモード(送信せず、内容の確認だけ)。手順は SETUP.md
