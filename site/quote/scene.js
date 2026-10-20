@@ -166,7 +166,7 @@ am(sph(0.06, M.white, 0, 0, 0, j5));
 const flange = group(j5, 0, 0.07, 0);
 am(cyl(0.04, 0.03, M.dark, 0, 0, 0, flange));
 const tool = group(flange, 0, 0.015, 0);                         // エンドエフェクタ・カメラの取付点
-const crxTag = label('CRX 先方支給', '#5b6b7b', 0.14); crxTag.position.set(0, 0.95, 0); arm.add(crxTag);
+const crxTag = label('CRX お客様手配', '#5b6b7b', 0.14); crxTag.position.set(0, 0.95, 0); arm.add(crxTag);
 const ghostMat = new THREE.MeshStandardMaterial({ color: 0xbfd6ea, transparent: true, opacity: 0.28, depthWrite: false, roughness: 0.4 });
 armMeshes.forEach((m) => { m.userData.real = m.material; });
 function setCrx(real) {

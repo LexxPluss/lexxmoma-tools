@@ -17,12 +17,11 @@ site/                      ← published root (https://<org>.github.io/<repo>/)
 ├ simulator/               ← Motion Simulator (2D)
 ├ process-sketch/          ← Process Sketch (beta)
 ├ lexxmoma-roi/            ← ROI Calculator
+├ quote/                   ← LexxMoMa 3D 見積 (prices in catalog.js; request form → Google Apps Script, see quote/SETUP.md)
 ├ robot-sier-map/          ← Robot SIer Database
 ├ members/                 ← 社内ツールの入口(index.html)。共通パスワードはここだけで入れ、全ツールで使う(members-auth.js。未入力のツールは入口へ移動)
 ├ members/factory-map/     ← Factory Map (internal, encrypted data)
-├ members/people-db/       ← 顧客人事データベース (internal, encrypted data; built from people/)
-├ members/videos/          ← 共有動画 (internal, encrypted list; scripts/build_member_videos.py)
-└ members/quote/           ← 3D 見積 (internal, encrypted price master; scripts/build_member_quote.py from site/internal/quote/price-master.json)
+└ members/people-db/       ← 顧客人事データベース (internal, encrypted data; built from people/)
 people/                    ← 顧客人事データベースのクローラ・ビルド・手動投入 (see people/README.md; not published)
 .github/workflows/pages.yml ← deploys site/ on push to main
 ```

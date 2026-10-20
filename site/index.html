@@ -339,6 +339,7 @@ const WORRIES = [
   {id:"equip",  t:"電源・エアはどう積む?"},
   {id:"teach",  t:"ロボットの教示は誰がやる?"},
   {id:"partner",t:"誰に頼めばいい?(SIer)"},
+  {id:"price",  t:"導入にいくらかかる?"},
   {id:"roi",    t:"いくらで元が取れる?"},
   {id:"layout", t:"現場に置けるか?(レイアウト)"},
   {id:"parts",  t:"交換部品はすぐ手に入る?"},
@@ -389,6 +390,13 @@ const TOOLS = [
     icon:"yen", href:"lexxmoma-roi/dist/lexxmoma_roi.html"
   },
   {
+    id:"quote", cat:"BUSINESS", name:"LexxMoMa 3D 見積",
+    desc:"3DのLexxMoMaにハンドや充電器、工程盤などのオプションを付けていき、機体を完成させながら参考価格を確認。商流やお付き合いのあるSIerを添えて、そのまま正式なお見積りを依頼できます。",
+    solves:"<b>自社に合う構成と導入費用</b>の目安をつかむ。",
+    phases:["assess","deploy"], worries:["price","partner"], status:"web", ver:"v1",
+    icon:"cart", href:"quote/index.html"
+  },
+  {
     id:"parts", cat:"MAINTENANCE", name:"サービスパーツカタログ",
     desc:"LexxMoMaの交換部品・消耗品を一覧で確認できるカタログ。部品ごとの型番や価格、国内での入手先などを確認でき、保守部品の手配や予備品の準備に役立てられる予定です。",
     solves:"<b>交換部品と国内での入手先</b>を一覧で確認する。",
@@ -403,6 +411,7 @@ const ICONS = {
   plc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h3M7 12h3M7 15h3M14 9h3v6h-3z"/></svg>',
   hand:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 13V6a1.5 1.5 0 0 1 3 0v6M11 11V4.5a1.5 1.5 0 0 1 3 0V12M14 11.5V6a1.5 1.5 0 0 1 3 0v8.5a5.5 5.5 0 0 1-5.5 5.5H11a5 5 0 0 1-4.2-2.3L4.6 14a1.4 1.4 0 0 1 2.3-1.5L8 14"/></svg>',
   map:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg>',
+  cart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 4h2l2.4 11h11l2-8H6.2"/><circle cx="9.5" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/></svg>',
   yen:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 4l5 8 5-8M12 12v8M8 14h8M8 17h8"/></svg>',
   grid:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>',
   wrench:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9l-3.8 3.8z"/></svg>',

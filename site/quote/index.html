@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LexxMoMa 3D 見積 | LexxMoMa Tools</title>
+<meta name="description" content="3D の LexxMoMa にオプションを付けていき、機体を完成させながら参考価格を確認。そのまま正式なお見積りを依頼できます。">
+<link rel="icon" type="image/png" href="../assets/favicon.png">
+<script src="../assets/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=2">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="lx-hdr hdr">
+    <div class="lx-title">
+      <a class="lx-brand" href="../index.html" title="LexxMoMa Tools のトップへ"><img class="lx-logo" src="../assets/lexxpluss-logo.png" alt="LexxPluss"><span class="lx-wordmark">LexxMoMa</span></a>
+      <h1 class="lx-tool">3D 見積</h1>
+    </div>
+    <span class="hdr-btns">
+      <button type="button" class="lx-theme-btn" data-lx-theme-toggle aria-label="ライト / ダーク切替"></button>
+    </span>
+  </header>
+  <div class="banner" role="note">表示している金額は<b>参考価格(税抜)</b>です。正式なお見積りは、構成をお送りいただいたあと LexxPluss から発行します。</div>
+
+  <main class="main">
+    <!-- ガレージ: 3D の LexxMoMa。オプションを付けると機体に取り付く -->
+    <section class="garage" id="garage">
+      <canvas id="scene" aria-label="LexxMoMa の 3D モデル(ドラッグで回転)"></canvas>
+      <div class="garage-fallback" id="sceneFallback" hidden>3D を表示できませんでした。構成はこのまま右の一覧で選べます。</div>
+      <div class="hud">
+        <div class="hud-total"><span>参考価格の合計(税抜)</span><b id="hudTotal">¥0</b><em id="hudQuote" hidden>+ 個別見積の項目あり</em></div>
+        <div class="hud-stats" id="hudStats"></div>
+      </div>
+      <div class="garage-tools">
+        <span class="muted">はじめ方:</span>
+        <span id="presets"></span>
+        <button type="button" class="chip" id="spin" aria-pressed="true" title="ターンテーブルを回す / 止める">⟳ 回転</button>
+      </div>
+      <div class="floats" id="floats" aria-hidden="true"></div>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </section>
+
+    <!-- ピット: カテゴリごとにパーツを選ぶ -->
+    <section class="pit">
+      <nav class="steps" id="steps" aria-label="カテゴリ"></nav>
+      <div class="cat" id="cat"></div>
+      <div class="pit-nav">
+        <button type="button" class="btn ghost" id="prevCat">← 前へ</button>
+        <button type="button" class="btn" id="nextCat">次へ →</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="bar">
+    <div class="bar-sum">
+      <span class="muted">参考価格(税抜)</span><b id="barTotal">¥0</b>
+    </div>
+    <button type="button" class="btn ghost" id="reset" title="本体だけに戻す">リセット</button>
+    <button type="button" class="btn big" id="openQuote">見積を依頼する 🏁</button>
+  </footer>
+</div>
+
+<!-- 概算見積と見積依頼 -->
+<dialog class="sheet" id="sheet">
+  <div class="sheet-hdr">
+    <b>概算見積と見積依頼</b>
+    <span class="sheet-btns">
+      <button type="button" class="btn ghost" id="print">印刷 / PDF</button>
+      <button type="button" class="icon-btn" id="closeSheet" aria-label="閉じる">✕</button>
+    </span>
+  </div>
+  <div class="doc" id="doc"></div>
+
+  <form class="req" id="req" novalidate>
+    <h3>この構成で正式なお見積りを依頼する</h3>
+    <p class="muted">商流(ご購入の経路)やお付き合いのある SIer を教えていただくと、その経路に合わせてお見積りします。</p>
+    <div class="test-note" id="testNote" hidden>テストモード: 送信先が未設定のため、送信しても LexxPluss には届きません。</div>
+    <div class="grid2">
+      <label><span>会社名 <i>必須</i></span><input name="company" required maxlength="100" autocomplete="organization"></label>
+      <label>部署・役職<input name="dept" maxlength="100" autocomplete="organization-title"></label>
+      <label><span>お名前 <i>必須</i></span><input name="name" required maxlength="60" autocomplete="name"></label>
+      <label><span>メールアドレス <i>必須</i></span><input name="email" type="email" required maxlength="120" autocomplete="email"></label>
+      <label>電話番号<input name="tel" type="tel" maxlength="30" autocomplete="tel"></label>
+      <label>導入時期の目安<select name="timing" id="timing"></select></label>
+    </div>
+    <fieldset class="channel">
+      <legend>商流(ご購入の経路) <i>必須</i></legend>
+      <div id="channels"></div>
+    </fieldset>
+    <div class="grid2" id="partnerBox" hidden>
+      <label><span id="partnerLabel">SIer の会社名</span><input name="partner" maxlength="100"></label>
+      <label>ご担当者(わかれば)<input name="partnerContact" maxlength="60"></label>
+    </div>
+    <label class="full">お付き合いのある SIer・設備メーカー(あれば)<input name="sierRelations" maxlength="200" placeholder="例: ○○エンジニアリング(ロボット設備の立ち上げで取引あり)"></label>
+    <label class="full">ご相談内容・ワークや工程について<textarea name="message" rows="4" maxlength="1500" placeholder="例: 旋盤 2 台へのワーク供給。ワークは 3kg の鋳物、1 日 2 直。"></textarea></label>
+    <label class="hp" aria-hidden="true">website<input name="website" tabindex="-1" autocomplete="off"></label>
+    <label class="agree"><input type="checkbox" name="agree" required> <span id="agreeText">ご入力いただいた情報は、お見積りとご連絡のためにのみ使用します。</span></label>
+    <p class="err" id="reqErr" role="alert"></p>
+    <div class="req-ft">
+      <button type="submit" class="btn big" id="send">この構成で見積を依頼する</button>
+    </div>
+  </form>
+  <div class="done" id="done" hidden>
+    <span class="done-ic">🏁</span>
+    <h3>見積依頼を受け付けました</h3>
+    <p>LexxPluss の担当から、ご入力のメールアドレスへご連絡します。<br>受付番号: <b id="doneId"></b></p>
+    <button type="button" class="btn ghost" id="doneClose">閉じる</button>
+  </div>
+</dialog>
+
+<script src="../assets/track.js" data-tool="quote"></script>
+<script src="catalog.js?v=1"></script>
+<script src="app.js?v=2"></script>
+<script type="module" src="scene.js?v=2"></script>
+</body>
+</html>
