@@ -30,7 +30,7 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(36, 1, 0.05, 60);
-const HOME = { pos: new THREE.Vector3(4.3, 3.0, 5.0), target: new THREE.Vector3(0, 0.85, 0) };
+const HOME = { pos: new THREE.Vector3(3.2, 2.3, 3.8), target: new THREE.Vector3(-0.35, 0.7, -0.4) };
 camera.position.copy(HOME.pos);
 const controls = new OrbitControls(camera, canvas);
 controls.target.copy(HOME.target);
@@ -343,7 +343,7 @@ function focus(part) {
     const p = worldPos(o);
     const dir = p.clone().setY(0); if (dir.lengthSq() < 0.01) dir.set(1, 0, 1);
     dir.normalize();
-    focusTo = { target: p.clone().lerp(HOME.target, 0.35), pos: p.clone().add(dir.multiplyScalar(2.6)).add(new THREE.Vector3(0.9, 1.1, 0.9)) };
+    focusTo = { target: p.clone().lerp(HOME.target, 0.35), pos: p.clone().add(dir.multiplyScalar(3.2)).add(new THREE.Vector3(1.1, 1.3, 1.1)) };
   }
   focusT0 = performance.now();
 }

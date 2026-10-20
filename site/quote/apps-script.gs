@@ -1,5 +1,5 @@
 /**
- * LexxMoMa 3D 見積「見積依頼」の受け口(Google Apps Script)
+ * LexxMoMa 3D 見積依頼の受け口(Google Apps Script)
  *
  * このコードを、保存先スプレッドシートの「拡張機能 > Apps Script」に貼り付けて
  * Web アプリとしてデプロイする(手順は SETUP.md)。
@@ -13,14 +13,13 @@
 const SHEET_NAME = 'requests';
 const NOTIFY_TO = '';            // 依頼が来たら知らせる宛先(カンマ区切りで複数可)。空なら知らせない
 const RATE_PER_MIN = 10;         // 全体で 1 分あたり受け付ける上限(いたずら対策)
-const HEAD = ['id', 'createdAt', 'status', 'company', 'dept', 'name', 'email', 'tel', 'timing',
-              'channel', 'partner', 'partnerContact', 'sierRelations', 'message',
-              'total', 'body', 'extra', 'laterItems', 'items', 'terms', 'catalog', 'v'];
+const HEAD = ['id', 'createdAt', 'status', 'company', 'name', 'email', 'channel', 'partner', 'message',
+              'qty', 'body', 'extra', 'total', 'options', 'later', 'outside', 'catalog', 'v'];
 
-// catalog.js の QUOTE_CHANNELS / QUOTE_TIMINGS と合わせる
+// catalog.js の QUOTE_CHANNELS / QUOTE_OPTIONS と合わせる
 const CHANNEL = { direct: 'LexxPluss と直接', sier: 'SIer と', dealer: '商社・販売店を通して', undecided: '未定・相談' };
-const TIMING = { '': '', '3m': '3 か月以内', '6m': '半年以内', '1y': '1 年以内', later: '1 年以上先' };
-const LIMIT = { company: 100, dept: 100, name: 60, email: 120, tel: 30, partner: 100, partnerContact: 60, sierRelations: 200, message: 1500 };
+const OPTION = { charger: '充電器', tablet: '操作用タブレット', ee: 'ハンド・治具', camera: 'ビジョンカメラ', panel: '工程盤', estop: '無線非常停止' };
+const LIMIT = { company: 100, name: 60, email: 120, partner: 100, message: 1500 };
 
 function sheet_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -38,6 +37,7 @@ function safe_(s, max) {
   s = String(s == null ? '' : s).replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, ' ').trim().slice(0, max);
   return /^[=+\-@]/.test(s) ? "'" + s : s;
 }
+function names_(arr) { return (Array.isArray(arr) ? arr : []).slice(0, 20).map(id => OPTION[id] || '').filter(String).join('、'); }
 
 function doGet() { return json_({ ok: false, error: 'POST で送ってください' }); }
 
@@ -57,35 +57,36 @@ function doPost(e) {
 
     const t = {};
     Object.keys(LIMIT).forEach(k => { t[k] = safe_(d[k], LIMIT[k]); });
-    if (!t.company || !t.name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t.email)) return json_({ ok: false, error: '会社名・お名前・メールアドレスを確認してください' });
-    if (!CHANNEL[d.channel]) return json_({ ok: false, error: '商流を選んでください' });
+    if (!t.company || !t.name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t.email)) return json_({ ok: false, error: '会社名・お名前・メールアドレスを確かめてください' });
+    if (!CHANNEL[d.channel]) return json_({ ok: false, error: '進めたい経路を選んでください' });
 
-    const items = (Array.isArray(d.items) ? d.items : []).slice(0, 40)
-      .map(x => safe_(x && x.id, 40) + ' ×' + (Number(x && x.qty) || 0) + (x && x.note ? '(' + safe_(x.note, 60) + ')' : '')).join('\n');
-    const terms = (Array.isArray(d.terms) ? d.terms : []).slice(0, 10).map(x => safe_(x, 40)).join(',');
+    const options = (Array.isArray(d.items) ? d.items : []).slice(0, 20)
+      .map(x => (OPTION[x && x.id] || '') + ' ×' + (Number(x && x.qty) || 0)).filter(s => s[0] !== ' ').join('、');
+    const later = names_(d.later), outside = names_(d.outside);
+    const yen = v => '¥' + (Number(v) || 0).toLocaleString();
     const id = 'Q-' + Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyMMdd') + '-' + Utilities.getUuid().slice(0, 4).toUpperCase();
 
     sheet_().appendRow([
-      id, new Date(), 'new', t.company, t.dept, t.name, t.email, t.tel, TIMING[d.timing] || '',
-      CHANNEL[d.channel], t.partner, t.partnerContact, t.sierRelations, t.message,
-      Number(d.total) || 0, Number(d.body) || 0, Number(d.extra) || 0, Number(d.laterItems) || 0, items, terms, safe_(d.catalog, 20), Number(d.v) || 1,
+      id, new Date(), 'new', t.company, t.name, t.email, CHANNEL[d.channel], t.partner, t.message,
+      Number(d.qty) || 0, Number(d.body) || 0, Number(d.extra) || 0, Number(d.total) || 0,
+      options, later, outside, safe_(d.catalog, 20), Number(d.v) || 1,
     ]);
 
     if (NOTIFY_TO) {
       MailApp.sendEmail({
         to: NOTIFY_TO,
-        subject: '[3D 見積] 見積依頼 ' + id + ' ' + t.company,
+        subject: '[3D 見積依頼] ' + id + ' ' + t.company,
         body: [
-          '3D 見積ツールから見積依頼が届きました。', '',
+          '3D 見積依頼ツールから見積依頼が届きました。', '',
           '受付番号: ' + id,
-          '会社名: ' + t.company + (t.dept ? ' / ' + t.dept : ''),
-          'お名前: ' + t.name, 'メール: ' + t.email, '電話: ' + t.tel,
-          '導入時期: ' + (TIMING[d.timing] || '-'),
-          '希望の販売経路: ' + CHANNEL[d.channel] + (t.partner ? '(' + t.partner + (t.partnerContact ? ' / ' + t.partnerContact : '') + ')' : ''),
-          'お付き合いのある SIer: ' + (t.sierRelations || '-'), '',
-          '合計(税別): ¥' + (Number(d.total) || 0).toLocaleString() + '(本体標準価格 ¥' + (Number(d.body) || 0).toLocaleString() + ' + 別途費用 ¥' + (Number(d.extra) || 0).toLocaleString() + ')' +
-            (Number(d.laterItems) ? ' ほかにヒアリング後に金額を出す項目 ' + d.laterItems + ' 件' : ''),
-          '構成:', items, '', 'ご相談内容:', t.message || '-', '',
+          '会社名: ' + t.company, 'お名前: ' + t.name, 'メール: ' + t.email,
+          '希望の経路: ' + CHANNEL[d.channel] + (t.partner ? '(' + t.partner + ')' : ''), '',
+          'LexxMoMa 本体 × ' + (Number(d.qty) || 0) + ' 台: ' + yen(d.body),
+          '別途費用(金額あり): ' + yen(d.extra) + (options ? '(' + options + ')' : ''),
+          'ヒアリング後に提示: ' + (later || '-'),
+          'SIer・パートナーが用意: ' + (outside || '-'),
+          '表示した合計(税別): ' + yen(d.total), '',
+          'ご相談内容:', t.message || '-', '',
           '一覧: ' + SpreadsheetApp.getActiveSpreadsheet().getUrl(),
         ].join('\n'),
       });
