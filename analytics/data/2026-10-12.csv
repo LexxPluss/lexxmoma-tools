@@ -1,0 +1,98 @@
+path,title,visits
+/hub,LexxMoMa Tools,72
+/tool/tour,LexxMoMa 見学ツアー,35
+tool/sim2d/open,LexxMoMa 動作シミュレーター(2D),24
+lib/open/lexxmoma-intro,LexxMoMa 紹介動画,22
+/tool/sketch,工程スケッチ,19
+tool/sketch/open,工程スケッチ,19
+/tool/roi,LexxMoMa 費用対効果（ROI）計算ツール,17
+tool/roi/open,費用対効果（ROI）計算ツール,15
+/tool/sier,ロボットSIerデータベース,14
+tool/sier/open,ロボットSIerデータベース,13
+tool/sketch/sim/calc,1日分を計算,11
+keep/shown,<em>(no title)</em>,11
+hub/phase/assess,効果を試算する,10
+lib/open/company-intro,LexxPluss 会社紹介資料,9
+tool/sketch/sim/play,動かす,9
+tool/tour/open,LexxMoMa 見学ツアー(会社紹介・紹介動画・実機映像),9
+hub/phase/design,工程を設計する,9
+hub/phase/know,知る・興味を持つ,9
+hub/phase/deploy,導入を進める,8
+/tool/members,社内ツール | LexxPluss 社内,8
+lib/stamp/lexxmoma-intro,LexxMoMa 紹介動画,7
+tool/sketch/add/worker,作業者,7
+tool/sketch/add/buffer,仮置き・棚,7
+tool/sketch/add/cart,台車,6
+tool/sketch/add/process,加工,6
+tool/roi/mode/detail,精緻モードに切替,6
+hub/phase/operate,運用・拡大する,6
+/tool/factory-map,工場マップ | LexxPluss 社内,6
+tool/sketch/add/inspect,検査,5
+tool/sketch/flow,つなぐ,5
+tool/sketch/add/out,搬出口,5
+tool/sketch/tpl/blank,白紙,5
+tool/sketch/report,検討シート,5
+lib/stamp/company-intro,LexxPluss 会社紹介資料,5
+member/factory-map/open,工場マップを開いた,5
+tool/sketch/sim/lexxmoma,LexxMoMaに任せる,4
+lib/ver/lexxmoma-intro,完全版,4
+tool/sketch/poly/walk,通路(歩く所),4
+tool/sketch/add/part,部品置き場,4
+tool/sketch/add/robot,LexxMoMa,4
+tool/sketch/add/in,搬入口,4
+lib/open/lexxmoma-demo,LexxMoMa 実機デモ動画(11分),4
+tool/sketch/tpl/cell2,2台持ちセル(並行作業),4
+member/factory-map/factory,アマダ 富士宮事業所,4
+hub/robot/pet,LexxMoMaをなでた,4
+tool/sketch/save,保存,3
+hub/worry/what,そもそもLexxMoMaって何?,3
+hub/worry/cycle,うちの工程で何秒かかる?,3
+lib/stamp/lexxmoma-demo,LexxMoMa 実機デモ動画(11分),3
+keep/dismiss,<em>(no title)</em>,3
+hub/tour/navTour,見学ツアーへ,3
+lib/open/company-video,LexxPluss 会社紹介動画,3
+member/factory-map/news,ポリプラスチックス富士工場 (静岡県富士市) ポリプラスチックス富士工場,3
+pass/open,<em>(no title)</em>,3
+/tool/videos,共有動画 | LexxPluss 社内,2
+tool/sketch/add/container,TPポリ箱,2
+tool/sketch/help,使い方,2
+tool/sketch/png,画像,2
+hub/worry/partner,誰に頼めばいい?(SIer),2
+lib/slide/company-video,7ページ目へ,2
+tool/sketch/add/wall,壁・柱・既存設備,2
+tool/sketch/tpl/line,直線ライン,2
+lib/cert,修了証を表示,2
+hub/tour/thScreen,見学ツアーへ,2
+member/people-db/company,SUBARU,2
+tool/sketch/tpl/join,合流セル(溶接・組立),2
+member/factory-map/company,Astemo,2
+hub/tour/thGo,見学ツアーへ,2
+member/people-db/open,顧客人事DBを開いた,2
+/tool/people-db,顧客人事データベース | LexxPluss 社内,2
+member/videos/play,02 LexxMoMa 2607,1
+member/videos/open,共有動画を開いた,1
+lib/board/sort/new,<em>(no title)</em>,1
+lib/board/sort/shuffle,<em>(no title)</em>,1
+lib/board/view/note,<em>(no title)</em>,1
+lib/board/view/dense,<em>(no title)</em>,1
+lib/tab/all,<em>(no title)</em>,1
+lib/tab/other,<em>(no title)</em>,1
+lib/tab/video,<em>(no title)</em>,1
+lib/tab/company,<em>(no title)</em>,1
+lib/contact/tools,<em>(no title)</em>,1
+hub/worry/layout,現場に置けるか?(レイアウト),1
+hub/worry/teach,ロボットの教示は誰がやる?,1
+tool/sketch/poly/nogo,立入禁止,1
+hub/worry/grip,このワークは掴めるのか?,1
+lib/slide-zoom/company-video,1ページ目を拡大,1
+keep/standalone,<em>(no title)</em>,1
+tool/roi/mode/light,ライトモードに切替,1
+lib/complete,見学ツアー修了,1
+lib/stamp/your-info,あなたの現場での使い道を教えてください,1
+lib/board/post,"feed,assy,inspect,pack",1
+lib/open/your-info,あなたの現場での使い道を教えてください,1
+lib/stamp/company-video,LexxPluss 会社紹介動画,1
+tool/sketch/add/join,溶接・接着・組立,1
+hub/worry/roi,いくらで元が取れる?,1
+member/factory-map/people,小糸製作所,1
+pass/app,アプリとして開いた,1
