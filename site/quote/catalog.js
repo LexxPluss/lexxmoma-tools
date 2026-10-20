@@ -21,7 +21,8 @@
  */
 window.QUOTE_CONFIG = {
   updated: "2026-10",
-  bodyPrice: 11800000,       // LexxMoMa 本体標準価格(税別)。2026-10-21 に確定
+  bodyPrice: 11800000,       // LexxMoMa 本体標準価格(税別・アームセット込み)。2026-10-21 に確定
+  armlessPrice: 7300000,     // アームセットをお客様が自ら調達する場合の本体価格(税別)。2026-10-21 に表示を決定
   taxRate: 0.1,
   // 見積依頼の送信先(Google Apps Script の Web アプリ URL)。空ならテストモード(送信せず、内容の確認だけ)。手順は SETUP.md
   endpoint: "",
@@ -33,6 +34,11 @@ window.QUOTE_CONFIG = {
 window.QUOTE_BODY = {
   id: "moma", cat: "標準商品", name: "LexxMoMa 本体", unit: "台", max: 10,
   includes: ["モバイルベース", "ロボットアーム(FANUC CRX-20iA/L)", "制御システム一式", "標準バッテリー一式"],
+  // アームセット: 込み(本体標準価格)か、お客様が自ら調達するか
+  arms: [
+    { id: "set", label: "アームセット込み", desc: "" },
+    { id: "own", label: "アームセットを自ら調達", desc: "お手持ちまたはお客様調達の FANUC CRX-20iA/L を使います。取付・適合確認は別途費用です。" },
+  ],
 };
 
 window.QUOTE_OPTIONS = [

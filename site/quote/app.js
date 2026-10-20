@@ -23,12 +23,12 @@
   function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
 
   // ---------------------------------------------------------------- 構成
-  var S = { qty: 1, opts: {}, step: 0 };
+  var S = { qty: 1, arm: 'set', opts: {}, step: 0 };
   var BY = {};
   OPTS.forEach(function (o) { BY[o.id] = o; });
 
   function defaults() {
-    S.qty = 1; S.opts = {};
+    S.qty = 1; S.arm = 'set'; S.opts = {};
     OPTS.forEach(function (o) { S.opts[o.id] = { on: o.id === 'charger' || o.id === 'tablet', qty: o.qty || 1, who: 'sier' }; });
   }
   function load() {
@@ -37,10 +37,13 @@
       var d = JSON.parse(store(DRAFT) || 'null');
       if (!d) return;
       S.qty = Math.max(1, Math.min(BODY.max || 10, +d.qty || 1));
+      if (d.arm === 'own') S.arm = 'own';
       Object.keys(d.opts || {}).forEach(function (id) { if (BY[id]) S.opts[id] = Object.assign(S.opts[id], d.opts[id]); });
     } catch (e) { /* 壊れた下書きは捨てる */ }
   }
-  function save() { store(DRAFT, JSON.stringify({ qty: S.qty, opts: S.opts })); }
+  function save() { store(DRAFT, JSON.stringify({ qty: S.qty, arm: S.arm, opts: S.opts })); }
+  function bodyUnit() { return S.arm === 'own' ? CFG.armlessPrice : CFG.bodyPrice; }
+  function bodyLabel() { return S.arm === 'own' ? 'LexxMoMa 本体(アームセットを自ら調達)' : 'LexxMoMa 本体'; }
 
   // 1 行の扱い: 金額 / ヒアリング後にご提示 / SIer・パートナーが用意(この見積に含めない)
   function lineOf(o) {
@@ -52,7 +55,7 @@
     return { o: o, qty: q, kind: 'price', amount: o.price * q };
   }
   function totals() {
-    var t = { body: CFG.bodyPrice * S.qty, extra: 0, lines: [], later: [], outside: [] };
+    var t = { body: bodyUnit() * S.qty, extra: 0, lines: [], later: [], outside: [] };
     OPTS.forEach(function (o) {
       var l = lineOf(o); if (!l) return;
       if (l.kind === 'price') { t.extra += l.amount; t.lines.push(l); }
@@ -67,7 +70,7 @@
   function sceneState() {
     var on = function (id) { return !!(S.opts[id] && S.opts[id].on); };
     return {
-      momaQty: S.qty, crx: true,
+      momaQty: S.qty, crx: S.arm !== 'own',
       charger: on('charger') ? S.opts.charger.qty : 0,
       tablet: on('tablet'),
       ee: on('ee') ? 'gripper' : null,
@@ -92,8 +95,17 @@
       '<button type="button" ' + attr + ' data-d="1" aria-label="増やす"' + (val >= max ? ' disabled' : '') + '>+</button></span>';
   }
   function renderBody() {
-    $('#bodyPrice').textContent = yen(CFG.bodyPrice);
-    $('#bodyIncl').innerHTML = (BODY.includes || []).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('');
+    var own = S.arm === 'own';
+    $('#bodyName').textContent = own ? 'LexxMoMa 本体(アームセットを自ら調達)' : 'LexxMoMa 本体標準価格';
+    $('#bodyPrice').textContent = yen(bodyUnit());
+    $('#bodyIncl').innerHTML = (BODY.includes || []).filter(function (x) { return !own || x.indexOf('ロボットアーム') < 0; })
+      .map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('');
+    $('#armSeg').innerHTML = (BODY.arms || []).map(function (a) {
+      return '<button type="button" role="radio" data-arm="' + esc(a.id) + '" aria-checked="' + (S.arm === a.id) + '">' + esc(a.label) + '</button>';
+    }).join('');
+    var arm = (BODY.arms || []).filter(function (a) { return a.id === S.arm; })[0];
+    $('#armNote').hidden = !(arm && arm.desc);
+    $('#armNote').textContent = arm && arm.desc ? arm.desc : '';
     $('#bodyQty').innerHTML = qtyCtl(S.qty, 1, BODY.max || 10, BODY.unit || '台', 'data-body');
   }
   function priceText(o, st) {
@@ -127,12 +139,12 @@
   function renderSummary() {
     var t = totals();
     var h = '<h2>お見積り内容</h2><table class="sum"><tbody>';
-    h += '<tr class="grp"><th colspan="2">本体標準価格</th></tr>';
-    h += '<tr><td>LexxMoMa 本体 × ' + S.qty + ' 台</td><td class="r">' + yen(t.body) + '</td></tr>';
+    h += '<tr class="grp"><th colspan="2">' + (S.arm === 'own' ? '本体' : '本体標準価格') + '</th></tr>';
+    h += '<tr><td>' + esc(bodyLabel()) + ' × ' + S.qty + ' 台</td><td class="r">' + yen(t.body) + '</td></tr>';
     h += '<tr class="grp"><th colspan="2">別途費用</th></tr>';
     h += t.lines.length ? t.lines.map(function (l) { return '<tr><td>' + esc(l.o.name) + (l.qty > 1 ? ' × ' + l.qty + ' ' + esc(l.o.unit) : '') + '</td><td class="r">' + yen(l.amount) + '</td></tr>'; }).join('')
       : '<tr><td class="muted" colspan="2">金額の決まっているオプションは選ばれていません</td></tr>';
-    var later = t.later.map(function (l) { return l.o.name; }).concat((window.QUOTE_HEARING || []).map(function (x) { return x.name; }));
+    var later = (S.arm === 'own' ? ['アームの取付・適合確認'] : []).concat(t.later.map(function (l) { return l.o.name; })).concat((window.QUOTE_HEARING || []).map(function (x) { return x.name; }));
     h += '<tr><td colspan="2" class="later"><span>ヒアリング後にご提示</span>' + esc(later.join('、')) + '</td></tr>';
     if (t.outside.length) h += '<tr><td colspan="2" class="later"><span>SIer・パートナーが用意(この見積に含めない)</span>' + esc(t.outside.map(function (l) { return l.o.name; }).join('、')) + '</td></tr>';
     h += '</tbody><tfoot><tr><th>表示中の合計(税別)</th><td class="r"><b id="sumTotal">' + yen(t.total) + '</b></td></tr></tfoot></table>';
@@ -242,7 +254,7 @@
       v: 3, website: val('website'),
       company: val('company'), name: val('name'), email: val('email'),
       channel: channel, sier: val('sier'), trader: val('trader'), message: val('message'),
-      qty: S.qty, body: t.body, extra: t.extra, total: t.total, catalog: CFG.updated || '',
+      qty: S.qty, arm: S.arm, body: t.body, extra: t.extra, total: t.total, catalog: CFG.updated || '',
       items: t.lines.map(function (l) { return { id: l.o.id, qty: l.qty }; }),
       later: t.later.map(function (l) { return l.o.id; }),
       outside: t.outside.map(function (l) { return l.o.id; })
@@ -273,6 +285,10 @@
   setupForm();
   setupPolicy();
   $('#bodyQty').addEventListener('click', onBodyClick);
+  $('#armSeg').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-arm]'); if (!b || b.dataset.arm === S.arm) return;
+    S.arm = b.dataset.arm; fx('moma', 'bump'); commit();
+  });
   $('#opts').addEventListener('click', onOptClick);
   $('#stepper').addEventListener('click', function (e) { var li = e.target.closest('li'); if (li && S.step < STEPS) go(+li.dataset.step); });
   $('#back').addEventListener('click', function () { go(S.step - 1); });

@@ -39,16 +39,21 @@
 
     <!-- ステップ 1: 本体 -->
     <div class="step" id="step0">
-      <h2>本体の台数を選ぶ</h2>
+      <h2>本体を選ぶ</h2>
       <div class="body-card">
         <div class="body-head">
           <span class="tag">標準商品</span>
-          <span class="body-name">LexxMoMa 本体標準価格</span>
+          <span class="body-name" id="bodyName">LexxMoMa 本体標準価格</span>
         </div>
         <div class="body-price"><b id="bodyPrice">¥0</b><span>/ 台(税別)</span></div>
         <p class="body-note">設置・導入支援等の費用は含まれておりません。どの販売経路でご検討いただいても同じ価格です。</p>
         <ul class="incl" id="bodyIncl"></ul>
       </div>
+      <div class="row qty-row">
+        <span class="row-label">ロボットアーム</span>
+        <span class="seg" role="radiogroup" id="armSeg"></span>
+      </div>
+      <p class="hint" id="armNote" hidden></p>
       <div class="row qty-row">
         <span class="row-label">台数</span>
         <span class="stepper-ctl" id="bodyQty"></span>
@@ -154,8 +159,8 @@
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="../assets/track.js" data-tool="quote"></script>
-<script src="catalog.js?v=4"></script>
-<script src="app.js?v=5"></script>
-<script type="module" src="scene.js?v=4"></script>
+<script src="catalog.js?v=5"></script>
+<script src="app.js?v=6"></script>
+<script type="module" src="scene.js?v=5"></script>
 </body>
 </html>
