@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<title>3D 見積 | LexxPluss 社内</title>
+<link rel="icon" type="image/png" href="../../assets/favicon.png">
+<script src="../../assets/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=1">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+
+<!-- 入口(パスワードは社内ツールの入口 members/index.html で入れる。未入力ならそこへ移動) -->
+<div class="gate" id="gate">
+  <button type="button" class="lx-theme-btn" data-lx-theme-toggle aria-label="ライト / ダーク切替"></button>
+  <div class="gate-card">
+    <a class="gate-home" href="../index.html" title="社内ツールのトップへ"><img class="lx-logo" src="../../assets/lexxpluss-logo.png" alt="LexxPluss"></a>
+    <h1>3D 見積</h1>
+    <p id="gateMsg" role="status">開いています…</p>
+    <p class="gate-note">LexxPluss 社内メンバー向けのツールです。パスワードは<a href="../index.html">社内ツールの入口</a>で入れます。</p>
+    <a class="gate-back" href="../../index.html">LexxMoMa Tools に戻る</a>
+  </div>
+</div>
+
+<div class="app" id="app" hidden>
+  <div class="banner" role="note">社内限定 — 原価・粗利を含みます。画面を社外に見せるときは「原価を表示」を外してください。</div>
+  <header class="hdr">
+    <div class="hdr-title">
+      <a href="../index.html" title="社内ツールのトップへ"><img class="lx-logo" src="../../assets/lexxpluss-logo.png" alt="LexxPluss"></a>
+      <h1>3D 見積</h1><a class="tag" href="../index.html" title="社内ツールのトップへ">社内</a>
+    </div>
+    <input class="case" id="caseName" type="text" placeholder="案件名(例: ○○株式会社 様 LexxMoMa 導入)" aria-label="案件名">
+    <span class="hdr-btns">
+      <label class="switch" title="原価・粗利を表示する(社内向け)"><input type="checkbox" id="showCost"><span>原価を表示</span></label>
+      <button type="button" class="lx-theme-btn" data-lx-theme-toggle aria-label="ライト / ダーク切替"></button>
+      <button class="icon-btn" id="lock" type="button" title="ロックする(社内ツールすべてのパスワードを忘れさせる)">🔒</button>
+    </span>
+  </header>
+
+  <main class="main">
+    <!-- ガレージ: 3D の LexxMoMa。オプションを付けると機体に取り付く -->
+    <section class="garage" id="garage">
+      <canvas id="scene" aria-label="LexxMoMa の 3D モデル(ドラッグで回転)"></canvas>
+      <div class="garage-fallback" id="sceneFallback" hidden>3D を表示できませんでした。見積はこのまま右の一覧で作れます。</div>
+      <div class="hud">
+        <div class="hud-total"><span>見積合計(税抜)</span><b id="hudTotal">¥0</b></div>
+        <div class="hud-stats" id="hudStats"></div>
+      </div>
+      <div class="garage-tools">
+        <span class="muted">ひな形:</span>
+        <span id="presets"></span>
+        <button type="button" class="chip" id="spin" aria-pressed="true" title="ターンテーブルを回す / 止める">⟳ 回転</button>
+      </div>
+      <div class="floats" id="floats" aria-hidden="true"></div>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </section>
+
+    <!-- ピット: カテゴリ(エクセルの区分)ごとにパーツを選ぶ -->
+    <section class="pit">
+      <nav class="steps" id="steps" aria-label="カテゴリ"></nav>
+      <div class="cat" id="cat"></div>
+      <div class="pit-nav">
+        <button type="button" class="btn ghost" id="prevCat">← 前へ</button>
+        <button type="button" class="btn" id="nextCat">次へ →</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="bar">
+    <div class="bar-sum">
+      <span class="muted">合計(税抜)</span><b id="barTotal">¥0</b>
+      <span class="bar-cost" id="barCost"></span>
+    </div>
+    <button type="button" class="btn ghost" id="reset" title="本体だけに戻す">リセット</button>
+    <button type="button" class="btn big" id="openQuote">見積書を見る 🏁</button>
+  </footer>
+</div>
+
+<!-- 見積書 -->
+<dialog class="sheet" id="sheet">
+  <div class="sheet-hdr">
+    <b>見積書(下書き)</b>
+    <span class="sheet-btns">
+      <button type="button" class="btn ghost" id="copyTsv" title="Excel に貼り付けられる形でコピー">表をコピー</button>
+      <button type="button" class="btn ghost" id="print">印刷 / PDF</button>
+      <button type="button" class="icon-btn" id="closeSheet" aria-label="閉じる">✕</button>
+    </span>
+  </div>
+  <div class="doc" id="doc"></div>
+</dialog>
+
+<script src="../../assets/track.js" data-tool="quote"></script>
+<script src="data.enc.js?v=1" onerror="void 0"></script>
+<script src="../members-auth.js?v=4"></script>
+<script src="app.js?v=1"></script>
+<script type="module" src="scene.js?v=1"></script>
+</body>
+</html>

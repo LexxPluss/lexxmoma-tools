@@ -74,11 +74,16 @@ p{margin:0;color:var(--muted);font-size:13px}
       <span>社内で共有したい LexxPluss の YouTube 動画をまとめて。限定公開の動画もこのページの中でそのまま再生できます。</span>
       <em>開く →</em>
     </a>
+    <a class="tool" href="quote/index.html">
+      <span class="ic">🏁</span><b>3D 見積</b>
+      <span>3D の LexxMoMa にオプションを付けていき、機体を完成させながら見積を作る。標準・準標準・非標準のカテゴリはエクセルの区分のまま。</span>
+      <em>開く →</em>
+    </a>
   </div>
   <a class="back" href="../index.html">← LexxMoMa Tools に戻る</a>
 </div>
 <script src="../assets/track.js" data-tool="members"></script>
-<script src="members-auth.js?v=3"></script>
+<script src="members-auth.js?v=4"></script>
 <script>
 // 共通の入口: パスワードは工場マップのデータで確かめてから、この端末に置く(各ツールはそれで自分のデータを復号する)
 (function () {
@@ -94,7 +99,7 @@ p{margin:0;color:var(--muted);font-size:13px}
   }
   // 各ツールから送られてきたとき(?next=)は、解除後にそのツールへ戻す。行き先は社内ツールのフォルダだけに限る
   var next = new URLSearchParams(location.search).get('next');
-  if (next && !/^(factory-map|people-db|videos)\/index\.html(#[\w\-\/=&%.]*)?$/.test(next)) next = null;
+  if (next && !/^(factory-map|people-db|videos|quote)\/index\.html(#[\w\-\/=&%.]*)?$/.test(next)) next = null;
   if (next) $('pw').focus();
   function show() { var on = !!lxMembers.password(); $('unlock').hidden = on; $('unlocked').hidden = !on; }
   function fail(msg) { $('unlockErr').textContent = msg; $('unlockBtn').disabled = false; $('unlockBtn').textContent = 'ロック解除'; }
