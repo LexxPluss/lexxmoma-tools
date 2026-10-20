@@ -25,6 +25,8 @@
   var isMobile = function () { return window.matchMedia('(max-width: 767px)').matches; };
   var hasPos = function (c) { return c.hq && c.hq.lat != null && c.hq.lng != null; };
   var UNCLASSIFIED = '未分類';
+  // 操作の計測（../assets/track.js）。検索語など入力内容は送らない
+  function track(ev, t) { try { if (window.lxTrack) window.lxTrack('tool/sier/' + ev, t || ''); } catch (e) { /* 計測不可 */ } }
 
   // ---------------------------------------------------------------- 分類軸
   var PREF_REGION = {};
@@ -246,7 +248,7 @@
   if (!BASEMAPS[baseName]) baseName = DEFAULT_BASE;
   BASEMAPS[baseName].addTo(map);
   var layersCtl = L.control.layers(BASEMAPS, null, { position: 'topright', collapsed: true }).addTo(map);
-  map.on('baselayerchange', function (e) { baseName = e.name; try { localStorage.setItem('sier-map-basemap', e.name); } catch (err) { /* 無視 */ } });
+  map.on('baselayerchange', function (e) { baseName = e.name; track('basemap', e.name); try { localStorage.setItem('sier-map-basemap', e.name); } catch (err) { /* 無視 */ } });
   // タイルが続けて取れない背景地図は、自動で標準地図に戻す（サーバー側の拒否・障害に備える）
   Object.keys(BASEMAPS).forEach(function (name) {
     if (name === DEFAULT_BASE) return;
@@ -302,7 +304,7 @@
     if (!hasPos(c)) return;
     var m = L.marker([c.hq.lat, c.hq.lng], { icon: iconFor(c), title: c.name, keyboard: true, riseOnHover: true });
     m.bindTooltip(function () { return tooltipHtml(c); }, { direction: 'top', opacity: 1, className: 'tip' });
-    m.on('click', function () { select(c.id, false); });
+    m.on('click', function () { select(c.id, false, 'map'); });
     markers[c.id] = m;
   });
   function refreshMap() {
@@ -352,7 +354,7 @@
       b.title = k + 'を強調表示';
       b.innerHTML = '<i class="dot" style="--c:' + colorForCat(k) + '"></i><span>' + esc(k) + '</span><span class="n">' + counts[k] + '</span>';
       b.addEventListener('click', function () {
-        if (state.highlight[k]) delete state.highlight[k]; else state.highlight[k] = true;
+        if (state.highlight[k]) delete state.highlight[k]; else { state.highlight[k] = true; track('highlight', k); }
         renderLegend(); refreshIcons(); renderList();
       });
       li.appendChild(b);
@@ -369,6 +371,7 @@
       if (state.colorAxis === b.dataset.axis) return;
       state.colorAxis = b.dataset.axis;
       state.highlight = {};
+      track('color/' + state.colorAxis);
       renderLegend(); refreshIcons(); renderList();
     });
   });
@@ -402,7 +405,7 @@
           return '<optgroup label="' + esc(r.name) + '">' + r.prefectures.map(function (p) { return '<option value="' + esc(p) + '">' + esc(p) + '</option>'; }).join('') + '</optgroup>';
         }).join('');
         sel.addEventListener('change', function () {
-          if (sel.value) { state.f.prefecture.add(sel.value); sel.value = ''; update(); }
+          if (sel.value) { state.f.prefecture.add(sel.value); track('filter/prefecture', sel.value); sel.value = ''; update(); }
         });
         body.appendChild(sel);
         var chipsSel = document.createElement('div');
@@ -429,7 +432,7 @@
   }
   function toggleFilter(key, v) {
     var s = state.f[key];
-    if (s.has(v)) s.delete(v); else s.add(v);
+    if (s.has(v)) s.delete(v); else { s.add(v); track('filter/' + key, v); }
     update();
   }
   function removableChip(g, v) {
@@ -493,6 +496,7 @@
     updateFilterUI();
   });
   $('#resetBtn').addEventListener('click', function () {
+    track('reset');
     GROUPS.forEach(function (g) { state.f[g.key].clear(); });
     state.q = '';
     $('#q').value = '';
@@ -510,11 +514,14 @@
     if (parsed.free.length) parts.push('<span class="interp-chip">「' + esc(parsed.free.join(' ')) + '」<b>会社名・紹介文・対応業務を全文検索</b></span>');
     el.innerHTML = '<span class="interp-lead">解釈:</span>' + parts.join('') + '<span class="interp-note">（本番は自由文をLLMで条件に変換）</span>';
   }
-  var qTimer = null;
+  var qTimer = null, qTrackTimer = null, qTracked = '';
   $('#q').addEventListener('input', function () {
     var v = this.value;
     clearTimeout(qTimer);
     qTimer = setTimeout(function () { state.q = v; update(); }, 160);
+    // 打ち終えて少し置いた時点で1回だけ数える（語そのものは送らない）
+    clearTimeout(qTrackTimer);
+    qTrackTimer = setTimeout(function () { if (v.trim() && v !== qTracked) { qTracked = v; track('search', '該当 ' + current.length + '社'); } }, 1500);
   });
   $('#q').addEventListener('keydown', function (e) { if (e.key === 'Escape') { this.value = ''; state.q = ''; update(); } });
   $('#qClear').addEventListener('click', function () { $('#q').value = ''; state.q = ''; update(); $('#q').focus(); });
@@ -564,7 +571,7 @@
   }
   $('#list').addEventListener('click', function (e) {
     var b = e.target.closest('.item');
-    if (b) select(b.dataset.id, true);
+    if (b) select(b.dataset.id, true, 'list');
   });
   $('#list').addEventListener('mouseover', function (e) {
     var b = e.target.closest('.item');
@@ -576,7 +583,7 @@
     var b = e.target.closest('.item');
     if (b && markers[b.dataset.id]) markers[b.dataset.id].closeTooltip();
   });
-  $('#sort').addEventListener('change', function () { state.sort = this.value; renderList(); });
+  $('#sort').addEventListener('change', function () { state.sort = this.value; track('sort/' + this.value); renderList(); });
   map.on('moveend', function () { if (state.sort === 'distance') renderList(); });
 
   // ---------------------------------------------------------------- 詳細
@@ -617,9 +624,9 @@
       (hq.precision && hq.precision !== 'address' ? '<br><span class="muted">地図上の位置は' + (hq.precision === 'prefecture' ? '県庁所在地' : hq.precision === 'city' ? '市区町村' : '町名') + 'で代替</span>' : '') + '</p>';
     if (c.description) html += '<p class="d-desc">' + esc(c.description) + '</p>';
     html += '<div class="d-links">' +
-      (c.website ? '<a class="primary" href="' + esc(c.website) + '" target="_blank" rel="noopener">公式サイト ↗</a>' : '<span class="muted">公式サイト 未取得</span>') +
-      (c.casesUrl ? '<a href="' + esc(c.casesUrl) + '" target="_blank" rel="noopener">導入事例 ↗</a>' : '') +
-      (c.contactUrl ? '<a href="' + esc(c.contactUrl) + '" target="_blank" rel="noopener">問い合わせ ↗</a>' : '') +
+      (c.website ? '<a class="primary" data-t="website" href="' + esc(c.website) + '" target="_blank" rel="noopener">公式サイト ↗</a>' : '<span class="muted">公式サイト 未取得</span>') +
+      (c.casesUrl ? '<a data-t="cases" href="' + esc(c.casesUrl) + '" target="_blank" rel="noopener">導入事例 ↗</a>' : '') +
+      (c.contactUrl ? '<a data-t="contact" href="' + esc(c.contactUrl) + '" target="_blank" rel="noopener">問い合わせ ↗</a>' : '') +
       '</div>';
 
     html += '<section class="d-sec"><h3>概要・規模</h3><dl class="kv">' +
@@ -692,7 +699,7 @@
     $('#detail').hidden = false;
     panel.classList.add('has-detail');
   }
-  function select(id, fly) {
+  function select(id, fly, via) {
     var prev = state.selectedId;
     state.selectedId = id;
     [prev, id].forEach(function (x) { if (x && byId[x] && markers[x]) markers[x].setIcon(iconFor(byId[x])); });
@@ -705,6 +712,7 @@
       updateFilterUI();
     }
     renderDetail(c);
+    if (via) track('company/' + via, c.shortName);
     dig(c);
     $$('#list .item').forEach(function (b) { b.classList.toggle('is-selected', b.dataset.id === id); });
     var it = $('#list .item[data-id="' + id + '"]');
@@ -728,7 +736,12 @@
   }
   $('#detailClose').addEventListener('click', closeDetail);
   $('#detailBack').addEventListener('click', closeDetail);
-  $('#detailLocate').addEventListener('click', function () { if (state.selectedId) locate(state.selectedId); });
+  $('#detailLocate').addEventListener('click', function () { if (state.selectedId) { track('locate'); locate(state.selectedId); } });
+  // 詳細の外部リンク（公式サイト・導入事例・問い合わせ、それ以外は出所リンク）
+  $('#detailBody').addEventListener('click', function (e) {
+    var a = e.target.closest('a[href]');
+    if (a && state.selectedId) track('link/' + (a.dataset.t || 'source'), byId[state.selectedId].shortName);
+  });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('#detail').hidden && document.activeElement !== $('#q')) closeDetail(); });
 
   // ---------------------------------------------------------------- テーマ（ライト / ダーク）
@@ -906,7 +919,7 @@
   function openDigBook(open) {
     digBook.hidden = !open;
     digBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-    if (open) renderDigBook();
+    if (open) { renderDigBook(); track('dig/open'); }
   }
   digBtn.addEventListener('click', function () { openDigBook(digBook.hidden); });
   $('#digClose').addEventListener('click', function () { openDigBook(false); });
@@ -914,11 +927,12 @@
   $('#digMap').addEventListener('click', function (e) {
     var t = e.target.closest('.tile'); if (!t || t.disabled) return;
     state.f.prefecture.clear(); state.f.prefecture.add(t.dataset.pref);
+    track('dig/pref', t.dataset.pref);
     update(); fitAll(); openDigBook(false);
   });
   $('#digGem').addEventListener('click', function () {
     if (!state.f.gem) return;
-    if (state.f.gem.has(GEM_LABEL)) state.f.gem.delete(GEM_LABEL); else { state.f.gem.clear(); state.f.gem.add(GEM_LABEL); }
+    if (state.f.gem.has(GEM_LABEL)) state.f.gem.delete(GEM_LABEL); else { state.f.gem.clear(); state.f.gem.add(GEM_LABEL); track('dig/gem'); }
     update(); renderDigBook();
   });
   $('#digRandom').addEventListener('click', function () {
@@ -927,10 +941,11 @@
     var gems = pool.filter(isGem);
     var pickFrom = gems.length && Math.random() < 0.6 ? gems : pool;  // 眠るSIが出やすい
     openDigBook(false);
-    select(pickFrom[Math.floor(Math.random() * pickFrom.length)].id, true);
+    select(pickFrom[Math.floor(Math.random() * pickFrom.length)].id, true, 'random');
   });
   $('#digReset').addEventListener('click', function () {
     if (!window.confirm('このブラウザの発掘記録を消しますか？')) return;
+    track('dig/reset');
     dug = {}; saveDug(); renderDigBtn(); renderDigBook(); renderList();
   });
   var toastTimer = null;
@@ -952,6 +967,7 @@
     if (p && !before.byPref[p]) newPref = p;
     if (p && !before.byPref[p]) lines.push('🗾 ' + p + ' 初発掘（' + after.prefs + ' / 47 県）');
     var ti = titleIdx(after.n);
+    if (ti > titleIdx(before.n)) track('dig/title/' + ti, TITLES[ti][1]);
     if (ti > titleIdx(before.n)) lines.push('🏅 称号アップ「' + TITLES[ti][1] + '」');
     toast(lines);
     renderDigBtn();
