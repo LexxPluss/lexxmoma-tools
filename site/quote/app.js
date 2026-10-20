@@ -217,19 +217,16 @@
   }
 
   // ---------------------------------------------------------------- 送信
-  var PARTNER_LABEL = { sier: 'SIer の会社名(任意)', dealer: '商社・販売店の会社名(任意)' };
   function setupForm() {
+    var P = window.QUOTE_PARTNERS || {};
+    ['sier', 'trader'].forEach(function (k) {
+      $('#' + k + 'List').innerHTML = (P[k] || []).map(function (x) { return '<option value="' + esc(x) + '"></option>'; }).join('');
+    });
     $('#testNote').hidden = !!CFG.endpoint;
     $('#channels').innerHTML = (window.QUOTE_CHANNELS || []).map(function (x) {
       return '<label class="chip"><input type="radio" name="channel" value="' + esc(x.id) + '"><span>' + esc(x.label) + '</span></label>';
     }).join('');
     if (CFG.privacyUrl) $('#privacy').innerHTML = '送信した内容は、お見積りとご連絡のためにのみ使います(<a href="' + esc(CFG.privacyUrl) + '" target="_blank" rel="noopener">プライバシーポリシー</a>)。';
-    $('#step2').addEventListener('change', function (e) {
-      if (e.target.name !== 'channel') return;
-      var lb = PARTNER_LABEL[e.target.value];
-      $('#partnerBox').hidden = !lb;
-      if (lb) $('#partnerLabel').textContent = lb;
-    });
     $('#step2').addEventListener('submit', function (e) { e.preventDefault(); send(); });
   }
   function send() {
@@ -242,9 +239,9 @@
     err.textContent = '';
     var t = totals();
     var body = {
-      v: 2, website: val('website'),
+      v: 3, website: val('website'),
       company: val('company'), name: val('name'), email: val('email'),
-      channel: channel, partner: PARTNER_LABEL[channel] ? val('partner') : '', message: val('message'),
+      channel: channel, sier: val('sier'), trader: val('trader'), message: val('message'),
       qty: S.qty, body: t.body, extra: t.extra, total: t.total, catalog: CFG.updated || '',
       items: t.lines.map(function (l) { return { id: l.o.id, qty: l.qty }; }),
       later: t.later.map(function (l) { return l.o.id; }),
@@ -280,7 +277,7 @@
   $('#stepper').addEventListener('click', function (e) { var li = e.target.closest('li'); if (li && S.step < STEPS) go(+li.dataset.step); });
   $('#back').addEventListener('click', function () { go(S.step - 1); });
   $('#next').addEventListener('click', function () { if (S.step === STEPS - 1) send(); else go(S.step + 1); });
-  $('#again').addEventListener('click', function () { $('#step2').reset(); $('#partnerBox').hidden = true; go(0); });
+  $('#again').addEventListener('click', function () { $('#step2').reset(); go(0); });
   $('#spin').addEventListener('click', function () {
     var p = this.getAttribute('aria-pressed') !== 'true';
     this.setAttribute('aria-pressed', p ? 'true' : 'false');

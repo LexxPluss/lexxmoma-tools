@@ -13,13 +13,13 @@
 const SHEET_NAME = 'requests';
 const NOTIFY_TO = '';            // 依頼が来たら知らせる宛先(カンマ区切りで複数可)。空なら知らせない
 const RATE_PER_MIN = 10;         // 全体で 1 分あたり受け付ける上限(いたずら対策)
-const HEAD = ['id', 'createdAt', 'status', 'company', 'name', 'email', 'channel', 'partner', 'message',
+const HEAD = ['id', 'createdAt', 'status', 'company', 'name', 'email', 'channel', 'sier', 'trader', 'message',
               'qty', 'body', 'extra', 'total', 'options', 'later', 'outside', 'catalog', 'v'];
 
 // catalog.js の QUOTE_CHANNELS / QUOTE_OPTIONS と合わせる
-const CHANNEL = { direct: 'LexxPluss と直接', sier: 'SIer と', dealer: '商社・販売店を通して', undecided: '未定・相談' };
+const CHANNEL = { direct: 'LexxPluss と直接', sier: 'SIer と', trader: '商社を通して', undecided: '未定・相談' };
 const OPTION = { charger: '充電器', tablet: '操作用タブレット', ee: 'ハンド・治具', camera: 'ビジョンカメラ', panel: '工程盤', estop: '無線非常停止' };
-const LIMIT = { company: 100, name: 60, email: 120, partner: 100, message: 1500 };
+const LIMIT = { company: 100, name: 60, email: 120, sier: 100, trader: 100, message: 1500 };
 
 function sheet_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -67,7 +67,7 @@ function doPost(e) {
     const id = 'Q-' + Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyMMdd') + '-' + Utilities.getUuid().slice(0, 4).toUpperCase();
 
     sheet_().appendRow([
-      id, new Date(), 'new', t.company, t.name, t.email, CHANNEL[d.channel], t.partner, t.message,
+      id, new Date(), 'new', t.company, t.name, t.email, CHANNEL[d.channel], t.sier, t.trader, t.message,
       Number(d.qty) || 0, Number(d.body) || 0, Number(d.extra) || 0, Number(d.total) || 0,
       options, later, outside, safe_(d.catalog, 20), Number(d.v) || 1,
     ]);
@@ -80,7 +80,9 @@ function doPost(e) {
           '3D 見積依頼ツールから見積依頼が届きました。', '',
           '受付番号: ' + id,
           '会社名: ' + t.company, 'お名前: ' + t.name, 'メール: ' + t.email,
-          '希望の経路: ' + CHANNEL[d.channel] + (t.partner ? '(' + t.partner + ')' : ''), '',
+          '希望の経路: ' + CHANNEL[d.channel],
+          'お付き合いのある SIer: ' + (t.sier || '-'),
+          'お付き合いのある商社: ' + (t.trader || '-'), '',
           'LexxMoMa 本体 × ' + (Number(d.qty) || 0) + ' 台: ' + yen(d.body),
           '別途費用(金額あり): ' + yen(d.extra) + (options ? '(' + options + ')' : ''),
           'ヒアリング後に提示: ' + (later || '-'),

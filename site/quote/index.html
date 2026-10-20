@@ -9,7 +9,7 @@
 <script src="../assets/theme.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="style.css?v=6">
 <script type="importmap">
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
@@ -80,7 +80,14 @@
         <legend>どの経路で進めたいですか <i>必須</i></legend>
         <p class="hint">価格はどの経路でも同じです。窓口となる担当を決めるために伺います。</p>
         <div class="chips" id="channels"></div>
-        <label class="field" for="fPartner" id="partnerBox" hidden><span id="partnerLabel">SIer の会社名(任意)</span><input id="fPartner" name="partner" maxlength="100"></label>
+      </fieldset>
+      <fieldset class="partners">
+        <legend>お付き合いのある会社(任意)</legend>
+        <p class="hint">わかれば教えてください。担当から連携してご連絡します。</p>
+        <label class="field" for="fSier"><span>SIer</span><input id="fSier" name="sier" maxlength="100" list="sierList" placeholder="会社名"></label>
+        <label class="field" for="fTrader"><span>商社</span><input id="fTrader" name="trader" maxlength="100" list="traderList" placeholder="会社名"></label>
+        <datalist id="sierList"></datalist>
+        <datalist id="traderList"></datalist>
       </fieldset>
       <label class="field" for="fMessage"><span>ご相談内容(任意)</span><textarea id="fMessage" name="message" rows="3" maxlength="1500" placeholder="例: 旋盤 2 台へのワーク供給。ワークは 3kg の鋳物。"></textarea></label>
       <label class="hp" aria-hidden="true">website<input name="website" tabindex="-1" autocomplete="off"></label>
@@ -134,7 +141,7 @@
     <ol class="policy-list">
       <li><b>本体は一つの価格です</b><span>LexxMoMa 本体標準価格 <em id="policyPrice"></em>(税別)。モバイルベース・ロボットアーム・制御システム・標準バッテリーを含みます。</span></li>
       <li><b>本体と別途費用を分けてお見せします</b><span>設置・導入支援、工程設計、周辺設備との接続、ハンド・治具、安全設備、保守は本体に含まず、別途費用として項目ごとにご提示します。</span></li>
-      <li><b>どの販売経路でも同じ価格です</b><span>LexxPluss・SIer・商社/販売店のどこからご検討いただいても、本体標準価格は変わりません。条件のご相談は LexxPluss の窓口で承ります。</span></li>
+      <li><b>どの販売経路でも同じ価格です</b><span>LexxPluss・SIer・商社のどこからご検討いただいても、本体標準価格は変わりません。条件のご相談は LexxPluss の窓口で承ります。</span></li>
     </ol>
     <p class="policy-how">このツールでは、本体とオプションを選んで 3 ステップで見積を依頼できます。正式なお見積りは、ご依頼のあと担当からお送りします。</p>
     <div class="policy-ft">
@@ -147,8 +154,8 @@
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="../assets/track.js" data-tool="quote"></script>
-<script src="catalog.js?v=3"></script>
-<script src="app.js?v=4"></script>
+<script src="catalog.js?v=4"></script>
+<script src="app.js?v=5"></script>
 <script type="module" src="scene.js?v=4"></script>
 </body>
 </html>
