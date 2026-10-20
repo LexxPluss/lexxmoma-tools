@@ -15,10 +15,10 @@ const NOTIFY_TO = '';            // 依頼が来たら知らせる宛先(カン�
 const RATE_PER_MIN = 10;         // 全体で 1 分あたり受け付ける上限(いたずら対策)
 const HEAD = ['id', 'createdAt', 'status', 'company', 'dept', 'name', 'email', 'tel', 'timing',
               'channel', 'partner', 'partnerContact', 'sierRelations', 'message',
-              'total', 'quoteItems', 'items', 'terms', 'catalog', 'v'];
+              'total', 'body', 'extra', 'laterItems', 'items', 'terms', 'catalog', 'v'];
 
 // catalog.js の QUOTE_CHANNELS / QUOTE_TIMINGS と合わせる
-const CHANNEL = { direct: 'LexxPluss から直接', sier: 'SIer 経由', dealer: '商社・販売店経由', undecided: '未定・相談' };
+const CHANNEL = { direct: 'LexxPluss と直接', sier: 'SIer と', dealer: '商社・販売店を通して', undecided: '未定・相談' };
 const TIMING = { '': '', '3m': '3 か月以内', '6m': '半年以内', '1y': '1 年以内', later: '1 年以上先' };
 const LIMIT = { company: 100, dept: 100, name: 60, email: 120, tel: 30, partner: 100, partnerContact: 60, sierRelations: 200, message: 1500 };
 
@@ -68,7 +68,7 @@ function doPost(e) {
     sheet_().appendRow([
       id, new Date(), 'new', t.company, t.dept, t.name, t.email, t.tel, TIMING[d.timing] || '',
       CHANNEL[d.channel], t.partner, t.partnerContact, t.sierRelations, t.message,
-      Number(d.total) || 0, Number(d.quoteItems) || 0, items, terms, safe_(d.catalog, 20), Number(d.v) || 1,
+      Number(d.total) || 0, Number(d.body) || 0, Number(d.extra) || 0, Number(d.laterItems) || 0, items, terms, safe_(d.catalog, 20), Number(d.v) || 1,
     ]);
 
     if (NOTIFY_TO) {
@@ -81,9 +81,10 @@ function doPost(e) {
           '会社名: ' + t.company + (t.dept ? ' / ' + t.dept : ''),
           'お名前: ' + t.name, 'メール: ' + t.email, '電話: ' + t.tel,
           '導入時期: ' + (TIMING[d.timing] || '-'),
-          '商流: ' + CHANNEL[d.channel] + (t.partner ? '(' + t.partner + (t.partnerContact ? ' / ' + t.partnerContact : '') + ')' : ''),
+          '希望の販売経路: ' + CHANNEL[d.channel] + (t.partner ? '(' + t.partner + (t.partnerContact ? ' / ' + t.partnerContact : '') + ')' : ''),
           'お付き合いのある SIer: ' + (t.sierRelations || '-'), '',
-          '参考価格の合計(税抜): ¥' + (Number(d.total) || 0).toLocaleString() + (Number(d.quoteItems) ? '(ほかに個別見積 ' + d.quoteItems + ' 件)' : ''),
+          '合計(税別): ¥' + (Number(d.total) || 0).toLocaleString() + '(本体標準価格 ¥' + (Number(d.body) || 0).toLocaleString() + ' + 別途費用 ¥' + (Number(d.extra) || 0).toLocaleString() + ')' +
+            (Number(d.laterItems) ? ' ほかにヒアリング後に金額を出す項目 ' + d.laterItems + ' 件' : ''),
           '構成:', items, '', 'ご相談内容:', t.message || '-', '',
           '一覧: ' + SpreadsheetApp.getActiveSpreadsheet().getUrl(),
         ].join('\n'),
