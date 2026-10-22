@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LexxMoMa 3D 見積依頼 | LexxMoMa Tools</title>
+<meta name="description" content="3D の LexxMoMa にオプションを付けて、本体標準価格を確かめながら 3 ステップで LexxPluss に見積を依頼できます。">
+<link rel="icon" type="image/png" href="../assets/favicon.png">
+<script src="../assets/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=6">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<header class="lx-hdr">
+  <div class="lx-title">
+    <a class="lx-brand" href="../index.html" title="LexxMoMa Tools のトップへ"><img class="lx-logo" src="../assets/lexxpluss-logo.png" alt="LexxPluss"><span class="lx-wordmark">LexxMoMa</span></a>
+    <h1 class="lx-tool">3D 見積依頼</h1>
+  </div>
+  <span class="spacer"></span>
+  <button type="button" class="btn ghost sm" id="openPolicy">価格の考え方</button>
+  <button type="button" class="lx-theme-btn" data-lx-theme-toggle aria-label="ライト / ダーク切替"></button>
+</header>
+
+<main class="grid">
+  <!-- 左: 3 ステップの見積依頼 -->
+  <section class="panel flow" aria-label="見積依頼">
+    <ol class="stepper" id="stepper">
+      <li data-step="0"><button type="button"><b>1</b><span>本体</span></button></li>
+      <li data-step="1"><button type="button"><b>2</b><span>オプション</span></button></li>
+      <li data-step="2"><button type="button"><b>3</b><span>依頼を送る</span></button></li>
+    </ol>
+
+    <!-- ステップ 1: 本体 -->
+    <div class="step" id="step0">
+      <h2>本体を選ぶ</h2>
+      <div class="body-card">
+        <div class="body-head">
+          <span class="tag">標準商品</span>
+          <span class="body-name" id="bodyName">LexxMoMa 本体標準価格</span>
+        </div>
+        <div class="body-price"><b id="bodyPrice">¥0</b><span>/ 台(税別)</span></div>
+        <p class="body-note">設置・導入支援等の費用は含まれておりません。どの販売経路でご検討いただいても同じ価格です。</p>
+        <ul class="incl" id="bodyIncl"></ul>
+      </div>
+      <div class="row qty-row">
+        <span class="row-label">ロボットアーム</span>
+        <span class="seg" role="radiogroup" id="armSeg"></span>
+      </div>
+      <p class="hint" id="armNote" hidden></p>
+      <div class="row qty-row">
+        <span class="row-label">台数</span>
+        <span class="stepper-ctl" id="bodyQty"></span>
+      </div>
+    </div>
+
+    <!-- ステップ 2: オプション -->
+    <div class="step" id="step1" hidden>
+      <h2>必要なオプションを選ぶ</h2>
+      <p class="lead">わかる範囲で大丈夫です。迷うものは付けたままにして、ご相談内容でお知らせください。</p>
+      <div class="opts" id="opts"></div>
+      <div class="hearing">
+        <b>このほかの別途費用</b>
+        <p>次の項目は現場によって変わるため、このツールでは選びません。ヒアリングのうえ、別途費用として項目ごとにご提示します。</p>
+        <ul id="hearing"></ul>
+      </div>
+    </div>
+
+    <!-- ステップ 3: 依頼を送る -->
+    <form class="step" id="step2" novalidate hidden>
+      <h2>連絡先を入れて依頼を送る</h2>
+      <div class="test-note" id="testNote" hidden>テストモード: 送信先が未設定のため、送っても LexxPluss には届きません。</div>
+      <div class="fields">
+        <label class="field" for="fCompany"><span>会社名 <i>必須</i></span><input id="fCompany" name="company" required maxlength="100" autocomplete="organization"></label>
+        <label class="field" for="fName"><span>お名前 <i>必須</i></span><input id="fName" name="name" required maxlength="60" autocomplete="name"></label>
+        <label class="field" for="fEmail"><span>メールアドレス <i>必須</i></span><input id="fEmail" name="email" type="email" required maxlength="120" autocomplete="email"></label>
+      </div>
+      <fieldset class="channel">
+        <legend>どの経路で進めたいですか <i>必須</i></legend>
+        <p class="hint">価格はどの経路でも同じです。窓口となる担当を決めるために伺います。</p>
+        <div class="chips" id="channels"></div>
+      </fieldset>
+      <fieldset class="partners">
+        <legend>お付き合いのある会社(任意)</legend>
+        <p class="hint">わかれば教えてください。担当から連携してご連絡します。</p>
+        <label class="field" for="fSier"><span>SIer</span><input id="fSier" name="sier" maxlength="100" list="sierList" placeholder="会社名"></label>
+        <label class="field" for="fTrader"><span>商社</span><input id="fTrader" name="trader" maxlength="100" list="traderList" placeholder="会社名"></label>
+        <datalist id="sierList"></datalist>
+        <datalist id="traderList"></datalist>
+      </fieldset>
+      <label class="field" for="fMessage"><span>ご相談内容(任意)</span><textarea id="fMessage" name="message" rows="3" maxlength="1500" placeholder="例: 旋盤 2 台へのワーク供給。ワークは 3kg の鋳物。"></textarea></label>
+      <label class="hp" aria-hidden="true">website<input name="website" tabindex="-1" autocomplete="off"></label>
+      <p class="privacy" id="privacy">送信した内容は、お見積りとご連絡のためにのみ使います。</p>
+      <p class="err" id="err" role="alert"></p>
+    </form>
+
+    <!-- 送信後 -->
+    <div class="step done" id="done" hidden>
+      <span class="done-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+      <h2>見積依頼を受け付けました</h2>
+      <p>LexxPluss の担当から、ご入力のメールアドレスへご連絡します。</p>
+      <p class="done-id">受付番号 <b id="doneId"></b></p>
+      <button type="button" class="btn ghost" id="again">もう一度構成を選ぶ</button>
+    </div>
+
+    <div class="flow-nav" id="flowNav">
+      <button type="button" class="btn ghost" id="back">戻る</button>
+      <button type="button" class="btn primary" id="next">次へ</button>
+    </div>
+  </section>
+
+  <!-- 右上: 3D -->
+  <section class="panel view" aria-label="LexxMoMa の構成">
+    <div class="scene-bar">
+      <span class="scene-hint">ドラッグで回転・ホイールで拡大</span>
+      <button type="button" class="btn ghost sm" id="spin" aria-pressed="true">回転を止める</button>
+    </div>
+    <div class="garage" id="garage">
+      <canvas id="scene" aria-label="LexxMoMa の 3D モデル"></canvas>
+      <div class="garage-fallback" id="sceneFallback" hidden>3D を表示できませんでした。構成は左のステップで選べます。</div>
+      <div class="floats" id="floats" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <!-- 右下: お見積り内容 -->
+  <section class="panel summary" id="summary" aria-label="お見積り内容" aria-live="polite"></section>
+</main>
+
+<footer class="foot">
+  <span>正式なお見積りは、ご依頼をいただいたあと LexxPluss の担当からお送りします。金額はすべて税別です。</span>
+  <span>LexxMoMa 3D 見積依頼 / 株式会社LexxPluss</span>
+</footer>
+
+<!-- 価格の考え方(はじめに確認してもらう) -->
+<dialog class="policy" id="policy" aria-labelledby="policyTitle">
+  <div class="policy-body">
+    <p class="eyebrow">はじめに</p>
+    <h2 id="policyTitle">LexxMoMa の価格の考え方</h2>
+    <p class="policy-lead">LexxMoMa は、お客様ごとに設計し直すカスタム設備ではなく、標準化された一つの製品です。価格も次の考え方で一本化しています。</p>
+    <ol class="policy-list">
+      <li><b>本体は一つの価格です</b><span>LexxMoMa 本体標準価格 <em id="policyPrice"></em>(税別)。モバイルベース・ロボットアーム・制御システム・標準バッテリーを含みます。</span></li>
+      <li><b>本体と別途費用を分けてお見せします</b><span>設置・導入支援、工程設計、周辺設備との接続、ハンド・治具、安全設備、保守は本体に含まず、別途費用として項目ごとにご提示します。</span></li>
+      <li><b>どの販売経路でも同じ価格です</b><span>LexxPluss・SIer・商社のどこからご検討いただいても、本体標準価格は変わりません。条件のご相談は LexxPluss の窓口で承ります。</span></li>
+    </ol>
+    <p class="policy-how">このツールでは、本体とオプションを選んで 3 ステップで見積を依頼できます。正式なお見積りは、ご依頼のあと担当からお送りします。</p>
+    <div class="policy-ft">
+      <a class="btn ghost" href="../index.html">トップへ戻る</a>
+      <button type="button" class="btn primary" id="agree">理解して始める</button>
+    </div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="../assets/track.js" data-tool="quote"></script>
+<script src="catalog.js?v=5"></script>
+<script src="app.js?v=6"></script>
+<script type="module" src="scene.js?v=5"></script>
+</body>
+</html>
