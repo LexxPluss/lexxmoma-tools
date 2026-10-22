@@ -672,7 +672,7 @@
     // 掲載元の記録が無い会社(公式サイトURLだけが分かっている)は、公式サイトを掲載元として示す
     if (!srcs.length && c.website) srcs = [{ label: '各社公式サイト', url: c.website, retrievedAt: c.meta && c.meta.retrievedAt }];
     var fs = (c.meta && c.meta.fieldSources) || {};
-    var FIELD_LABEL = { hq: '本社所在地', website: '公式サイト', employees: '従業員数', founded: '設立', capital: '資本金', industries: '業種', processes: '得意な工程', phone: '電話' };
+    var FIELD_LABEL = { hq: '本社所在地', website: '公式サイト', employees: '従業員数', founded: '設立', capital: '資本金', industries: '業種', processes: '得意な工程', phone: '電話', clients: '取引先', description: '紹介文' };
     var fsRows = Object.keys(FIELD_LABEL).filter(function (k) { return fs[k]; }).map(function (k) {
       var p = fs[k];
       var kind = p.source === 'manual' ? '手動確認' : p.source === 'website' ? '公式サイト（会社概要）' : p.source === 'site-text' ? 'サイト本文の語彙から推定' : (SOURCE_LABEL[p.source] || p.label || p.source);
