@@ -281,6 +281,6 @@ makers:
       - {model: LexxMoMa, pattern: "\\bLexxMoMa\\b", class: 協働, payload: 20, mobile: true}
 # 型式が無くても区分の手がかりになる語(本文に明記されたときだけ採用)
 class_terms:
-  協働: [協働ロボット, 協働, 人協働, cobot, cobots, collaborative robot, collaborative robots, collaborative arm]
-  産業用: [産業用ロボット, 多関節ロボット, 6軸ロボット, industrial robot, industrial robots, 6-axis robot, six-axis robot, articulated robot, SCARA, scara, delta robot, parallel robot, palletizing robot]
-mobile_terms: [移動マニピュレータ, 自律移動マニピュレータ, AMR + アーム, AMRにアーム, mobile manipulator, mobile manipulators, mobile manipulation, mobile cobot, AMR with arm, arm on AMR, MoMa, autonomous mobile manipulator, cobot on AMR, robot on an AMR, mobile robot with arm]
+  協働: [協働ロボット, 協働, 人協働, cobot, cobots, collaborative robot, collaborative robots, collaborative arm, 协作机器人]
+  産業用: [産業用ロボット, 多関節ロボット, 6軸ロボット, industrial robot, industrial robots, 6-axis robot, six-axis robot, articulated robot, SCARA, scara, delta robot, parallel robot, palletizing robot, 工业机器人, 六轴机器人]
+mobile_terms: [移動マニピュレータ, 复合机器人, 自律移動マニピュレータ, AMR + アーム, AMRにアーム, mobile manipulator, mobile manipulators, mobile manipulation, mobile cobot, AMR with arm, arm on AMR, MoMa, autonomous mobile manipulator, cobot on AMR, robot on an AMR, mobile robot with arm]

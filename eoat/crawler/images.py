@@ -24,6 +24,7 @@ THUMB = DATA / "img" / "thumb"
 DETAIL = DATA / "img" / "detail"
 THUMB_PX, DETAIL_PX = 240, 400
 MAX_PER_CASE, MAX_TRY = 3, 7
+MIN_CLIP = 0.52   # 画像の中身判定(imgjudge): 「ハンドがワークを扱っている写真」らしさがこれ未満なら使わない
 _idx_lock = threading.Lock()
 
 
@@ -63,6 +64,12 @@ def check_image(data):
     st = ImageStat.Stat(rgb.resize((64, 64)))
     if max(st.stddev) < 12:
         return None, "ほぼ単色(ロゴ・プレースホルダ)"
+    # 左右(または上下)に単色の帯がある画像(動画の静止画など): 改変(切り抜き)はしない方針なので使わない
+    sm = rgb.resize((64, 64))
+    whole = max(ImageStat.Stat(sm).stddev)
+    for box in ((0, 0, 12, 64), (52, 0, 64, 64), (0, 0, 64, 12), (0, 52, 64, 64)):
+        if max(ImageStat.Stat(sm.crop(box)).stddev) < 8 and whole > 15:
+            return None, "縁に単色の帯(動画の静止画など)"
     return rgb, None
 
 
@@ -175,6 +182,14 @@ def process_case(rec, idx, policy, log, force=False, generic=None):
             continue   # 取得元の多くのページに出る共通画像(バナー・ロゴ)
         if face_fraction(RAW_IMG / r["file"]) > 0.04:
             continue   # 顔が主役の画像(インタビュー写真)は使わない
+        if "clip" not in r:   # 中身の判定(結果は index.json に残す)
+            import imgjudge
+            sc, lb = imgjudge.judge(RAW_IMG / r["file"])
+            with _idx_lock:
+                r["clip"] = sc
+                r["clip_label"] = lb
+        if r.get("clip") is not None and r["clip"] < MIN_CLIP:
+            continue   # 人物・建物・画面・図・車・AMR だけ などの写真
         im = Image.open(RAW_IMG / r["file"])
         im = ImageOps.exif_transpose(im).convert("RGB")
         tb, (tw, th) = shrink(im, THUMB_PX)
@@ -190,8 +205,10 @@ def process_case(rec, idx, policy, log, force=False, generic=None):
             "credit": (rec["sources"][0].get("publisher") or domain_of(page_url)) + f"({domain_of(page_url)})",
             "license_note": "著作権法47条の5(所在検索)に基づく縮小版。元の画像・ページは出典リンク先", "hand_bbox": None,
             "kind": "photo", "alt_ja": c.get("alt") or None, "retrieved_at": r["retrieved_at"], "policy": "stored",
-            "orig": {"w": r["w"], "h": r["h"]},
+            "orig": {"w": r["w"], "h": r["h"]}, "relevance": r.get("clip"),
         })
+    # 代表画像 = 「ハンドがワークを扱っている」らしさが最も高いもの
+    kept.sort(key=lambda k: -(k.get("relevance") or 0))
     rec["images"] = kept
     if kept:
         log.ok(page_url, f"画像 {len(kept)} 枚(試行 {tried})")
@@ -209,6 +226,9 @@ def main():
     idx = jload(IDX, {})
     policy = load_image_policy()
     log = RunLog("images")
+    import imgjudge
+    if imgjudge.available():
+        print("画像の中身判定: CLIP ViT-B/32 を使う")
     paths = sorted((DATA / "classified").glob("*.json"))
     recs = [jload(p) for p in paths]
     recs = [r for r in recs if not a.ids or r["id"] in a.ids]

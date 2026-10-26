@@ -32,6 +32,7 @@ site/members/eoat-db/  index.html app.js search.js style.css test/ui.test.cjs
 
 ```sh
 pip install -r eoat/crawler/requirements.txt      # + 顔検出に opencv-python-headless(任意。無ければ顔の除外を飛ばす)
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu && pip install open_clip_torch   # 画像の中身判定(任意。無ければ規則だけ)
 ```
 
 | 環境変数 | 用途 |
@@ -47,7 +48,10 @@ python discover.py                 # sources.yaml の一覧ページを巡回 �
 python crawl.py --workers 10       # 事例ページを取得 → raw/pages/(取得済みは再取得しない)
 python extract.py                  # 本文・見出し・画像候補・動画・年 → data/extracted/(noindex / noai は取り込まない)
 python classify.py --force         # 語彙との一致で分類 → data/classified/。事例でないページは data/rejected.json
-python images.py --workers 10      # 画像の取得・確認・縮小(240px / 400px WebP, EXIF 除去, phash) → raw/images/ と data/img/
+python images.py --workers 10      # 画像の取得・確認・縮小(240px / 400px WebP, EXIF 除去, phash, 顔検出, CLIP で中身判定) → raw/images/ と data/img/
+python llm_prep.py                 # LLM レビューの入力(data/llm_batches/)。レビューは llm_review_instructions.md の手順でサブエージェントが data/llm_out/ に書く
+python llm_merge.py                # レビューを分類結果に反映(method: inferred + 本文の引用)
+python sier_discover.py            # (任意)SIer DB 1,500 社の公式サイトから事例ページを発見して候補に足す → その後 crawl.py から
 python build.py --password …       # 重複除去 → 検証 → data/cases.json(平文)→ 暗号化データと画像パック(site/members/eoat-db/)→ 監査
 python -m unittest discover -s ../tests            # 受入テスト
 python ../tests/eval_queries.py                    # 検索の評価(precision@12 など)
@@ -116,6 +120,12 @@ python3 ../../scripts/serve.py 8750 &  EOAT_PW=… node ../tests/playwright_eval
 | 1 | パイロット: 取得元 28 件(うち巡回できたもの 25)・候補 894 ページ → 事例 143 件。OnRobot の共通バナーと安川のサイドバー定型文を除外(同じ取得元で繰り返す画像・段落)。顔検出で人物写真を除外 | 143 | 100% | 0.74 / 0.52 / 8.8 | — | — | 7.1 | 14 |
 | 2 | UR の本文が写真の説明欄になっていた(本文ブロックの選び方: 段落の最も多い候補を選び body の 6 割未満なら body)→ UR 19 → 70 件。OnRobot・Techman は JS 描画なので Chromium で描画して取得(render.js) | 218 | 100% | 0.46 / 0.39 / 22.5 | 0.787 | — | 11.2 | 13 |
 | 3 | 作業ツール(研磨・塗布…)は見出しに語があるときだけ付ける(UR の用途一覧の本文で誤って付いていた 21 件を除外)。傾向パネルで作業ツールを最後に。同義語「板」「木」「移動マニピュレータ(作業側)」を整理。パックを 400 KB・代表画像を先に詰め、残りのパックは最初の 24 枚が出てから取る | 191 | 100% | 0.70 / 0.46 / 8.2 | 0.803 | 画像 24% / 分類 20%(各 50 件) | 9.2 | 13 |
+
+| 4 | 画像の中身判定を入れた(CLIP ViT-B/32 のゼロショット: 「ハンドがワークを扱う写真」の確率 < 0.45 を除外 → 683 枚中 175 枚を除外。AMR だけ・工場全景・タブレットを見る人・肖像が主)。代表画像はこの確率が最も高いもの。ハンド製品辞書(ee_products.yaml 64 型式)で掴み方と可搬を補う | 194 | 100% | — | 0.809 | 画像 12% | 8.6 | 13 |
+| 5 | 分類の弱い一致を抑える(ワーク・掴み方とも「見出しに語がある」か「本文で 2 語以上」)。CLIP のしきい値 0.52、縁に単色の帯がある画像(動画の静止画)を除外。中国語の同義語 80 語 | 145 | 100% | — | 0.72 | 画像 10% / 分類 16% | 6.6 | 13 |
+
+ループ 5 の評価: 規則を厳しくすると件数が 194 → 145 に減り、検索の precision も下がる(当たる事例そのものが減る)。規則だけでは「本文に多くのワークが出る事例」を正しく読めないので、
+ループ 6 からは **規則で候補を集め、公開する事例だけ LLM(サブエージェント)で確認する**(llm_prep.py → data/llm_batches → レビュー → llm_merge.py。値は method: inferred と本文の引用付き)。
 
 ループ 3 回目の時点の未達(フェーズ 2 で直す順): 画像の関連性(人物・工場全景・画面写真が 24%: 画像の内容判定が無い → 軽量な画像分類モデルか、alt の無い og 画像を使わない規則)、
 分類の誤り(20%: 製品ページの定型語と用途一覧 → 取得元ごとの抽出規則)、可搬重量の不明 50%(ハンド製品の可搬から推定する規則)、Fast 3G 8.2 秒(data.enc の復号 2.3 秒 + 最初のパック 400 KB → fieldSources の証拠文を短くする・パックを 200 KB に)、

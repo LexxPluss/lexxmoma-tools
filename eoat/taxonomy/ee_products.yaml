@@ -1,0 +1,68 @@
+# ハンド製品の型式 → メーカー・掴み方・可搬重量(kg)。本文に型式が出たときに使う(可搬は公開カタログの定格。ワークの重さが書かれていないときの推定に使い、根拠に「ハンドの可搬から」と残す)。
+# pattern は正規表現(大文字小文字を区別しない)。長い pattern を先に試す。
+products:
+  - {maker: Robotiq, model: 2F-85, pattern: "\\b2F-?85\\b", principle: parallel2, payload: 5}
+  - {maker: Robotiq, model: 2F-140, pattern: "\\b2F-?140\\b", principle: parallel2, payload: 2.5}
+  - {maker: Robotiq, model: Hand-E, pattern: "\\bHand-?E\\b", principle: parallel2, payload: 5}
+  - {maker: Robotiq, model: 3-Finger Adaptive, pattern: "\\b3-Finger Adaptive\\b", principle: parallel3, payload: 10}
+  - {maker: Robotiq, model: AirPick, pattern: "\\bAirPick\\b", principle: single_pad, payload: 7}
+  - {maker: Robotiq, model: EPick, pattern: "\\bEPick\\b", principle: single_pad, payload: 7}
+  - {maker: Robotiq, model: PE10, pattern: "\\bPE10\\b", principle: multi_pad, payload: 10}
+  - {maker: Robotiq, model: PE20, pattern: "\\bPE20\\b", principle: multi_pad, payload: 20}
+  - {maker: Robotiq, model: AX10, pattern: "\\bAX10\\b", principle: multi_pad, payload: 10}
+  - {maker: Robotiq, model: AX20, pattern: "\\bAX20\\b", principle: multi_pad, payload: 20}
+  - {maker: Robotiq, model: Palletizing Solution, pattern: "\\bRobotiq Palletizing Solution\\b|\\bPalletizing Solution\\b", principle: multi_pad, payload: 20}
+  - {maker: OnRobot, model: RG2, pattern: "\\bRG2(-FT)?\\b", principle: parallel2, payload: 2}
+  - {maker: OnRobot, model: RG6, pattern: "\\bRG6\\b", principle: parallel2, payload: 6}
+  - {maker: OnRobot, model: 2FG7, pattern: "\\b2FG7\\b", principle: parallel2, payload: 7}
+  - {maker: OnRobot, model: 2FGP20, pattern: "\\b2FGP20\\b", principle: parallel2, payload: 20}
+  - {maker: OnRobot, model: 2FG14, pattern: "\\b2FG14\\b", principle: parallel2, payload: 14}
+  - {maker: OnRobot, model: 3FG15, pattern: "\\b3FG15\\b", principle: parallel3, payload: 15}
+  - {maker: OnRobot, model: 3FG25, pattern: "\\b3FG25\\b", principle: parallel3, payload: 25}
+  - {maker: OnRobot, model: VG10, pattern: "\\bVG10\\b", principle: multi_pad, payload: 15}
+  - {maker: OnRobot, model: VGC10, pattern: "\\bVGC10\\b", principle: multi_pad, payload: 15}
+  - {maker: OnRobot, model: VGP20, pattern: "\\bVGP20\\b", principle: multi_pad, payload: 20}
+  - {maker: OnRobot, model: VGP30, pattern: "\\bVGP30\\b", principle: multi_pad, payload: 30}
+  - {maker: OnRobot, model: MG10, pattern: "\\bMG10\\b", principle: electropermanent, payload: 10}
+  - {maker: OnRobot, model: Soft Gripper, pattern: "\\bOnRobot Soft Gripper\\b|\\bSG-[A-Z]\\d{2}", principle: soft_finger, payload: 2.2}
+  - {maker: OnRobot, model: Gecko Gripper, pattern: "\\bGecko Gripper\\b|\\bGecko SP\\d\\b", principle: magnet_vacuum, payload: 6.5}
+  - {maker: OnRobot, model: Screwdriver, pattern: "\\bOnRobot Screwdriver\\b", principle: screwdriver, payload: null}
+  - {maker: OnRobot, model: Sander, pattern: "\\bOnRobot Sander\\b", principle: sanding, payload: null}
+  - {maker: SCHUNK, model: Co-act EGP-C, pattern: "\\bCo-act EGP-?C\\b|\\bEGP-C\\b", principle: parallel2, payload: 2.25}
+  - {maker: SCHUNK, model: EGU, pattern: "\\bEGU\\b", principle: parallel2, payload: 8}
+  - {maker: SCHUNK, model: EGK, pattern: "\\bEGK\\b", principle: parallel2, payload: 3}
+  - {maker: SCHUNK, model: EGL, pattern: "\\bEGL\\b", principle: parallel2, payload: 8}
+  - {maker: SCHUNK, model: PGN-plus, pattern: "\\bPGN-?plus\\b", principle: parallel2, payload: null}
+  - {maker: SCHUNK, model: PZN-plus, pattern: "\\bPZN-?plus\\b", principle: parallel3, payload: null}
+  - {maker: SCHUNK, model: EMH, pattern: "\\bEMH\\b", principle: electropermanent, payload: null}
+  - {maker: Schmalz, model: ECBPi, pattern: "\\bECBPi\\b", principle: single_pad, payload: 7}
+  - {maker: Schmalz, model: ECBPMi, pattern: "\\bECBPMi\\b", principle: single_pad, payload: 5}
+  - {maker: Schmalz, model: FXCB, pattern: "\\bFXCB\\b", principle: area, payload: 10}
+  - {maker: Schmalz, model: FMCB, pattern: "\\bFMCB\\b", principle: area, payload: 10}
+  - {maker: Schmalz, model: FXP, pattern: "\\bFXP\\b", principle: area, payload: null}
+  - {maker: Schmalz, model: FMP, pattern: "\\bFMP\\b", principle: area, payload: null}
+  - {maker: Schmalz, model: SSP-HD, pattern: "\\bSSP-?HD\\b", principle: area, payload: null}
+  - {maker: Schmalz, model: mGrip, pattern: "\\bmGrip\\b", principle: soft_finger, payload: 2}
+  - {maker: Schmalz, model: SNG, pattern: "\\bSNG\\b", principle: needle, payload: null}
+  - {maker: Piab, model: piCOBOT L, pattern: "\\bpiCOBOT ?L\\b", principle: single_pad, payload: 16}
+  - {maker: Piab, model: piCOBOT, pattern: "\\bpiCOBOT\\b", principle: single_pad, payload: 7}
+  - {maker: Piab, model: piSOFTGRIP, pattern: "\\bpiSOFTGRIP\\b", principle: soft_finger, payload: 1}
+  - {maker: Piab, model: Kenos KCS, pattern: "\\bKenos\\b|\\bKCS\\b", principle: area, payload: null}
+  - {maker: Zimmer Group, model: HRC-03, pattern: "\\bHRC-?03\\b", principle: parallel2, payload: 3}
+  - {maker: Zimmer Group, model: HRC-05, pattern: "\\bHRC-?05\\b", principle: parallel2, payload: 5}
+  - {maker: Zimmer Group, model: GEH6000IL, pattern: "\\bGEH\\d{4}", principle: parallel2, payload: null}
+  - {maker: Zimmer Group, model: GEP, pattern: "\\bGEP\\d{4}", principle: parallel2, payload: null}
+  - {maker: Soft Robotics, model: mGrip, pattern: "\\bSoft Robotics mGrip\\b", principle: soft_finger, payload: 2}
+  - {maker: Weiss Robotics, model: CRG, pattern: "\\bCRG ?\\d{2,3}", principle: parallel2, payload: 5}
+  - {maker: Weiss Robotics, model: GRIPKIT, pattern: "\\bGRIPKIT\\b", principle: parallel2, payload: 5}
+  - {maker: DH-Robotics, model: AG-95, pattern: "\\bAG-?95\\b", principle: parallel2, payload: 3}
+  - {maker: DH-Robotics, model: PGC-140, pattern: "\\bPGC-?140\\b", principle: parallel2, payload: 4}
+  - {maker: DH-Robotics, model: PGE-50, pattern: "\\bPGE-?50\\b", principle: parallel2, payload: 1}
+  - {maker: Festo, model: DHEF, pattern: "\\bDHEF\\b", principle: adaptive, payload: null}
+  - {maker: Festo, model: DHAS FinRay, pattern: "\\bDHAS\\b", principle: soft_finger, payload: null}
+  - {maker: Gimatic, model: MPBM, pattern: "\\bMPBM\\b", principle: parallel2, payload: null}
+  - {maker: Applied Robotics, model: Smart Vacuum, pattern: "\\bSmart Vacuum\\b", principle: single_pad, payload: null}
+  - {maker: Magswitch, model: Magswitch, pattern: "\\bMagswitch\\b", principle: electropermanent, payload: null}
+  - {maker: Kosmek, model: SWR, pattern: "\\bSWR\\d{3}", principle: tool_changer, payload: null}
+  - {maker: ATI, model: QC-11, pattern: "\\bQC-?\\d{2,3}\\b", principle: tool_changer, payload: null}
+  - {maker: Universal Robots, model: UR Palletizing, pattern: "\\bPalletizing Solution by UR\\b", principle: multi_pad, payload: 20}

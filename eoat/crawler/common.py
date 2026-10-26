@@ -210,10 +210,13 @@ class RunLog:
 
 # ---------------------------------------------------------------- 取得元
 def load_sources():
+    """sources.yaml の取得元 + sier_discover.py が見つけた SIer の事例ページ(data/sier_sources.json, key は "sier:<id>")。"""
     src = yload(HERE / "sources.yaml")
     out = {}
     for s in src["sources"]:
         out[s["key"]] = s
+    for k, s in (jload(DATA / "sier_sources.json", {}) or {}).items():
+        out[k] = dict(s, status="ok")
     return out
 
 

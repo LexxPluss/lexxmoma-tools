@@ -381,6 +381,108 @@ sources:
     article: "^https://www\\.robotics247\\.com/article/[^/?#]+$"
     status: ok
     checked: 2026-10-26
+  # ---------------------------------------------------------------- フェーズ 2 で追加(2026-10-26 調査)
+  - key: kawasaki_en
+    label: Kawasaki Robotics 導入事例(英語・米国)
+    type: maker_robot
+    case_type: sier_case
+    region: 北米
+    country: 米国
+    lang: en
+    index_urls: ["https://kawasakirobotics.com/case-studies/"]
+    article: "^https://kawasakirobotics\\.com/case-studies/[^/?#]+/$"
+    status: ok
+    checked: 2026-10-26
+  - key: kawasaki_emea
+    label: Kawasaki Robotics 導入事例(欧州)
+    type: maker_robot
+    case_type: sier_case
+    region: 欧州
+    country: ドイツ
+    lang: en
+    index_urls: ["https://kawasakirobotics.com/emea/case-studies/"]
+    article: "^https://kawasakirobotics\\.com/emea/case-studies/[^/?#]+/$"
+    status: ok
+    checked: 2026-10-26
+  - key: motoman
+    label: Yaskawa Motoman(米国) 事例
+    type: maker_robot
+    case_type: sier_case
+    region: 北米
+    country: 米国
+    lang: en
+    index_urls: ["https://www.motoman.com/en-us/about/media-center/case-studies"]
+    article: "^https://www\\.motoman\\.com/(en-us/)?about/media-center/case-studies/[^/?#]+$"
+    status: ok
+    checked: 2026-10-26
+  - key: kassow
+    label: Kassow Robots 事例(use cases)
+    type: maker_robot
+    case_type: sier_case
+    region: 欧州
+    country: デンマーク
+    lang: en
+    index_urls: ["https://www.kassowrobots.com/use-cases"]
+    article: "^https://www\\.kassowrobots\\.com/use-cases/[^/?#]+$"
+    status: ok
+    checked: 2026-10-26
+  - key: aubo_cn
+    label: AUBO 応用事例(中国語)
+    type: maker_robot
+    case_type: maker_product
+    region: 中国
+    country: 中国
+    lang: zh
+    index_urls: ["https://www.aubo-robotics.cn/application"]
+    article: "^https://www\\.aubo-robotics\\.cn/application/\\d+\\.html$"
+    status: ok
+    checked: 2026-10-26
+  - key: ifr
+    label: IFR(国際ロボット連盟) 事例
+    type: public
+    case_type: sier_case
+    region: 欧州
+    country: ドイツ
+    lang: en
+    index_urls: ["https://ifr.org/case-studies"]
+    paginate: "https://ifr.org/case-studies?page={n}"
+    max_pages: 6
+    article: "^https://ifr\\.org/case-studies/[^/?#]+$"
+    status: ok
+    checked: 2026-10-26
+  - key: rri
+    label: ロボット革命・産業IoTイニシアティブ協議会 ユースケース
+    type: public
+    case_type: sier_case
+    region: 日本
+    country: 日本
+    lang: ja
+    index_urls: ["https://www.jmfrri.gr.jp/usecase/"]
+    article: "^https://www\\.jmfrri\\.gr\\.jp/usecase/[^/?#]+/?$"
+    status: ok
+    checked: 2026-10-26
+  - key: mechmind_ind
+    label: Mech-Mind 業種別事例
+    type: sier
+    case_type: sier_case
+    region: 中国
+    country: 中国
+    lang: en
+    index_urls: ["https://www.mech-mind.com/casestudies/automotive.html", "https://www.mech-mind.com/casestudies/electronics.html", "https://www.mech-mind.com/casestudies/evbattery.html", "https://www.mech-mind.com/casestudies/logistics.html", "https://www.mech-mind.com/casestudies/steel.html", "https://www.mech-mind.com/casestudies/machinery.html"]
+    article: "^https://www\\.mech-mind\\.com/cases/[^/?#]+$"
+    status: ok
+    checked: 2026-10-26
+  - key: fanuc_jp_academia
+    label: ファナック アカデミア 事例(日本語)
+    type: maker_robot
+    case_type: research
+    region: 日本
+    country: 日本
+    lang: ja
+    index_urls: ["https://www.fanuc.co.jp/ja/product/robot/academia/index.html"]
+    article: "^https://www\\.fanuc\\.co\\.jp/ja/product/robot/academia/case_study/[^/?#]+\\.html$"
+    status: ok
+    checked: 2026-10-26
   # ---------------------------------------------------------------- 調査済みで使えないもの(理由を残す)
   - key: therobotreport
     label: The Robot Report
@@ -423,4 +525,22 @@ sources:
     type: public
     status: todo
     note: "メンテナンス中(503)。後日再調査"
+    checked: 2026-10-26
+  - key: ur_other_langs
+    label: Universal Robots 事例(韓国語・独・仏・西)
+    type: maker_robot
+    status: skip
+    note: "英語・日本語と同じ事例の翻訳(画像が同じ)なので入れない(重複判定で束ねられる)"
+    checked: 2026-10-26
+  - key: nachi_mitsubishi_epson_yamaha_daihen
+    label: 不二越・三菱電機・エプソン・ヤマハ・ダイヘン 事例
+    type: maker_robot
+    status: todo
+    note: "事例ページの URL が見つからない(推測 URL は 404)。サイト内検索か Web 検索で再調査"
+    checked: 2026-10-26
+  - key: cn_others
+    label: Geek+ / Dorabot / Rokae / Hanwha
+    type: sier
+    status: blocked
+    note: "526 / 接続不可 / 404"
     checked: 2026-10-26

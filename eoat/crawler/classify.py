@@ -92,6 +92,9 @@ class Taxonomy:
                                     "plen": len(m["pattern"])})
         self.models.sort(key=lambda m: -m["plen"])
         self.makers = [(mk["name"], mk.get("aliases", [mk["name"]]), mk.get("class")) for mk in self.robots["makers"]]
+        # ハンド製品の型式 → メーカー・掴み方・可搬(taxonomy/ee_products.yaml)。長い pattern を先に
+        self.products = [dict(p, re=re.compile(p["pattern"], re.I)) for p in yload(TAXONOMY / "ee_products.yaml")["products"]]
+        self.products.sort(key=lambda p: -len(p["pattern"]))
 
     def payload_of(self, maker, model):
         for m in self.models:
@@ -158,12 +161,18 @@ def classify_one(rec, tx, cleaned=None):
     def src(method, evidence):
         return {"source": src_idx, "method": method, "evidence": evidence}
 
-    cats = scored(title_side, body, tx.cat_items, lambda it: it[1]["key"], lambda it: it[1]["terms"], keep=3, min_score=2)
+    cats = scored(title_side, body, tx.cat_items, lambda it: it[1]["key"], lambda it: it[1]["terms"], keep=4, min_score=2)
     cats = [c for c in cats if c[0] != "generic"]
+    # 本文だけの弱い一致(語 1 つが 2〜3 回)はワークとして付けない: 見出し側に語があるか、本文で 2 つ以上の異なる語が出ているときだけ
+    cat_terms = {it["key"]: it["terms"] for _, it in tx.cat_items}
+    # (ループ 6 から: 規則は候補を広く集める役。精度は LLM レビュー(llm_prep / llm_merge)で担保するので、ここでは見出しか 2 語以上か 3 点以上)
+    cats = [c for c in cats if count_terms(title_side, cat_terms[c[0]]) or len(c[2]) >= 2 or c[1] >= 3][:3]
     prs = scored(title_side, body, tx.pr_items, lambda it: it[1]["key"], lambda it: it[1]["terms"], keep=4, min_score=2)
     # 作業ツール(溶接トーチ・研磨・塗布…)は、用途一覧の本文に出るだけでは付けない(見出し・説明に語があるときだけ)
     pr_terms = {it["key"]: it["terms"] for _, it in tx.pr_items}
-    prs = [p for p in prs if tx.pr_group[p[0]] != "process" or count_terms(title_side, pr_terms[p[0]])][:3]
+    prs = [p for p in prs if tx.pr_group[p[0]] != "process" or count_terms(title_side, pr_terms[p[0]])]
+    # 掴み方も同じ: 見出し側に語があるか、本文で 2 つ以上の異なる語(または 1 語でも 4 回以上)
+    prs = [p for p in prs if count_terms(title_side, pr_terms[p[0]]) or len(p[2]) >= 2 or p[1] >= 3][:3]
     tasks = scored(title_side, body, tx.tasks, lambda t: t["key"], lambda t: t["terms"], keep=3, min_score=2)
     mats = scored(title_side, body, tx.materials, lambda m: m["key"], lambda m: m["terms"], keep=3, min_score=2)
     # 食品カテゴリなら材料は食品、段ボールなら紙 のような整合
@@ -215,6 +224,27 @@ def classify_one(rec, tx, cleaned=None):
     if robot["maker"] and not robot["form"]:
         robot["form"] = "垂直多関節"
 
+    ee_maker, ee_model, ee_payload = None, None, None
+    # ハンドの製品型式(ee_products.yaml): 本文に出れば メーカー・型式・掴み方・可搬 の根拠になる
+    prod = None
+    for p in tx.products:
+        mm = p["re"].search(raw_full)
+        if mm:
+            prod = p
+            ee_maker, ee_model, ee_payload = p["maker"], p["model"], p.get("payload")
+            fs["end_effector.model"] = src("pattern", [mm.group(0)])
+            if p["principle"] not in [k for k, _, _ in prs]:
+                prs.insert(0, (p["principle"], 6.0, [mm.group(0)]))
+            elif prs and prs[0][0] != p["principle"]:
+                prs.sort(key=lambda x: x[0] != p["principle"])   # 製品が示す掴み方を先頭に
+            break
+    if not ee_maker:
+        EE_MAKERS = {"robotiq": "Robotiq", "onrobot": "OnRobot", "schunk": "SCHUNK", "schmalz": "Schmalz", "piab": "Piab", "zimmer": "Zimmer Group", "weiss": "Weiss Robotics", "softgripping": "SoftGripping"}
+        for k, name in EE_MAKERS.items():
+            if k in rec.get("sources", []) or count_terms(full, [name]):
+                ee_maker = name
+                break
+
     # 重量: ワークの重さ(文脈付き)→ 無ければロボットの可搬
     mass = workpiece_mass(rec.get("text") or "")
     if mass:
@@ -226,6 +256,9 @@ def classify_one(rec, tx, cleaned=None):
     elif robot["payload_kg"]:
         pl = payload_class(robot["payload_kg"])
         fs["payload_class"] = src("derived", [f"ロボットの可搬 {robot['payload_kg']} kg から"])
+    elif ee_payload:
+        pl = payload_class(ee_payload)
+        fs["payload_class"] = src("derived", [f"ハンド {ee_model} の可搬 {ee_payload} kg から"])
     else:
         pl = "不明"
 
@@ -237,21 +270,6 @@ def classify_one(rec, tx, cleaned=None):
     sens = [(k, list(h)[:3]) for k, v in SENSORS.items() if (h := count_terms(full, v))]
     drives = sorted([(k, sum(h.values())) for k, v in DRIVE.items() if (h := count_terms(full, v))], key=lambda x: -x[1])
     custom_hit = count_terms(full, CUSTOM)
-
-    ee_maker, ee_model = None, None
-    # ハンドのメーカー・型式: 取得元がハンドメーカーならそのメーカー。型式は掴み方の証拠語から製品名らしいもの
-    EE_MAKERS = {"robotiq": "Robotiq", "onrobot": "OnRobot", "schunk": "SCHUNK", "schmalz": "Schmalz", "piab": "Piab", "zimmer": "Zimmer Group", "weiss": "Weiss Robotics", "softgripping": "SoftGripping"}
-    for k, name in EE_MAKERS.items():
-        if k in rec.get("sources", []) or count_terms(full, [name]):
-            ee_maker = name
-            break
-    for key, sc, ev in prs:
-        for t in ev:
-            if re.search(r"[A-Z0-9]", t) and re.search(r"\d|-", t) and len(t) <= 14 and t not in ("3D", "2D"):
-                ee_model = t
-                break
-        if ee_model:
-            break
 
     case_type = rec.get("case_type") or "sier_case"
     if custom_hit and case_type != "research":
@@ -288,7 +306,7 @@ def classify_one(rec, tx, cleaned=None):
         fs["end_effector.sensors"] = src("keyword", [f"{k}: {', '.join(e)}" for k, e in sens])
     if ee_maker:
         fs["end_effector.maker"] = src("keyword", [ee_maker])
-    if ee_model:
+    if ee_model and "end_effector.model" not in fs:
         fs["end_effector.model"] = src("keyword", [ee_model])
     if custom_hit:
         fs["end_effector.is_custom"] = src("keyword", list(custom_hit)[:3])
