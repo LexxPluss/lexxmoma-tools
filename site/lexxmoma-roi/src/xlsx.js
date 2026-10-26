@@ -227,7 +227,7 @@ ${o.extra || ''}
     heights[1] = 26;
     if (now) { str(2, 1, '出力 ' + CSV.fmtDateTime(now), S.stamp); merges.push('C1:D1'); }
     str(0, 2, '黄色のセルに入力してください（金額の単位は万円）。「使うモード」がライト／精緻の行は、B4 のモードで計算するときだけ使われます。'
-      + 'このファイルは ROI 計算ツールの「Excel読み込み」でそのまま読み込めます（E列のキーは変更しないでください）。', S.note);
+      + 'このファイルは回収シミュレーターの「Excel読み込み」でそのまま読み込めます（E列のキーは変更しないでください）。', S.note);
     merges.push('A2:D2'); heights[2] = 54;
     const HEAD = 3;
     ['項目', '値', '単位', '使うモード', 'キー'].forEach((h, i) => str(i, HEAD, h, S.head));
@@ -322,7 +322,7 @@ ${o.extra || ''}
     str(G, 9, 'NPV（正味現在価値）', S.resLabel); fml(H, 9, `IF(OR(${V.rate}="",${V.capex}<=0),"—",-${V.capex}+SUM(M${T1 + 1}:M${TN}))`, S.man); str(I, 9, '万円', S.unit);
 
     const foot = TN + 2;
-    str(G, foot, '本シートの計算結果は概算であり、正式な見積・提案とは異なります。計算式は ROI 計算ツールと同じです。', S.footer);
+    str(G, foot, '本シートの計算結果は概算であり、正式な見積・提案とは異なります。計算式は回収シミュレーターと同じです。', S.footer);
     merges.push(`G${foot}:K${foot}`);
 
     // 投資回収年数の色分け（稟議基準）
@@ -361,7 +361,7 @@ ${o.extra || ''}
     const sh = newSheet();
     const { str, numc } = sh;
     str(0, 1, 'シナリオ A/B 比較', S.title); sh.heights[1] = 26;
-    str(0, 2, 'ROI 計算ツールで「シナリオA／Bに保存」した時点の値です（このシートは再計算しません。入力を変えて試すときは「入力・計算」シートで）。', S.footer);
+    str(0, 2, '回収シミュレーターで「シナリオA／Bに保存」した時点の値です（このシートは再計算しません。入力を変えて試すときは「入力・計算」シートで）。', S.footer);
     let r = 4;
     ['項目', 'シナリオA', 'シナリオB', '単位'].forEach((h, i) => str(i, r, h, S.head)); r++;
     const pb = x => x.result.error ? '—' : (x.result.paybackYears === null ? '未回収' : x.result.paybackYears);

@@ -39,9 +39,10 @@ h1, h2, h3 { margin: 0; font-weight: 700; }
 /* LexxMoMa Tools 共通ヘッダー(.lx-hdr / .lx-wordmark / .lx-tool, ../../assets/theme.js)と同じ値。theme.js が無い単体表示でも同じ見た目にする */
 .hdr .brand .logo, .hdr .brand h1 { font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", Meiryo, system-ui, sans-serif; }
 .hdr .brand .logo { color: var(--primary); font-weight: 800; font-size: 20px; letter-spacing: .02em; }
-.hdr .brand h1 { font-size: 16px; font-weight: 600; }
+.hdr .brand h1 { font-size: 16px; font-weight: 600; min-width: 0; } /* 長いツール名はロゴに重ならず折り返す */
+.hdr .brand .corp-link { flex-shrink: 0; }
 .hdr .spacer { flex: 1; }
-.mode-toggle { display: inline-flex; border: 1px solid var(--primary); border-radius: 999px; overflow: hidden; }
+.mode-toggle { display: inline-flex; border: 1px solid var(--primary); border-radius: 999px; overflow: hidden; flex-shrink: 0; }
 .mode-toggle button { background: #fff; border: 0; padding: 6px 18px; color: var(--primary); font-weight: 600; }
 .mode-toggle button.on { background: var(--primary); color: #fff; }
 .scn { display: flex; align-items: center; gap: 8px; color: var(--muted); }
