@@ -6,7 +6,7 @@
   --shadow:0 2px 6px rgba(16,32,48,.08),0 12px 32px rgba(16,32,48,.10); --r:12px;
   --img-bg:#e9eef3;
   /* 掴み方の大分類の色(機能で分ける: 機械式=青 / 吸着=緑 / 磁石=橙 / ソフト=紫 / 複合=青緑 / 作業ツール=灰) */
-  --g-mech:#0068B7; --g-vacuum:#3EB370; --g-magnet:#E8A33D; --g-soft:#7B61C9; --g-combo:#2BA6B8; --g-process:#8a99a8;
+  --g-mech:#0068B7; --g-vacuum:#3EB370; --g-magnet:#E8A33D; --g-soft:#7B61C9; --g-combo:#2BA6B8; --g-process:#8a99a8; --g-unknown:#b8c2cc;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
@@ -14,7 +14,7 @@
     --bg:#0f1519; --panel:#171f26; --panel-2:#1e2831; --line:#2b3741;
     --text:#e7edf2; --muted:#a3b1bd; --faint:#6f7e8b; --warn:#f0b840; --danger:#f07a9a;
     --shadow:0 2px 6px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.4); --img-bg:#111820;
-    --g-mech:#5aa8e6; --g-vacuum:#5fcb8a; --g-magnet:#f0b840; --g-soft:#a08ee0; --g-combo:#4cc3d4; --g-process:#6f7e8b;
+    --g-mech:#5aa8e6; --g-vacuum:#5fcb8a; --g-magnet:#f0b840; --g-soft:#a08ee0; --g-combo:#4cc3d4; --g-process:#6f7e8b; --g-unknown:#55636f;
     color-scheme:dark;
   }
 }
@@ -23,7 +23,7 @@
   --bg:#0f1519; --panel:#171f26; --panel-2:#1e2831; --line:#2b3741;
   --text:#e7edf2; --muted:#a3b1bd; --faint:#6f7e8b; --warn:#f0b840; --danger:#f07a9a;
   --shadow:0 2px 6px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.4); --img-bg:#111820;
-  --g-mech:#5aa8e6; --g-vacuum:#5fcb8a; --g-magnet:#f0b840; --g-soft:#a08ee0; --g-combo:#4cc3d4; --g-process:#6f7e8b;
+  --g-mech:#5aa8e6; --g-vacuum:#5fcb8a; --g-magnet:#f0b840; --g-soft:#a08ee0; --g-combo:#4cc3d4; --g-process:#6f7e8b; --g-unknown:#55636f;
   color-scheme:dark;
 }
 *{box-sizing:border-box}

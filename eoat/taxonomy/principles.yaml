@@ -106,3 +106,10 @@ groups:
       - key: camera
         label: 検査(カメラ・センサ)
         terms: [検査カメラ, 外観検査, 計測ヘッド, inspection camera, vision inspection, measuring head, probe]
+  - key: unknown
+    label: 記載なし(写真で確認)
+    pictogram: parallel
+    items:
+      - key: hand_unspecified
+        label: ハンド(種類の記載なし)
+        terms: [ロボットハンド, 専用ハンド, ハンド部, ハンドを, ハンドで, ハンドの, エンドエフェクタ, エンドエフェクター, 把持, つかむ, 掴む, つかみ, gripper, grippers, end effector, end-effector, end-of-arm tooling, EOAT, gripping, grasp, grasping, 夹爪, 抓手, 末端执行器]

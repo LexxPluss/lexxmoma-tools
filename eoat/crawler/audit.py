@@ -60,6 +60,7 @@ def run(plain, check_links=False):
         "image_stored_rate": rate(with_img, len(stored)), "images_total": len(imgs), "image_attribution_coverage": rate(attr, len(imgs)),
         "field_source_coverage": rate(fs_have, fs_need),
         "category_rate": rate(sum(1 for c in cases if c["workpiece"]["categories"]), n), "principle_rate": rate(sum(1 for c in cases if c["end_effector"]["principles"]), n),
+        "principle_known_rate": rate(sum(1 for c in cases if c["end_effector"]["principles"] and c["end_effector"]["principles"][0] != "hand_unspecified"), n),
         "robot_class_rate": rate(sum(1 for c in cases if c["robot"].get("class")), n), "material_rate": rate(sum(1 for c in cases if c["workpiece"]["materials"]), n),
         "payload_rate": rate(sum(1 for c in cases if c["payload_class"] != "不明"), n), "task_rate": rate(sum(1 for c in cases if c["tasks"]), n),
         "needs_review_rate": rate(sum(1 for c in cases if c["quality"]["needs_review"]), n),

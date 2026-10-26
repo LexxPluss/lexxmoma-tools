@@ -181,7 +181,8 @@
     });
     var out = Object.keys(groups).map(function (k) { return groups[k]; }).filter(function (g) { return g.n > 0; });
     // 作業ツール(把持以外)は「掴み方」ではないので、件数に関わらず最後に置く
-    out.sort(function (a, b) { return ((a.key === 'process') - (b.key === 'process')) || (b.n - a.n); });
+    var last = function (g) { return g.key === 'process' ? 2 : g.key === 'unknown' ? 1 : 0; };
+    out.sort(function (a, b) { return (last(a) - last(b)) || (b.n - a.n); });
     out.forEach(function (g) { g.pct = total ? Math.round(g.n / total * 100) : 0; g.sub = Object.keys(g.items).map(function (k) { return { key: k, label: labelOf(tax, 'principle', k), n: g.items[k] }; }).sort(function (a, b) { return b.n - a.n; }); });
     return { total: total, groups: out };
   }

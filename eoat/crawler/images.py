@@ -68,8 +68,9 @@ def check_image(data):
     sm = rgb.resize((64, 64))
     whole = max(ImageStat.Stat(sm).stddev)
     for box in ((0, 0, 12, 64), (52, 0, 64, 64), (0, 0, 64, 12), (0, 52, 64, 64)):
-        if max(ImageStat.Stat(sm.crop(box)).stddev) < 8 and whole > 15:
-            return None, "縁に単色の帯(動画の静止画など)"
+        st2 = ImageStat.Stat(sm.crop(box))
+        if max(st2.stddev) < 8 and max(st2.mean) < 40 and whole > 15:   # 黒い帯だけ(白背景の製品写真は残す)
+            return None, "縁に黒い帯(動画の静止画など)"
     return rgb, None
 
 

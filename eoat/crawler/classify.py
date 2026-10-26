@@ -277,6 +277,8 @@ def classify_one(rec, tx, cleaned=None):
     if rec.get("source_type") == "custom":
         case_type = "user_custom"
 
+    # 掴み方の種類が書かれていない(「ロボットハンド」「把持」とだけある)事例: 「記載なし(写真で確認)」として残す。種類が分かるものが 1 つでもあれば使わない
+    prs = [p for p in prs if p[0] != "hand_unspecified"] or [p for p in prs if p[0] == "hand_unspecified"]
     # 事例ではない(カテゴリも掴み方も付かない)ページは落とす。本文だけの弱い一致しか無いページ(業界紹介・会社案内)も落とす
     if not cats or not prs:
         return None, f"カテゴリ {len(cats)} / 掴み方 {len(prs)} が付かない"
@@ -288,7 +290,7 @@ def classify_one(rec, tx, cleaned=None):
         return None, f"一致が弱い(カテゴリ {cats[0][1]} + 掴み方 {prs[0][1]} < {need}、見出しの語: ワーク {strong_cat} / 掴み方 {strong_pr})"
 
     cat_keys = [c[0] for c in cats]
-    prs.sort(key=lambda p: tx.pr_group[p[0]] == "process")   # 作業ツール(溶接トーチ・研磨など)は掴み方の後ろに
+    prs.sort(key=lambda p: tx.pr_group[p[0]] in ("process", "unknown"))   # 作業ツール・記載なし は掴み方の後ろに
     pr_keys = [p[0] for p in prs]
     fs["workpiece.categories"] = src("keyword", [f"{tx.cat_label[k]}: {', '.join(e)}" for k, s, e in cats])
     fs["end_effector.principles"] = src("keyword", [f"{tx.pr_label[k]}: {', '.join(e)}" for k, s, e in prs])

@@ -168,7 +168,7 @@
   PICT.soft = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 6h16v8H16z"/><path d="M18 14c-6 8-8 16-2 24M30 14c6 8 8 16 2 24M24 14v10"/></svg>';
   PICT.combo = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6h24v8H12z"/><path d="M16 14v14l-4 8M24 14v18"/><path d="M28 30c0-4 3-6 6-6s6 2 6 6"/></svg>';
   PICT.tool = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6h12v10H18z"/><path d="M24 16v14"/><path d="M14 30h20l-4 12h-12z"/></svg>';
-  var GCOL = { mech: 'var(--g-mech)', vacuum: 'var(--g-vacuum)', magnet: 'var(--g-magnet)', soft: 'var(--g-soft)', combo: 'var(--g-combo)', process: 'var(--g-process)' };
+  var GCOL = { mech: 'var(--g-mech)', vacuum: 'var(--g-vacuum)', magnet: 'var(--g-magnet)', soft: 'var(--g-soft)', combo: 'var(--g-combo)', process: 'var(--g-process)', unknown: 'var(--g-unknown)' };
   var CT = {};
   var RC_LABEL = { '協働': '協働', '産業用': '産業用' };
 
