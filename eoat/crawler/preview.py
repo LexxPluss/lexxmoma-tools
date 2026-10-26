@@ -52,6 +52,10 @@ def main():
     html = html.replace('href="../index.html"', 'href="#"').replace('href="../../index.html"', 'href="#"')
     html = html.replace("<title>エンドエフェクタ事例データベース | LexxPluss 社内</title>", "<title>エンドエフェクタ事例DB プレビュー</title>")
     (out / "index.html").write_text(html, encoding="utf-8")
+    # バイナリを置けない場所(Artifact など)向けに、パックと詳細画像を base64 のテキストにも出す(app.js は preview:true のとき .txt を読む)
+    for f in list(out.glob("img/**/*.bin")):
+        f.with_name(f.name + ".txt").write_text(base64.b64encode(f.read_bytes()).decode("ascii"), encoding="ascii")
+        f.unlink()
     total = sum(f.stat().st_size for f in out.glob("**/*") if f.is_file())
     print(f"{len(cases)} 件 / {len(pidx['images'])} 枚 → {out}  ({total/1e6:.1f} MB)")
 
