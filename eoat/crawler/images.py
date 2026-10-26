@@ -64,14 +64,23 @@ def check_image(data):
     st = ImageStat.Stat(rgb.resize((64, 64)))
     if max(st.stddev) < 12:
         return None, "ほぼ単色(ロゴ・プレースホルダ)"
-    # 左右(または上下)に単色の帯がある画像(動画の静止画など): 改変(切り抜き)はしない方針なので使わない
+    if has_bars(rgb):
+        return None, "左右(上下)に単色の帯(縦長の動画静止画など)"
+    return rgb, None
+
+
+def has_bars(rgb):
+    """左右(または上下)だけに単色の帯がある画像(縦長の写真を横長の枠に入れたもの): 改変(切り抜き)はしない方針なので使わない。
+    四辺すべてが単色なら白背景の製品写真なので残す。"""
     sm = rgb.resize((64, 64))
     whole = max(ImageStat.Stat(sm).stddev)
-    for box in ((0, 0, 12, 64), (52, 0, 64, 64), (0, 0, 64, 12), (0, 52, 64, 64)):
-        st2 = ImageStat.Stat(sm.crop(box))
-        if max(st2.stddev) < 8 and max(st2.mean) < 40 and whole > 15:   # 黒い帯だけ(白背景の製品写真は残す)
-            return None, "縁に黒い帯(動画の静止画など)"
-    return rgb, None
+    if whole < 15:
+        return False
+    def flat(box):
+        return max(ImageStat.Stat(sm.crop(box)).stddev) < 8
+    lr = flat((0, 0, 10, 64)) and flat((54, 0, 64, 64))
+    tb = flat((0, 0, 64, 10)) and flat((0, 54, 64, 64))
+    return (lr and not tb) or (tb and not lr)
 
 
 def shrink(im, px):
@@ -176,6 +185,13 @@ def process_case(rec, idx, policy, log, force=False, generic=None):
         tried += 1
         key, r = fetch_image(c["url"], idx)
         if not r.get("ok"):
+            continue
+        if "bars" not in r:   # 取得済みの画像にも帯の判定を掛ける(結果は index.json に残す)
+            try:
+                r["bars"] = has_bars(ImageOps.exif_transpose(Image.open(RAW_IMG / r["file"])).convert("RGB"))
+            except Exception:
+                r["bars"] = False
+        if r["bars"]:
             continue
         if any(hamming(r["phash"], k["phash"]) <= 6 for k in kept):
             continue
