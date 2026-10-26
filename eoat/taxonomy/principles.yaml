@@ -1,0 +1,108 @@
+# 掴み方(把持原理)。2 階層。terms は本文・製品名からの判定語。products は型式名(メーカー製品 → 原理)。
+# 判定: terms/products のどれかが出れば候補。複数出れば回数順に最大 3 つ。
+groups:
+  - key: mech
+    label: 機械式(把持)
+    pictogram: parallel
+    items:
+      - key: parallel2
+        label: 2指平行
+        terms: [2指, 二指, 平行ハンド, 平行グリッパ, 平行開閉, 電動ハンド, 電動グリッパ, 2-finger, two-finger, two finger, parallel gripper, parallel grippers, parallel jaw, electric gripper, electric grippers, servo gripper, pneumatic gripper, pneumatic grippers, 2F-85, 2F-140, Hand-E, RG2, RG6, 2FG7, 2FG14, EGP, EGU, EGK, PGN-plus, PGN, MPG-plus, GEP, GEH, HRC-03, HRC-05, CRG, WSG, GRIPKIT, jaw gripper, jaws, finger gripper, fingers]
+      - key: parallel3
+        label: 3指
+        terms: [3指, 三指, 3-finger, three-finger, three finger, 3FG15, 3FG25, 3-Finger Adaptive, centric gripper, centric grippers, PZN-plus, PZN, EZN, 3-jaw, three-jaw]
+      - key: adaptive
+        label: 多指・アダプティブ
+        terms: [多指, アダプティブ, 人型ハンド, adaptive gripper, adaptive grippers, multi-finger, multifinger, underactuated, dexterous hand, humanoid hand, robotic hand, five-finger, Barrett, Allegro, Shadow Hand, Inspire hand]
+      - key: angular
+        label: 角度開閉
+        terms: [角度開閉, 角度ハンド, angular gripper, angular grippers, swivel jaw, radial gripper, PWG, GAP]
+      - key: internal
+        label: 内径把持
+        terms: [内径把持, 内径チャック, 内張り, internal gripping, internal grip, inside gripping, ID gripping, expanding mandrel, mandrel gripper, bore gripping]
+      - key: clamp_fork
+        label: クランプ・フォーク
+        terms: [クランプ, フォーク, 挟み込み, 爪, フォークハンド, clamp, clamping, clamp gripper, fork, forks, forklift, fork gripper, fork-type, bag gripper, bag grippers, sack gripper, layer gripper, pallet gripper, pallet fork, tote gripper]
+      - key: hook
+        label: フック・吊り
+        terms: [フック, 吊り, 吊り具, hook, hooks, hanging, hanger, lifting hook]
+  - key: vacuum
+    label: 真空吸着
+    pictogram: vacuum
+    items:
+      - key: single_pad
+        label: 単パッド
+        terms: [吸着パッド, 単一パッド, 1点吸着, suction cup, suction cups, suction pad, suction pads, vacuum cup, vacuum cups, single cup, single suction, VG10, VGC10, VGP20, EPick, AirPick, piCOBOT, Palletizing Solution, AX10, AX20, PE10, PE20, Lean Palletizing, piSOFTGRIP, vacuum gripper, vacuum grippers, suction gripper, 真空吸着, 吸着ハンド, 吸着]
+      - key: multi_pad
+        label: 複数パッド
+        terms: [複数パッド, 多点吸着, 4点吸着, 2点吸着, multi-cup, multiple suction cups, multi-pad, 4 suction cups, four suction cups, cup array, vacuum gripper with cups]
+      - key: area
+        label: フォーム・エリア吸着
+        terms: [フォーム吸着, エリア吸着, 面吸着, 発泡, foam gripper, foam grippers, area gripper, area grippers, FXP, FMP, FXCB, FMCB, large-area, large area gripper, vacuum foam, foam suction, layer gripper vacuum, vacuum layer]
+      - key: bernoulli
+        label: ベルヌーイ・非接触
+        terms: [ベルヌーイ, 非接触吸着, 非接触ハンド, Bernoulli, non-contact gripper, non contact gripper, contactless gripper, floating gripper, air bearing gripper]
+      - key: magnet_vacuum
+        label: "吸着(その他: 静電・ゲッコー)"
+        terms: [静電吸着, ゲッコー, electroadhesion, electro-adhesion, electrostatic gripper, gecko gripper, gecko adhesive, Grabit]
+  - key: magnet
+    label: 磁石
+    pictogram: magnet
+    items:
+      - key: electropermanent
+        label: 永電磁
+        terms: [永電磁, 電気永久磁石, electro-permanent, electropermanent, electro permanent, EPM, MG10, Magswitch, magnetic gripper, magnetic grippers, magnet gripper, magnet grippers, マグネットハンド, マグネットグリッパ, 磁石ハンド, 磁気ハンド]
+      - key: electromagnet
+        label: 電磁石
+        terms: [電磁石, electromagnet, electromagnets, electromagnetic gripper, electro-magnet]
+      - key: permanent
+        label: 永久磁石
+        terms: [永久磁石, permanent magnet, permanent magnets, magnetic pickup]
+  - key: soft
+    label: ソフトハンド
+    pictogram: soft
+    items:
+      - key: soft_finger
+        label: 空気圧ソフトフィンガ
+        terms: [ソフトハンド, ソフトグリッパ, ソフトフィンガ, 柔らかいハンド, soft gripper, soft grippers, soft robotic gripper, soft robotics, mGrip, soft fingers, soft finger, pneumatic soft, elastomer fingers, silicone fingers, SoftGripping, Soft Robotics, FinRay, fin ray, Fin Ray, finray, Festo fin]
+      - key: jamming
+        label: ジャミング(粒子)
+        terms: [ジャミング, jamming gripper, granular jamming, jamming, Versaball, universal gripper]
+      - key: needle
+        label: ニードル
+        terms: [ニードル, 針, needle gripper, needle grippers, needle, needles, pin gripper, pin grippers, SNG]
+      - key: inflatable
+        label: バルーン・膨張式
+        terms: [バルーン, 膨張, balloon gripper, inflatable gripper, bladder gripper, bladder]
+  - key: combo
+    label: 複合・ツールチェンジャ
+    pictogram: combo
+    items:
+      - key: hybrid
+        label: 複合(吸着+把持など)
+        terms: [複合ハンド, 吸着と把持, ハイブリッド, hybrid gripper, combined gripper, combination gripper, dual mode, suction and gripping, gripper and suction, multi-function gripper, multifunctional gripper]
+      - key: tool_changer
+        label: ツールチェンジャ併用
+        terms: [ツールチェンジャ, ツールチェンジャー, 自動ツール交換, tool changer, tool changers, tool change, quick changer, quick-change, Quick Changer, automatic tool change, ATC, ツール交換]
+      - key: multi_tool
+        label: 多連・複数ハンド
+        terms: [多連, 2連, ダブルハンド, 複数ハンド, dual gripper, dual grippers, double gripper, twin gripper, multi-gripper, two grippers, multiple grippers, dual-gripper, Dual Quick Changer]
+  - key: process
+    label: 作業ツール(把持以外)
+    pictogram: tool
+    items:
+      - key: screwdriver
+        label: ねじ締め
+        terms: [ねじ締め, ネジ締め, スクリュードライバ, screwdriver, screwdriving, screw driving, nutrunner, nut runner, fastening tool]
+      - key: welding
+        label: 溶接トーチ
+        terms: [溶接トーチ, 溶接ガン, welding torch, weld torch, welding gun, spot welding gun, torch]
+      - key: sanding
+        label: 研磨・バリ取り
+        terms: [研磨, バリ取り, サンダー, sanding, sander, polishing, grinding, deburring, finishing tool]
+      - key: dispensing
+        label: 塗布・ディスペンス
+        terms: [塗布, ディスペンス, シーリングガン, dispensing, dispenser, gluing, glue gun, sealing, adhesive application, spray gun]
+      - key: camera
+        label: 検査(カメラ・センサ)
+        terms: [検査カメラ, 外観検査, 計測ヘッド, inspection camera, vision inspection, measuring head, probe]

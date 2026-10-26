@@ -1,0 +1,47 @@
+# 検索の評価セット(7-2)。q を UI と同じ分解・検索にかけ、上位 12 件が expect(いずれかを満たす)に合う割合 = precision@12、
+# 傾向パネルの最多の掴み方(principle_group)が trend に一致する割合 = trend_accuracy。
+# expect: category / principle / principle_group / task / material / robot / mobile のうち書いたものは、それぞれ 1 つ以上一致すること。
+# 判定は eoat/tests/eval_queries.py(node の search.js を使う)。
+queries:
+  - {q: "段ボール 10kg デパレ", expect: {category: [carton], task: [depalletizing, palletizing]}, trend: vacuum}
+  - {q: "TPポリ箱を棚から取る", expect: {category: [tote, container]}, trend: mech}
+  - {q: "通い箱 協働ロボット", expect: {category: [tote, container, carton], robot: [協働]}}
+  - {q: "米袋 20kg", expect: {category: [sack, fibc, pouch]}, trend: mech}
+  - {q: "粉体袋のパレタイズ", expect: {category: [sack], task: [palletizing]}}
+  - {q: "油の付いた鉄の丸棒 旋盤投入", expect: {category: [round, block, bulk_parts, casting], task: [machine_tending]}, trend: mech}
+  - {q: "薄板 1枚取り", expect: {category: [sheet, glass_plate, film]}, trend: vacuum}
+  - {q: "鋳物", expect: {category: [casting]}}
+  - {q: "樹脂成形品 取出し", expect: {category: [molded], task: [machine_tending, pick_place]}}
+  - {q: "卵", expect: {category: [egg, tray]}, trend: soft}
+  - {q: "透明なガラス板", expect: {category: [glass_plate, panel]}, trend: vacuum}
+  - {q: "布", expect: {category: [textile], material: [textile]}}
+  - {q: "ばら積みボルト", expect: {category: [bulk_parts], task: [bin_picking]}}
+  - {q: "弁当 盛り付け", expect: {category: [ready_meal, meat_fish, bakery, fresh], task: [food_handling, pick_place]}}
+  - {q: "バイアル", expect: {category: [vial, tube, plate]}, trend: mech}
+  - {q: "タイヤ", expect: {category: [tire]}}
+  - {q: "ケーブル", expect: {category: [cable]}}
+  - {q: "果物 収穫", expect: {category: [fresh], task: [harvesting]}, trend: soft}
+  - {q: "協働ロボットでマシンテンディング", expect: {task: [machine_tending], robot: [協働]}, trend: mech}
+  - {q: "移動マニピュレータ 工程間搬送", expect: {mobile: true}}
+  - {q: "AMR アーム 棚", expect: {mobile: true}}
+  - {q: "depalletizing cardboard boxes", expect: {category: [carton], task: [depalletizing, palletizing]}, trend: vacuum}
+  - {q: "machine tending CNC lathe", expect: {task: [machine_tending]}, trend: mech}
+  - {q: "bin picking of metal parts", expect: {task: [bin_picking], category: [bulk_parts, casting, round, block]}}
+  - {q: "sack palletizing 25 kg", expect: {category: [sack]}}
+  - {q: "sheet metal handling", expect: {category: [sheet]}, trend: vacuum}
+  - {q: "pcb assembly cobot", expect: {category: [pcb, component], robot: [協働]}}
+  - {q: "glass panel vacuum", expect: {category: [glass_plate, panel], principle_group: [vacuum]}}
+  - {q: "soft gripper for food", expect: {principle_group: [soft], material: [food]}}
+  - {q: "magnetic gripper steel sheet", expect: {principle_group: [magnet], category: [sheet]}}
+  - {q: "tote handling warehouse", expect: {category: [tote, piece, carton]}}
+  - {q: "bottle packing", expect: {category: [bottle, can, cup], task: [packing]}}
+  - {q: "pallet", expect: {category: [pallet, carton]}}
+  - {q: "段ボール 吸着", expect: {category: [carton], principle_group: [vacuum]}, trend: vacuum}
+  - {q: "鉄 磁石", expect: {principle_group: [magnet]}, trend: magnet}
+  - {q: "ピースピッキング EC", expect: {category: [piece], task: [order_picking, pick_place, sorting]}}
+  - {q: "クッキー トレイ 箱詰め", expect: {category: [bakery, tray, carton], task: [packing, pick_place]}}
+  - {q: "試験管 ラボ", expect: {category: [tube, vial, plate], task: [lab]}}
+  - {q: "木材", expect: {category: [timber], material: [wood]}}
+  - {q: "缶 パレタイズ", expect: {category: [can, bottle, carton], task: [palletizing]}}
+  - {q: "ねじ締め", expect: {task: [screwdriving, assembly]}}
+  - {q: "2指ハンド 協働", expect: {principle_group: [mech], robot: [協働]}, trend: mech}

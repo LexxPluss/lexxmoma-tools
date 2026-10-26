@@ -1,0 +1,426 @@
+# 取得元の一覧。discover.py が index_urls を巡回し、article(正規表現) に合う URL を候補にする。
+# type: maker_gripper(ハンド・吸着メーカー) / maker_robot(ロボットメーカー) / sier(SIer・装置メーカー) / public(公的・協会) / media(業界メディア) / custom(ユーザー・研究・オープンソース)
+# case_type: 事例の種別(3-2 スキーマ)。region/country: 取得元の地域(事例の地域は本文で上書きすることがある)
+# image: stored(既定) / link_only(規約で画像利用を禁じているサイト。manual/image_policy.json と同じ意味)
+# status: ok / blocked(403・Cloudflare など) / todo(未調査)。調査日は checked。
+sources:
+  # ---------------------------------------------------------------- ハンド・吸着メーカー
+  - key: robotiq
+    label: Robotiq 事例(resource-center / case studies)
+    type: maker_gripper
+    case_type: maker_product
+    region: 北米
+    country: カナダ
+    lang: en
+    index_urls: ["https://robotiq.com/resource-center?type_of_resources=Case+Studies"]
+    paginate: "https://robotiq.com/resource-center?type_of_resources=Case+Studies&page={n}"
+    max_pages: 6
+    article: "^https://robotiq\\.com/resource-center/case-studies/[^/?#]+$"
+    status: ok
+    checked: 2026-10-26
+  - key: onrobot
+    label: OnRobot 事例(case studies)
+    type: maker_gripper
+    case_type: maker_product
+    region: 欧州
+    country: デンマーク
+    lang: en
+    index_urls: ["https://onrobot.com/en/case-studies"]
+    paginate: "https://onrobot.com/en/case-studies?page={n}"
+    max_pages: 8
+    article: "^https://onrobot\\.com/en/case-studies/[^/?#]+$"
+    render: true     # 本文と画像を JS で組み立てるので、Chromium で描画してから取る
+    status: ok
+    checked: 2026-10-26
+  - key: schunk
+    label: SCHUNK アプリケーション(applications)
+    type: maker_gripper
+    case_type: maker_product
+    region: 欧州
+    country: ドイツ
+    lang: en
+    index_urls:
+      - "https://schunk.com/us/en/applications/machine-tending"
+      - "https://schunk.com/us/en/applications/handling"
+      - "https://schunk.com/us/en/applications/assembly"
+      - "https://schunk.com/us/en/applications/robots-cobots"
+    article: "^https://schunk\\.com/us/en/applications/[^/?#]+/[^/?#]+"
+    status: ok
+    checked: 2026-10-26
+  - key: schmalz
+    label: Schmalz メディアセンター(応用動画・事例)
+    type: maker_gripper
+    case_type: maker_product
+    region: 欧州
+    country: ドイツ
+    lang: en
+    index_urls: ["https://www.schmalz.com/en/solutions/media-center"]
+    article: "^https://www\\.schmalz\\.com/en/(solutions|applications|knowledge)/[^?#]+/[^/?#]+$"
+    exclude: "media-center$|^https://www\\.schmalz\\.com/[a-z]{2}-[a-z]{2}/"
+    status: ok
+    checked: 2026-10-26
+  - key: piab
+    label: Piab ロボット・協働ロボット向け把持ソリューション
+    type: maker_gripper
+    case_type: maker_product
+    region: 欧州
+    country: スウェーデン
+    lang: en
+    index_urls: ["https://www.piab.com/en-us/robot-and-cobot-gripping-solutions"]
+    article: "^https://www\\.piab\\.com/en-us/(robot-and-cobot-gripping-solutions|inspiration|case)[^?#]*/[^/?#]+$"
+    status: ok
+    checked: 2026-10-26
+  - key: zimmer
+    label: Zimmer Group ロボット向けソリューション
+    type: maker_gripper
+    case_type: maker_product
+    region: 欧州
+    country: ドイツ
+    lang: en
+    index_urls:
+      - "https://www.zimmer-group.com/en/industries/robotic-solutions/lightweight-robots"
+      - "https://www.zimmer-group.com/en/industries/robotic-solutions/industrial-robots"
+      - "https://www.zimmer-group.com/en/industries/robotic-solutions/mobile-robotics"
+    article: "^https://www\\.zimmer-group\\.com/en/(industries|references|applications)/[^?#]+/[^/?#]+$"
+    status: ok
+    checked: 2026-10-26
+  - key: weiss
+    label: Weiss Robotics 産業別ソリューション
+    type: maker_gripper
+    case_type: maker_product
+    region: 欧州
+    country: ドイツ
+    lang: en
+    index_urls: ["https://www.weiss-robotics.com/en/industry-solutions/"]
+    article: "^https://www\\.weiss-robotics\\.com/en/(industry-solutions|solutions)/[^?#]+/$"
+    status: ok
+    checked: 2026-10-26
+  - key: softgripping
+    label: SoftGripping ソリューション(ソフトグリッパ)
+    type: maker_gripper
+    case_type: maker_product
+    region: 欧州
+    country: ドイツ
+    lang: en
+    index_urls: ["https://soft-gripping.com/solutions/"]
+    article: "^https://soft-gripping\\.com/solutions/[^/?#]+/$"
+    status: ok
+    checked: 2026-10-26
+  # ---------------------------------------------------------------- ロボットメーカー
+  - key: ur
+    label: Universal Robots 導入事例(case stories)
+    type: maker_robot
+    case_type: sier_case
+    region: 欧州
+    country: デンマーク
+    lang: en
+    index_urls: ["https://www.universal-robots.com/case-stories/"]
+    paginate: "https://www.universal-robots.com/case-stories/?page={n}"
+    max_pages: 25
+    article: "^https://www\\.universal-robots\\.com/case-stories/[^/?#]+/$"
+    status: ok
+    checked: 2026-10-26
+  - key: ur_ja
+    label: Universal Robots 導入事例(日本語)
+    type: maker_robot
+    case_type: sier_case
+    region: 日本
+    country: 日本
+    lang: ja
+    index_urls: ["https://www.universal-robots.com/ja/case-stories/"]
+    paginate: "https://www.universal-robots.com/ja/case-stories/?page={n}"
+    max_pages: 12
+    article: "^https://www\\.universal-robots\\.com/ja/case-stories/[^/?#]+/$"
+    status: ok
+    checked: 2026-10-26
+  - key: kawasaki_jp
+    label: 川崎重工 産業用ロボット 導入事例(日本語)
+    type: maker_robot
+    case_type: sier_case
+    region: 日本
+    country: 日本
+    lang: ja
+    index_urls: ["https://kawasakirobotics.com/jp/case-studies/"]
+    paginate: "https://kawasakirobotics.com/jp/case-studies/page/{n}/"
+    max_pages: 6
+    article: "^https://kawasakirobotics\\.com/jp/case-studies/[^/?#]+/$"
+    exclude: "/case-studies/page/"
+    status: ok
+    checked: 2026-10-26
+  - key: kawasaki_asia
+    label: Kawasaki Robotics(アジア・オセアニア) アプリケーション
+    type: maker_robot
+    case_type: maker_product
+    region: その他アジア
+    country: シンガポール
+    lang: en
+    index_urls: ["https://kawasakirobotics.com/asia-oceania/applications/"]
+    article: "^https://kawasakirobotics\\.com/asia-oceania/(applications|case-studies)/[^/?#]+/$"
+    status: ok
+    checked: 2026-10-26
+  - key: yaskawa_jp
+    label: 安川電機 アプリケーション事例(日本語)
+    type: maker_robot
+    case_type: sier_case
+    region: 日本
+    country: 日本
+    lang: ja
+    index_urls: ["https://www.yaskawa.co.jp/applications"]
+    article: "^https://www\\.yaskawa\\.co\\.jp/applications/[^/?#]+/?$"
+    status: ok
+    checked: 2026-10-26
+  - key: motoman
+    label: Yaskawa Motoman(米国) 事例
+    type: maker_robot
+    case_type: sier_case
+    region: 北米
+    country: 米国
+    lang: en
+    index_urls: ["https://www.motoman.com/about/media-center/case-studies"]
+    article: "^https://www\\.motoman\\.com/(en-us/)?about/media-center/case-studies/[^/?#]+$"
+    status: ok
+    checked: 2026-10-26
+  - key: fanuc_us
+    label: FANUC America 事例(case studies)
+    type: maker_robot
+    case_type: sier_case
+    region: 北米
+    country: 米国
+    lang: en
+    index_urls: ["https://www.fanucamerica.com/case-studies"]
+    paginate: "https://www.fanucamerica.com/case-studies?page={n}"
+    max_pages: 6
+    article: "^https://www\\.fanucamerica\\.com/case-studies/[^/?#]+$"
+    status: ok
+    checked: 2026-10-26
+  - key: fanuc_eu
+    label: FANUC Europe 事例(case studies)
+    type: maker_robot
+    case_type: sier_case
+    region: 欧州
+    country: ルクセンブルク
+    lang: en
+    index_urls: ["https://www.fanuc.eu/eu-en/case-studies"]
+    paginate: "https://www.fanuc.eu/eu-en/case-studies?page={n}"
+    max_pages: 8
+    article: "^https://www\\.fanuc\\.eu/eu-en/case-studies/[^/?#]+$"
+    status: ok
+    checked: 2026-10-26
+  - key: kuka
+    label: KUKA ソリューションデータベース
+    type: maker_robot
+    case_type: sier_case
+    region: 欧州
+    country: ドイツ
+    lang: en
+    index_urls: ["https://www.kuka.com/en-us/industries/solutions-database"]
+    paginate: "https://www.kuka.com/en-us/industries/solutions-database?page={n}"
+    max_pages: 10
+    article: "^https://www\\.kuka\\.com/en-us/industries/solutions-database/[^?#]+$"
+    exclude: "\\?page="
+    status: ok
+    checked: 2026-10-26
+  - key: tmrobot
+    label: Techman Robot アプリケーション
+    type: maker_robot
+    case_type: maker_product
+    region: その他アジア
+    country: 台湾
+    lang: en
+    index_urls: ["https://www.tm-robot.com/en/solution/industry", "https://www.tm-robot.com/en/solution/application"]
+    article: "^https://www\\.tm-robot\\.com/en/solution/application/[^/?#]+$"
+    render: true
+    status: ok
+    checked: 2026-10-26
+  - key: denso_jp
+    label: デンソーウェーブ ロボット ソリューション(日本語)
+    type: maker_robot
+    case_type: maker_product
+    region: 日本
+    country: 日本
+    lang: ja
+    index_urls: ["https://www.denso-wave.com/ja/robot/solution/"]
+    article: "^https://www\\.denso-wave\\.com/ja/robot/solution/[^/?#]+\\.html$"
+    exclude: "RoHS|history"
+    status: ok
+    checked: 2026-10-26
+  - key: iai
+    label: IAI 導入事例(日本語)
+    type: maker_robot
+    case_type: sier_case
+    region: 日本
+    country: 日本
+    lang: ja
+    index_urls: ["https://www.iai-robot.co.jp/case/index.html", "https://www.iai-robot.co.jp/case/industry/index.html"]
+    article: "^https://www\\.iai-robot\\.co\\.jp/case/[^/?#]+/(index\\.html)?$"
+    exclude: "/case/(industry|introducution)/"
+    status: ok
+    checked: 2026-10-26
+  - key: neura
+    label: NEURA Robotics アプリケーション
+    type: maker_robot
+    case_type: maker_product
+    region: 欧州
+    country: ドイツ
+    lang: en
+    index_urls: ["https://neura-robotics.com/applications/"]
+    article: "^https://neura-robotics\\.com/applications/[^/?#]+/$"
+    status: ok
+    checked: 2026-10-26
+  - key: dobot
+    label: Dobot アプリケーション
+    type: maker_robot
+    case_type: maker_product
+    region: 中国
+    country: 中国
+    lang: en
+    index_urls: ["https://www.dobot-robots.com/applications"]
+    article: "^https://www\\.dobot-robots\\.com/applications/[^/?#]+\\.html$"
+    status: ok
+    checked: 2026-10-26
+  - key: elibot
+    label: Elite Robots 事例(中国語)
+    type: maker_robot
+    case_type: sier_case
+    region: 中国
+    country: 中国
+    lang: zh
+    index_urls: ["https://www.elibot.com/case"]
+    article: "^https://www\\.elibot\\.com/case/[^?#]+$"
+    status: ok
+    checked: 2026-10-26
+  - key: mir
+    label: Mobile Industrial Robots 事例(AMR・移動マニピュレータ)
+    type: maker_robot
+    case_type: sier_case
+    region: 欧州
+    country: デンマーク
+    lang: en
+    index_urls: ["https://mobile-industrial-robots.com/cases"]
+    article: "^https://mobile-industrial-robots\\.com/cases/[^/?#]+$"
+    status: ok
+    checked: 2026-10-26
+  # ---------------------------------------------------------------- SIer・自動化ソリューション
+  - key: mujin
+    label: Mujin 導入事例(日本語)
+    type: sier
+    case_type: sier_case
+    region: 日本
+    country: 日本
+    lang: ja
+    index_urls: ["https://www.mujin.co.jp/example/"]
+    article: "^https://www\\.mujin\\.co\\.jp/case/[^/?#]+/$"
+    status: ok
+    checked: 2026-10-26
+  - key: formic
+    label: Formic 顧客事例(米国 RaaS)
+    type: sier
+    case_type: sier_case
+    region: 北米
+    country: 米国
+    lang: en
+    index_urls: ["https://formic.co/resources/customer-stories"]
+    article: "^https://formic\\.co/resources/customer-stories/[^/?#]+$"
+    status: ok
+    checked: 2026-10-26
+  - key: vention
+    label: Vention 顧客事例
+    type: sier
+    case_type: sier_case
+    region: 北米
+    country: カナダ
+    lang: en
+    index_urls: ["https://vention.com/customer-stories"]
+    article: "^https://vention\\.com/customer-stories/[^/?#]+$"
+    status: ok
+    checked: 2026-10-26
+  - key: hirebotics
+    label: Hirebotics 事例(米国 SIer)
+    type: sier
+    case_type: sier_case
+    region: 北米
+    country: 米国
+    lang: en
+    index_urls: ["https://www.hirebotics.com/case-studies/"]
+    article: "^https://www\\.hirebotics\\.com/case-studies/[^/?#]+/$"
+    status: ok
+    checked: 2026-10-26
+  - key: mechmind
+    label: Mech-Mind 事例(3D ビジョン+ロボット)
+    type: sier
+    case_type: sier_case
+    region: 中国
+    country: 中国
+    lang: en
+    index_urls: ["https://www.mech-mind.com/cases", "https://www.mech-mind.com/"]
+    paginate: "https://www.mech-mind.com/cases?page={n}"
+    max_pages: 6
+    article: "^https://www\\.mech-mind\\.com/cases/[^/?#]+$"
+    status: ok
+    checked: 2026-10-26
+  - key: xyz
+    label: XYZ Robotics 事例
+    type: sier
+    case_type: sier_case
+    region: 中国
+    country: 中国
+    lang: en
+    index_urls: ["https://www.xyzrobotics.com/news/list/case-study/1", "https://www.xyzrobotics.com/news/list/case-study/2"]
+    article: "^https://www\\.xyzrobotics\\.com/news/[^/?#]+$"
+    exclude: "/news/list/"
+    status: ok
+    checked: 2026-10-26
+  - key: robotics247
+    label: Robotics 24/7 記事(業界メディア)
+    type: media
+    case_type: sier_case
+    region: 北米
+    country: 米国
+    lang: en
+    index_urls: ["https://www.robotics247.com/", "https://www.robotics247.com/topics/grippers", "https://www.robotics247.com/topics/end_effectors"]
+    article: "^https://www\\.robotics247\\.com/article/[^/?#]+$"
+    status: ok
+    checked: 2026-10-26
+  # ---------------------------------------------------------------- 調査済みで使えないもの(理由を残す)
+  - key: therobotreport
+    label: The Robot Report
+    type: media
+    status: blocked
+    note: "Cloudflare の確認画面(403)。取得しない"
+    checked: 2026-10-26
+  - key: staubli
+    label: Stäubli customer stories
+    type: maker_robot
+    status: blocked
+    note: "Cloudflare の確認画面(403)"
+    checked: 2026-10-26
+  - key: abb
+    label: ABB Robotics case studies
+    type: maker_robot
+    status: todo
+    note: "応答が遅く 25 秒で時間切れ。別途 timeout を伸ばして再調査"
+    checked: 2026-10-26
+  - key: festo
+    label: Festo solutions
+    type: maker_gripper
+    status: blocked
+    note: "Access Denied(403)"
+    checked: 2026-10-26
+  - key: smc
+    label: SMC
+    type: maker_gripper
+    status: blocked
+    note: "Cloudflare の確認画面(403)"
+    checked: 2026-10-26
+  - key: fanuc_jp
+    label: ファナック(日本) 導入事例
+    type: maker_robot
+    status: todo
+    note: "事例ページの URL が未特定(/ja/product/robot/casestudy/ は 404)"
+    checked: 2026-10-26
+  - key: jara
+    label: 日本ロボット工業会 / ロボナビ
+    type: public
+    status: todo
+    note: "メンテナンス中(503)。後日再調査"
+    checked: 2026-10-26

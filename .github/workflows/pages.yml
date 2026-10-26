@@ -32,6 +32,9 @@ jobs:
           bad=$(find site \( -name internal -o -name safety-navi -o -iname crx-eoat-tool -o -name .claude \
                  -o -path 'site/robot-sier-map/scripts' -o -path 'site/robot-sier-map/data/raw' \) -print)
           if [ -n "$bad" ]; then echo "Internal-only files found:"; echo "$bad"; exit 1; fi
+          # エンドエフェクタ事例DB: 原本・平文・ログは eoat/ の下(公開外)。公開側の画像は暗号化した .bin だけ(平文の画像が混ざっていたら止める)
+          bad=$(find eoat/raw eoat/data eoat/logs -type f 2>/dev/null; find site/members/eoat-db/img -type f ! -name '*.bin' 2>/dev/null)
+          if [ -n "$bad" ]; then echo "eoat: plaintext data or images found:"; echo "$bad"; exit 1; fi
 
       # ROI Calculator and Process Sketch are published from dist/; make sure it was rebuilt from src/
       - name: Check built tools are up to date
@@ -45,6 +48,7 @@ jobs:
         run: |
           node site/lexxmoma-roi/test/calc.test.js
           node site/process-sketch/test/continuity.test.cjs
+          node --test site/members/eoat-db/test/ui.test.cjs
 
       # Publish only what the pages need: sources, build scripts, tests and dev notes stay in the repo
       - name: Package site

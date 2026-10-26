@@ -32,3 +32,8 @@ people/logs/
 
 # 社内限定の仕様書(公開リポジトリには置かない)
 people/SPEC.md
+
+# エンドエフェクタ事例データベース(eoat/): 取得原本(HTML・元画像)・平文データ・実行ログはコミットしない
+eoat/raw/
+eoat/data/
+eoat/logs/
