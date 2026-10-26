@@ -1,0 +1,61 @@
+path,title,visits
+/hub,LexxMoMa Tools,28
+/tool/tour,LexxMoMa 見学ツアー,15
+tool/tour/open,LexxMoMa 見学ツアー(会社紹介・紹介動画・実機映像),12
+tool/sim2d/open,LexxMoMa 動作シミュレーター(2D),10
+/tool/sketch,工程スケッチ,9
+/tool/roi,LexxMoMa 費用対効果（ROI）計算ツール,9
+tool/sier/open,ロボットSIerデータベース,8
+/tool/sier,ロボットSIerデータベース,8
+tool/sketch/open,工程スケッチ,8
+lib/open/company-intro,LexxPluss 会社紹介資料,7
+keep/shown,<em>(no title)</em>,6
+tool/roi/open,費用対効果（ROI）計算ツール,6
+lib/open/lexxmoma-intro,LexxMoMa 紹介動画,5
+/tool/members,社内ツール | LexxPluss 社内,4
+/tool/videos,共有動画 | LexxPluss 社内,3
+pass/app,アプリとして開いた,3
+member/videos/open,共有動画を開いた,2
+keep/standalone,<em>(no title)</em>,2
+tool/sketch/sim/calc,1日分を計算,2
+keep/dismiss,<em>(no title)</em>,2
+lib/open/lexxmoma-demo,LexxMoMa 実機デモ動画(11分),2
+hub/tour/thScreen,見学ツアーへ,2
+tool/sketch/sim/play,動かす,2
+lib/open/company-video,LexxPluss 会社紹介動画,2
+/tool/factory-map,工場マップ | LexxPluss 社内,2
+hub/phase/know,知る・興味を持つ,2
+pass/close,<em>(no title)</em>,2
+pass/open,<em>(no title)</em>,2
+tool/sier/link/website,スターテクノ,1
+tool/sier/company/list,スターテクノ,1
+tool/sier/search,該当 1社,1
+lib/download/lexxmoma-demo,LexxMoMa 実機デモ動画(11分),1
+pass/renamed,<em>(no title)</em>,1
+pass/named,<em>(no title)</em>,1
+pass/complete,常連パス完成,1
+pass/install_ok,<em>(no title)</em>,1
+pass/install_click,<em>(no title)</em>,1
+pass/bm,ブックマークから開いた,1
+pass/bm_pending,Ctrl+D,1
+member/videos/play,02 LexxMoMa 2607,1
+lib/board/view/note,<em>(no title)</em>,1
+lib/board/view/dense,<em>(no title)</em>,1
+tool/sketch/save,保存,1
+lib/ver/lexxmoma-intro,完全版,1
+tool/sketch/poly/walk,通路(歩く所),1
+tool/sketch/flow,つなぐ,1
+tool/sketch/add/worker,作業者,1
+tool/sketch/poly/nogo,立入禁止,1
+tool/roi/mode/light,ライトモードに切替,1
+tool/sketch/add/process,加工,1
+lib/cert,修了証を表示,1
+lib/stamp/lexxmoma-demo,LexxMoMa 実機デモ動画(11分),1
+hub/tour/navTour,見学ツアーへ,1
+tool/roi/mode/detail,精緻モードに切替,1
+member/factory-map/news,ポリプラスチックス富士工場 (静岡県富士市) ポリプラスチックス富士工場,1
+member/factory-map/factory,アマダ 富士宮事業所,1
+pass/installed,<em>(no title)</em>,1
+member/factory-map/open,工場マップを開いた,1
+hub/robot/pet,LexxMoMaをなでた,1
+hub/phase/assess,効果を試算する,1
