@@ -64,7 +64,7 @@ def crawl_one(c, log, refresh=False, render_keys=()):
     (PAGES / f"{pid}.html").write_text(html, encoding="utf-8", newline="\n")
     jdump({"id": pid, "url": url, "final_url": final, "status": "ok", "content_type": ct, "retrieved_at": today(),
            "sources": c.get("sources", []), "robots_flags": sorted(flags), "bytes": len(html),
-           "rendered": bool(set(c.get("sources", [])) & set(render_keys))}, meta_p)
+           "rendered": bool(set(c.get("sources", [])) & set(render_keys)), "hints": c.get("hints")}, meta_p)
     log.ok(url, f"{len(html)} bytes", id=pid)
     return pid, "ok"
 

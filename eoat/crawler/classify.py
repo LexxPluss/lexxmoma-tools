@@ -277,6 +277,10 @@ def classify_one(rec, tx, cleaned=None):
     if rec.get("source_type") == "custom":
         case_type = "user_custom"
 
+    # ロボットの語がまったく無いページ(SIer サイトから自動発見した会社案内・製品一覧など)は事例ではない。画像取得・LLM レビューの前に落とす
+    if not robot["maker"] and not count_terms(full, ["ロボット", "robot", "robots", "robotic", "cobot", "cobots", "机器人", "로봇", "アーム", "manipulator",
+                                                      "ハンド", "gripper", "grippers", "吸着", "suction", "夹爪", "把持", "end effector"]):
+        return None, "ロボット・ハンドの語が無い"
     # 掴み方の種類が書かれていない(「ロボットハンド」「把持」とだけある)事例: 「記載なし(写真で確認)」として残す。種類が分かるものが 1 つでもあれば使わない
     prs = [p for p in prs if p[0] != "hand_unspecified"] or [p for p in prs if p[0] == "hand_unspecified"]
     # 事例ではない(カテゴリも掴み方も付かない)ページは落とす。本文だけの弱い一致しか無いページ(業界紹介・会社案内)も落とす

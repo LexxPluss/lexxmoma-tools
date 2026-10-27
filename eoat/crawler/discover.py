@@ -61,11 +61,60 @@ def discover_source(key, src, log):
     return found
 
 
+SEARCH_SOURCES = DATA / "search_sources.json"
+REGION_OF = {"japan": "日本", "jp": "日本", "日本": "日本", "na": "北米", "us": "北米", "北米": "北米", "eu": "欧州", "europe": "欧州", "欧州": "欧州",
+             "cn": "中国", "china": "中国", "中国": "中国", "asia": "その他アジア", "その他アジア": "その他アジア", "other": "その他", "その他": "その他"}
+
+
+def from_search(cands, log):
+    """Web 検索で見つけた候補(data/search_result_*.json: [{url, title, region, category_hint, robot_hint, query}])を候補に足す。
+    取得元は search:<ファイルの tag>(種別 discovery)。事例の地域は結果の region から。採用の判断は crawl → extract → classify → 画像 → LLM レビューで行う。"""
+    srcs = jload(SEARCH_SOURCES, {})
+    added, files = 0, 0
+    for p in sorted(DATA.glob("search_result_*.json")):
+        tag = p.stem.replace("search_result_", "")
+        try:
+            rows = jload(p, [])
+        except Exception as e:
+            log.fail(p.name, e)
+            continue
+        if not isinstance(rows, list):
+            continue
+        files += 1
+        key = f"search:{tag}"
+        region = REGION_OF.get((rows[0].get("region") if rows else "") or tag.split("_")[0].lower(), "その他")
+        srcs[key] = {"key": key, "label": f"ウェブ検索による発掘({tag})", "type": "discovery", "case_type": "sier_case", "region": region,
+                     "country": None, "lang": "ja" if region == "日本" else ("zh" if region == "中国" else "en"), "index_urls": []}
+        for r in rows:
+            u = (r.get("url") or "").strip()
+            if not u.startswith("http") or u.lower().endswith(".pdf"):
+                continue
+            c = canon_url(u)
+            e = cands.setdefault(c, {"url": u, "sources": [], "first_seen": today(), "text": (r.get("title") or "")[:120]})
+            if key not in e["sources"]:
+                e["sources"].append(key)
+                e["hints"] = {k: r.get(k) for k in ("region", "category_hint", "robot_hint", "query") if r.get(k)}
+                e["hints"]["region_ja"] = REGION_OF.get(str(r.get("region") or "").lower(), REGION_OF.get(str(r.get("region") or ""), region))
+                added += 1
+    jdump(srcs, SEARCH_SOURCES)
+    print(f"検索結果 {files} ファイル → 候補 +{added} 件")
+    return added
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--source", nargs="*")
     ap.add_argument("--workers", type=int, default=6)
+    ap.add_argument("--from-search", action="store_true", help="data/search_result_*.json(Web 検索の結果)を候補に取り込む")
     a = ap.parse_args()
+    if a.from_search:
+        log = RunLog("discover-search")
+        cands = jload(CANDIDATES, {})
+        from_search(cands, log)
+        jdump(cands, CANDIDATES)
+        print(f"候補 {len(cands)} 件 → {CANDIDATES.relative_to(DATA.parent)}")
+        log.save()
+        return
     sources = load_sources()
     keys = a.source or [k for k, s in sources.items() if s.get("status") == "ok"]
     log = RunLog("discover")

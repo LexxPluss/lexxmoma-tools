@@ -189,7 +189,7 @@ def extract_one(pid, meta, html, sources):
     return {
         "id": pid, "url": meta["url"], "final_url": base, "retrieved_at": meta.get("retrieved_at"), "sources": src_keys,
         "source_type": src.get("type") if src else None, "case_type": src.get("case_type") if src else None,
-        "region": src.get("region") if src else None, "country": src.get("country") if src else None,
+        "region": (meta.get("hints") or {}).get("region_ja") or (src.get("region") if src else None), "country": src.get("country") if src else None,
         "lang": lang or (src.get("lang") if src else None), "publisher": src.get("label") if src else None,
         "title": h1 or ld.get("headline") or title, "page_title": title, "description": desc or ld.get("description") or "",
         "headings": headings, "text": text, "images": images, "videos": extract_videos(soup, base),

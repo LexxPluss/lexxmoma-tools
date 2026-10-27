@@ -217,6 +217,8 @@ def load_sources():
         out[s["key"]] = s
     for k, s in (jload(DATA / "sier_sources.json", {}) or {}).items():
         out[k] = dict(s, status="ok")
+    for k, s in (jload(DATA / "search_sources.json", {}) or {}).items():   # Web 検索による発掘(discover.py --from-search)
+        out[k] = dict(s, status="ok")
     return out
 
 
