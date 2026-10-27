@@ -37,7 +37,10 @@ makers:
       - {model: M-900iB, pattern: "\\bM-?900i[AB]\\b", class: 産業用, payload: 360}
       - {model: M-2000iA, pattern: "\\bM-?2000i[AB]\\b", class: 産業用, payload: 1350}
       - {model: R-2000iC, pattern: "\\bR-?2000i[BC]\\b", class: 産業用, payload: 210}
-      - {model: M-410iC, pattern: "\\bM-?410i[BC](/\\d+)?\\b", class: 産業用, payload: 185}
+      - {model: M-410iC, pattern: "\\bM-?410(i[BC])?(/\\d+)?\\b", class: 産業用, payload: 185}
+      - {model: M-710, pattern: "\\bM-?710\\b", class: 産業用, payload: 50}
+      - {model: M-20iB, pattern: "\\bM-?20iB(/\\d+)?\\b", class: 産業用, payload: 25}
+      - {model: R-1000iA, pattern: "\\bR-?1000(iA)?(/\\d+[FH]?)?\\b", class: 産業用, payload: 80}
       - {model: SR-3iA, pattern: "\\bSR-?(3|6|12|20)iA\\b", class: 産業用, payload: 6}
       - {model: CR series, pattern: "\\bCR-?\\d+i[AB]\\b", class: 協働}
       - {model: M series, pattern: "\\bM-?\\d{2,4}i[A-D]\\b", class: 産業用}
@@ -54,6 +57,7 @@ makers:
       - {model: GP25, pattern: "\\bGP25(-12)?\\b", class: 産業用, payload: 25}
       - {model: GP50, pattern: "\\bGP50\\b", class: 産業用, payload: 50}
       - {model: GP88, pattern: "\\bGP88\\b", class: 産業用, payload: 88}
+      - {model: GP225, pattern: "\\bGP(225|280|400|600)\\b", class: 産業用, payload: 225}
       - {model: GP180, pattern: "\\bGP180(-120)?\\b", class: 産業用, payload: 180}
       - {model: GP280, pattern: "\\bGP280(L)?\\b", class: 産業用, payload: 280}
       - {model: PL80, pattern: "\\bPL(80|190|320|500|800)\\b", class: 産業用, payload: 190}
@@ -93,7 +97,17 @@ makers:
     aliases: [川崎重工, 川崎, Kawasaki, KAWASAKI]
     models:
       - {model: duAro, pattern: "\\bduAro ?[12]?\\b", class: 協働, payload: 2}
+      - {model: RS003N, pattern: "\\bRS003N\\b", class: 産業用, payload: 3}
+      - {model: RS005, pattern: "\\bRS005[NL]\\b", class: 産業用, payload: 5}
       - {model: RS007, pattern: "\\bRS007[NL]\\b", class: 産業用, payload: 7}
+      - {model: RS013N, pattern: "\\bRS013N\\b", class: 産業用, payload: 13}
+      - {model: RS030N, pattern: "\\bRS030N\\b", class: 産業用, payload: 30}
+      - {model: RS050N, pattern: "\\bRS050N\\b", class: 産業用, payload: 50}
+      - {model: MC004N, pattern: "\\bMC004[NV]\\b", class: 産業用, payload: 4}
+      - {model: BX200L, pattern: "\\bBX(100|165|200|250)[LNXS]?\\b", class: 産業用, payload: 200}
+      - {model: ZX130L, pattern: "\\bZX(130|165|200)[LUS]?\\b", class: 産業用, payload: 130}
+      - {model: ZX300S, pattern: "\\bZX300S\\b", class: 産業用, payload: 300}
+      - {model: BA006L, pattern: "\\bBA006[LN]\\b", class: 産業用, payload: 6}
       - {model: RS010, pattern: "\\bRS010[NL]\\b", class: 産業用, payload: 10}
       - {model: RS020, pattern: "\\bRS020N\\b", class: 産業用, payload: 20}
       - {model: RS025, pattern: "\\bRS025N\\b", class: 産業用, payload: 25}
@@ -255,6 +269,12 @@ makers:
     models:
       - {model: Racer, pattern: "\\bRacer-?\\d\\b", class: 産業用, payload: 5}
       - {model: AURA, pattern: "\\bAURA\\b", class: 協働, payload: 170}
+  - name: Hyundai Robotics
+    aliases: [Hyundai Robotics, 現代ロボティクス, 현대로보틱스]
+    models:
+      - {model: HS160, pattern: "\\bHS(160|180|220)L?\\b", class: 産業用, payload: 160}
+      - {model: HH7, pattern: "\\bHH(4|7|20)\\b", class: 産業用, payload: 7}
+      - {model: YL012, pattern: "\\bYL0(05|12|15)\\b", class: 協働, payload: 12}
   - name: Hanwha
     aliases: [Hanwha, ハンファ]
     class: 協働

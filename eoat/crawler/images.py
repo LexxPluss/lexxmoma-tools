@@ -11,6 +11,7 @@ import argparse
 import concurrent.futures as cf
 import hashlib
 import io
+from pathlib import Path
 import threading
 
 from PIL import Image, ImageOps, ImageStat
@@ -24,7 +25,12 @@ THUMB = DATA / "img" / "thumb"
 DETAIL = DATA / "img" / "detail"
 THUMB_PX, DETAIL_PX = 240, 400
 MAX_PER_CASE, MAX_TRY = 3, 7
-MIN_CLIP = 0.52   # 画像の中身判定(imgjudge): 「ハンドがワークを扱っている写真」らしさがこれ未満なら使わない
+try:
+    from imgjudge import BAD as BAD_LABELS
+except Exception:   # open_clip が無い環境
+    BAD_LABELS = []
+MODELS = Path(__file__).resolve().parent / "models"
+MIN_CLIP = 0.62   # 画像の中身判定(imgjudge): 「ハンドがワークを扱っている写真」らしさがこれ未満なら使わない(ループ 8: 0.52 → 0.62。0.52〜0.66 の帯は 81 枚中 73 枚が人物・縦長の帯・画面だった)
 _idx_lock = threading.Lock()
 
 
@@ -57,8 +63,8 @@ def check_image(data):
     w, h = im.size
     if max(w, h) < 200:
         return None, f"小さすぎる {w}x{h}"
-    if w / h > 4 or h / w > 4:
-        return None, f"縦横比が極端 {w}x{h}"
+    if w / h > 4 or h / w > 1.5:
+        return None, f"縦横比が極端 {w}x{h}"   # 縦長(h/w > 1.5)はサイドバーの帯・人物の立ち姿が大半で、ハンドの写真はまず無い
     im = ImageOps.exif_transpose(im)
     rgb = im.convert("RGB")
     st = ImageStat.Stat(rgb.resize((64, 64)))
@@ -137,9 +143,15 @@ def face_fraction(path):
         if scale < 1:
             img = cv2.resize(img, (int(w * scale), int(h * scale)))
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        cc = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
-        faces = cc.detectMultiScale(gray, 1.1, 5, minSize=(40, 40))
-        area = sum(fw * fh for (_, _, fw, fh) in faces)
+        # 分類器の XML は crawler/models/ に置く(opencv 5 の wheel には同梱されない。ループ 8 まで検出が黙って 0 だった)
+        area = 0
+        for name, min_px in (("haarcascade_frontalface_default.xml", 24), ("haarcascade_profileface.xml", 24)):   # upperbody は誤検出が多く使わない
+            f = MODELS / name
+            if not f.exists():
+                continue
+            cc = cv2.CascadeClassifier(str(f))
+            for (_, _, fw, fh) in cc.detectMultiScale(gray, 1.1, 5, minSize=(min_px, min_px)):
+                area += fw * fh
         return area / (img.shape[0] * img.shape[1])
     except Exception:
         return 0.0
@@ -207,6 +219,8 @@ def process_case(rec, idx, policy, log, force=False, generic=None):
                 r["clip_label"] = lb
         if r.get("clip") is not None and r["clip"] < MIN_CLIP:
             continue   # 人物・建物・画面・図・車・AMR だけ などの写真
+        if r.get("clip_label") and r["clip_label"] in BAD_LABELS:
+            continue   # 点数が足りても、最も近い文が悪い例(工場の全景・AMR だけ・人物)なら使わない(ループ 8)
         im = Image.open(RAW_IMG / r["file"])
         im = ImageOps.exif_transpose(im).convert("RGB")
         tb, (tw, th) = shrink(im, THUMB_PX)

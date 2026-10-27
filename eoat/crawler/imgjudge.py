@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """画像の中身の判定(4-4「内容の確認」): CLIP(ViT-B/32, ゼロショット)で「ロボットのハンドがワークを扱っている写真」らしさを点数にする。
 
-- 良い例と悪い例(人物・建物・画面・図・ロゴ・車・AMR だけ・風景・文字)の文を用意し、softmax の確率を合計する
+- 良い例と悪い例(人物・建物・画面・図・ロゴ・車・AMR だけ・風景・文字。ループ 8 で「人とロボットが一緒」「工場の全景」「工作機械だけ」を追加)の文を用意し、softmax の確率を合計する
 - 戻り値 (score, label): score = 良い例の確率の合計(0〜1)、label = 最も近い文の種類
 - モデルは最初の呼び出しで読み込む(CPU で 1 枚 0.1〜0.2 秒)。open_clip が無ければ (None, None) を返し、呼び出し側は規則だけで判断する
 """
@@ -19,6 +19,10 @@ GOOD = [
     "a robot gripper product photo on a plain background",
     "a robot palletizing boxes with a gripper",
     "a robot picking items from a bin with a gripper",
+    "a robot arm lifting a sack or bag with a bag gripper",
+    "a suction gripper lifting a glass sheet, panel or tray",
+    "a robot hand grasping a bottle, tube or small part",
+    "a soft robotic gripper holding food",
 ]
 BAD = [
     "a portrait photo of a person",
@@ -34,6 +38,13 @@ BAD = [
     "a sign with text",
     "a factory production line overview photo with no robot gripper visible",
     "food or products on a table with no robot",
+    "a person standing next to a robot arm and talking or posing",
+    "a worker operating a machine or holding a part by hand",
+    "a group of people posing for a photo in a factory",
+    "a trade show booth with visitors",
+    "a wide view of a factory floor with machines and no gripper visible",
+    "a cartoon mascot or illustration",
+    "a photo of a machine tool or CNC machine with its door closed",
 ]
 
 

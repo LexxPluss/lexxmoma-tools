@@ -19,6 +19,8 @@ from common import DATA, SIER_DATA, RunLog, canon_url, domain_of, fetch, jdump, 
 LINK_TEXT = re.compile(r"導入事例|事例|納入実績|納入事例|実績紹介|製作実績|設備実績|ソリューション事例|case ?stud|works|showcase|実績", re.I)
 LINK_HREF = re.compile(r"case|jirei|works|example|result|jisseki|solution|showcase|achievement", re.I)
 SKIP = re.compile(r"recruit|採用|news|お知らせ|privacy|contact|お問い合わせ|company|会社|ir/|pdf$|\.pdf|login|mailto:|tel:", re.I)
+# ロボット・ハンド・把持 の語(トップページにも事例一覧にも無い会社は、事例ページを候補にしない: 無関係なページが 9 割を占めていた)
+ROBOT_TERMS = re.compile(r"ロボット|robot|ハンド|gripper|グリッパ|把持|吸着|協働|パレタイ|ピッキング|マニピュレータ|アーム", re.I)
 
 
 def sier_list():
@@ -45,6 +47,8 @@ def discover(c, log):
         return c["id"], None, "robots"
     except Exception as e:
         return c["id"], None, f"top: {str(e)[:80]}"
+    page_text = BeautifulSoup(html, "lxml").get_text(" ", strip=True)
+    robot_site = bool(ROBOT_TERMS.search(page_text))
     idx = []
     for h, t in links(html, final):
         if domain_of(h) != dom or SKIP.search(h):
@@ -63,6 +67,9 @@ def discover(c, log):
             log.fail(c["name"], f"{u}: {str(e)[:80]}")
             continue
         base_path = urllib.parse.urlsplit(f2).path.rstrip("/")
+        if not robot_site and not ROBOT_TERMS.search(BeautifulSoup(h2, "lxml").get_text(" ", strip=True)):
+            continue   # トップにも事例一覧にもロボット・ハンドの語が無い
+        robot_site = True
         for h, t in links(h2, f2):
             p = urllib.parse.urlsplit(h).path.rstrip("/")
             if domain_of(h) != dom or SKIP.search(h) or h.rstrip("/") == f2.rstrip("/"):
@@ -70,9 +77,12 @@ def discover(c, log):
             # 一覧ページのパスの下で、1 段以上深いもの(例: /case/ → /case/abc/)
             if base_path and p.startswith(base_path + "/") and p.count("/") > base_path.count("/") and not re.search(r"/(page|category|tag)/", p):
                 if h not in arts:
-                    arts.append(h)
+                    arts.append((0 if ROBOT_TERMS.search(t) else 1, h))   # リンク文字にロボットの語があるものを先に
         if len(arts) >= 40:
             break
+    if not robot_site:
+        return c["id"], {"index": idx, "articles": []}, "no-robot"
+    arts = [h for _, h in sorted(arts, key=lambda x: x[0])]
     return c["id"], {"index": idx, "articles": arts[:40]}, "ok"
 
 

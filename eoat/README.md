@@ -31,7 +31,8 @@ site/members/eoat-db/  index.html app.js search.js style.css test/ui.test.cjs
 ## セットアップ
 
 ```sh
-pip install -r eoat/crawler/requirements.txt      # + 顔検出に opencv-python-headless(任意。無ければ顔の除外を飛ばす)
+pip install -r eoat/crawler/requirements.txt      # + 顔検出に "opencv-python-headless<5"(任意。5.x には CascadeClassifier が無い。無ければ顔の除外を飛ばす)
+for f in haarcascade_frontalface_default.xml haarcascade_profileface.xml; do curl -sSL -o eoat/crawler/models/$f https://raw.githubusercontent.com/opencv/opencv/4.x/data/haarcascades/$f; done   # 顔検出の分類器(gitignore)
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu && pip install open_clip_torch   # 画像の中身判定(任意。無ければ規則だけ)
 ```
 

@@ -90,7 +90,8 @@ class Taxonomy:
                 self.models.append({"maker": mk["name"], "model": m["model"], "re": re.compile(m["pattern"], re.I),
                                     "class": m.get("class") or mk.get("class"), "payload": m.get("payload"), "mobile": m.get("mobile", False),
                                     "plen": len(m["pattern"])})
-        self.models.sort(key=lambda m: -m["plen"])
+        # 可搬の分かる型式(RS007N)を、シリーズだけの一致(RS series)より先に試す。同じ条件なら長い pattern を先に
+        self.models.sort(key=lambda m: (m["payload"] is None, -m["plen"]))
         self.makers = [(mk["name"], mk.get("aliases", [mk["name"]]), mk.get("class")) for mk in self.robots["makers"]]
         # ハンド製品の型式 → メーカー・掴み方・可搬(taxonomy/ee_products.yaml)。長い pattern を先に
         self.products = [dict(p, re=re.compile(p["pattern"], re.I)) for p in yload(TAXONOMY / "ee_products.yaml")["products"]]

@@ -37,3 +37,5 @@ people/SPEC.md
 eoat/raw/
 eoat/data/
 eoat/logs/
+# 顔検出の分類器(opencv の GitHub から取る。setup の行を参照)
+eoat/crawler/models/*.xml
