@@ -214,7 +214,7 @@
     renderTrend(eff);
     renderRes(r.relaxed, eff);
     renderGrid();
-    IMG.warm(LIST.slice(0, 60)).then(function () { if (first) mark('firstPackReady'); }).catch(function () { });
+    IMG.warm(LIST.slice(0, 60)).then(function () { if (first) mark('firstPackReady'); showTrendImgs(); loadFont(); }).catch(function () { showTrendImgs(); loadFont(); });
     var h = S.encodeHash(F);
     if (h !== location.hash && !(h === '' && !location.hash)) history.replaceState(null, '', location.pathname + location.search + h);
     window.__eoat.eff = eff; window.__eoat.list = LIST;
@@ -326,8 +326,20 @@
     $$('.tb', el).forEach(function (b) {
       b.onclick = function () { var g = b.dataset.g, i = F.pr.indexOf(g); if (i >= 0) F.pr.splice(i, 1); else F.pr = [g]; track('trend/' + g, GROUP_LABEL[g]); run(); };
     });
-    t.groups.forEach(function (g) { if (g.rep && g.rep.images[0]) showImg($('[data-img="' + g.rep.images[0].id + '"]', el), g.rep.images[0]); });
+    // 傾向の代表画像は、最初の画面(24 枚)のパックが届いてから取る。先に取ると別のパックを同時に引いて最初の画面が遅れる(Fast 3G で 10.7 秒 → 計測後に調整)
+    TREND_IMGS = t.groups.filter(function (g) { return g.rep && g.rep.images[0]; }).map(function (g) { return { el: $('[data-img="' + g.rep.images[0].id + '"]', el), im: g.rep.images[0] }; });
+    TREND_IMGS.forEach(function (x) { if (IMG.packs[x.im.thumb.pack]) showImg(x.el, x.im); });
   }
+  var TREND_IMGS = [];
+  // 本文の書体(Noto Sans JP)は最初の画面が出てから。それまでは system-ui(style.css の予備)で描く
+  var FONT_DONE = false;
+  function loadFont() {
+    if (FONT_DONE) return; FONT_DONE = true;
+    var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap';
+    document.head.appendChild(l);
+  }
+  setTimeout(loadFont, 8000);   // 画像が来なくても 8 秒で読む
+  function showTrendImgs() { TREND_IMGS.forEach(function (x) { if (x.el && !x.el.src) showImg(x.el, x.im); }); }
 
   function renderRes(relaxed, eff) {
     var parts = [LIST.length.toLocaleString('ja-JP') + ' 件'];

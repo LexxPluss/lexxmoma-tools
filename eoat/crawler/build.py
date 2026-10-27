@@ -272,6 +272,7 @@ def main():
     ap.add_argument("--password")
     ap.add_argument("--plain-only", action="store_true")
     ap.add_argument("--no-audit", action="store_true")
+    ap.add_argument("--repack", action="store_true", help="画像パックを並び順どおりに作り直す(既定は追記。並びを変えたときに使う)")
     a = ap.parse_args()
     log = RunLog("build")
     cases, L, merged = assemble(log)
@@ -299,8 +300,19 @@ def main():
             for f in (SITE_OUT / "img").glob("**/*.bin"):
                 f.unlink()
             pidx = {"packs": [], "images": {}, "detail": {}}
+        if a.repack:
+            # 追記だけだと、並びを変えても既存の画像は古いパックに残り、最初の画面が 4〜5 パックに散る(ループ 8)。並びを変えたときは作り直す
+            print("画像パックを作り直します(--repack)")
+            for f in (SITE_OUT / "img" / "thumb").glob("*.bin"):
+                f.unlink()
+            pidx = {"packs": [], "images": {}, "detail": pidx.get("detail", {}), "key_check": kc_now}
         pidx["key_check"] = kc_now
         added = pack_images(cases, key, pidx, SITE_OUT)
+        # 公開しなくなった画像の詳細ファイルは消す
+        used = {im["id"] for r in cases for im in r.get("images", [])}
+        for iid in [i for i in pidx["detail"] if i not in used]:
+            (SITE_OUT / "img" / "detail" / pidx["detail"][iid]["file"]).unlink(missing_ok=True)
+            del pidx["detail"][iid]
         jdump(pidx, DATA / "packs.json")
         plain["packs"] = [p["name"] for p in pidx["packs"]]
         plain["cases"] = cases
