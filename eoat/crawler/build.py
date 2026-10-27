@@ -254,8 +254,16 @@ def assemble(log):
     cases, merged, reasons = dedupe(cases)
     jdump(reasons, DATA / "dedupe_log.json")
     # UI の既定の並び(search.js の score: 5–20kg > ≤5kg > 20–100kg、協働・移動マニピュレータを先)に合わせる。最初のパックが最初の画面になる
-    rank = {"5–20kg": 0, "≤5kg": 1, "20–100kg": 2, ">100kg": 3, "不明": 4}
-    cases.sort(key=lambda r: (rank.get(r["payload_class"], 4), r["robot"].get("class") != "協働", not r["robot"].get("is_mobile_manipulator"), -len(r["images"]), r["id"]))
+    # search.js の score() と同じ式(条件なしのとき): 可搬帯 + 協働 + 移動 + 画像の枚数 + 分類の確信度。並びが違うと最初の 24 枚が 4 つのパックに散り、Fast 3G で 16 秒かかった(ループ 8)
+    def ui_score(r):
+        s = {"5–20kg": 2, "≤5kg": 1.5, "20–100kg": 0.5}.get(r["payload_class"], 0)
+        s += 1 if r["robot"].get("class") == "協働" else 0
+        s += 1.5 if r["robot"].get("is_mobile_manipulator") else 0
+        s += min(len(r["images"]), 3) * 0.3
+        conf = (r.get("quality") or {}).get("confidence") or {}
+        s += (conf.get("category") or 0) + (conf.get("principle") or 0)
+        return s
+    cases.sort(key=lambda r: (-ui_score(r), r["id"]))
     return cases, L, merged
 
 

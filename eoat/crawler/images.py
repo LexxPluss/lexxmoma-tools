@@ -205,6 +205,8 @@ def process_case(rec, idx, policy, log, force=False, generic=None):
                 r["bars"] = False
         if r["bars"]:
             continue
+        if r.get("w") and r.get("h") and r["h"] / r["w"] > 1.4:
+            continue   # 縦長は取得済みの画像にも当てる(check_image は初回の取得時にしか通らない)
         if any(hamming(r["phash"], k["phash"]) <= 6 for k in kept):
             continue
         if any(hamming(r["phash"], g) <= 4 for g in generic):
