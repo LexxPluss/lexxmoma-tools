@@ -30,7 +30,7 @@ try:
 except Exception:   # open_clip が無い環境
     BAD_LABELS = []
 MODELS = Path(__file__).resolve().parent / "models"
-MIN_CLIP = 0.62   # 画像の中身判定(imgjudge): 「ハンドがワークを扱っている写真」らしさがこれ未満なら使わない(ループ 8: 0.52 → 0.62。0.52〜0.66 の帯は 81 枚中 73 枚が人物・縦長の帯・画面だった)
+MIN_CLIP = 0.60   # 画像の中身判定(imgjudge): 「ハンドがワークを扱っている写真」らしさがこれ未満なら使わない(ループ 8: 0.52 → 0.60(文を足して再判定した後の点数で)。0.52〜0.66 の帯は 81 枚中 73 枚が人物・縦長の帯・画面だった)
 _idx_lock = threading.Lock()
 
 

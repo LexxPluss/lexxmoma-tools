@@ -500,8 +500,8 @@ sources:
     label: ABB Robotics case studies
     type: maker_robot
     status: todo
-    note: "応答が遅く 25 秒で時間切れ。別途 timeout を伸ばして再調査"
-    checked: 2026-10-26
+    note: "応答が遅く 25 秒で時間切れ(2026-10-26)。2026-10-27 はこの環境から 503 / 空応答。顧客事例の URL(/news/detail/NNNNN/cstmr-…)9 本は検索結果として候補に入れた"
+    checked: 2026-10-27
   - key: festo
     label: Festo solutions
     type: maker_gripper
@@ -514,12 +514,44 @@ sources:
     status: blocked
     note: "Cloudflare の確認画面(403)"
     checked: 2026-10-26
-  - key: fanuc_jp
-    label: ファナック(日本) 導入事例
+  - key: fanuc_robotsi
+    label: ファナック ロボットSIパートナー事例(robotsi.fanuc.co.jp)
     type: maker_robot
-    status: todo
-    note: "事例ページの URL が未特定(/ja/product/robot/casestudy/ は 404)"
-    checked: 2026-10-26
+    case_type: sier_case
+    region: 日本
+    country: 日本
+    lang: ja
+    index_urls: ["https://www.robotsi.fanuc.co.jp/application/general_handling/"]
+    paginate: "https://www.robotsi.fanuc.co.jp/application/general_handling/page/{n}/"
+    max_pages: 6
+    article: "^https://www\\.robotsi\\.fanuc\\.co\\.jp/case/[^/?#]+/$"
+    status: ok
+    note: "fanuc.co.jp 本体に顧客事例の一覧は無い(/ja/product/robot/casestudy/ は 404)。SI パートナー事例サイトの一覧(/cases/)は JS 描画だが、用途別の一覧ページはサーバー描画。WP REST(/wp-json/wp/v2/cases?per_page=100)でも全 81 件が取れる"
+    checked: 2026-10-27
+  - key: yamaha_global
+    label: ヤマハ発動機 ロボティクス 事例(英語)
+    type: maker_robot
+    case_type: sier_case
+    region: 日本
+    country: 日本
+    lang: en
+    index_urls: ["https://global.yamaha-motor.com/business/robot/casestudies/"]
+    article: "^https://global\\.yamaha-motor\\.com/business/robot/casestudies/case\\d{2}/?$"
+    status: ok
+    note: "16 件(case02〜17)。日本語の一覧は無い"
+    checked: 2026-10-27
+  - key: daihen_signage
+    label: ダイヘン ロボットシステム例(daihen-robot.com/signage)
+    type: maker_robot
+    case_type: sier_case
+    region: 日本
+    country: 日本
+    lang: ja
+    index_urls: ["https://www.daihen-robot.com/signage/"]
+    article: "^https://www\\.daihen-robot\\.com/signage/[a-z]+\\d{2}\\.html$"
+    status: ok
+    note: "29 件。大半は溶接セルで、治具のハンドリングは 6 件ほど"
+    checked: 2026-10-27
   - key: jara
     label: 日本ロボット工業会 / ロボナビ
     type: public
@@ -533,11 +565,11 @@ sources:
     note: "英語・日本語と同じ事例の翻訳(画像が同じ)なので入れない(重複判定で束ねられる)"
     checked: 2026-10-26
   - key: nachi_mitsubishi_epson_yamaha_daihen
-    label: 不二越・三菱電機・エプソン・ヤマハ・ダイヘン 事例
+    label: 不二越・三菱電機・デンソーウェーブ 事例
     type: maker_robot
     status: todo
-    note: "事例ページの URL が見つからない(推測 URL は 404)。サイト内検索か Web 検索で再調査"
-    checked: 2026-10-26
+    note: "Web 検索で再調査(2026-10-27): 不二越は動画一覧だけ(HTML の事例無し)。三菱電機 our-stories は JS 描画で、記事一覧は /fa/our-stories/data/article-data.json(104 本、ロボットは 6 本 → 検索結果として取り込み済み)。デンソーウェーブ /ja/robot/dounyu/ は 22 件あるが詳細は会員ログインが必要。ヤマハ・ダイヘンは別の取得元(yamaha_global, daihen_signage)に"
+    checked: 2026-10-27
   - key: cn_others
     label: Geek+ / Dorabot / Rokae / Hanwha
     type: sier
