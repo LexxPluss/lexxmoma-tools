@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MoMa対応シューター 6案</title>
-<meta name="description" content="LexxMoMaが投入し人が取り出す前提で、ラインサイドのシューター（部品供給棚）の標準インターフェース案を6つ、3Dで比較する叩き台。">
+<title>MoMa対応シューター 7案</title>
+<meta name="description" content="LexxMoMaが投入し人が取り出す前提で、ラインサイドのシューター（部品供給棚）の標準インターフェース案を7つ、3Dで比較する叩き台。">
 <script>
 /* =====================================================================
    CONFIG（config.js 相当）
@@ -46,6 +46,28 @@ const CONFIG = {
           models: { A: { name: '車種A', color: '#E8A33D' }, B: { name: '車種B', color: '#8C6BB1' }, C: { name: '車種C', color: '#D9644A' } },
           sequence: ['A', 'B', 'A', 'C', 'C', 'A', 'B', 'A', 'C', 'B'] },
     p6: { cols: 3, levels: 3, depth: 1500, levelPitch: 260, slopePct: 4, secPerBox: 80 },
+    // ⑦ 縦型省スペース型（TP規格コンテナ）。高さはすべて棚板の上面（箱を置く面）の床からの高さ
+    p7: { cols: 3, colPitch: 400, laneW: 360, depth: 1060, levelPitch: 190,
+          lowStart: 120, lowLevels: 3,          // 下の予備在庫段（MoMa専用）
+          bandStart: 700, bandLevels: 4,        // 人の取り出し段（平ら・1間口2箱）。その上が空箱返却段
+          highLevels: 1,                        // 上の予備在庫段（MoMa専用）
+          mainType: 'TP-341.5B', secPerBox: 60,
+          // 列×段ごとのコンテナ（指定がなければ mainType）。長物や小箱も同じ奥行きに入る
+          mix: { '1-0': 'TP-391.5B', '1-2': 'TP-331.5B' },
+          // 比較の基準：同じ箱数を置く従来の傾斜ローラーシューター（TP-341.5B を長手を奥へ）
+          baseline: { cols: 4, levels: 3, deep: 3, colPitch: 400, slopePct: 4, extra: 80 } },
+  },
+  // TP規格コンテナ（岐阜プラスチック工業の掲載寸法・外寸）。底面は 167.5mm のモジュールの倍数
+  tp: {
+    module: 167.5,
+    types: {
+      'TP-331.5B': { L: 335, W: 335, H: 149, liter: 11 },
+      'TP-341.5B': { L: 503, W: 335, H: 149, liter: 17 },
+      'TP-361.5B': { L: 670, W: 335, H: 149, liter: 25 },
+      'TP-391.5B': { L: 1005, W: 335, H: 149, liter: 35 },
+      'TP-3121.5B': { L: 1340, W: 335, H: 149, liter: 51 },
+    },
+    fullKg: 9,   // 部品入りの重さの想定（仮）。アームの可搬を超える箱は対象外
   },
   colors: {
     blue: '#0068B7', green: '#3EB370', retro: '#5AA0DC', frame: '#9AA6AF', roller: '#C5CDD3',
@@ -143,7 +165,7 @@ table.cmp th.plan{white-space:nowrap;background:#fafcfe}
 <body>
 <header>
   <div class="hd-top">
-    <h1>LexxMoMa対応シューター 標準インターフェース 6案</h1>
+    <h1>LexxMoMa対応シューター 標準インターフェース 7案</h1>
     <span class="sub">MoMaが通路側から投入し、人がライン側で取り出す前提の叩き台。数値はすべて仮値（ファイル冒頭の CONFIG で変更）</span>
   </div>
   <nav class="tabs" id="tabs" role="tablist"></nav>
@@ -1076,6 +1098,109 @@ function buildP6(root) {
   return { steps, center: V3(0.4, 0.85, D / 2 + 0.5), span: Math.max(1.15, S.W / 2.0) };
 }
 
+/* ===================== ⑦ 縦型省スペース型（TP規格コンテナ） ===================== */
+const tpDim = t => { const d = C.tp.types[t]; return { x: M(d.W), y: M(d.H), z: M(d.L) }; };
+function p7Layout() {
+  const P = C.plans.p7, py = P.levelPitch;
+  const low = [...Array(P.lowLevels)].map((_, i) => P.lowStart + i * py);
+  const band = [...Array(P.bandLevels)].map((_, i) => P.bandStart + i * py);
+  const ret = P.bandStart + P.bandLevels * py;
+  const high = [...Array(P.highLevels)].map((_, i) => ret + (i + 1) * py);
+  const typeAt = (c, l) => P.mix[`${c}-${l}`] || P.mainType;
+  const capOfType = t => Math.floor((P.depth - 20 + C.box.gap) / (C.tp.types[t].L + C.box.gap));
+  let bandBoxes = 0; for (let c = 0; c < P.cols; c++) for (let l = 0; l < P.bandLevels; l++) bandBoxes += capOfType(typeAt(c, l));
+  const stock = P.cols * (P.lowLevels + P.highLevels);
+  const hMain = C.tp.types[P.mainType].H, top = high.length ? high[high.length - 1] : ret;
+  const B = P.baseline, bt = C.tp.types[P.mainType], bD = B.deep * (bt.L + C.box.gap) + B.extra;
+  const bPitch = Math.round(bt.H + bD * B.slopePct / 100 + 70);
+  const bTopBox = P.bandStart + (B.levels - 1) * bPitch + bD * B.slopePct / 100 + bt.H;
+  return { P, low, band, ret, high, typeAt, capOfType, bandBoxes, stock, boxes: bandBoxes + stock, width: P.cols * P.colPitch, H: top + hMain + 60,
+    base: { width: B.cols * B.colPitch, depth: bD, boxes: B.cols * B.levels * B.deep, pitch: bPitch, retLine: Math.round(bTopBox + 40 + bD * B.slopePct / 100) } };
+}
+function buildP7(root) {
+  const Lo = p7Layout(), P = Lo.P, D = M(P.depth), laneW = M(P.laneW), cp = M(P.colPitch), W = M(Lo.width), main = tpDim(P.mainType);
+  env(root, { zB: D });
+  const xs = [...Array(P.cols + 1)].map((_, i) => -W / 2 + i * cp), xc = c => -W / 2 + cp * (c + 0.5);
+  const sku = (c, l) => skuOf(c, l, P.bandLevels);
+  const band = [], rets = [], lowS = [], highS = [];
+  for (let c = 0; c < P.cols; c++) {
+    band[c] = []; lowS[c] = []; highS[c] = [];
+    Lo.band.forEach((y, l) => {
+      const bx = tpDim(Lo.typeAt(c, l)), lane = makeLane(root, { x: xc(c), w: laneW, zF: 0, yF: M(y), zB: D, yB: M(y), type: 'flat', box: bx, plateColor: '#f4f7f9' });
+      band[c][l] = lane; addBox(root, laneW, 0.06, 0.014, '#6f7c86', xc(c), M(y) + 0.03, 0.007);
+      for (let i = 0; i < lane.cap; i++) putOnLane(lane, makeBox(bx, sku(c, l)), i);
+    });
+    const ry = M(Lo.ret);
+    rets[c] = makeLane(root, { x: xc(c), w: laneW, zF: 0, yF: ry, zB: D, yB: ry, type: 'flat', box: main, plateColor: '#e3eaef' });
+    addBox(root, laneW, 0.04, 0.014, '#6f7c86', xc(c), ry + 0.02, D - 0.007);
+    const stockLane = (y, l, arr, bandLvl) => {
+      const t = Lo.typeAt(c, bandLvl), bx = tpDim(t);
+      const lane = makeLane(root, { x: xc(c), w: laneW, zF: 0, yF: M(y), zB: D, yB: M(y), type: 'flat', box: bx, plateColor: '#dde6ee', railColor: shade(COL.retro, 0.2) });
+      const b = makeBox(bx, sku(c, bandLvl)); root.add(b); b.position.copy(lane.posS(lane.entryS)); arr[c][l] = { lane, box: b, pos: lane.posS(lane.entryS) };
+    };
+    Lo.low.forEach((y, l) => stockLane(y, l, lowS, Math.min(l, P.bandLevels - 1)));
+    Lo.high.forEach((y, l) => stockLane(y, l, highS, P.bandLevels - 1));
+  }
+  const H = M(Lo.H);
+  posts(root, xs, [0, D], H);
+  const pan = new THREE.MeshStandardMaterial({ color: '#dfe7ee', transparent: true, opacity: 0.55, roughness: 0.3 });
+  const y0 = M(Lo.band[0]) - 0.04, y1 = M(Lo.ret) + main.y + 0.02;
+  addBox(root, W, y0 - 0.06, 0.008, pan, 0, 0.06 + (y0 - 0.06) / 2, -0.006);
+  addBox(root, W, H - y1, 0.008, pan, 0, y1 + (H - y1) / 2, -0.006);
+  const retro = mat(COL.retro), mk = [];
+  for (const x of [xs[0], xs[xs.length - 1]]) { addBox(root, 0.13, 0.13, 0.01, retro, x, M(Lo.band[0]) - 0.03, D + 0.03); mk.push(makeMarker(root, x, M(Lo.band[0]) - 0.03, D + 0.036, 0.1, mk.length + 71)); }
+  pickBand(root, -W / 2, W / 2, 0);
+  // 床面積：今回の案（実線）と、同じ箱数を置く従来シューター（破線）
+  const bw = M(Lo.base.width), bd = M(Lo.base.depth);
+  rectLine(root, -W / 2, W / 2, 0, D, COL.blue, false);
+  const ghost = rectLine(root, -bw / 2, bw / 2, 0.0, bd, '#8a99a5', true);
+  const gp = new THREE.Mesh(new THREE.PlaneGeometry(bw, bd), new THREE.MeshBasicMaterial({ color: '#8a99a5', transparent: true, opacity: 0.08, depthWrite: false }));
+  gp.rotation.x = -Math.PI / 2; gp.position.set(0, 0.002, bd / 2); root.add(gp);
+  const aNew = (W * D), aOld = bw * bd;
+  label(V3(bw / 2 - 0.1, 0.01, bd - 0.05), `従来シューター（同じ${Lo.base.boxes}箱）の床 ${mm(bw)}×${mm(bd)}mm＝${aOld.toFixed(2)}m²（仮）`, '');
+  label(V3(-W / 2 + 0.1, 0.01, D * 0.5), `この案の床 ${mm(W)}×${mm(D)}mm＝${aNew.toFixed(2)}m²（${Math.round(aNew / aOld * 100)}%）`, 'moma');
+  // ラベル
+  label(lowS[2][0].lane.posS(0.35).add(V3(0, 0.1, 0)), `下の予備在庫段（MoMa専用・${P.lowLevels}段）`, 'moma');
+  label(highS[2][0].lane.posS(0.4).add(V3(0, 0.18, 0)), '上の予備在庫段（MoMa専用）', 'moma');
+  label(rets[2].posS(0.45).add(V3(0, 0.1, 0)), `空箱返却段（平ら・${Lo.ret}mm）`);
+  label(band[1][0].q[0], 'TP箱が混在：長物1005は1箱・503は2箱・335角は3箱', '', V3(0, 0.0, 0.45));
+  label(V3(W / 2 - 0.15, y0 / 2 + 0.05, -0.02), 'ライン側は透明板で閉じる', 'human');
+  label(mk[1], '棚マーカー（左右2枚）', 'retro', V3(0, 0.08, 0));
+  dimLine(root, V3(-W / 2 - 0.3, 0.01, 0), V3(-W / 2 - 0.3, 0.01, D), `奥行き ${P.depth}mm＝TP 6モジュール（1005）＋余裕`, V3(1, 0, 0));
+  dimLine(root, V3(-W / 2, H + 0.08, 0), V3(W / 2, H + 0.08, 0), `棚幅 ${mm(W)}mm（${P.cols}列×${P.bandLevels}段＝${P.cols * P.bandLevels}品番）`);
+  dimLine(root, V3(xc(0) - laneW / 2, H + 0.2, 0), V3(xc(0) + laneW / 2, H + 0.2, 0), `間口 ${P.laneW}mm＝335＋余裕`);
+  const topC = Lo.high.length ? Lo.high[Lo.high.length - 1] : Lo.ret;
+  dimLine(root, V3(W / 2 + 0.16, M(P.lowStart), D), V3(W / 2 + 0.16, M(topC), D), `MoMaの投入面 ${P.lowStart}〜${topC}mm`);
+  dimLine(root, V3(W / 2 + 0.16, M(Lo.band[0]), -0.04), V3(W / 2 + 0.16, M(Lo.ret), -0.04), `人の開口 ${P.bandStart}〜${Lo.ret}mm`);
+  heightCheck(Lo.ret, '空箱返却段の置き面');
+  const W0 = makeWorker(); W0.g.position.set(xc(0), 0, -0.42); root.add(W0.g);
+  label(W0.g, '作業者（開口の中だけで取り出し・空箱返却）', 'human', V3(0, 1.85, 0));
+  const m = makeMoMa({ box: main, tool: 'gripper' }), zM = momaZ(D), stopX = 0 - ARM_X();
+  m.g.position.set(stopX, 0, zM); root.add(m.g); stopMark(root, stopX, zM); stopLabel(root, stopX, zM);
+  const deck = [makeBox(main, sku(0, 1)), makeBox(main, sku(2, 0)), makeBox(main, sku(1, 3)), makeBox(main, sku(0, 3))];
+  m.fill(deck); m.ik(m.homeW()); momaLabels(m, 'グリッパ（TP幅335用）＋手先カメラ');
+  payloadCheck(C.tp.fullKg, 'TP箱（部品入り）');
+  const T = band[0][1], R = rets[0], rs = lowS[0][1], empty = T.q[0];
+  let ef;
+  const steps = [
+    A.call(() => { m.g.position.x = -4.3; }, '消費連動：空箱の信号を受けてMoMaが出発', 0.6),
+    A.drive(m, stopX, 3.0, 'MoMaが棚の中央に停止（1か所の停止で全12品番と予備段に届く）'),
+    A.call(() => empty.userData.setEmpty(), 'ライン側：先頭の箱の部品を使い切る（時間は省略）', 0.9, 'human'),
+    ...workerPick(W0, T, '作業者が空箱を取り出す'),
+    ...workerPlace(W0, R, `空箱を返却段（${Lo.ret}mm・人の開口の最上段）の手前へ置き…`, 1.4, () => R.sAt(0)),
+    { label: '奥へ押す（平らなので押した位置で止まる）', who: 'human', dur: 1.1, start() { ef = empty.userData.s; }, update(k) { const s = lerp(ef, R.entryS, k); empty.userData.s = s; empty.position.copy(R.posS(s)); W0.setPose(1.4 + 0.15 * k); } },
+    { label: '次の箱を手前へ引き寄せる（滑り板。約9kgで20N程度・仮）', who: 'human', dur: 1.3, start() { ef = T.q.map(b => b.userData.s); }, update(k) { T.q.forEach((b, i) => { const s = lerp(ef[i], T.sAt(i), k); b.userData.s = s; b.position.copy(T.posS(s)); }); W0.setPose(0.9 * (1 - k * 0.6)); } },
+    ...scan(m, () => wp(mk[0]), '手先カメラで棚の左右マーカーを読み、全間口と予備段の位置を計算'),
+    ...transfer(m, rs.box, () => rs.pos.clone(), () => T.wpos(T.sAt(1)), toLane(T, () => T.sAt(1)), { fromOut: V3(0, 0.03, 0.3), l0: `真下の予備在庫段（${Lo.low[1]}mm）から同じ品番の箱を取る`, l2: '取り出し段の奥（待機位置）へ運ぶ', l3: '待機位置へ置く（人の手元はすぐ2箱に戻る）' }),
+    ...verify(m, () => deck[0], '台車の箱のバーコードを照合', `照合OK：${deck[0].userData.code}`),
+    ...transfer(m, deck[0], () => wp(m.g, m.slots[0]), () => rs.pos.clone(), toSpot(root, rs.pos.clone()), { l2: '予備在庫段の手前へ運ぶ', l3: '台車の箱で予備在庫段を補充（床から310mm）' }),
+    ...transfer(m, empty, () => R.wpos(R.entryS), () => wp(m.g, m.slots[0]), toDeck(m, 0), { fromLane: R, fromOut: V3(0, 0.03, 0.22), toApp: V3(0, 0.12, 0.14), l0: `返却段（${Lo.ret}mm）の通路側の端で空箱をつかむ`, l2: '空箱を台車へ運ぶ', l3: '台車に空箱を積む（かんばん回収）' }),
+    A.arm(m, () => m.homeW(), 0.9, '手先を走行姿勢に戻す'),
+    A.drive(m, 4.3, 2.8, 'MoMaは次の棚へ'),
+  ];
+  return { steps, center: V3(0, 0.95, D / 2 + 0.3), span: 0.78 };
+}
+
 /* ===================== 数値（CONFIG から計算） ===================== */
 const E = C.estimate;
 const perMoMa = (sec, rate = E.boxesPerLanePerHour) => E.utilization * 3600 / (rate * sec);
@@ -1092,6 +1217,9 @@ const STATS = {
   p4: () => { const P = C.plans.p4, fr = P.units * P.levels, uw = C.shooter.laneW + 80; return { fr, w: P.units * uw + (P.units - 1) * P.gap, sku: fr, per: capOf(P.depth, P.slopePct, C.box.d), eMin: Math.round(P.firstH + P.depth * P.slopePct / 100), eMax: Math.round(P.firstH + (P.levels - 1) * P.levelPitch + P.depth * P.slopePct / 100), sec: P.secPerBox, mo: perMoMa(P.secPerBox) }; },
   p5: () => { const P = C.plans.p5; return { fr: 1, w: P.kitW + 60 + 70, sku: P.partsPerKit, per: capOf(P.depth, 0, P.kitD), eMin: P.laneH, eMax: P.laneH, sec: P.secPerBox, mo: perMoMa(P.secPerBox, P.kitsPerHour), kit: true }; },
   p6: () => inclineStats(C.plans.p6),
+  p7: () => { const Lo = p7Layout(), P = Lo.P, fr = P.cols * P.bandLevels, topC = Lo.high.length ? Lo.high[Lo.high.length - 1] : Lo.ret;
+    return { fr, w: Lo.width, sku: fr, per: 2, extra: Lo.stock / fr, eMin: P.lowStart, eMax: topC, sec: P.secPerBox, mo: perMoMa(P.secPerBox),
+      area: Lo.width * P.depth / 1e6, baseArea: Lo.base.width * Lo.base.depth / 1e6, boxes: Lo.boxes, baseBoxes: Lo.base.boxes }; },
 };
 function kpis(id) {
   const s = STATS[id]();
@@ -1102,6 +1230,7 @@ function kpis(id) {
     [s.eMin === s.eMax ? `${s.eMin} mm` : `${s.eMin}〜${s.eMax} mm`, 'MoMaの投入高さ（仮）'],
     [`${s.sec} 秒/箱`, '1箱の補充時間（走行込み・仮）'],
     [s.mo < 10 ? `${f1(s.mo)} 間口/台` : `${f0(s.mo)} 間口/台`, 'MoMa 1台の担当間口数の目安（仮）'],
+    ...(s.area ? [[`${s.area.toFixed(2)} m²`, `棚の床面積（従来 ${s.baseArea.toFixed(2)} m² の ${Math.round(s.area / s.baseArea * 100)}%・仮）`], [`${s.boxes} 箱`, `収納できる箱数（従来 ${s.baseBoxes} 箱）`]] : []),
   ];
 }
 
@@ -1196,6 +1325,25 @@ const PLANS = [
     ease: ['○ 既存棚の改造＋表示灯・端末・床表示で済む。', '切り替えの運用ルール（誰が・いつ・どう戻すか）の整備が必要。'],
     verify: ['モード切替の手順と所要時間、MoMaと人が同時に入らない仕組みの確実さ', '人が補充したときの照合漏れの起きやすさ（ハンディ端末の運用）', 'MoMa停止からライン停止までの余裕時間（間口の在庫箱数×消費の間隔）と、人が駆けつけるまでの時間'],
     cmp: { ease: ['○', '既存棚の改造＋運用'], dens: ['△', '上下段を使わない'], jam: ['△', '傾斜ローラーが残る'], mis: ['○', '人もMoMaも照合'], layout: ['△', '棚は従来どおり固定'], red: ['◎', '同じ口で人が代われる'] } },
+  { id: 'p7', tab: '⑦ 縦型省スペース型（TP）', sub: '縦長タワー方式：MoMaは床から1.8mまで全面で投入し、人は700〜1460mmの開口だけで受け取る', build: buildP7,
+    lead: '①〜⑥を踏まえた「床面積を最小にする」案。奥行きを箱1〜2個分に縮め、そのぶんの在庫は人が使えない足元と頭上へ縦に積む。同じ36箱を従来の約半分の床で持つ。',
+    struct: ['TP規格コンテナ（底面167.5mmモジュール）に合わせた<b>縦長タワー</b>。奥行き1060mm＝6モジュール（1005）＋余裕で、TP-341.5B は2箱、TP-391.5B（長物1005）は1箱、TP-331.5B は3箱がそのまま入る。',
+      '間口360mm（幅335＋余裕）×3列。段の間隔は190mm（高さ149の箱＋棚板・すき間）。棚板の穴の位置を変えれば、高さ195・241の箱にも段を合わせられる。',
+      '高さ方向は3つの区分：<b>下の予備在庫段</b>120〜500mm（3段・MoMa専用）／<b>人の開口</b>700〜1460mm（取り出し4段＋空箱返却1段）／<b>上の予備在庫段</b>1650mm（MoMa専用）。',
+      '取り出し段は傾斜なしの滑り板と前端の当て板。傾斜の分の高さを使わないので、人の開口に4段入る。',
+      'ライン側は開口以外を透明板で閉じる。位置決めの基準は棚の左右2枚のマーカー。',
+      '空箱は、人が返却段（1460mm）に置いて奥へ押し、MoMaが通路側の端から回収する。'],
+    moma: ['棚の中央に1回停止するだけで、3列×全段（120〜1650mm）に手が届く（リーチ1300mm・仮）。',
+      '空箱の信号を受けて到着 → マーカーで位置を計算 → 真下（または真上）の予備在庫段から同じ品番を取り、取り出し段の待機位置へ移す。',
+      '台車の箱で予備在庫段を補充し、返却段の端から空箱を回収して台車に積む。'],
+    human: ['受け取りは700〜1460mmの開口の中だけ。足元や頭上の棚には触れない。',
+      '箱を使い切ったら空箱を返却段に置いて奥へ押し、次の箱を手前に引き寄せる（滑り板で約20N・仮）。MoMaが先に来ていれば押し込みもMoMaが行う。',
+      'ライン側の幅は1.2m（3列）と狭く、作業者の左右の移動が少ない。'],
+    solves: ['混流・多品種で棚が溢れる（同じ箱数を約半分の床に）', 'レイアウト変更のたびの作り直し（TPモジュールに合わせた仕切りと段の差し替え）', '詰まり・勢いがつきすぎる（傾斜ローラーを使わない）', '補充の負担（足元・頭上の重い箱はMoMaだけが扱う）', '受け渡し口の標準化（奥行き・間口・段の間隔をTP規格から決める）'],
+    risks: ['MoMaへの依存が大きい。止まると予備在庫段（足元・頭上）の箱は人では扱いにくい。', '待機位置の次の箱は、MoMaが来るまで作業者が手前に引き寄せる必要がある。', '部品入りでアームの可搬（10kg・仮）を超えるTP箱（容量の大きい型）は対象外。長物（1005）は片持ちで持つと手先に大きな負担。', '長さ1340mm以上（TP-3121.5Bなど）はこの奥行きに入らない。別の段か別の供給方法が要る。', '背が1.86mになり、ライン側から通路側が見えにくい。透明板で見通しを残す。'],
+    ease: ['△ 新規製作。ただし構造は平らな棚板と仕切りだけで単純。', 'TP箱をそのまま使えるため、箱の入れ替えは不要。'],
+    verify: ['床上120mmと1650mmの予備在庫段での把持（リーチ・姿勢・アームと床の干渉）と、1箱あたりの動作時間', '部品入りTP箱（特に長物TP-391.5B）を持ったときの手先の負担と、平らな滑り板での押し込み・引き寄せの力', 'MoMa停止時に、開口内の2箱と予備在庫で何分ラインを止めずにもつか。人が予備段の箱を取り出すときの負担'],
+    cmp: { ease: ['△', '新規（構造は単純）'], dens: ['◎', '同じ箱数で床が約半分'], jam: ['○', '転がらない滑り板'], mis: ['○', '照合＋予備段も品番固定'], layout: ['○', 'TPモジュールで仕切り変更'], red: ['△', '予備段は人に不向き'] } },
 ];
 
 /* ===================== 画面（タブ・右パネル・比較表） ===================== */
@@ -1214,13 +1362,22 @@ function renderPanel(P) {
     <p class="note">数値はすべて仮値です。ファイル冒頭の CONFIG を変えると、3D・寸法・この欄の数値が変わります。担当間口数の目安の計算は「比較表」タブを参照。</p>`;
   renderWarns(); panel.scrollTop = 0;
 }
+function p7Compare() {
+  const Lo = p7Layout(), P = Lo.P, aw = C.moma.aisleTurn, B = Lo.base, topC = Lo.high.length ? Lo.high[Lo.high.length - 1] : Lo.ret;
+  const r = (name, w, d, boxes, open, feed) => { const a = w * d / 1e6, at = w * (d + aw) / 1e6; return `<tr><th class="plan">${name}</th><td class="num">${w.toLocaleString()}×${Math.round(d).toLocaleString()}</td><td class="num">${a.toFixed(2)}</td><td class="num">${at.toFixed(2)}</td><td class="num">${boxes}</td><td class="num">${f1(boxes / a)}</td><td class="num">${open}</td><td class="num">${feed}</td></tr>`; };
+  return `<h3 style="font-size:14px;margin:18px 0 4px">同じ箱数での床面積（${P.mainType}・品番${P.cols * P.bandLevels}種・仮）</h3>
+    <div style="overflow-x:auto"><table class="cmp" style="min-width:860px"><thead><tr><th>案</th><th class="num">棚の外形 幅×奥行き（mm）</th><th class="num">棚の床面積（m²）</th><th class="num">通路${aw}mm込みの面積（m²）</th><th class="num">収納箱数（箱）</th><th class="num">床1m²あたり（箱/m²）</th><th class="num">人側の開口（mm）</th><th class="num">投入側の高さ範囲（mm）</th></tr></thead><tbody>
+    ${r(`従来：傾斜ローラー ${P.baseline.cols}列×${P.baseline.levels}段×${P.baseline.deep}箱`, B.width, B.depth, B.boxes, `${P.bandStart}〜${B.retLine}`, `${P.bandStart}〜${B.retLine}`)}
+    ${r('⑦ 縦型省スペース型', Lo.width, P.depth, Lo.boxes, `${P.bandStart}〜${Lo.ret}`, `${P.lowStart}〜${topC}`)}</tbody></table></div>
+    <p class="note">従来は TP-341.5B を長手を奥にして3箱並べ、勾配${P.baseline.slopePct}%（仮）で人の取り出し域に3段とした場合。どちらも品番${P.cols * P.bandLevels}種・${B.boxes}箱です。</p>`;
+}
 function renderCompare() {
   const cls = s => ({ '◎': 'a', '○': 'b', '△': 'c', '×': 'd' }[s]);
   const cell = v => `<td><span class="s ${cls(v[0])}">${v[0]}</span>${v[1]}</td>`;
   const cur = { fr: 9, w: 3 * (C.shooter.laneW + 70) };
   const rows = PLANS.map(P => { const s = STATS[P.id](), c = P.cmp;
     return `<tr><th class="plan">${P.tab}</th>${cell(c.ease)}${cell(c.dens)}<td class="num">${f1(s.fr / (s.w / 1000))}</td><td class="num">${f1(s.sku / (s.w / 1000))}</td>${cell(c.jam)}${cell(c.mis)}${cell(c.layout)}${cell(c.red)}<td class="num">${s.mo < 10 ? f1(s.mo) : f0(s.mo)}</td><td class="num">${s.per}${s.kit ? '（台分）' : ''}${s.extra ? `＋予備${s.extra}` : ''}</td><td class="num">${s.sec}</td></tr>`; }).join('');
-  compare.innerHTML = `<h2>6案の比較表</h2>
+  compare.innerHTML = `<h2>7案の比較表</h2>
     <p class="note">評価は叩き台としての相対評価です（◎ とても良い・○ 良い・△ 課題あり・× 不向き）。数値はすべて CONFIG の仮値から計算しています。</p>
     <div class="legend2"><span>標準箱 ${C.box.w}×${C.box.d}×${C.box.h}mm・${C.box.kg}kg（仮）</span><span>MoMa 台車 ${C.moma.baseW}×${C.moma.baseL}mm・リーチ${C.moma.armReach}mm・可搬${C.moma.payloadKg}kg・最大${C.moma.maxBoxes}箱/巡回（仮）</span></div>
     <div style="overflow-x:auto"><table class="cmp"><thead><tr>
@@ -1228,6 +1385,7 @@ function renderCompare() {
       <th>詰まりにくさ</th><th>誤投入防止</th><th>レイアウト変更の軽さ</th><th>停止時の冗長性</th>
       <th class="num">MoMa 1台あたりの担当間口数の目安<br>（間口/台・仮）</th><th class="num">ラインサイド在庫<br>（箱/間口・仮）</th><th class="num">1箱の補充時間<br>（秒/箱・仮）</th></tr></thead>
     <tbody><tr class="base"><th class="plan">参考：現行（人が補充）</th><td>—</td><td>基準</td><td class="num">${f1(cur.fr / (cur.w / 1000))}</td><td class="num">${f1(cur.fr / (cur.w / 1000))}</td><td><span class="s c">△</span>傾斜ローラー</td><td><span class="s c">△</span>目視のみ</td><td><span class="s c">△</span>作り直し</td><td>—</td><td class="num">—</td><td class="num">${capOf(1500, 4, C.box.d)}</td><td class="num">—</td></tr>${rows}</tbody></table></div>
+    ${p7Compare()}
     <h3 style="font-size:14px;margin:18px 0 4px">担当間口数の目安の計算（仮）</h3>
     <p class="note" style="font-size:13px;line-height:1.8">担当間口数（間口/台）＝ 稼働率 ${E.utilization * 100}%（仮）× 3600秒 ÷（1間口あたりの消費 ${E.boxesPerLanePerHour}箱/時（仮）× 1箱の補充時間 秒/箱（仮））<br>
     ⑤順序供給型は、1間口の消費をライン速度 ${C.plans.p5.kitsPerHour}台/時（仮）として計算しています。つまり「工程数/台」の意味です。<br>
@@ -1235,6 +1393,7 @@ function renderCompare() {
     <h3 style="font-size:14px;margin:18px 0 4px">読み方</h3>
     <ul class="note" style="font-size:13px;line-height:1.8"><li>最初の1ラインには ①現行改良型（後付け）が入れやすく、⑥人・ロボット兼用型の表示灯と切替手順を足すと停止時も安心です。</li>
     <li>詰まりの多い工程は ②フラット押し込み型、多品種で間口が足りない工程は ③高密度型 か ⑤順序供給型 が候補です。</li>
+    <li>床面積を最小にしたいときは ⑦縦型省スペース型。①〜⑥の考え方（③の予備段、②の平ら置き、④のモジュール化）をTP規格に合わせて組み合わせた案です。</li>
     <li>レイアウト変更が多い工場は ④可搬モジュール型 のユニット外寸・基準板・IDマーカーを標準インターフェースとして先に決めておくと、他の案にも流用できます。</li></ul>`;
 }
 
@@ -1280,7 +1439,7 @@ function selectTab(i) {
   try { history.replaceState(null, '', '#' + PLANS[i].id); } catch (e) { }
 }
 const tabs = $('#tabs');
-[...PLANS.map(P => P.tab), '比較表（6案）'].forEach((t, i) => { const b = document.createElement('button'); b.className = 'tab' + (i === PLANS.length ? ' cmp' : ''); b.textContent = t; b.setAttribute('role', 'tab'); b.onclick = () => selectTab(i); tabs.appendChild(b); });
+[...PLANS.map(P => P.tab), '比較表（7案）'].forEach((t, i) => { const b = document.createElement('button'); b.className = 'tab' + (i === PLANS.length ? ' cmp' : ''); b.textContent = t; b.setAttribute('role', 'tab'); b.onclick = () => selectTab(i); tabs.appendChild(b); });
 $('#btnPlay').onclick = () => { setPlay(!playing); if (playing && tline.done) loadPlan(cur, false); };
 $('#btnRestart').onclick = () => { loadPlan(cur, false); };
 $('#selSpeed').onchange = e => speed = +e.target.value;
