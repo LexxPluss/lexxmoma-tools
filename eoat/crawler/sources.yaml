@@ -576,3 +576,27 @@ sources:
     status: blocked
     note: "526 / 接続不可 / 404"
     checked: 2026-10-26
+  - key: photoneo
+    label: Photoneo 事例(3D ビジョン+ロボット、case studies)
+    type: sier
+    case_type: sier_case
+    region: 欧州
+    country: スロバキア
+    lang: en
+    index_urls: ["https://www.photoneo.com/case-study-sitemap.xml"]
+    article: "^https://(www\\.)?photoneo\\.com/case-study/[^/?#]+/?$"
+    status: ok
+    checked: 2026-10-28
+    note: 一覧ページ(/case-studies/)は 404。sitemap から個別ページを取る(ループ 9)
+  - key: myrobotsolution
+    label: 마이로봇솔루션 適用事例(韓国 SIer ポータル)
+    type: sier
+    case_type: sier_case
+    region: その他アジア
+    country: 韓国
+    lang: ko
+    index_urls: ["https://www.myrobotsolution.com/sitemap/cases-sitemap.xml"]
+    article: "^https://(www\\.)?myrobotsolution\\.com/[^/?#]*cases?/[^/?#]+/?$"
+    status: ok
+    checked: 2026-10-28
+    note: 事例約 430 本(溶接・AMR 単独も含む。規則と LLM レビューで選別)。sitemap から取る(ループ 9)
