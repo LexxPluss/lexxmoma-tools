@@ -54,6 +54,11 @@ def main():
                 r["fieldSources"]["tasks"] = src("tasks")
             if setlist(r["workpiece"], "materials", rv.get("materials"), mats):
                 r["fieldSources"]["workpiece.materials"] = src("workpiece.materials")
+            elif rv.get("materials") == [] and r["workpiece"]["materials"]:
+                # レビューが「本文に材料の記載が無い」と判断したら規則の値(本文の別の語から拾ったもの)を消す(ループ 10)
+                r["workpiece"]["materials"] = []
+                r["fieldSources"].pop("workpiece.materials", None)
+                changed = True
             rc = rv.get("robot_class")
             if rc in CLASSES and rc != r["robot"].get("class"):
                 r["robot"]["class"] = rc
