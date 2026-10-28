@@ -65,11 +65,35 @@ def _robots_ok(url):
         return True
 
 
+def _reserve_shared(host, slot):
+    """別のプロセス(discover と crawl、取得元を調べるエージェント)が同じドメインに同時に行っても 2 秒あくよう、
+    ドメインごとの予約時刻を logs/.ratelimit/<host> に置いてファイルロックで回す(ループ 10)。使えない環境ではプロセス内の予約だけ。"""
+    try:
+        import fcntl
+        d = LOGS / ".ratelimit"
+        d.mkdir(parents=True, exist_ok=True)
+        with open(d / re.sub(r"[^A-Za-z0-9.-]", "_", host), "a+") as f:
+            fcntl.flock(f, fcntl.LOCK_EX)
+            f.seek(0)
+            try:
+                prev = float(f.read().strip() or 0)
+            except ValueError:
+                prev = 0.0
+            slot = max(slot, prev + MIN_INTERVAL)
+            f.seek(0)
+            f.truncate()
+            f.write(f"{slot:.3f}")
+        return slot
+    except Exception:
+        return slot
+
+
 def polite_wait(url):
     """同一ドメインへの前回アクセスから MIN_INTERVAL 秒以上あける。並列実行でも守れるよう、ロックの中で次の枠を予約してから待つ。"""
     host = urllib.parse.urlsplit(url).netloc.replace("www.", "")
     with _hit_lock:
         slot = max(time.time(), _last_hit.get(host, 0) + MIN_INTERVAL)
+        slot = _reserve_shared(host, slot)
         _last_hit[host] = slot
     w = slot - time.time()
     if w > 0:
