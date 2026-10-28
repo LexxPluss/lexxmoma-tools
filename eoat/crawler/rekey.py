@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """公開側の暗号化データ(site/members/eoat-db/)を、別のパスワードで暗号化し直す。data/ が無い環境でも使える。
 
-data.enc.json と画像(img/thumb/*.bin・img/detail/*.bin)を古い鍵で全部復号できることを確かめてから、新しい salt・鍵で書き換える。
+data.enc.json・data.detail.enc.json と画像(img/thumb/*.bin・img/detail/*.bin)を古い鍵で全部復号できることを確かめてから、新しい salt・鍵で書き換える。
 1 件ずつ [iv 12B][ct] を同じ長さで暗号化し直すので、パック内の位置(thumb.off / len)と事例データの中身は変わらない。
 新しいパスワードは環境変数 EOAT_PW(または FACTORY_PW / PEOPLE_PW)。古いパスワードは --old-password(既定はパイロット用の pilot-test)。
 使い方: python rekey.py [--old-password pilot-test]
@@ -42,6 +42,15 @@ def main():
         data = json.loads(zlib.decompress(open_record(old_key, base64.b64decode(enc["iv"]) + base64.b64decode(enc["ct"]))))
     except InvalidTag:
         raise SystemExit("古いパスワードで data.enc.json を復号できません(--old-password を確認)")
+    # 詳細用(ループ 10 から。data.enc.json と同じ salt・鍵)
+    detail = None
+    dp = SITE_OUT / "data.detail.enc.json"
+    if dp.exists():
+        denc = json.loads(dp.read_text(encoding="utf-8"))
+        try:
+            detail = json.loads(zlib.decompress(open_record(old_key, base64.b64decode(denc["iv"]) + base64.b64decode(denc["ct"]))))
+        except InvalidTag:
+            raise SystemExit("古いパスワードで data.detail.enc.json を復号できません")
 
     # 一覧用パック: 事例データの thumb.{pack, off, len} が各レコードの位置。パック全体を隙間なく覆うことも確かめる
     thumb_dir, detail_dir = SITE_OUT / "img" / "thumb", SITE_OUT / "img" / "detail"
@@ -82,6 +91,8 @@ def main():
     for path, blob in out.items():
         path.write_bytes(blob)
     encrypt_json(data, new_key, salt, SITE_OUT / "data.enc.json")
+    if detail is not None:
+        encrypt_json(detail, new_key, salt, dp, js=False)
     print(f"暗号化し直しました: 事例 {len(data['cases'])} 件・一覧用パック {len(spans)}・詳細画像 {len(detail_files)} 枚")
 
 

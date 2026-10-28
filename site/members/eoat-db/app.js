@@ -1,5 +1,5 @@
 /* エンドエフェクタ事例データベース(社内・試験運用)
- * 入口: 社内ツール共通のパスワード(members-auth.js)。データ(data.enc.json)も画像(img/*.bin)も同じ鍵で復号する。
+ * 入口: 社内ツール共通のパスワード(members-auth.js)。データ(一覧用 data.enc.json・詳細用 data.detail.enc.json)も画像(img/*.bin)も同じ鍵で復号する。
  * 画像の瞬時表示: 鍵は 1 回だけ導出 → 一覧用パックを Cache Storage に置き、必要な分から復号(Web Crypto, 1 枚数ミリ秒)→ Blob URL を LRU で保持。
  * 検索ロジックは search.js(DOM 非依存)。計測は member/eoat-db/...(入力内容は送らず件数だけ)。 */
 (function () {
@@ -191,8 +191,29 @@
     $('#hdrCount').textContent = ALL.length.toLocaleString('ja-JP') + ' 件 · ' + (D.built_at || '');
     bind();
     run(true);
+    // 詳細用のデータ(出典の証拠文・画像のクレジット・適用可能性)は最初の 24 枚が出てから読む(ループ 10: 一覧用だけなら Fast 3G の復号が早い)
+    (function waitGrid(n) { if (window.__eoat.marks.firstGrid != null || n > 50) loadDetail(); else setTimeout(function () { waitGrid(n + 1); }, 100); })(0);
     track('open', 'エンドエフェクタ事例DBを開いた');
     if (F.c && BYID[F.c]) openCase(F.c, true);
+  }
+
+  var DETAIL = null;
+  function loadDetail() {
+    if (DETAIL) return DETAIL;
+    if (!D.detail) return Promise.resolve();
+    DETAIL = fetch(D.detail, { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw new Error('detail'); return r.json(); })
+      .then(function (enc) { return decryptData(KEY, enc); })
+      .then(function (d) {
+        Object.keys(d.cases || {}).forEach(function (id) {
+          var c = BYID[id], x = d.cases[id]; if (!c) return;
+          if (x.fieldSources) c.fieldSources = x.fieldSources;
+          if (x.interpretation) c.interpretation = x.interpretation;
+          (c.images || []).forEach(function (im) { var e = (x.images || {})[im.id]; if (e) Object.keys(e).forEach(function (k) { im[k] = e[k]; }); });
+        });
+        mark('detail');
+      })
+      .catch(function () { DETAIL = null; });   // 読めなければ詳細は一覧用の値だけで出す(次に開いたときにもう一度読む)
+    return DETAIL;
   }
 
   function labels(kind, keys) { return (keys || []).map(function (k) { return S.labelOf(TAX, kind, k); }); }
@@ -409,6 +430,11 @@
 
   // ---------------------------------------------------------------- 詳細
   function openCase(id, silent) {
+    var c = BYID[id]; if (!c) return;
+    if (c.fieldSources || !D.detail) return openCaseNow(id, silent);
+    loadDetail().then(function () { openCaseNow(id, silent); });
+  }
+  function openCaseNow(id, silent) {
     var c = BYID[id]; if (!c) return;
     CUR = id;
     F.c = id;

@@ -41,7 +41,9 @@ def main():
             im["detail"] = {k: v for k, v in im["detail"].items() if k in ("w", "h", "bytes")}
     build.pack_images(cases, key, pidx, out)
     data = dict(plain, cases=cases, count=len(cases), packs=[p["name"] for p in pidx["packs"]], preview=True)
-    build.encrypt_json(data, key, salt, out / "data.enc.json")
+    light, detail = build.split_public(data)
+    build.encrypt_json(light, key, salt, out / "data.enc.json")
+    build.encrypt_json(detail, key, salt, out / "data.detail.enc.json", js=False)
     for f in ("app.js", "search.js", "style.css"):
         shutil.copy(SITE_OUT / f, out / f)
     for f in ("theme.js", "lexxpluss-logo.png", "favicon.png"):

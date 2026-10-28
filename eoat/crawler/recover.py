@@ -21,10 +21,15 @@ REGION_OF = {"japan": "日本", "jp": "日本", "na": "北米", "us": "北米", 
 def decrypt(password):
     from cryptography.hazmat.primitives.ciphers.aead import AESGCM
     from build import derive_key
+    from build import merge_detail
     enc = jload(SITE_OUT / "data.enc.json")
     key = derive_key(password, base64.b64decode(enc["salt"]))
-    plain = zlib.decompress(AESGCM(key).decrypt(base64.b64decode(enc["iv"]), base64.b64decode(enc["ct"]), None))
-    return json.loads(plain)
+    open_ = lambda e: json.loads(zlib.decompress(AESGCM(key).decrypt(base64.b64decode(e["iv"]), base64.b64decode(e["ct"]), None)))
+    data = open_(enc)
+    # ループ 10 から出典の証拠文(fieldSources)などは詳細用(data.detail.enc.json)にある
+    if data.get("detail"):
+        data = merge_detail(data, open_(jload(SITE_OUT / data["detail"])))
+    return data
 
 
 def main():

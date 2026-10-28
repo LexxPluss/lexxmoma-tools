@@ -40,14 +40,55 @@ def seal(key, plain):
     return iv + AESGCM(key).encrypt(iv, plain, None)
 
 
-def encrypt_json(data, key, salt, out_json):
+def encrypt_json(data, key, salt, out_json, js=True):
     plain = zlib.compress(json.dumps(data, ensure_ascii=False, separators=(",", ":")).encode("utf-8"), 9)
     blob = seal(key, plain)
     b64 = lambda b: base64.b64encode(b).decode("ascii")
     enc = json.dumps({"v": 2, "kdf": "PBKDF2-SHA256", "iter": ITER, "salt": b64(salt), "iv": b64(blob[:12]), "z": "deflate", "ct": b64(blob[12:])})
     out_json.parent.mkdir(parents=True, exist_ok=True)
     out_json.write_text(enc, encoding="utf-8")
-    out_json.with_name("data.enc.js").write_text("window.EOAT_ENC=" + enc + ";\n", encoding="utf-8")
+    if js:
+        out_json.with_name("data.enc.js").write_text("window.EOAT_ENC=" + enc + ";\n", encoding="utf-8")
+
+
+# 詳細画面だけが使う値(ループ 10: 598 件で data.enc 531 KB・Fast 3G の復号まで 2.8 秒 → 一覧用と詳細用に分け、詳細は最初の画面の後に読む)
+DETAIL_CASE_KEYS = ("fieldSources", "interpretation")
+DETAIL_IMAGE_KEYS = ("source_image_url", "source_page_url", "credit", "license_note", "alt_ja", "retrieved_at", "phash", "orig", "relevance", "kind", "policy")
+
+
+def split_public(data):
+    """公開データを 一覧用(data.enc.json)と 詳細用(data.detail.enc.json: {"cases": {id: {fieldSources, interpretation, images: {画像 id: {…}}}}})に分ける。
+    一覧用だけで検索・絞り込み・カードが描ける。app.js は詳細用を読んだら事例に戻す(merge_detail)。"""
+    light = dict(data, cases=[], detail="data.detail.enc.json")
+    detail = {"cases": {}}
+    for r in data["cases"]:
+        r = dict(r)
+        d = {k: r.pop(k) for k in DETAIL_CASE_KEYS if k in r}
+        ims, dims = [], {}
+        for im in r.get("images", []):
+            im = dict(im)
+            dims[im["id"]] = {k: im.pop(k) for k in DETAIL_IMAGE_KEYS if k in im}
+            ims.append(im)
+        r["images"] = ims
+        d["images"] = dims
+        detail["cases"][r["id"]] = d
+        light["cases"].append(r)
+    return light, detail
+
+
+def merge_detail(light, detail):
+    """split_public の逆(recover.py・rekey.py・テスト用)。"""
+    out = dict(light, cases=[])
+    out.pop("detail", None)
+    for r in light["cases"]:
+        r = dict(r)
+        d = (detail or {}).get("cases", {}).get(r["id"], {})
+        for k in DETAIL_CASE_KEYS:
+            if k in d:
+                r[k] = d[k]
+        r["images"] = [dict(im, **d.get("images", {}).get(im["id"], {})) for im in r.get("images", [])]
+        out["cases"].append(r)
+    return out
 
 
 # ---------------------------------------------------------------- 文章(自分の言葉で。原文は写さない)
@@ -322,9 +363,11 @@ def main():
             (r.get("quality") or {}).pop("scores", None)
             for v in (r.get("fieldSources") or {}).values():
                 v.pop("note", None)
-        encrypt_json(slim, key, salt, SITE_OUT / "data.enc.json")
+        light, detail = split_public(slim)
+        encrypt_json(light, key, salt, SITE_OUT / "data.enc.json")
+        encrypt_json(detail, key, salt, SITE_OUT / "data.detail.enc.json", js=False)
         total = sum(f.stat().st_size for f in (SITE_OUT / "img").glob("**/*.bin"))
-        print(f"暗号化 → {SITE_OUT.relative_to(SITE_OUT.parents[2])}/data.enc.json  画像 +{added/1e6:.1f} MB(合計 {total/1e6:.1f} MB, パック {len(pidx['packs'])})")
+        print(f"暗号化 → {SITE_OUT.relative_to(SITE_OUT.parents[2])}/data.enc.json({(SITE_OUT / 'data.enc.json').stat().st_size // 1024} KB)+ data.detail.enc.json({(SITE_OUT / 'data.detail.enc.json').stat().st_size // 1024} KB)  画像 +{added/1e6:.1f} MB(合計 {total/1e6:.1f} MB, パック {len(pidx['packs'])})")
     log.save()
     if not a.no_audit:
         import audit

@@ -175,6 +175,20 @@ class TestImagesAndBuild(unittest.TestCase):
         with self.assertRaises(Exception):
             AESGCM(build.derive_key("other", b"\x01" * 16)).decrypt(blobs[0][:12], blobs[0][12:], None)
 
+    def test_split_public_roundtrip(self):
+        # 一覧用には証拠文・クレジットを入れず、詳細用と合わせると元に戻る(ループ 10)
+        import build
+        data = {"count": 1, "cases": [{"id": "a1", "title_ja": "t", "sources": [{"url": "https://x/1", "publisher": "X"}],
+                                       "fieldSources": {"tasks": {"evidence": ["e"]}}, "interpretation": {"lexxmoma_fit": None},
+                                       "images": [{"id": "i1", "thumb": {"pack": "p-0001.bin"}, "credit": "X(x)", "source_page_url": "https://x/1"}]}]}
+        light, detail = build.split_public(data)
+        c = light["cases"][0]
+        self.assertNotIn("fieldSources", c)
+        self.assertNotIn("credit", c["images"][0])
+        self.assertEqual(c["images"][0]["thumb"]["pack"], "p-0001.bin")
+        self.assertEqual(light["detail"], "data.detail.enc.json")
+        self.assertEqual(build.merge_detail(light, detail), data)
+
     def test_validate_requires_fields(self):
         import build
         L = build.Labels()
