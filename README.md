@@ -18,7 +18,7 @@ site/                      ← published root (https://<org>.github.io/<repo>/)
 ├ process-sketch/          ← Process Sketch (beta)
 ├ lexxmoma-roi/            ← ROI Calculator
 ├ robot-sier-map/          ← Robot SIer Database
-├ shooter-concepts/        ← MoMa対応シューター（部品供給棚）標準インターフェース 6案の3D比較（叩き台。CONFIG は index.html 冒頭）
+├ shooter-concepts/        ← MoMa対応シューター（部品供給棚）の本案「縦型省スペース型」の3D（寸法は cad/shooter-space と同じ規則。CONFIG は index.html 冒頭）
 ├ members/                 ← 社内ツールの入口(index.html)。共通パスワードはここだけで入れ、全ツールで使う(members-auth.js。未入力のツールは入口へ移動)
 ├ members/factory-map/     ← Factory Map (internal, encrypted data)
 └ members/people-db/       ← 顧客人事データベース (internal, encrypted data; built from people/)
