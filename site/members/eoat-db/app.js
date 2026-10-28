@@ -98,7 +98,12 @@
     order: [],        // LRU
     MAX: 1500,
     packOf: function (im) { return im.thumb && im.thumb.pack; },
-    cache: function () { return (window.caches && caches.open) ? caches.open('eoat-img-v1') : Promise.resolve(null); },
+    // v1 はパイロット用パスワードの鍵で暗号化したパック。鍵を変えたら名前を上げ、古い保管庫は消す
+    cache: function () {
+      if (!window.caches || !caches.open) return Promise.resolve(null);
+      if (!IMG.dropped) { IMG.dropped = true; caches.delete('eoat-img-v1').catch(function () { }); }
+      return caches.open('eoat-img-v2');
+    },
     fetchBin: function (path) {
       // プレビュー(preview.py で作った一式)ではバイナリを置けない場所向けに、パックを base64 のテキスト(.txt)で持つ
       if (D && D.preview) return fetch(path + '.txt').then(function (r) { if (!r.ok) throw new Error(path); return r.text(); }).then(function (t) { return b64(t.trim()).buffer; });

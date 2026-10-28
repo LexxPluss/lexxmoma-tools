@@ -160,7 +160,7 @@ Fast 3G は 448 KB のデータで 5.7 秒に悪化 → UI が使わない値を
 ## 収集の進捗(セッションをまたいで続きから再開するためのメモ。最終更新 2026-10-28 ループ 9)
 
 ### いまの状態
-- 公開データ: 403 件・画像 765 枚(`site/members/eoat-db/`、パイロット用パスワード `pilot-test` で暗号化。**マージ前に共通パスワードで `build.py --repack` を実行し直す**)
+- 公開データ: 403 件・画像 765 枚(`site/members/eoat-db/`、社内ツールの共通パスワードで暗号化。パイロット用パスワード `pilot-test` のまま公開されていたのを `crawler/rekey.py` で暗号化し直した。data/ がある環境では packs.json の key_check が古いので、次の `build.py` は画像パックを作り直す)
 - 候補 3,864 ページ(`data/candidates.json`)、取得済み 3,740(403 など 118 件は取れず)、抽出 3,714、規則で分類 764、画像あり 570 → LLM レビュー済み 593(復元 258 + 今回 335。事例ではない 142)→ 重複除去後 403
 - `data/`・`raw/` はこの環境にだけある(gitignore)。別の環境で再開するときは `recover.py --password …` で公開データから出典 URL・取得元・レビュー結果を戻し、`crawl.py` から回す(原本と画像は取り直し。約 1 時間)
 - LLM レビュー済みの id は `data/llm_out/*.json` にある(`recovered_published.json` は公開データから戻した分)。`llm_prep.py --only-missing` で未レビューだけを出せる。**レビュー中に `llm_prep.py` を再実行すると batch ファイルが消える**ので、バッチは別の名前(`llm_batches_r9a/`)に写してから配る
