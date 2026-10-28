@@ -23,6 +23,7 @@ site/                      ← published root (https://<org>.github.io/<repo>/)
 ├ members/factory-map/     ← Factory Map (internal, encrypted data)
 └ members/people-db/       ← 顧客人事データベース (internal, encrypted data; built from people/)
 people/                    ← 顧客人事データベースのクローラ・ビルド・手動投入 (see people/README.md; not published)
+cad/shooter-space/         ← シューター省スペース検討の CAD（CadQuery → STEP。see cad/shooter-space/README.md; not published)
 .github/workflows/pages.yml ← deploys site/ on push to main
 ```
 
