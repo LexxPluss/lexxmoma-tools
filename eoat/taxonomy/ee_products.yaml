@@ -11,7 +11,7 @@ products:
   - {maker: Robotiq, model: PE20, pattern: "\\bPE20\\b", principle: multi_pad, payload: 20}
   - {maker: Robotiq, model: AX10, pattern: "\\bAX10\\b", principle: multi_pad, payload: 10}
   - {maker: Robotiq, model: AX20, pattern: "\\bAX20\\b", principle: multi_pad, payload: 20}
-  - {maker: Robotiq, model: Palletizing Solution, pattern: "\\bRobotiq Palletizing Solution\\b|\\bPalletizing Solution\\b", principle: multi_pad, payload: 20}
+  - {maker: Robotiq, model: Palletizing Solution, pattern: "\\bRobotiq Palletizing Solution\\b|\\bRobotiq.{0,40}\\bPalletizing Solution\\b", principle: multi_pad, payload: 20}
   - {maker: OnRobot, model: RG2, pattern: "\\bRG2(-FT)?\\b", principle: parallel2, payload: 2}
   - {maker: OnRobot, model: RG6, pattern: "\\bRG6\\b", principle: parallel2, payload: 6}
   - {maker: OnRobot, model: 2FG7, pattern: "\\b2FG7\\b", principle: parallel2, payload: 7}

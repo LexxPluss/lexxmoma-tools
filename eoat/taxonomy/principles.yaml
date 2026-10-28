@@ -32,7 +32,7 @@ groups:
     items:
       - key: single_pad
         label: 単パッド
-        terms: [吸着パッド, 単一パッド, 1点吸着, suction cup, suction cups, suction pad, suction pads, vacuum cup, vacuum cups, single cup, single suction, VG10, VGC10, VGP20, EPick, AirPick, piCOBOT, Palletizing Solution, AX10, AX20, PE10, PE20, Lean Palletizing, piSOFTGRIP, vacuum gripper, vacuum grippers, suction gripper, 真空吸着, 吸着ハンド, 吸着]
+        terms: [吸着パッド, 単一パッド, 1点吸着, suction cup, suction cups, suction pad, suction pads, vacuum cup, vacuum cups, single cup, single suction, VG10, VGC10, VGP20, EPick, AirPick, piCOBOT, AX10, AX20, PE10, PE20, Lean Palletizing, piSOFTGRIP, vacuum gripper, vacuum grippers, suction gripper, 真空吸着, 吸着ハンド, 吸着]
       - key: multi_pad
         label: 複数パッド
         terms: [複数パッド, 多点吸着, 4点吸着, 2点吸着, multi-cup, multiple suction cups, multi-pad, 4 suction cups, four suction cups, cup array, vacuum gripper with cups]
