@@ -13,11 +13,10 @@ sources:
     country: カナダ
     lang: en
     index_urls: ["https://robotiq.com/resource-center?type_of_resources=Case+Studies"]
-    paginate: "https://robotiq.com/resource-center?type_of_resources=Case+Studies&page={n}"
-    max_pages: 6
     article: "^https://robotiq\\.com/resource-center/case-studies/[^/?#]+$"
     status: ok
-    checked: 2026-10-26
+    checked: 2026-10-28
+    note: "修正版: paginate を外す。&page=6 / &page=7 は 1 ページ目と同じ 35 件を返す(page を見ていない)。sitemap.xml の英語版の事例も 35 件なので、1 ページ目で全部(例 /ajinomoto, /sennheiser, /walt-machine)。/ja/ には同じ事例の訳 30 件、/ko/ に 1 件(/ko/resource-center/case-studies/korea-filter-engineering)"
   - key: onrobot
     label: OnRobot 事例(case studies)
     type: maker_gripper
@@ -26,12 +25,11 @@ sources:
     country: デンマーク
     lang: en
     index_urls: ["https://onrobot.com/en/case-studies"]
-    paginate: "https://onrobot.com/en/case-studies?page={n}"
-    max_pages: 8
     article: "^https://onrobot\\.com/en/case-studies/[^/?#]+$"
     render: true     # 本文と画像を JS で組み立てるので、Chromium で描画してから取る
     status: ok
-    checked: 2026-10-26
+    checked: 2026-10-28
+    note: "修正版: paginate を外す。?page=1,2,7,8 はどれも 1 ページ目と同じ 23 件を返す(page を見ていない)。sitemap.xml の /en/case-studies/ も同じ 23 件なので、英語の事例はこれで全部。1 ページ目の素の HTML に 23 件そろう(例 /35-cost-savings-at-yokoyama, /wefag-cnc-machine-tending-3fg15, /packaging-delicate-herbs-with-rg6)。他言語に事例ページは無い。render: true は個別ページ用で、そのまま残す"
   - key: schunk
     label: SCHUNK アプリケーション(applications)
     type: maker_gripper
@@ -720,16 +718,15 @@ sources:
     checked: 2026-10-28
     note: Wix のサイト。トップは取れたが、sitemap.xml が 429 Too Many Requests(再試行していない)。トップに事例一覧へのリンクは無い。
   - key: softrobotics
-    label: Soft Robotics(mGrip、食品向けソフトグリッパ)
+    label: Soft Robotics Inc
     type: maker_gripper
     case_type: maker_product
     region: 北米
-    country: 米国
+    country: アメリカ
     lang: en
-    index_urls: ["https://softroboticsinc.com/"]
     status: blocked
     checked: 2026-10-28
-    note: www 付きと sitemap.xml は Connection reset。www なしのトップは JS 描画で、素の HTML にリンクが無い。Web 検索でも顧客事例の一覧は見つからず、展示会デモと報道発表だけ。
+    note: "www.softroboticsinc.com は Connection reset(robots.txt の時点)。再試行していない。検索結果ではデモ記事だけで、事例一覧は見つからない(mGripAI は Oxipital AI 名義の記事もある)"
   - key: neobotix_references
     label: Neobotix 参照事例(移動マニピュレータ MM-500/MMO-700 など)
     type: maker_robot
@@ -1327,3 +1324,177 @@ sources:
     status: todo
     checked: 2026-10-28
     note: 既存 photoneo(case-study-sitemap)以外の取得元として調べた。post-sitemap に 513 本あるが、ほとんどは展示会・人事・資金調達のニュースで、ロボットの把持事例は 1 割未満(mitsubishi-bin-picking, phoxi-3d-scanner-automation-of-chair-packing-system など)。正規表現で選び分けられないため保留。その他の sitemap は page・products・downloads・training で事例は無い
+  - key: schunk_stories
+    label: SCHUNK ニュース・成功事例(Success Stories / press)
+    type: maker_gripper
+    case_type: maker_product
+    region: 欧州
+    country: ドイツ
+    lang: en
+    index_urls: ["https://schunk.com/us/en/siteMapMedia/news-1.xml"]   # 一覧ページ(/us/en/news)は検索 UI。sitemap は素の XML
+    article: "^https://schunk\\.com/us/en/(news|press)/[^/?#]+/\\d+$"
+    status: ok
+    checked: 2026-10-28
+    note: "既存 schunk(applications)の取りこぼし。news-1.xml に news 40 件 + press 42 件、article に合うのは 81 件(例 /us/en/news/feiba-s-patented-profile-handling-solution-at-fux-maschinenbau/37952, /us/en/news/perfect-end-to-end-system-efficiently-handles-component-diversity/41088, /us/en/press/safely-handling-battery-cells/23936)。本文は 'Success Stories' 区分の事例記事で、記事固有の画像 4〜5 枚(<img>、cloudfront)。社内行事・受賞ニュースも混じる。把持の事例は 15〜25 件ほどの見込み(残りは治具・クランプ・ツーリング)。news-2.xml は空。robots.txt は検索・カート系だけ禁止"
+  - key: schmalz_stories
+    label: Schmalz 成功事例(success stories)
+    type: maker_gripper
+    case_type: maker_product
+    region: 欧州
+    country: ドイツ
+    lang: en
+    index_urls: ["https://www.schmalz.com/en/solutions/success-stories"]
+    paginate: "https://www.schmalz.com/en/solutions/success-stories?page={n}"
+    max_pages: 5
+    article: "^https://www\\.schmalz\\.com/en/solutions/success-stories/\\d+-[^/?#]+$"
+    status: ok
+    checked: 2026-10-28
+    note: "既存 schmalz(media-center)の取りこぼし。全 44 件(ページ内 JSON の total 44, 12 件/ページ)。素の HTML に 12 件ずつ: 1 ページ目 12 件、?page=2 で別の 12 件、?page=4 で 8 件を確認。例 /400741-wurth-automates-logistics-with-cobot-grippers-from-schmalz, /740485-schmalz-compact-vacuum-system-flexible-palletization, /750273-247tailorsteel-fully-automated-deburring-loading-with-ai。本文に事例写真の <img>(media.schmalz.com)。約半数は手動の真空リフター(ロボットなし)なので、ロボット+吸着の事例は 12〜18 件の見込み。robots.txt は /api /site /partials だけ禁止"
+  - key: piab_stories
+    label: Piab 成功事例(success stories)
+    type: maker_gripper
+    case_type: maker_product
+    region: 欧州
+    country: スウェーデン
+    lang: en
+    index_urls: ["https://www.piab.com/sitemap.xml?batch=0&language=en-us"]   # 一覧は 8 件だけ表示し、ページ送り ?page= は robots.txt で禁止のため sitemap を使う
+    article: "^https://www\\.piab\\.com/en-us/success-stories/[^/?#]+$"
+    status: ok
+    checked: 2026-10-28
+    note: "既存 piab(robot-and-cobot-gripping-solutions)の取りこぼし。sitemap で 23 件(例 /success-stories/increased-productivity-in-the-packaging-and-palletizing-of-boxes, /piabs-hybrid-bag-gripper-increased-productivity-by-33, /safe-palletizing-of-wet-vehicle-batteries-with-piab-duraflex-friction-cups)。一覧 /en-us/success-stories は素の HTML で 8 件だけ。本文に写真 1 枚(<img>, /contentassets/)。うち 8〜9 件は真空コンベア(把持なし)、ロボット把持は約 13 件。robots.txt: Crawl-Delay 2、/*?page= を禁止"
+  - key: zimmer_news
+    label: Zimmer Group 製品ニュース(導入事例を含む)
+    type: maker_gripper
+    case_type: maker_product
+    region: 欧州
+    country: ドイツ
+    lang: en
+    index_urls: ["https://www.zimmer-group.com/en/sitemap.xml?tx_seo%5Bsitemap%5D=news&cHash=169b77fa3bceac16fc980c3d9d99d36105db49a8565507b422cdf4e067adcd5b"]
+    article: "^https://www\\.zimmer-group\\.com/en/company/news/product-news/news/[^/?#]+$"
+    status: ok
+    checked: 2026-10-28
+    note: "既存 zimmer(industries)には事例一覧が無く、事例は product-news に入っている。news sitemap で product-news 75 件(company-news 70 件は除外)。例 /a-cobot-with-an-hrc-gripper-from-the-zimmer-group-provides-support-at-weidmuellers-workplace, /a-robust-gripper-for-a-lock-system, /theater-zum-greifen-nah-wie-kawasaki-roboter-mit-zimmer-greifern-im-theater-fuer-furore-sorgen。本文に写真 <img>(/fileadmin/_processed_/)。英語 URL でもドイツ語の記事が混じる。新製品告知が多く、ハンドで掴む導入事例は 15〜20 件の見込み。sitemap の cHash が変わったら /en/sitemap.xml から取り直す"
+  - key: weiss_blog
+    label: Weiss Robotics ブログ(応用事例を含む)
+    type: maker_gripper
+    case_type: maker_product
+    region: 欧州
+    country: ドイツ
+    lang: de
+    index_urls: ["https://www.weiss-robotics.com/de/blog/"]
+    article: "^https://www\\.weiss-robotics\\.com/de/blog/entries/[^/?#]+/$"
+    status: ok
+    checked: 2026-10-28
+    note: "既存 weiss(/en/industry-solutions/)は合うリンク 9 件で、ほぼ製品・ソリューション紹介(事例一覧は無い)。ブログ一覧 1 ページに全 48 件(sitemap と同数、ページ送りなし)。例 /entries/fingerspitzengefuehl-am-mikroskop/, /entries/revolution-in-der-pharmaetikettierung/, /entries/starke-roboter-lernen-weiches-greifen/。本文に事例写真 <img> 5〜6 枚。展示会・社内ニュースが多く、把持の応用事例は 8〜12 件。英語版ブログは sitemap に無い"
+  - key: destaco
+    label: DESTACO 事例(case studies)
+    type: maker_gripper
+    case_type: maker_product
+    region: 北米
+    country: アメリカ
+    lang: en
+    index_urls: ["https://www.destaco.com/en/pages/sitemap.xml"]   # 一覧 /resources/case-studies は JS 描画(素の HTML にリンク 0 件)
+    article: "^https://www\\.destaco\\.com/resources/case-studies/[^/?#]+$"
+    status: ok
+    checked: 2026-10-28
+    note: "sitemap(/pages/sitemap.xml へリダイレクト)で 23 件(例 /food-grade-gripper-needed-for-cheese-handling, /packaging-glass-bottles-with-precision, /parallel-grippers-for-efficient-pick-and-place-solution)。個別ページは素の HTML に本文(CHALLENGE / SOLUTION)と事例写真 <img>(bloomreach を /_next/image 経由)がある。クランプ・インデクサ・コンベアの事例が多く、ロボットハンドの把持は 6〜8 件。robots.txt の禁止なし"
+  - key: dh_robotics
+    label: DH-Robotics
+    type: maker_gripper
+    case_type: maker_product
+    region: 中国
+    country: 中国
+    lang: en
+    status: blocked
+    checked: 2026-10-28
+    note: "https://www.dh-robotics.com/robots.txt が 403。再試行していない"
+  - key: gimatic
+    label: Gimatic
+    type: maker_gripper
+    case_type: maker_product
+    region: 欧州
+    country: イタリア
+    lang: en
+    status: todo
+    checked: 2026-10-28
+    note: "sitemap(/__sitemap__/en.xml)は製品ページ約 290 件と /solutions /industries /technologies だけで、事例ページなし。/solutions も素の HTML は Nuxt で、事例へのリンクなし"
+  - key: ckd_jp
+    label: CKD
+    type: maker_gripper
+    case_type: maker_product
+    region: 日本
+    country: 日本
+    lang: ja
+    status: todo
+    checked: 2026-10-28
+    note: "wp-sitemap に事例の投稿タイプが無い(productnews, event, csrnews など)。トップにも事例へのリンクなし"
+  - key: convum
+    label: 妙徳 CONVUM
+    type: maker_gripper
+    case_type: maker_product
+    region: 日本
+    country: 日本
+    lang: ja
+    status: todo
+    checked: 2026-10-28
+    note: "sitemap.xml は製品(パッド・エジェクタ・センサ)と会社情報だけ。事例ページなし"
+  - key: nitta_thk_inspire_hitbot
+    label: ニッタ / THK / Inspire Robots / Hitbot
+    type: maker_gripper
+    case_type: maker_product
+    region: その他
+    country: その他
+    lang: en
+    status: todo
+    checked: 2026-10-28
+    note: "ニッタ・THK(/jp/ja/)はトップに事例へのリンクなし。検索でも事例一覧は見つからない。Inspire Robots(因时科技)の /Applications/ は JS リダイレクトを 2 回挟んだ用途紹介 1 ページで、個別事例なし。Hitbot は sitemap の投稿が SEO 向けの解説記事(cobot-for-…、control-principle-of-…)で事例ではない"
+  - key: applied_robotics_effecto
+    label: Applied Robotics(現 Effecto)
+    type: maker_gripper
+    case_type: maker_product
+    region: 北米
+    country: アメリカ
+    lang: en
+    status: todo
+    checked: 2026-10-28
+    note: "appliedrobotics.com は effecto.com へ移っている。page-sitemap に /applications/(assembly, machine-tending, palletizing-packaging)と /company/customers/ はあるが、個別の事例ページは無い"
+  - key: bastian_eoat
+    label: Bastian(EOAT)
+    type: sier
+    case_type: sier_case
+    region: 北米
+    country: アメリカ
+    lang: en
+    status: todo
+    checked: 2026-10-28
+    note: "bastiansolutions.com は bastianautomation.com(HubSpot)へ移っている。トップのリンクは業界別ページ数枚だけで、事例・EOAT のページなし"
+  - key: coval
+    label: COVAL
+    type: maker_gripper
+    case_type: maker_product
+    region: 欧州
+    country: フランス
+    lang: en
+    status: todo
+    checked: 2026-10-28
+    note: "www.coval-vacuum.com はプロキシが 502。www.coval.com の en-us sitemap に事例ページなし(applications--measurements の 1 ページだけ)"
+  - key: joulin
+    label: Joulin(Piab グループ)
+    type: maker_gripper
+    case_type: maker_product
+    region: 欧州
+    country: フランス
+    lang: en
+    status: todo
+    checked: 2026-10-28
+    note: "/realisation-1〜6.html はメニューだけで本文が無いページ。/wood-industry/examples-of-installations.html は写真 79 枚のギャラリー 1 ページで、個別事例へのリンクなし。用途ページ(/all-industries/applications/ の 7 件)は製品の用途紹介"
+  - key: tuenkers
+    label: TÜNKERS
+    type: maker_gripper
+    case_type: maker_product
+    region: 欧州
+    country: ドイツ
+    lang: de
+    status: todo
+    checked: 2026-10-28
+    note: "sitemap(sitemap_d3.xml, ?cmsfkt=sitemap_xml)は製品数件だけ。検索でも事例・Referenzen 一覧は見つからない"
