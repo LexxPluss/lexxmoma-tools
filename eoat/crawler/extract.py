@@ -18,7 +18,7 @@ from common import DATA, RAW, RunLog, clean_text, jdump, jload, load_sources
 PAGES = RAW / "pages"
 OUT = DATA / "extracted"
 DROP_TAGS = ["script", "style", "noscript", "nav", "header", "footer", "aside", "form", "iframe", "svg", "button", "select", "template"]
-RELATED = re.compile(r"related|more (case|stories|articles)|other (case|stories)|you may also|recommended|関連|おすすめ|他の事例|その他の事例|similar|share this|newsletter|contact us|お問い合わせ|sidebar|breadcrumb|cookie|社会|popular", re.I)
+RELATED = re.compile(r"related|more (case|stories|articles)|other (case|stories)|you may also|recommended|関連|おすすめ|他の事例|その他の事例|similar|share this|newsletter|contact us|お問い合わせ|sidebar|breadcrumb|cookie|社会|popular|추천|관련|다른 사례|相关案例|推荐", re.I)
 BAD_IMG = re.compile(r"logo|icon|sprite|avatar|badge|flag|arrow|button|pixel|tracking|spacer|blank|placeholder|loading|share|social|facebook|twitter|linkedin|youtube_|banner|cta|map\b|qr", re.I)
 LAZY_ATTRS = ["data-src", "data-lazy-src", "data-original", "data-srcset", "data-lazy", "data-image", "data-bg"]
 

@@ -63,6 +63,11 @@ def main():
                 r["robot"]["is_mobile_manipulator"] = True
                 r["fieldSources"]["robot.is_mobile_manipulator"] = src("robot.is_mobile_manipulator")
                 changed = True
+            elif rv.get("is_mobile") is False and r["robot"].get("is_mobile_manipulator"):
+                # 規則が「移動」の語(推薦事例の見出しなど)で付けたものをレビューが否定したら外す(ループ 9)
+                r["robot"]["is_mobile_manipulator"] = False
+                r["fieldSources"].pop("robot.is_mobile_manipulator", None)
+                changed = True
             m = rv.get("mass_kg")
             from normalize import payload_class
             if isinstance(m, (int, float)) and m > 0 and (r["workpiece"].get("mass_kg") or {}).get("max") != float(m):

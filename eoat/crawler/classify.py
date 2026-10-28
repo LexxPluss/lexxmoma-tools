@@ -151,7 +151,8 @@ def strip_boilerplate(recs):
     return out
 
 
-def classify_one(rec, tx, cleaned=None):
+def classify_one(rec, tx, cleaned=None, lenient=False):
+    """lenient=True: LLM レビューで「事例」と確定した id は、規則の足切り(語が無い・一致が弱い)で落とさない(値はレビューで置き換わる)。"""
     text, heads, alts = cleaned or (rec.get("text") or "", rec.get("headings") or [], [i.get("alt") or "" for i in rec.get("images", []) if i.get("in_main")][:4])
     rec = dict(rec, text=text, headings=heads)
     title_side = norm_text(" ".join([rec.get("title") or "", rec.get("description") or ""] + heads + alts))
@@ -281,17 +282,21 @@ def classify_one(rec, tx, cleaned=None):
     # ロボットの語がまったく無いページ(SIer サイトから自動発見した会社案内・製品一覧など)は事例ではない。画像取得・LLM レビューの前に落とす
     if not robot["maker"] and not count_terms(full, ["ロボット", "robot", "robots", "robotic", "cobot", "cobots", "机器人", "로봇", "アーム", "manipulator",
                                                       "ハンド", "gripper", "grippers", "吸着", "suction", "夹爪", "把持", "end effector"]):
-        return None, "ロボット・ハンドの語が無い"
+        if not lenient:
+            return None, "ロボット・ハンドの語が無い"
     # 掴み方の種類が書かれていない(「ロボットハンド」「把持」とだけある)事例: 「記載なし(写真で確認)」として残す。種類が分かるものが 1 つでもあれば使わない
     prs = [p for p in prs if p[0] != "hand_unspecified"] or [p for p in prs if p[0] == "hand_unspecified"]
     # 事例ではない(カテゴリも掴み方も付かない)ページは落とす。本文だけの弱い一致しか無いページ(業界紹介・会社案内)も落とす
+    if (not cats or not prs) and lenient:
+        cats = cats or [("generic", 0, ["(レビュー済み: 規則の一致なし)"])]
+        prs = prs or [("hand_unspecified", 0, ["(レビュー済み: 規則の一致なし)"])]
     if not cats or not prs:
         return None, f"カテゴリ {len(cats)} / 掴み方 {len(prs)} が付かない"
     strong_cat = bool(count_terms(title_side, [t for _, it in tx.cat_items for t in it["terms"]]))
     strong_pr = bool(count_terms(title_side, [t for _, it in tx.pr_items for t in it["terms"]]))
     total = cats[0][1] + prs[0][1]
     need = 4 if (strong_cat or strong_pr) else 8
-    if total < need:
+    if total < need and not lenient:
         return None, f"一致が弱い(カテゴリ {cats[0][1]} + 掴み方 {prs[0][1]} < {need}、見出しの語: ワーク {strong_cat} / 掴み方 {strong_pr})"
 
     cat_keys = [c[0] for c in cats]
@@ -370,6 +375,8 @@ def main():
     log = RunLog("classify")
     OUT.mkdir(parents=True, exist_ok=True)
     rejected = jload(DATA / "rejected.json", {})
+    # LLM レビューで「事例」と確定した id(data/llm_out/)は、本文の抽出をやり直して語が減っても落とさない
+    reviewed_true = {r["id"] for p in (DATA / "llm_out").glob("*.json") for r in (jload(p, []) or []) if r.get("is_case")}
     n = 0
     recs = [jload(p) for p in sorted(IN.glob("*.json"))]
     cleaned = strip_boilerplate(recs)
@@ -379,7 +386,7 @@ def main():
         op = OUT / f"{rec['id']}.json"
         if op.exists() and not a.force and rec["id"] not in rejected:
             continue
-        out, why = classify_one(rec, tx, cleaned.get(rec["id"]))
+        out, why = classify_one(rec, tx, cleaned.get(rec["id"]), lenient=rec["id"] in reviewed_true)
         if out is None:
             rejected[rec["id"]] = {"url": rec["url"], "why": why}
             if op.exists():
