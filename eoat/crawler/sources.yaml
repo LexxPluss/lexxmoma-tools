@@ -1625,3 +1625,17 @@ sources:
     status: skip
     checked: 2026-10-28
     note: "https://www.imrobotic.com/anli/ に個別 /anli/detail/\\d+.html(9000 番台まで)。素の HTML で取れるが「应用案例视频」で、個別は mp4 の <video>+一行説明。動画だけなので入れない"
+  - key: mmsonline_cases
+    label: MM 现代制造 机器人 案例・技术(中国の業界誌)
+    type: media
+    case_type: sier_case
+    region: 中国
+    country: 中国
+    lang: zh
+    index_urls: ["https://www.mmsonline.com.cn/robot/case-tech-list-1.shtml"]
+    paginate: "https://www.mmsonline.com.cn/robot/case-tech-list-{n}.shtml"
+    max_pages: 10
+    article: "^https://www\\.mmsonline\\.com\\.cn/info/\\d+\\.shtml$"
+    status: ok
+    checked: 2026-10-28
+    note: 一覧 1 ページに記事約 36 本(サイドバーの人気記事も合う)。cn2_l10 の検索で見つけ、一覧の 1・2 ページ目を fetch して確認(2 ページ目の新規 43 本)。業界誌なので解説記事も混じる
