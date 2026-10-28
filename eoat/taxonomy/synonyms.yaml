@@ -182,3 +182,77 @@ synonyms:
   - {canonical: robot:協働, terms: [协作机器人, 协作]}
   - {canonical: robot:産業用, terms: [工业机器人]}
   - {canonical: robot:mobile, terms: [复合机器人, 移动操作, AMR复合]}
+  # ---- 韓国語(ループ 9: 마로솔 myrobotsolution.com の事例 466 本が「語が無い」で 453 本落ちていた)
+  - {canonical: category:carton, terms: [박스, 골판지, 종이상자, 상자, 카톤]}
+  - {canonical: category:tote, terms: [토트, 플라스틱 박스, 플라스틱박스, 바구니, 컨테이너 박스, 물류박스, 바스켓]}
+  - {canonical: category:tray, terms: [트레이]}
+  - {canonical: category:sack, terms: [포대, 마대, 자루, 사료포대, 비료포대, 쌀포대]}
+  - {canonical: category:pouch, terms: [파우치, 봉지]}
+  - {canonical: category:round, terms: [샤프트, 환봉, 원통형, 선반 가공물]}
+  - {canonical: category:block, terms: [하우징, 가공품, 가공물, 블록]}
+  - {canonical: category:sheet, terms: [판금, 박판, 철판, 판재, 프레스물]}
+  - {canonical: category:casting, terms: [주물, 주조품, 단조품, 다이캐스팅]}
+  - {canonical: category:bulk_parts, terms: [볼트, 너트, 나사, 소형 부품]}
+  - {canonical: category:gear, terms: [기어, 베어링]}
+  - {canonical: category:molded, terms: [사출물, 사출품, 사출 성형품, 플라스틱 부품]}
+  - {canonical: category:pcb, terms: [기판, PCB]}
+  - {canonical: category:component, terms: [전자부품, 커넥터, 반도체, 배터리 셀]}
+  - {canonical: category:device, terms: [스마트폰, 태블릿, 노트북]}
+  - {canonical: category:glass_plate, terms: [유리, 유리판]}
+  - {canonical: category:panel, terms: [패널, 디스플레이, 태양광 패널]}
+  - {canonical: category:wafer, terms: [웨이퍼]}
+  - {canonical: category:fresh, terms: [과일, 채소, 농산물, 딸기, 토마토]}
+  - {canonical: category:meat_fish, terms: [육류, 고기, 닭고기, 생선]}
+  - {canonical: category:bakery, terms: [빵, 과자, 쿠키, 케이크, 초콜릿]}
+  - {canonical: category:ready_meal, terms: [도시락, 튀김, 조리, 반찬, 식판]}
+  - {canonical: category:egg, terms: [계란, 달걀]}
+  - {canonical: category:vial, terms: [바이알, 앰플, 주사기]}
+  - {canonical: category:tube, terms: [시험관, 튜브]}
+  - {canonical: category:medical, terms: [의약품, 의료기기]}
+  - {canonical: category:bottle, terms: [병, 보틀, 페트병]}
+  - {canonical: category:can, terms: [캔, 음료캔]}
+  - {canonical: category:cup, terms: [컵, 용기]}
+  - {canonical: category:textile, terms: [섬유, 원단, 의류, 직물]}
+  - {canonical: category:cable, terms: [케이블, 와이어 하네스, 전선]}
+  - {canonical: category:timber, terms: [목재, 가구]}
+  - {canonical: category:building, terms: [벽돌, 타일, 건자재]}
+  - {canonical: category:body_panel, terms: [차체, 범퍼, 도어 패널]}
+  - {canonical: category:tire, terms: [타이어, 휠]}
+  - {canonical: category:engine, terms: [엔진, 실린더 블록, 변속기]}
+  - {canonical: category:ev_battery, terms: [배터리 팩, 배터리 모듈]}
+  - {canonical: category:pallet, terms: [팔레트, 파레트]}
+  - {canonical: category:piece, terms: [이커머스, 택배, 물류센터, 다품종]}
+  - {canonical: material:steel, terms: [철, 강, 금속, 스틸]}
+  - {canonical: material:stainless, terms: [스테인리스]}
+  - {canonical: material:aluminum, terms: [알루미늄]}
+  - {canonical: material:plastic, terms: [플라스틱, 수지]}
+  - {canonical: material:paper, terms: [종이, 골판지]}
+  - {canonical: material:glass, terms: [유리]}
+  - {canonical: material:wood, terms: [목재, 나무]}
+  - {canonical: material:food, terms: [식품, 음식]}
+  - {canonical: principle:parallel2, terms: [2지 그리퍼, 2핑거, 평행 그리퍼, 전동 그리퍼, 공압 그리퍼, 그리퍼, 핑거 그리퍼]}
+  - {canonical: principle:parallel3, terms: [3지 그리퍼, 3핑거]}
+  - {canonical: principle:adaptive, terms: [적응형 그리퍼, 다지 핸드, 로봇 핸드]}
+  - {canonical: principle:clamp_fork, terms: [클램프, 포크, 집게]}
+  - {canonical: principle:single_pad, terms: [흡착, 진공 흡착, 진공 그리퍼, 흡착 패드, 석션, 석션컵, 진공패드, 흡착패드]}
+  - {canonical: principle:area, terms: [폼 그리퍼, 면 흡착, 에어리어 그리퍼]}
+  - {canonical: principle:electropermanent, terms: [마그넷, 자석, 전자석, 마그네틱 그리퍼]}
+  - {canonical: principle:soft_finger, terms: [소프트 그리퍼, 소프트 핸드]}
+  - {canonical: principle:tool_changer, terms: [툴체인저, 툴 체인저, 공구 교환]}
+  - {canonical: task:pick_place, terms: [픽앤플레이스, 픽 앤 플레이스, 피킹, 이송, 적재, 핸들링, 취출]}
+  - {canonical: task:machine_tending, terms: [머신텐딩, 머신 텐딩, 공작기계, 선반, CNC, 사출기, 프레스, 로딩, 언로딩]}
+  - {canonical: task:palletizing, terms: [팔레타이징, 파렛타이징, 적재]}
+  - {canonical: task:depalletizing, terms: [디팔레타이징, 하역]}
+  - {canonical: task:packing, terms: [포장, 박스 포장, 패킹, 박싱]}
+  - {canonical: task:bin_picking, terms: [빈피킹, 빈 피킹, 무작위 피킹]}
+  - {canonical: task:assembly, terms: [조립, 체결, 삽입]}
+  - {canonical: task:transport, terms: [운반, 공정간 이송, 물류 이송, 자율주행 로봇]}
+  - {canonical: task:sorting, terms: [분류, 선별]}
+  - {canonical: task:inspection, terms: [검사, 측정]}
+  - {canonical: task:screwdriving, terms: [나사 체결, 스크류]}
+  - {canonical: task:welding, terms: [용접]}
+  - {canonical: task:finishing, terms: [연마, 디버링, 도장, 도포, 폴리싱]}
+  - {canonical: task:food_handling, terms: [조리, 튀김, 커피, 배식]}
+  - {canonical: robot:協働, terms: [협동로봇, 협동 로봇, 코봇]}
+  - {canonical: robot:産業用, terms: [산업용 로봇, 산업용로봇]}
+  - {canonical: robot:mobile, terms: [모바일 매니퓰레이터, 자율주행 로봇 팔, AMR 로봇팔, 이동형 로봇]}

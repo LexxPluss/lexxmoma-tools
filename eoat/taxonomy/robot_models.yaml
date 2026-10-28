@@ -143,7 +143,7 @@ makers:
       - {model: RV-7FR, pattern: "\\bRV-?\\d{1,2}FR?[LM]?\\b", class: 産業用, payload: 7}
       - {model: RH series, pattern: "\\bRH-?\\d{1,2}FR?H?\\b", class: 産業用, payload: 6}
   - name: Doosan Robotics
-    aliases: [Doosan, 斗山, Doosan Robotics]
+    aliases: [Doosan, 斗山, Doosan Robotics, 두산로보틱스, 두산 로보틱스]
     class: 協働
     models:
       - {model: M0609, pattern: "\\bM0609\\b", payload: 6}
@@ -270,13 +270,13 @@ makers:
       - {model: Racer, pattern: "\\bRacer-?\\d\\b", class: 産業用, payload: 5}
       - {model: AURA, pattern: "\\bAURA\\b", class: 協働, payload: 170}
   - name: Hyundai Robotics
-    aliases: [Hyundai Robotics, 現代ロボティクス, 현대로보틱스]
+    aliases: [Hyundai Robotics, 現代ロボティクス, 현대로보틱스, 현대로보틱스]
     models:
       - {model: HS160, pattern: "\\bHS(160|180|220)L?\\b", class: 産業用, payload: 160}
       - {model: HH7, pattern: "\\bHH(4|7|20)\\b", class: 産業用, payload: 7}
       - {model: YL012, pattern: "\\bYL0(05|12|15)\\b", class: 協働, payload: 12}
   - name: Hanwha
-    aliases: [Hanwha, ハンファ]
+    aliases: [Hanwha, ハンファ, 한화로보틱스, 한화]
     class: 協働
     models:
       - {model: HCR-5, pattern: "\\bHCR-?(3|5|12)A?\\b", payload: 5}
@@ -295,12 +295,30 @@ makers:
     class: 協働
     models:
       - {model: OB7, pattern: "\\bOB7\\b", payload: 5}
+  - name: Rainbow Robotics
+    aliases: [Rainbow Robotics, 레인보우로보틱스, 레인보우 로보틱스]
+    class: 協働
+    models:
+      - {model: RB3-1200, pattern: "\\bRB3[- ]1200\\b", payload: 3}
+      - {model: RB5-850, pattern: "\\bRB5[- ]850\\b", payload: 5}
+      - {model: RB10-1300, pattern: "\\bRB10[- ]1300\\b", payload: 10}
+      - {model: RB16-900, pattern: "\\bRB16[- ]900\\b", payload: 16}
+      - {model: RB20-1900, pattern: "\\bRB20[- ]1900\\b", payload: 20}
+      - {model: RB series, pattern: "\\bRB(3|5|10|16|20)\\b"}
+  - name: Neuromeka
+    aliases: [Neuromeka, 뉴로메카]
+    class: 協働
+    models:
+      - {model: Indy7, pattern: "\\bIndy ?7\\b", payload: 7}
+      - {model: Indy12, pattern: "\\bIndy ?12\\b", payload: 12}
+      - {model: Indy RP2, pattern: "\\bIndy ?RP2\\b", payload: 5}
+      - {model: Indy series, pattern: "\\bIndy\\b"}
   - name: LexxPluss
     aliases: [LexxPluss, レックスプラス]
     models:
       - {model: LexxMoMa, pattern: "\\bLexxMoMa\\b", class: 協働, payload: 20, mobile: true}
 # 型式が無くても区分の手がかりになる語(本文に明記されたときだけ採用)
 class_terms:
-  協働: [協働ロボット, 協働, 人協働, cobot, cobots, collaborative robot, collaborative robots, collaborative arm, 协作机器人]
-  産業用: [産業用ロボット, 多関節ロボット, 6軸ロボット, industrial robot, industrial robots, 6-axis robot, six-axis robot, articulated robot, SCARA, scara, delta robot, parallel robot, palletizing robot, 工业机器人, 六轴机器人]
-mobile_terms: [移動マニピュレータ, 复合机器人, 自律移動マニピュレータ, AMR + アーム, AMRにアーム, mobile manipulator, mobile manipulators, mobile manipulation, mobile cobot, AMR with arm, arm on AMR, MoMa, autonomous mobile manipulator, cobot on AMR, robot on an AMR, mobile robot with arm]
+  協働: [協働ロボット, 協働, 人協働, cobot, cobots, collaborative robot, collaborative robots, collaborative arm, 协作机器人, 협동로봇, 협동 로봇, 코봇]
+  産業用: [産業用ロボット, 多関節ロボット, 6軸ロボット, industrial robot, industrial robots, 6-axis robot, six-axis robot, articulated robot, SCARA, scara, delta robot, parallel robot, palletizing robot, 工业机器人, 六轴机器人, 산업용 로봇, 산업용로봇, 다관절 로봇, 6축 로봇]
+mobile_terms: [移動マニピュレータ, 复合机器人, 自律移動マニピュレータ, AMR + アーム, AMRにアーム, mobile manipulator, mobile manipulators, mobile manipulation, mobile cobot, AMR with arm, arm on AMR, MoMa, autonomous mobile manipulator, cobot on AMR, robot on an AMR, mobile robot with arm, 모바일 매니퓰레이터, 이동형 매니퓰레이터, AMR 로봇팔, 자율주행 로봇팔]
