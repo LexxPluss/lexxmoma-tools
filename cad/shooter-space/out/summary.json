@@ -1,7 +1,7 @@
 [
  {
   "name": "A_conventional",
-  "title": "A 従来型：傾斜ローラー 4列×3段×奥3箱＋空箱返却",
+  "title": "A 従来型：傾斜ローラー 4列×3段×奥3箱＋最上段に空箱返却",
   "width": 1560,
   "depth": 1584,
   "height": 1905,
@@ -9,129 +9,150 @@
   "area_aisle_m2": 4.811,
   "boxes": 36,
   "capacity": 36,
-  "lanes": 12,
+  "sku": 12,
+  "per_m2": 14.6,
+  "vol_eff": 19.2,
+  "ret_line": 1696,
+  "pick_top": 1455,
+  "moma_center": [
+   838,
+   1444
+  ],
   "levels": [
    {
-    "kind": "pick",
-    "s": 0.04,
-    "zf": 700,
-    "zb": 763.4
+    "kinds": [
+     "pick",
+     "pick",
+     "pick",
+     "pick"
+    ],
+    "zf": 700
    },
    {
-    "kind": "pick",
-    "s": 0.04,
-    "zf": 1003.0,
-    "zb": 1066.4
+    "kinds": [
+     "pick",
+     "pick",
+     "pick",
+     "pick"
+    ],
+    "zf": 1003.0
    },
    {
-    "kind": "pick",
-    "s": 0.04,
-    "zf": 1306.0,
-    "zb": 1369.4
+    "kinds": [
+     "pick",
+     "pick",
+     "pick",
+     "pick"
+    ],
+    "zf": 1306.0
    },
    {
-    "kind": "return",
-    "s": -0.04,
-    "zf": 1695.7,
-    "zb": 1632.4
+    "kinds": [
+     "return",
+     "return",
+     "return",
+     "return"
+    ],
+    "zf": 1695.7
    }
   ],
-  "pipe_m": 91.0,
-  "joints": 130,
+  "pipe_m": 103.9,
+  "joints": 94,
   "rail_m": 50.7
  },
  {
-  "name": "B_band_only",
-  "title": "B 帯の中だけで奥行きを縮める：6列×3段×奥2箱（人手のみ）",
-  "width": 2326,
-  "depth": 1071,
-  "height": 1864,
-  "area_m2": 2.491,
-  "area_aisle_m2": 5.98,
-  "boxes": 36,
-  "capacity": 36,
-  "lanes": 18,
-  "levels": [
-   {
-    "kind": "pick",
-    "s": 0.04,
-    "zf": 700,
-    "zb": 742.8
-   },
-   {
-    "kind": "pick",
-    "s": 0.04,
-    "zf": 1003.0,
-    "zb": 1045.8
-   },
-   {
-    "kind": "pick",
-    "s": 0.04,
-    "zf": 1306.0,
-    "zb": 1348.8
-   },
-   {
-    "kind": "return",
-    "s": -0.04,
-    "zf": 1654.7,
-    "zb": 1611.8
-   }
-  ],
-  "pipe_m": 87.8,
-  "joints": 140,
-  "rail_m": 51.4
- },
- {
-  "name": "C_vertical",
-  "title": "C 縦型省スペース：4列×3段×奥2箱＋足元の予備段2段",
-  "width": 1560,
+  "name": "D_tall",
+  "title": "D 縦型・高さ活用：5列×奥2箱、足元2段＋人の3段＋頭上3段（MoMa専用の予備は押し込み式）",
+  "width": 1943,
   "depth": 1076,
-  "height": 1864,
-  "area_m2": 1.679,
-  "area_aisle_m2": 4.019,
-  "boxes": 36,
-  "capacity": 40,
-  "lanes": 12,
+  "height": 2130,
+  "area_m2": 2.091,
+  "area_aisle_m2": 5.005,
+  "boxes": 66,
+  "capacity": 66,
+  "sku": 13,
+  "per_m2": 31.6,
+  "vol_eff": 37.2,
+  "ret_line": 1309,
+  "pick_top": 1458,
+  "moma_center": [
+   250,
+   1952
+  ],
   "levels": [
    {
-    "kind": "reserve",
-    "s": 0.0,
-    "zf": 120,
-    "zb": 120.0
+    "kinds": [
+     "reserve",
+     "reserve",
+     "reserve",
+     "reserve",
+     "reserve"
+    ],
+    "zf": 218.3
    },
    {
-    "kind": "reserve",
-    "s": 0.0,
-    "zf": 383.0,
-    "zb": 383.0
+    "kinds": [
+     "reserve",
+     "reserve",
+     "reserve",
+     "reserve",
+     "reserve"
+    ],
+    "zf": 481.3
    },
    {
-    "kind": "pick",
-    "s": 0.04,
-    "zf": 700,
-    "zb": 742.8
+    "kinds": [
+     "pick",
+     "pick",
+     "pick",
+     "pick",
+     "pick"
+    ],
+    "zf": 700
    },
    {
-    "kind": "pick",
-    "s": 0.04,
-    "zf": 1003.0,
-    "zb": 1045.8
+    "kinds": [
+     "pick",
+     "pick",
+     "pick",
+     "pick",
+     "returnf"
+    ],
+    "zf": 1005.8
    },
    {
-    "kind": "pick",
-    "s": 0.04,
-    "zf": 1306.0,
-    "zb": 1348.8
+    "kinds": [
+     "pick",
+     "pick",
+     "pick",
+     "pick",
+     "returnf"
+    ],
+    "zf": 1308.8
    },
    {
-    "kind": "return",
-    "s": -0.04,
-    "zf": 1654.7,
-    "zb": 1611.8
+    "kinds": [
+     "reserve",
+     "reserve",
+     "reserve",
+     "reserve",
+     "reserve"
+    ],
+    "zf": 1657.5
+   },
+   {
+    "kinds": [
+     "reserve",
+     "reserve",
+     "reserve",
+     "reserve",
+     "reserve"
+    ],
+    "zf": 1920.5
    }
   ],
-  "pipe_m": 79.3,
-  "joints": 140,
-  "rail_m": 51.4
+  "pipe_m": 138.9,
+  "joints": 164,
+  "rail_m": 75.0
  }
 ]

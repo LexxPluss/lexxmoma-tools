@@ -22,14 +22,17 @@ python3 build.py                    # out/ に STEP・画像・寸法図・部�
 | `tp.py` | TP規格コンテナの3Dモデル（外寸・内寸は掲載値、取っ手穴・底の嵌合部などの細部は簡略） |
 | `parts.py` | Φ28パイプ・ジョイント・ローラーレール・ストッパーと、部材の数え上げ |
 | `shooter.py` | 段の並びを渡すと、隙間のルールを満たす最小の高さで段を積み、棚を組み立てる |
-| `variants.py` | 比較する案（A 従来型・B 帯の中だけで縮める・C 縦型省スペース） |
+| `variants.py` | 比較する案（A 従来型・D 縦型・高さ活用） |
+| `optimize.py` | 列数・奥行きの箱数・空箱返却の置き方を総当たりして、条件を満たす中で床面積が最小の案を探す |
+| `params_local.py` | 社内の実機値（任意・git に入れない）。あれば `params.py` の仮値を上書きする |
 | `build.py` | 書き出し（STEP・陰影画像・寸法図・部材表・summary.json） |
-| `out/shooter_variants_step.zip` | 3案の組立 STEP（FreeCAD で開く） |
+| `out/shooter_variants_step.zip` | 比較する案の組立 STEP（FreeCAD で開く） |
 | `out/TP-*.step` | TP コンテナ単体の STEP |
 | `out/*_drawing.png` | 側面の断面と、ライン側から見た正面の寸法図 |
 | `out/*_aisle.png`, `out/*_line.png` | 通路側・ライン側から見た陰影画像 |
 | `out/*_bom.csv` | 部材表（パイプの長さと本数・レール・ローラー・ストッパー） |
-| `out/footprint_compare.png` | 3案の床面積を真上から並べた図 |
+| `out/footprint_compare.png` | 案の床面積を真上から並べた図 |
+| `out/optimize.csv` | 総当たりの結果 |
 
 ## 座標と単位
 
@@ -44,6 +47,6 @@ python3 build.py                    # out/ に STEP・画像・寸法図・部�
 |---|---|---|---|
 | 取り出し | 100mm（仮） | 60mm（仮） | ライン側は手を入れて部品を取る。通路側は箱を入れる |
 | 空箱返却 | 60mm（仮） | 60mm（仮） | 空箱を置く・取り出す |
-| 予備在庫 | 20mm（仮） | 60mm（仮） | 通路側からだけ出し入れする |
+| 予備在庫 | 15mm（仮） | 60mm（仮） | 通路側からだけ出し入れする（ライン側は閉じ板） |
 
 取り出し段は、置き面が 700mm 以上、ライン側の箱の上端が 1500mm 以下という条件を付けている。

@@ -1,6 +1,9 @@
 # 組立の STEP は大きいので zip（out/shooter_variants_step.zip）だけを入れる。python3 build.py で作り直せる
 out/*_conventional.step
 out/*_band_only.step
-out/*_vertical.step
+out/*_tall.step
 out/.*.stl
 __pycache__/
+
+# 社内の実機値（配布不可の資料から）は入れない
+params_local.py
