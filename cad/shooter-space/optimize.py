@@ -21,7 +21,7 @@ def search():
                 ok_cap = e["capacity"] >= P.N_BOX
                 ok_ret = e["ret_line"] <= P.RET_MAX
                 ok_top = e["pick_top"] <= P.PICK_TOP_MAX + 0.5
-                ok_moma = e["moma_center"][1] <= moma_range()[1] + 0.5 and e["moma_center"][0] >= moma_range()[0] - 0.5
+                ok_moma = e["moma_center"][1] + P.HOOK_LIFT <= moma_range()[1] + 0.5 and e["moma_center"][0] >= moma_range()[0] - 0.5
                 rows.append(dict(name=d["name"], cols=cols, deep=deep, ret_mode=ret_mode, n_low=d["n_low"], n_band=d["n_band"], n_high=d["n_high"],
                                  width=round(e["width"]), depth=round(e["depth"]), height=round(e["height"]), area_m2=round(e["area_m2"], 3),
                                  sku=e["sku"], capacity=e["capacity"], per_m2=round(e["per_m2"], 1), vol_eff=round(e["vol_eff"] * 100, 1),

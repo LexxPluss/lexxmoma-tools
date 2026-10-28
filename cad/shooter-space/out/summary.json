@@ -65,19 +65,19 @@
   "title": "E 本案：4列×奥2箱、足元の予備2段＋人の3段＋空箱返却＋頭上の予備2段（予備は押し込み式・MoMa専用）",
   "width": 1560,
   "depth": 1076,
-  "height": 2127,
+  "height": 2107,
   "area_m2": 1.679,
   "area_aisle_m2": 4.019,
   "boxes": 48,
   "capacity": 48,
   "sku": 12,
   "per_m2": 28.6,
-  "vol_eff": 33.8,
+  "vol_eff": 34.1,
   "ret_line": 1655,
   "pick_top": 1455,
   "moma_center": [
-   250,
-   1949
+   270,
+   1929
   ],
   "levels": [
    {
@@ -87,7 +87,7 @@
      "reserve",
      "reserve"
     ],
-    "zf": 218.3
+    "zf": 238.3
    },
    {
     "kinds": [
@@ -96,7 +96,7 @@
      "reserve",
      "reserve"
     ],
-    "zf": 466.3
+    "zf": 481.3
    },
    {
     "kinds": [
@@ -141,10 +141,10 @@
      "reserve",
      "reserve"
     ],
-    "zf": 1917.7
+    "zf": 1897.7
    }
   ],
-  "pipe_m": 112.8,
+  "pipe_m": 112.6,
   "joints": 132,
   "rail_m": 60.0
  }

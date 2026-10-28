@@ -114,7 +114,7 @@ def design(cols, deep, ret_mode="top", n_ret=None, low=None, high=None, mix=None
         top = trial[-1]
         zb = top["zf"] + SLOPE_OF["reserve"] * D
         top_box = max(max(lv_z(l, k, 0), lv_z(l, k, D)) for l in trial for k in l["kinds"]) + H
-        if zb + H / 2 > c_max or top_box + 60 > P.RACK_MAX_H:
+        if zb + H / 2 + P.HOOK_LIFT > c_max or top_box + 60 > P.RACK_MAX_H:   # 持ち上げた分も届くこと
             break
         n_high += 1
         if high is not None and n_high >= high:

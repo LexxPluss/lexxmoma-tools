@@ -189,31 +189,34 @@ def footprint(metas, path):
 
 
 def reach_chart(metas, path):
-    """高さごとに、MoMaが箱を水平に出し入れできる停止距離（棚の面から肩まで）を帯で描き、案の段を重ねる。"""
+    """MoMaが箱を水平に出し入れできる範囲。左：正面に止まり前後に離れる場合、右：棚に近く止まり横にずらす場合。本案の段を重ねる。"""
+    import reach
     from shooter import moma_range, lv_z
     lo, hi, table = moma_range()
-    fig, ax = plt.subplots(figsize=(10, 7.5))
-    for z, f in table:
-        if f:
-            ax.plot([f[0], f[-1]], [z, z], color="#0068B7", lw=2.2, alpha=0.35, solid_capstyle="butt")
-    ax.axhspan(lo, hi, color="#0068B7", alpha=0.04)
-    ax.axhline(lo, color="#0068B7", lw=0.8, ls="--"); ax.axhline(hi, color="#0068B7", lw=0.8, ls="--")
-    ax.text(P.STANDOFF_MAX + 10, hi, f" 上限 {hi:.0f}", va="center", fontsize=9, color="#0068B7")
-    ax.text(P.STANDOFF_MAX + 10, lo, f" 下限 {lo:.0f}", va="center", fontsize=9, color="#0068B7")
+    side = reach.usable_range_side()
     m = metas[-1]; D = m["lane_len"]; H = P.TP[P.MAIN]["H"]
     names = {"pick": "取り出し（入口）", "return": "空箱返却（出口）", "returnf": "空箱返却（出口）", "reserve": "予備在庫"}
-    seen = set()
+    fig, axs = plt.subplots(1, 2, figsize=(15, 7.5), sharey=True)
+    for z, f in table:
+        if f: axs[0].plot([f[0], f[-1]], [z, z], color="#0068B7", lw=2.2, alpha=0.3, solid_capstyle="butt")
+    for z, d in side:
+        if d: axs[1].plot([d[0], d[-1]], [z, z], color="#3EB370", lw=8, alpha=0.3, solid_capstyle="butt")
+    for ax in axs:
+        for l in m["levels"]:
+            k = l["kinds"][0]; zc = lv_z(l, k, D) + H / 2
+            ax.axhline(zc, color={"pick": "#3EB370", "reserve": "#d08a2c"}.get(k, "#8a99a5"), lw=1.1)
+        ax.grid(alpha=0.25); ax.set_ylim(0, 2600)
     for l in m["levels"]:
         k = l["kinds"][0]; zc = lv_z(l, k, D) + H / 2
-        ax.axhline(zc, color={"pick": "#3EB370", "reserve": "#d08a2c"}.get(k, "#8a99a5"), lw=1.2)
-        ax.text(P.CLEARANCE_MIN + P.BODY_HALF - 10, zc + 12, f"{names[k]} 箱の中心 {zc:.0f}", ha="right", fontsize=8.5)
-    ax.axvline(P.CLEARANCE_MIN + P.BODY_HALF, color="#555", lw=0.8, ls=":")
-    ax.text(P.CLEARANCE_MIN + P.BODY_HALF + 8, 40, f"最も近い停止（すき間{P.CLEARANCE_MIN:.0f}）", fontsize=8, color="#555")
-    ax.set_xlim(250, P.STANDOFF_MAX + 160); ax.set_ylim(0, 2600)
-    ax.set_xlabel("棚の通路側の面から、アームの肩（車体の中心）までの距離 mm"); ax.set_ylabel("箱の中心の高さ mm")
-    ax.set_title(f"MoMaが {P.MAIN}（部品入り{P.TP_FULL_KG:.0f}kg）を水平に出し入れできる範囲（青い帯）と、{m['title'].split('：')[0]}の段", fontsize=10.5)
-    fig.text(0.01, 0.01, "フック式ハンドで端面を持つ。車体＋進入禁止域・床・棚に腕が当たらず、手首の負荷が許容内の範囲。低い段は車体を棚から離して手首を車体の外へ出す。", fontsize=8, color="#555")
-    ax.grid(alpha=0.25); fig.tight_layout(rect=(0, 0.03, 1, 1)); fig.savefig(path, dpi=120); plt.close(fig)
+        axs[1].text(905, zc + 12, f"{names[k]} {zc:.0f}", fontsize=8.5)
+    axs[0].set_xlim(250, P.STANDOFF_MAX + 50); axs[0].axvline(P.CLEARANCE_MIN + P.BODY_HALF, color="#555", lw=0.8, ls=":")
+    axs[0].set_xlabel("正面に止まる：棚の通路側の面から肩（車体の中心）までの距離 mm"); axs[0].set_ylabel("箱の中心の高さ mm")
+    axs[0].set_title("正面に止まる場合（低い段は棚から離れる必要がある）", fontsize=10)
+    axs[1].set_xlim(-20, 1150); axs[1].set_xlabel(f"棚に近く止まる（すき間{P.CLEARANCE_MIN:.0f}）：間口の中心から車体の中心までの横ずれ mm")
+    axs[1].set_title("横にずらして止まる場合（本案で使う）", fontsize=10)
+    fig.suptitle(f"MoMaが {P.MAIN}（部品入り{P.TP_FULL_KG:.0f}kg）をフック式ハンドで水平に出し入れできる範囲（帯）と本案の段", fontsize=11.5)
+    fig.text(0.01, 0.01, "車体＋進入禁止域・床・棚に腕が当たらず、手首の負荷が許容内の範囲。取り出すときはさらにフックで持ち上げる（予備・返却の出口）。", fontsize=8, color="#555")
+    fig.tight_layout(rect=(0, 0.03, 1, 0.95)); fig.savefig(path, dpi=115); plt.close(fig)
 
 
 def main():
