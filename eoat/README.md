@@ -19,7 +19,7 @@
 ```
 eoat/
   README.md  DESIGN.md
-  crawler/   common.py sources.yaml discover.py crawl.py extract.py normalize.py classify.py images.py dedupe.py audit.py build.py delete_case.py
+  crawler/   common.py sources.yaml discover.py crawl.py extract.py normalize.py classify.py images.py dedupe.py audit.py build.py delete_case.py recover.py search_brief.md
   taxonomy/  categories.yaml materials.yaml principles.yaml tasks.yaml robot_models.yaml synonyms.yaml
   manual/    suppressions.json(削除依頼) image_policy.json(ドメインごとの画像方針) reviews.json(レビュー)
   tests/     test_pipeline.py queries.yaml eval_queries.py / .cjs playwright_eval.js
@@ -53,6 +53,7 @@ python images.py --workers 10      # 画像の取得・確認・縮小(240px / 4
 python llm_prep.py                 # LLM レビューの入力(data/llm_batches/)。レビューは llm_review_instructions.md の手順でサブエージェントが data/llm_out/ に書く
 python llm_merge.py                # レビューを分類結果に反映(method: inferred + 本文の引用)
 python sier_discover.py            # (任意)SIer DB 1,500 社の公式サイトから事例ページを発見して候補に足す → その後 crawl.py から
+python recover.py --password …     # 別の環境で再開するとき: 公開側の暗号化データから 出典 URL・取得元・レビュー結果 を data/ に戻す → crawl.py から(原本・画像は取り直し)
 python build.py --password …       # 重複除去 → 検証 → data/cases.json(平文)→ 暗号化データと画像パック(site/members/eoat-db/)→ 監査
 python -m unittest discover -s ../tests            # 受入テスト
 python ../tests/eval_queries.py                    # 検索の評価(precision@12 など)
@@ -131,6 +132,13 @@ python3 ../../scripts/serve.py 8750 &  EOAT_PW=… node ../tests/playwright_eval
 
 | 8 | README の「次のセッションでやること」2〜5 + 検索発掘の続き(6 分担・検索 149 回 → 400 URL + ロボットメーカー日本の事例一覧 3 本 → 候補 +530、取得 391、画像あり 82 件をレビュー、32 件除外)。画像: CLIP の文に「人とロボットが一緒」「工場の全景」「工作機械だけ」を足して 2,213 枚を再判定、しきい値 0.52 → 0.60、縦長(h/w>1.4)と悪い例ラベルを除外、顔検出が opencv 5 で動いていなかったのを修正。ロボット型式の辞書 169 → 185、可搬の分かる型式をシリーズ名より先に照合。SIer 発見でロボットの語が無い会社を除外。速さ: パックを UI の並びで作り直し(--repack)、傾向の画像と Web フォント(1.4 MB)を最初の画面の後に | 258 | 100% | 0.31 / 0.48 / **4.1** | **0.869** | 画像 10%(人物+ロボットを許容しなければ 18%)/ 分類 6% | 10.4 | 12 |
 
+| 9 | 別の環境で再開(data/ 無し): 公開データを復号して出典 URL とレビュー結果を復元(recover.py、258 件中 252 件が同じ値で戻る)。検索発掘 8 分担(検索 199 回 → 666 URL)+ sitemap 取得元(Photoneo 84 本・韓国 마로솔 466 本)+ SIer 発見(153 社 1,571 ページ)。語彙に韓国語 77 組(마로솔が「語が無い」で 453 本落ちていた → 126 本通過)。レビュー 335 件(事例 191・除外 144)。規則の誤りを直した: ワークの重さがロボットの可搬を拾う(レビューで大半が可搬だった)、Robotiq「Palletizing Solution」が他社事例に付いて重複判定でも 26 件を誤って束ねる(製品キーの重複は題名の固有名詞が共通のときだけに)、韓国語の「推薦事例」の節が本文に混ざる。公開側から規則の点数とレビューの note を外して 448 → 352 KB | 403 | 100% | 0.43 / 0.48 / **4.2** | **0.915** | 画像 10%(人物+ロボットを許容しなければ 16%)/ 分類 —(全件 LLM 済み) | 14.7 | 13 |
+
+ループ 9 の評価: 件数は 258 → 403(+147 新規、復元できなかった 6 件は取得エラー 2・画像が取れなくなった 3・規則で落ちた 1)。地域は 北米 21%・欧州 22%・アジア 21%(韓国 86 件)で地域の目標はすべて達成、産業用は 28% → 36%。precision@12 0.915(目標 0.85)、zero_result 8/42(卵・ガラス・試験管など事例そのものが無い問い)、trend_accuracy 0.69(外れた 5 問は一致 1〜2 件の問いで、傾向が決まらない)。
+移動マニピュレータは検索 64 URL → 16 件のまま(メーカーのページは製品紹介ばかりで、ハンドの写真がある事例が少ない)。可搬の不明は 41%(規則の誤った重さを消した分だけ増えた。正しい数字が本文に無い事例が大半なのは同じ)。掴み方「記載なし」が先頭の事例が 128 件(32%): レビューが「本文に方式の記載が無い」を厳しく取るため。傾向パネルでは最後に回しているが、写真から掴み方を判定する手(人の目か画像モデル)が要る。
+Fast 3G は 448 KB のデータで 5.7 秒に悪化 → UI が使わない値を公開側から外して 4.2 秒(復号 2.0 秒 + 最初のパック 2.2 秒)。件数が 2,000 件に向かうとデータは 4 倍になるので、次は fieldSources の証拠文を短くするか、事例の一覧と詳細を分けて読む。
+この環境(クラウド)は http:// だけのサイトに届かない(プロキシが 503)ので、SIer 発見は 215 社 → 153 社。403 のドメインは data/crawl_blocked.txt に 16 件追加。
+
 ループ 8 の評価: 件数は 228 → 258(+82 レビュー、−32 除外、−14 は画像の規則で写真が無くなった)。precision@12 0.869、Fast 3G の最初の画面 10.5 → 4.1 秒(原因は画像の規則ではなく、パックが追記式で古い並びのまま最初の 24 枚が 4 パックに散っていたこと、傾向パネルの代表画像とフォント 42 本が同時に走っていたこと)。
 可搬の不明は 42% → 43% で動かず: 不明 97 件のうち本文に kg の数字があるのは 5 件、ロボットの型式があるのは 9 件だけで、残りは本文に手がかりが無い(LLM に読ませても取れない)。次は「ワークの種類からの推定」を **推測の枠** に出すかを相談。
 画像で残る誤りは「人がロボットの横に立つ写真」(CLIP が 0.85〜0.94 でハンドの写真と判定、顔検出も遠景・横向きは 0)。ハンドが写っているので許容するなら 10%、許容しないなら 18%。
@@ -149,29 +157,32 @@ python3 ../../scripts/serve.py 8750 &  EOAT_PW=… node ../tests/playwright_eval
 分類の誤り(20%: 製品ページの定型語と用途一覧 → 取得元ごとの抽出規則)、可搬重量の不明 50%(ハンド製品の可搬から推定する規則)、Fast 3G 8.2 秒(data.enc の復号 2.3 秒 + 最初のパック 400 KB → fieldSources の証拠文を短くする・パックを 200 KB に)、
 配分(件数が 2,000 に届くまで判断しない。北米・アジア・産業用・移動マニピュレータ・カスタム品が少ない)、検索の zero_result 10/42(卵・ガラス・試験管・磁石など、事例そのものが無いカテゴリ)。
 
-## 収集の進捗(セッションをまたいで続きから再開するためのメモ。最終更新 2026-10-27 ループ 8)
+## 収集の進捗(セッションをまたいで続きから再開するためのメモ。最終更新 2026-10-28 ループ 9)
 
 ### いまの状態
-- 公開データ: 258 件・画像 536 枚(`site/members/eoat-db/`、パイロット用パスワード `pilot-test` で暗号化。**マージ前に共通パスワードで `build.py --repack` を実行し直す**)
-- 候補 4,156 ページ(`data/candidates.json`)、取得済み 4,035、抽出 3,956、規則で分類 743、画像あり 451 → LLM レビュー済み 602(事例ではない 236、確定 366 → 画像の規則と重複除去後 258)
-- `data/`・`raw/` はこの環境にだけある(gitignore)。別の環境で再開するときは discover → crawl から回す(取得済みの原本は再取得しない設計なので、同じ環境なら続きから)
-- LLM レビュー済みの id は `data/llm_out/*.json` にある。`llm_prep.py --only-missing` で未レビューだけを出せる
-- 取れないドメインは `data/crawl_blocked.txt`(検索エージェントの除外語に使う)。顔検出の分類器は `crawler/models/*.xml`(gitignore、README の setup で取る)
+- 公開データ: 403 件・画像 765 枚(`site/members/eoat-db/`、パイロット用パスワード `pilot-test` で暗号化。**マージ前に共通パスワードで `build.py --repack` を実行し直す**)
+- 候補 3,864 ページ(`data/candidates.json`)、取得済み 3,740(403 など 118 件は取れず)、抽出 3,714、規則で分類 764、画像あり 570 → LLM レビュー済み 593(復元 258 + 今回 335。事例ではない 142)→ 重複除去後 403
+- `data/`・`raw/` はこの環境にだけある(gitignore)。別の環境で再開するときは `recover.py --password …` で公開データから出典 URL・取得元・レビュー結果を戻し、`crawl.py` から回す(原本と画像は取り直し。約 1 時間)
+- LLM レビュー済みの id は `data/llm_out/*.json` にある(`recovered_published.json` は公開データから戻した分)。`llm_prep.py --only-missing` で未レビューだけを出せる。**レビュー中に `llm_prep.py` を再実行すると batch ファイルが消える**ので、バッチは別の名前(`llm_batches_r9a/`)に写してから配る
+- 検索エージェント向けの手順は `crawler/search_brief.md`(ループ 9 から Git 管理。data/ に置いていた前の版は環境と一緒に消えた)
+- 取れないドメインは `data/crawl_blocked.txt`(検索エージェントの除外語に使う。ループ 9: 27 ドメイン)。顔検出の分類器は `crawler/models/*.xml`(gitignore、README の setup で取る)
+- この環境(Claude のクラウド)から取れないもの: http:// だけのサイト(プロキシが 503)、ABB(503)、Cloudflare 等の 403 サイト
 
 ### 次のセッションでやること(順番)
-1. **Web 検索による発掘を続ける**(ループ 7・8 で 14 分担・339 回 → 766 URL → 153 件追加。採用率 20%)。`data/search_brief.md` がエージェント向けの手順。狙い: 北米(19% → 20%)・アジア(8.5% → 10%)・産業用(28% → 40%)・移動マニピュレータ(14 件)。韓国 myrobotsolution.com の sitemap に未確認の事例が約 100 本ある
-2. **可搬の不明 43%** の扱いを決める: 本文に手がかりが無い事例が大半(kg の数字 5 件・型式 9 件 / 97 件)。「ワークの種類と作業からの推定(段ボールのパレタイズ → 5〜20 kg)」を推測の枠に出すか、不明のまま置くか。出すなら `is_speculative` を付けて事実と分ける
-3. **人物+ロボットの写真**(画像の誤りの大半): CLIP ViT-B/32 では分けられない。選択肢は (a) 許容する(ハンドは写っている)、(b) 人物検出モデル(YOLO 等)を足す、(c) 1 事例 3 枚のうち代表だけ厳しくする
-4. **動画だけの事例ページ**(FANUC SI パートナー事例 81 本・OnRobot・DAIHEN の一部): 動画の静止画を縮小版として置くかの権利整理。置けるなら `extract.py` に `<video poster>` / og:video の取り込みを足す
-5. ABB(new.abb.com)はこの環境から 503。別の環境か、時間を置いて再試行
-6. 500 件ごとに `audit.py`・`eval_queries.py`・`spot_sheet.py`・`playwright_eval.js` を回し、品質ループの表に 1 行足す(次は 500 件)
+1. **Web 検索による発掘を続ける**(ループ 7〜9 で 22 分担・538 回 → 1,432 URL → 300 件追加。採用率 20%)。`crawler/search_brief.md` がエージェント向けの手順(日本語の site: 指定は standard モードで効かないので extended モード)。狙い: 産業用(36% → 40%)・移動マニピュレータ(16 件)・カスタム(14% → 15%)・協働(44% → 45%)。韓国は 마로솔 sitemap で 86 件になったので、次は台湾(HIWIN は PDF のみ)・インド(SIer 事例が無い)より、欧州の産業用 SIer(Photoneo の一覧巡回は済み)と北米の SIer(MWES・Kaufman は済み)の続き
+2. **掴み方「記載なし」128 件(32%)** の扱い: レビューが本文に方式が無いと判断したもの。写真から判定する(CLIP のゼロショットで「2 指 / 吸着 / 袋用」を当てる、または人が 1 時間で 128 枚見る)か、「記載なし」のまま置くか
+3. **可搬の不明 41%** の扱い(ループ 8 の項目 2 と同じ。規則の誤った重さを消したので、残りは本文に数字が無い事例): 「ワークの種類と作業からの推定」を推測の枠に出すか
+4. **人物+ロボットの写真**(画像の誤り 10% → 16% の差分): ループ 8 の項目 3 と同じ
+5. **動画だけの事例ページ**(FANUC SI パートナー事例・OnRobot・DAIHEN):ループ 8 の項目 4 と同じ
+6. 500 件で `audit.py`・`eval_queries.py`・`spot_sheet.py`・`playwright_eval.js` を回し、品質ループの表に 1 行足す。データが 2,000 件になると data.enc が 1.4 MB になるので、一覧用と詳細用の分割を設計する
 
 ### 取得元の調査結果
-- `crawler/sources.yaml` の `status`: ok = 巡回できる(40 件) / blocked = Cloudflare 等で取れない / todo = URL 未特定 / skip = 重複(UR の他言語)
+- `crawler/sources.yaml` の `status`: ok = 巡回できる(45 件。sitemap.xml も一覧ページとして書ける) / blocked = Cloudflare 等で取れない / todo = URL 未特定 / skip = 重複(UR の他言語)
 - SIer DB の事例ページ: `data/sier_sources.json`(215 社)と `data/sier_discover_done.json`(1,500 社の結果)。再実行は済んだ会社を飛ばす
 - 公的事例集(経産省・NEDO・RRI)は PDF か 403 で未着手。ユーザー・研究(GitHub / GrabCAD / 大学)も未着手
 
 ### 判断が残っている点(フェーズ 2 開始時の既定で進めている)
 - 作業ツール(研磨・溶接トーチ・ねじ締め)は掴み方の末尾の群として残す(157 件中 38 件)。別の軸に分けるかは要相談
-- 掴み方の種類が本文に無い事例は「記載なし(写真で確認)」で残す(21 件)
+- 掴み方の種類が本文に無い事例は「記載なし(写真で確認)」で残す(ループ 9 で 128 件。次のセッションの項目 2)
+- 同じ製品・ワーク・用途の事例は、題名に同じ固有名詞(顧客名)があるときだけ 1 件に束ねる(ループ 9。それまでは Robotiq の段ボールパレタイズ 7 社が 1 件になっていた)
 - Cloudflare 等で取れない取得元は使わない

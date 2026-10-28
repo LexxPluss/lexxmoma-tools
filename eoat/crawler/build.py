@@ -316,7 +316,13 @@ def main():
         jdump(pidx, DATA / "packs.json")
         plain["packs"] = [p["name"] for p in pidx["packs"]]
         plain["cases"] = cases
-        encrypt_json(plain, key, salt, SITE_OUT / "data.enc.json")
+        # 公開側には UI が使わない確認用の値(規則の点数・レビューの note)を入れない(ループ 9: 403 件で 310 → 240 KB、Fast 3G の復号が 2.4 秒)
+        slim = json.loads(json.dumps(plain, ensure_ascii=False))
+        for r in slim["cases"]:
+            (r.get("quality") or {}).pop("scores", None)
+            for v in (r.get("fieldSources") or {}).values():
+                v.pop("note", None)
+        encrypt_json(slim, key, salt, SITE_OUT / "data.enc.json")
         total = sum(f.stat().st_size for f in (SITE_OUT / "img").glob("**/*.bin"))
         print(f"暗号化 → {SITE_OUT.relative_to(SITE_OUT.parents[2])}/data.enc.json  画像 +{added/1e6:.1f} MB(合計 {total/1e6:.1f} MB, パック {len(pidx['packs'])})")
     log.save()

@@ -120,10 +120,13 @@ class TestDedupe(unittest.TestCase):
         self.assertEqual(len(kept[0]["sources"]), 2)   # 束ねた側の出典が残る
 
     def test_same_product_work_task(self):
-        a = self.mk(1, "https://x.com/1", ph="0000000000000000", maker="OnRobot", model="VG10")
-        b = self.mk(2, "https://y.com/2", ph="ffffffffffffffff", maker="OnRobot", model="VG10")
-        kept, merged, _ = dedupe([a, b])
+        # 同じ製品・ワーク・用途でも、題名の固有名詞(顧客名)が共通のときだけ束ねる(ループ 9)
+        a = dict(self.mk(1, "https://x.com/1", ph="0000000000000000", maker="OnRobot", model="VG10"), title_orig="Raumland GmbH palletizes boxes with VG10")
+        b = dict(self.mk(2, "https://y.com/2", ph="ffffffffffffffff", maker="OnRobot", model="VG10"), title_orig="VG10 at Raumland: case study")
+        c = dict(self.mk(3, "https://z.com/3", ph="0f0f0f0f0f0f0f0f", maker="OnRobot", model="VG10"), title_orig="Korea Filter automates palletizing with VG10")
+        kept, merged, _ = dedupe([a, b, c])
         self.assertEqual(merged, 1)
+        self.assertEqual(sorted(k["id"] for k in kept), ["c1", "c3"])
 
 
 class TestImagesAndBuild(unittest.TestCase):
