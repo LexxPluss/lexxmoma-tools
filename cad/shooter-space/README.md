@@ -22,7 +22,8 @@ python3 build.py                    # out/ に STEP・画像・寸法図・部�
 | `tp.py` | TP規格コンテナの3Dモデル（外寸・内寸は掲載値、取っ手穴・底の嵌合部などの細部は簡略） |
 | `parts.py` | Φ28パイプ・ジョイント・ローラーレール・ストッパーと、部材の数え上げ |
 | `shooter.py` | 段の並びを渡すと、隙間のルールを満たす最小の高さで段を積み、棚を組み立てる |
-| `variants.py` | 比較する案（A 従来型・D 縦型・高さ活用） |
+| `variants.py` | 比較する案（A 従来型・E 本案） |
+| `reach.py` | MoMa がフック式ハンドで TP 箱を水平に出し入れできる高さと停止距離を計算する |
 | `optimize.py` | 列数・奥行きの箱数・空箱返却の置き方を総当たりして、条件を満たす中で床面積が最小の案を探す |
 | `params_local.py` | 社内の実機値（任意・git に入れない）。あれば `params.py` の仮値を上書きする |
 | `build.py` | 書き出し（STEP・陰影画像・寸法図・部材表・summary.json） |
@@ -33,6 +34,7 @@ python3 build.py                    # out/ に STEP・画像・寸法図・部�
 | `out/*_bom.csv` | 部材表（パイプの長さと本数・レール・ローラー・ストッパー） |
 | `out/footprint_compare.png` | 案の床面積を真上から並べた図 |
 | `out/optimize.csv` | 総当たりの結果 |
+| `out/reach_chart.png` | 高さごとに止まれる距離（MoMa の届く範囲）と本案の段 |
 
 ## 座標と単位
 

@@ -5,7 +5,7 @@
 """
 import csv, os
 import params as P
-from shooter import design, evaluate
+from shooter import design, evaluate, moma_range
 
 OUT = os.path.join(os.path.dirname(__file__), "out")
 
@@ -21,7 +21,7 @@ def search():
                 ok_cap = e["capacity"] >= P.N_BOX
                 ok_ret = e["ret_line"] <= P.RET_MAX
                 ok_top = e["pick_top"] <= P.PICK_TOP_MAX + 0.5
-                ok_moma = e["moma_center"][1] <= P.moma_center_max() + 0.5
+                ok_moma = e["moma_center"][1] <= moma_range()[1] + 0.5 and e["moma_center"][0] >= moma_range()[0] - 0.5
                 rows.append(dict(name=d["name"], cols=cols, deep=deep, ret_mode=ret_mode, n_low=d["n_low"], n_band=d["n_band"], n_high=d["n_high"],
                                  width=round(e["width"]), depth=round(e["depth"]), height=round(e["height"]), area_m2=round(e["area_m2"], 3),
                                  sku=e["sku"], capacity=e["capacity"], per_m2=round(e["per_m2"], 1), vol_eff=round(e["vol_eff"] * 100, 1),
@@ -37,6 +37,6 @@ if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
     with open(os.path.join(OUT, "optimize.csv"), "w", newline="", encoding="utf-8-sig") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0].keys())); w.writeheader(); w.writerows(rows)
-    print(f"MoMaが箱の中心を上げられる最大 {P.moma_center_max():.0f}mm")
+    print(f"MoMaが箱を水平に出し入れできる箱の中心の高さ {moma_range()[0]:.0f}〜{moma_range()[1]:.0f}mm（reach.py）")
     for r in sorted(rows, key=lambda r: (not r["ok"], r["area_m2"])):
         print(("OK " if r["ok"] else "-- ") + f'{r["name"]:16} 床{r["area_m2"]:.2f}m² {r["width"]}x{r["depth"]}x{r["height"]} 段 下{r["n_low"]}+人{r["n_band"]}+上{r["n_high"]} 品番{r["sku"]} 箱{r["capacity"]} {r["per_m2"]}箱/m² 体積効率{r["vol_eff"]}% 返却{r["ret_line"]} {r["why"]}')

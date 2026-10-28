@@ -105,9 +105,10 @@ def side_section(m, ax, col):
     D, Hb = m["lane_len"], P.TP[P.MAIN]["H"]
     ax.add_patch(Rectangle((-1500, P.PICK_MIN), 1500, P.PICK_TOP_MAX - P.PICK_MIN, color="#3EB370", alpha=0.12))
     ax.text(-750, P.PICK_TOP_MAX + 40, f"人の取り出し域 {P.PICK_MIN}〜{P.PICK_TOP_MAX}", ha="center", fontsize=8, color="#23864f")
-    cmax = P.moma_center_max()
-    ax.plot([D, D + P.AISLE_W], [cmax, cmax], color="#0068B7", lw=0.8, ls="--"); ax.text(D + P.AISLE_W / 2, cmax + 30, f"MoMaが箱の中心を上げられる上限 {cmax:.0f}", ha="center", fontsize=7.5, color="#0068B7")
-    ax.plot([D, D + P.AISLE_W], [P.MOMA_CENTER_MIN] * 2, color="#0068B7", lw=0.8, ls="--"); ax.text(D + P.AISLE_W / 2, P.MOMA_CENTER_MIN + 30, f"下限 {P.MOMA_CENTER_MIN}", ha="center", fontsize=7.5, color="#0068B7")
+    from shooter import moma_range
+    cmin, cmax, _ = moma_range()
+    ax.plot([D, D + P.AISLE_W], [cmax, cmax], color="#0068B7", lw=0.8, ls="--"); ax.text(D + P.AISLE_W / 2, cmax + 30, f"MoMaが扱える箱の中心の上限 {cmax:.0f}", ha="center", fontsize=7.5, color="#0068B7")
+    ax.plot([D, D + P.AISLE_W], [cmin] * 2, color="#0068B7", lw=0.8, ls="--"); ax.text(D + P.AISLE_W / 2, cmin + 30, f"下限 {cmin:.0f}", ha="center", fontsize=7.5, color="#0068B7")
     ax.add_patch(Rectangle((D, 0), P.AISLE_W, 40, color="#0068B7", alpha=0.15)); ax.text(D + P.AISLE_W / 2, 80, f"通路 {P.AISLE_W}", ha="center", fontsize=8, color="#0068B7")
     ax.add_patch(Rectangle((-1500, 0), 1500, 40, color="#3EB370", alpha=0.25)); ax.text(-750, 80, "ライン側", ha="center", fontsize=8, color="#23864f")
     ax.plot([-1600, D + P.AISLE_W + 100], [0, 0], color="#555", lw=1)
@@ -161,7 +162,7 @@ def front_view(m, ax):
 
 
 def drawing(m, path):
-    cols = sorted({x["col"] for x in m["lanes"] if x["kind"].startswith("return")}) or []
+    cols = sorted({x["col"] for x in m["lanes"] if x["kind"].startswith("return")}) if m["ret_mode"] == "column" else []
     secs = [0] + ([cols[0]] if cols and cols[0] != 0 else [])
     fig, axs = plt.subplots(1, len(secs) + 1, figsize=(8 * len(secs) + 8, 8.2), gridspec_kw=dict(width_ratios=[1.25] * len(secs) + [1]))
     for ax, c in zip(axs, secs):
@@ -187,6 +188,34 @@ def footprint(metas, path):
     fig.tight_layout(); fig.savefig(path, dpi=130); plt.close(fig)
 
 
+def reach_chart(metas, path):
+    """高さごとに、MoMaが箱を水平に出し入れできる停止距離（棚の面から肩まで）を帯で描き、案の段を重ねる。"""
+    from shooter import moma_range, lv_z
+    lo, hi, table = moma_range()
+    fig, ax = plt.subplots(figsize=(10, 7.5))
+    for z, f in table:
+        if f:
+            ax.plot([f[0], f[-1]], [z, z], color="#0068B7", lw=2.2, alpha=0.35, solid_capstyle="butt")
+    ax.axhspan(lo, hi, color="#0068B7", alpha=0.04)
+    ax.axhline(lo, color="#0068B7", lw=0.8, ls="--"); ax.axhline(hi, color="#0068B7", lw=0.8, ls="--")
+    ax.text(P.STANDOFF_MAX + 10, hi, f" 上限 {hi:.0f}", va="center", fontsize=9, color="#0068B7")
+    ax.text(P.STANDOFF_MAX + 10, lo, f" 下限 {lo:.0f}", va="center", fontsize=9, color="#0068B7")
+    m = metas[-1]; D = m["lane_len"]; H = P.TP[P.MAIN]["H"]
+    names = {"pick": "取り出し（入口）", "return": "空箱返却（出口）", "returnf": "空箱返却（出口）", "reserve": "予備在庫"}
+    seen = set()
+    for l in m["levels"]:
+        k = l["kinds"][0]; zc = lv_z(l, k, D) + H / 2
+        ax.axhline(zc, color={"pick": "#3EB370", "reserve": "#d08a2c"}.get(k, "#8a99a5"), lw=1.2)
+        ax.text(P.CLEARANCE_MIN + P.BODY_HALF - 10, zc + 12, f"{names[k]} 箱の中心 {zc:.0f}", ha="right", fontsize=8.5)
+    ax.axvline(P.CLEARANCE_MIN + P.BODY_HALF, color="#555", lw=0.8, ls=":")
+    ax.text(P.CLEARANCE_MIN + P.BODY_HALF + 8, 40, f"最も近い停止（すき間{P.CLEARANCE_MIN:.0f}）", fontsize=8, color="#555")
+    ax.set_xlim(250, P.STANDOFF_MAX + 160); ax.set_ylim(0, 2600)
+    ax.set_xlabel("棚の通路側の面から、アームの肩（車体の中心）までの距離 mm"); ax.set_ylabel("箱の中心の高さ mm")
+    ax.set_title(f"MoMaが {P.MAIN}（部品入り{P.TP_FULL_KG:.0f}kg）を水平に出し入れできる範囲（青い帯）と、{m['title'].split('：')[0]}の段", fontsize=10.5)
+    fig.text(0.01, 0.01, "フック式ハンドで端面を持つ。車体＋進入禁止域・床・棚に腕が当たらず、手首の負荷が許容内の範囲。低い段は車体を棚から離して手首を車体の外へ出す。", fontsize=8, color="#555")
+    ax.grid(alpha=0.25); fig.tight_layout(rect=(0, 0.03, 1, 1)); fig.savefig(path, dpi=120); plt.close(fig)
+
+
 def main():
     t0 = time.time(); metas = []
     # TPコンテナ単体
@@ -205,6 +234,7 @@ def main():
             w = csv.writer(f); w.writerow(["部材", "寸法", "数量"]); w.writerows(m["bom"].rows())
         print(m["name"], f"{time.time() - t0:.0f}s", flush=True)
     footprint(metas, os.path.join(OUT, "footprint_compare.png"))
+    reach_chart(metas, os.path.join(OUT, "reach_chart.png"))
     summary = [dict(name=m["name"], title=m["title"], width=round(m["width"]), depth=round(m["depth"]), height=round(m["height"]),
                     area_m2=round(m["area_m2"], 3), area_aisle_m2=round(m["area_aisle_m2"], 3), boxes=m["boxes"], capacity=m["capacity"],
                     sku=m["sku"], per_m2=round(m["per_m2"], 1), vol_eff=round(m["vol_eff"] * 100, 1), ret_line=round(m["ret_line"]),

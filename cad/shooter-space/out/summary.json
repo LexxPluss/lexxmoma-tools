@@ -61,28 +61,27 @@
   "rail_m": 50.7
  },
  {
-  "name": "D_tall",
-  "title": "D 縦型・高さ活用：5列×奥2箱、足元2段＋人の3段＋頭上3段（MoMa専用の予備は押し込み式）",
-  "width": 1943,
+  "name": "E_tall",
+  "title": "E 本案：4列×奥2箱、足元の予備2段＋人の3段＋空箱返却＋頭上の予備2段（予備は押し込み式・MoMa専用）",
+  "width": 1560,
   "depth": 1076,
-  "height": 2130,
-  "area_m2": 2.091,
-  "area_aisle_m2": 5.005,
-  "boxes": 66,
-  "capacity": 66,
-  "sku": 13,
-  "per_m2": 31.6,
-  "vol_eff": 37.2,
-  "ret_line": 1309,
-  "pick_top": 1458,
+  "height": 2127,
+  "area_m2": 1.679,
+  "area_aisle_m2": 4.019,
+  "boxes": 48,
+  "capacity": 48,
+  "sku": 12,
+  "per_m2": 28.6,
+  "vol_eff": 33.8,
+  "ret_line": 1655,
+  "pick_top": 1455,
   "moma_center": [
    250,
-   1952
+   1949
   ],
   "levels": [
    {
     "kinds": [
-     "reserve",
      "reserve",
      "reserve",
      "reserve",
@@ -95,14 +94,12 @@
      "reserve",
      "reserve",
      "reserve",
-     "reserve",
      "reserve"
     ],
-    "zf": 481.3
+    "zf": 466.3
    },
    {
     "kinds": [
-     "pick",
      "pick",
      "pick",
      "pick",
@@ -115,44 +112,40 @@
      "pick",
      "pick",
      "pick",
-     "pick",
-     "returnf"
+     "pick"
     ],
-    "zf": 1005.8
+    "zf": 1003.0
    },
    {
     "kinds": [
      "pick",
      "pick",
      "pick",
-     "pick",
-     "returnf"
+     "pick"
     ],
-    "zf": 1308.8
+    "zf": 1306.0
    },
    {
     "kinds": [
-     "reserve",
+     "return",
+     "return",
+     "return",
+     "return"
+    ],
+    "zf": 1654.7
+   },
+   {
+    "kinds": [
      "reserve",
      "reserve",
      "reserve",
      "reserve"
     ],
-    "zf": 1657.5
-   },
-   {
-    "kinds": [
-     "reserve",
-     "reserve",
-     "reserve",
-     "reserve",
-     "reserve"
-    ],
-    "zf": 1920.5
+    "zf": 1917.7
    }
   ],
-  "pipe_m": 138.9,
-  "joints": 164,
-  "rail_m": 75.0
+  "pipe_m": 112.8,
+  "joints": 132,
+  "rail_m": 60.0
  }
 ]

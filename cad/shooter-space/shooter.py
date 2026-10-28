@@ -59,14 +59,26 @@ def lv_z(l, k, y):
     return l["zf"] + SLOPE_OF[k] * y
 
 
-def design(cols, deep, ret_mode="column", n_ret=None, low=None, high=None, mix=None, title="", name=""):
+_RANGE = {}
+
+
+def moma_range():
+    """reach.py で計算した、MoMaが箱を水平に出し入れできる箱の中心の高さの範囲（仕様の下限も守る）。"""
+    if "r" not in _RANGE:
+        import reach
+        (lo, hi), table = reach.usable_range()
+        _RANGE["r"] = (max(P.MOMA_CENTER_MIN, lo), hi, table)
+    return _RANGE["r"]
+
+
+def design(cols, deep, ret_mode="top", n_ret=None, low=None, high=None, mix=None, title="", name=""):
     """段の構成を自動で決める。
     ret_mode: column = 1列を空箱返却にあてる（人の開口の中で返す） / top = 取り出し段の上に返却段（従来の形）
     low/high: 予備段の段数（None ならMoMaの届く範囲・棚の高さ上限いっぱいまで）
     """
     H = P.TP[P.MAIN]["H"]
     D = lane_len_of(deep)
-    c_max = P.moma_center_max()
+    c_min, c_max, _ = moma_range()
     # 取り出し域の段数：置き面700以上・箱の上端1500以下で入るだけ
     band = []
     z = P.PICK_MIN
@@ -83,7 +95,7 @@ def design(cols, deep, ret_mode="column", n_ret=None, low=None, high=None, mix=N
     if ret_mode == "top":
         rows_band.append(["return"] * cols)
     # 下の予備段：最下段の通路側の箱の中心が MOMA_CENTER_MIN 以上。取り出し1段目が700に収まる最大の段数
-    zb0 = max(P.FLOOR_MIN, P.MOMA_CENTER_MIN - H / 2)
+    zb0 = max(P.FLOOR_MIN, c_min - H / 2)
     zf0 = zb0 - SLOPE_OF["reserve"] * D
     best_low = 0
     for n in range(0, 8):
@@ -179,7 +191,7 @@ def build(d, fill="full"):
         if k == "pick":
             stops.append(stopper(xc(c), wst, 0, z0, bom))
         else:                                                   # 返却・予備は通路側が出口
-            stops.append(stopper(xc(c), wst, D - 3, z1, bom))
+            stops.append(stopper(xc(c), wst, D - 3, z1, bom, h=P.EXIT_STOP_H))
             if k == "reserve":
                 stops.append(stopper(xc(c), wst, 0, z0, bom))
         if k.startswith("return"):
