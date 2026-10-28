@@ -1498,3 +1498,130 @@ sources:
     status: todo
     checked: 2026-10-28
     note: "sitemap(sitemap_d3.xml, ?cmsfkt=sitemap_xml)は製品数件だけ。検索でも事例・Referenzen 一覧は見つからない"
+  - key: solomon_3d
+    label: SOLOMON 3D 事例(台湾、3D ビジョン+ロボット case studies)
+    type: sier
+    case_type: sier_case
+    region: その他アジア
+    country: 台湾
+    lang: en
+    index_urls: ["https://www.solomon-3d.com/case-studies/"]
+    article: "^https://www\\.solomon-3d\\.com/case-studies/[^/?#]+/[^/?#]+/$"
+    exclude: "/case-studies/(meta-aivi|solvision)/"
+    status: ok
+    checked: 2026-10-28
+    note: "一覧の素の HTML に個別リンク 17 本(accupick 4・solmotion 4・solvision 4・meta-aivi 5。後ろの 2 つは検査・AR で把持なしのため exclude、残り 8 本)。例: /case-studies/accupick/bin-picking-steel-parts-ai/, /case-studies/accupick/cnc-machine-tending-robotic-bin-picking/, /case-studies/solmotion/automotive-assembly-vision-guided-robotics-ai/。個別本文に顧客・課題・結果と <img>(wp-content/uploads/…bin-picking-steel-switchgear-parts-ai.jpg など現場写真)。把持(ビンピッキング・マシンテンディング・組立)は約 5 本。トップにある warehouse-depalletizing-of-randomly-positioned-boxes は一覧に出ない(一覧は一部だけ表示の可能性)。sitemap(page-sitemap1〜5)に個別事例は無い。robots.txt は curl だと NinjaFirewall の 403 だが、社名 UA の fetch では読めた"
+  - key: elite_en
+    label: Elite Robots 事例(英語)
+    type: maker_robot
+    case_type: sier_case
+    region: 中国
+    country: 中国
+    lang: en
+    index_urls: ["https://www.eliterobots.com/cases"]
+    article: "^https://www\\.eliterobots\\.com/cases/[^/?#]+$"
+    status: ok
+    checked: 2026-10-28
+    note: "既存 elibot(中国語)とは別の英語版。一覧にリンク 5 本(sitemap.xml でも /cases/ は 5 本)。例: /cases/palletizing-at-turbogrun, /cases/elite-robots-automating-salt-core-production, /cases/cable-inspection-sentinel-elite-robots。Webflow で本文に <img>(CP-series_turbogrun_c.jpg など現場写真)。把持はパレタイズ・中子搬送など 3 本前後。件数は少ない"
+  - key: dobot_cases
+    label: Dobot 事例(英語 case studies)
+    type: maker_robot
+    case_type: sier_case
+    region: 中国
+    country: 中国
+    lang: en
+    index_urls: ["https://www.dobot-robots.com/sitemap.xml"]
+    article: "^https://www\\.dobot-robots\\.com/insights/case-studies/[^/?#]+\\.html$"
+    status: todo
+    checked: 2026-10-28
+    note: "既存 dobot は /applications/*.html(用途 12 本)だけで、事例 /insights/case-studies/ を取りこぼしている。一覧 /insights/case-studies は素の HTML に 13 本・残りはフォーム+ajax(data-max=7)なので sitemap.xml から取る: 合うリンク 73 本(例: wine-box-palletizing-automation-with-dobot-cr20a.html, ac-motherboard-plug-in-assembly-line.html, agv-loading-and-unloading-of-cnc-machines.html)。ただし 4 本確かめて本文の <img> は製品画像(list_1.png 等)1 枚だけで、現場写真が無い(動画も素の HTML には無い)。画像の条件を満たさないため todo。大学・研究室の事例も 1/4 ほど混じる"
+  - key: dobot_cn
+    label: Dobot 越疆 事例(中国語)
+    type: maker_robot
+    status: skip
+    checked: 2026-10-28
+    note: "https://www.dobot.cn/news/cases(sitemap.xml に /news/cases/\\d+.html が 126 本)。個別は tcplayer の動画+数行の説明で、本文の <img> は製品画像だけ(1406.html, 1630.html で確認)。動画だけのページなので入れない"
+  - key: jaka
+    label: JAKA 節卡 事例
+    type: maker_robot
+    status: todo
+    checked: 2026-10-28
+    note: "https://www.jaka.com/en/case は Nuxt の SPA。__NUXT_DATA__ の caseList は空で、事例はクライアント側で prod-api(https://www.jaka.com/prod-api)から読む。素の HTML に個別リンク 0、sitemap.xml にも事例詳細 URL 無し(newsDetail・productDetails・application だけ)。render か API が要る"
+  - key: aubo_en
+    label: AUBO 事例(英語)
+    type: maker_robot
+    status: todo
+    checked: 2026-10-28
+    note: "https://www.aubo-cobot.com/public/ は jQuery で /public/api.php/aubodata/news/ の JSON から /public/jumcase3?xwid=… を組み立てる(ニュース・イベント中心)。素の HTML に事例の一覧も個別リンクも無い。既存 aubo_cn(中国語)で足りる"
+  - key: hans_huayan
+    label: Han's Robot(Huayan Robotics)アプリケーション
+    type: maker_robot
+    status: skip
+    checked: 2026-10-28
+    note: "hansrobot.net → huayan-robotics.net に移転。一覧 /application/pagenum/{n}(9 ページ、1 ページ 12 本、個別 /application/\\d+.html 約 100 本)は素の HTML で取れるが、個別(1143.html, 60.html)は <video> の mp4+数行の説明で、本文に現場の <img> 無し。動画だけなので入れない。/newsampevents-p/case-highlights は ajax で素の HTML にリンク無し"
+  - key: tmrobot_fix
+    label: Techman Robot(既存 tmrobot の確認)
+    type: maker_robot
+    status: todo
+    checked: 2026-10-28
+    note: "既存 tmrobot の index /en/solution/application は素の HTML(Nuxt SSR)に個別リンク 3 本だけ(V2A044, V3A080, ammr-cloning-solution)。SSR は最初のカテゴリ(AMMR Cloning、totalCount 3)だけで、Assembly・Dispensing・Finishing など他カテゴリは JS で /be/api/v1 から読む。sitemap.xml・robots.txt は 404。しかも項目の多くは typeName=Video で、画像は動画の静止画(…mp4_snapshot_….jpg)。一覧の取りこぼしは大きいが、動画中心で画像条件に合わないものが多い"
+  - key: hanwha_robotics
+    label: Hanwha Robotics 適用事例
+    type: maker_robot
+    status: skip
+    checked: 2026-10-28
+    note: "https://www.hanwharobotics.com/en/product/product_cases?menuSeq=5 は Total 1(中身は仮の文言)、韓国語 /kr/ は Total 0。事例が無い"
+  - key: fairino
+    label: Fairino(法奥)アプリケーション
+    type: maker_robot
+    status: skip
+    checked: 2026-10-28
+    note: "https://www.fairino.com/APPLICATIONS は用途紹介(/app1/6.html, /app2/3.html など 5 本)だけで事例一覧が無い。frtech.cc も同じサイト"
+  - key: doosan_kr
+    label: Doosan Robotics(韓国語)
+    type: maker_robot
+    status: skip
+    checked: 2026-10-28
+    note: "robots.txt で /ko/ は禁止。韓国語は /kr/ で、process/*(15)・industry/*(9)の用途紹介ページの「적용 사례」は YouTube 動画のサムネイル(img.youtube.com)だけ。事例一覧・個別ページ無し(英語版は doosan_robotics で skip 済み)"
+  - key: hiwin
+    label: HIWIN 上銀 ロボット
+    type: maker_robot
+    status: skip
+    checked: 2026-10-28
+    note: "hiwin.tw は製品一覧(multi_axis_robot_list.aspx 等)とニュース(__doPostBack)だけで、HTML の事例一覧が無い。用途は動画(stock_video.aspx)"
+  - key: delta_ia
+    label: Delta Electronics 産業オートメーション事例
+    type: maker_robot
+    status: todo
+    checked: 2026-10-28
+    note: "https://www.deltaww.com/ia_portal/en/success_stories.htm は 2 本の紹介と Press Center(/en-US/news?v=1&dataType=10)へのリンクだけ。Press Center の絞り込みは JS で、素の HTML は全社ニュース(決算など)が並ぶ。SCARA の事例はプレスリリースに散在(例: /en-US/press/7671)。一覧として取れない"
+  - key: siasun
+    label: 新松 Siasun
+    type: maker_robot
+    status: skip
+    checked: 2026-10-28
+    note: "https://www.siasun.com/industry*.html・solution*.html は Vue テンプレートで、カードのリンクが /industry/xxxxx.html(仮)のまま。個別ページが無い。中身も溶接ライン・AMR・組立ラインのソリューション紹介"
+  - key: efort
+    label: 埃夫特 Efort 解決方案
+    type: maker_robot
+    status: skip
+    checked: 2026-10-28
+    note: "一覧 /index.php/product/solution/1/{n}.html(個別 /index.php/product/soldetail/\\d+.html、1 ページ 6 本)は素の HTML で取れるが、個別(165.html)はタイトルと <video> だけで本文・現場写真が無い"
+  - key: estun
+    label: 埃斯顿 Estun
+    type: maker_robot
+    status: blocked
+    checked: 2026-10-28
+    note: "www.estun.com は 2 回とも Connection reset by peer、www.estunrobotics.com は SSL EOF。届かない"
+  - key: inovance
+    label: 汇川 Inovance
+    type: maker_robot
+    status: todo
+    checked: 2026-10-28
+    note: "www.inovance.com は Vue の SPA(素の HTML 13KB でリンク無し)、/sitemap.xml も同じ SPA の HTML を返す。render が要る"
+  - key: imrobotic
+    label: 机器人在线 应用案例(中国の事例ポータル)
+    type: media
+    status: skip
+    checked: 2026-10-28
+    note: "https://www.imrobotic.com/anli/ に個別 /anli/detail/\\d+.html(9000 番台まで)。素の HTML で取れるが「应用案例视频」で、個別は mp4 の <video>+一行説明。動画だけなので入れない"
