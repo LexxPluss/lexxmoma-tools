@@ -1,0 +1,324 @@
+# ロボットのメーカー・型式 → 区分(産業用/協働)・可搬重量(kg)。
+# 判定: pattern(正規表現、大文字小文字を区別しない)が本文に出れば採用。長い pattern(型式)を先に試し、メーカー名だけの一致は区分を付けない(「不明」のまま)。
+# 可搬重量は公開カタログ値(定格)。型式のバリエーション(例: UR10e の可搬 12.5kg)は代表値。
+# mobile: 移動マニピュレータ(AMR + アーム)の製品名
+makers:
+  - name: Universal Robots
+    aliases: [Universal Robots, ユニバーサルロボット, UR社]
+    class: 協働
+    models:
+      - {model: UR3e, pattern: "\\bUR3e?\\b", payload: 3}
+      - {model: UR5e, pattern: "\\bUR5e?\\b", payload: 5}
+      - {model: UR7e, pattern: "\\bUR7e\\b", payload: 7}
+      - {model: UR10e, pattern: "\\bUR10e?\\b", payload: 12.5}
+      - {model: UR12e, pattern: "\\bUR12e\\b", payload: 12.5}
+      - {model: UR15, pattern: "\\bUR15\\b", payload: 15}
+      - {model: UR16e, pattern: "\\bUR16e\\b", payload: 16}
+      - {model: UR20, pattern: "\\bUR20\\b", payload: 20}
+      - {model: UR30, pattern: "\\bUR30\\b", payload: 30}
+  - name: FANUC
+    aliases: [FANUC, ファナック]
+    models:
+      - {model: CRX-5iA, pattern: "\\bCRX-?5iA\\b", class: 協働, payload: 5}
+      - {model: CRX-10iA, pattern: "\\bCRX-?10iA(/L)?\\b", class: 協働, payload: 10}
+      - {model: CRX-20iA/L, pattern: "\\bCRX-?20iA(/L)?\\b", class: 協働, payload: 20}
+      - {model: CRX-25iA, pattern: "\\bCRX-?25iA\\b", class: 協働, payload: 25}
+      - {model: CRX-30iA, pattern: "\\bCRX-?30iA\\b", class: 協働, payload: 30}
+      - {model: CRX, pattern: "\\bCRX\\b", class: 協働}
+      - {model: CR-4iA, pattern: "\\bCR-?4iA\\b", class: 協働, payload: 4}
+      - {model: CR-7iA, pattern: "\\bCR-?7iA(/L)?\\b", class: 協働, payload: 7}
+      - {model: CR-14iA/L, pattern: "\\bCR-?14iA(/L)?\\b", class: 協働, payload: 14}
+      - {model: CR-15iA, pattern: "\\bCR-?15iA\\b", class: 協働, payload: 15}
+      - {model: CR-35iA, pattern: "\\bCR-?35iB?\\b", class: 協働, payload: 35}
+      - {model: LR Mate 200iD, pattern: "\\bLR ?Mate\\b", class: 産業用, payload: 7}
+      - {model: M-10iD, pattern: "\\bM-?10i[AD]\\b", class: 産業用, payload: 12}
+      - {model: M-20iD, pattern: "\\bM-?20i[ABD](/\\d+)?\\b", class: 産業用, payload: 25}
+      - {model: M-710iC, pattern: "\\bM-?710i[CD](/\\d+)?\\b", class: 産業用, payload: 50}
+      - {model: M-900iB, pattern: "\\bM-?900i[AB]\\b", class: 産業用, payload: 360}
+      - {model: M-2000iA, pattern: "\\bM-?2000i[AB]\\b", class: 産業用, payload: 1350}
+      - {model: R-2000iC, pattern: "\\bR-?2000i[BC]\\b", class: 産業用, payload: 210}
+      - {model: M-410iC, pattern: "\\bM-?410(i[BC])?(/\\d+)?\\b", class: 産業用, payload: 185}
+      - {model: M-710, pattern: "\\bM-?710\\b", class: 産業用, payload: 50}
+      - {model: M-20iB, pattern: "\\bM-?20iB(/\\d+)?\\b", class: 産業用, payload: 25}
+      - {model: R-1000iA, pattern: "\\bR-?1000(iA)?(/\\d+[FH]?)?\\b", class: 産業用, payload: 80}
+      - {model: SR-3iA, pattern: "\\bSR-?(3|6|12|20)iA\\b", class: 産業用, payload: 6}
+      - {model: CR series, pattern: "\\bCR-?\\d+i[AB]\\b", class: 協働}
+      - {model: M series, pattern: "\\bM-?\\d{2,4}i[A-D]\\b", class: 産業用}
+  - name: 安川電機
+    aliases: [安川電機, 安川, Yaskawa, YASKAWA, Motoman, MOTOMAN]
+    models:
+      - {model: HC10, pattern: "\\bHC10(DT|DTP|XP)?\\b", class: 協働, payload: 10}
+      - {model: HC20, pattern: "\\bHC20(DT|DTP|XP)?\\b", class: 協働, payload: 20}
+      - {model: HC30, pattern: "\\bHC30(PL)?\\b", class: 協働, payload: 30}
+      - {model: GP7, pattern: "\\bGP7\\b", class: 産業用, payload: 7}
+      - {model: GP8, pattern: "\\bGP8\\b", class: 産業用, payload: 8}
+      - {model: GP12, pattern: "\\bGP12\\b", class: 産業用, payload: 12}
+      - {model: GP20, pattern: "\\bGP20(HL)?\\b", class: 産業用, payload: 20}
+      - {model: GP25, pattern: "\\bGP25(-12)?\\b", class: 産業用, payload: 25}
+      - {model: GP50, pattern: "\\bGP50\\b", class: 産業用, payload: 50}
+      - {model: GP88, pattern: "\\bGP88\\b", class: 産業用, payload: 88}
+      - {model: GP225, pattern: "\\bGP(225|280|400|600)\\b", class: 産業用, payload: 225}
+      - {model: GP180, pattern: "\\bGP180(-120)?\\b", class: 産業用, payload: 180}
+      - {model: GP280, pattern: "\\bGP280(L)?\\b", class: 産業用, payload: 280}
+      - {model: PL80, pattern: "\\bPL(80|190|320|500|800)\\b", class: 産業用, payload: 190}
+      - {model: MPL, pattern: "\\bMPL(80|100|160|300|500|800)\\b", class: 産業用, payload: 160}
+      - {model: MotoMini, pattern: "\\bMotoMini\\b", class: 産業用, payload: 0.5}
+      - {model: GP series, pattern: "\\bGP\\d{1,3}\\b", class: 産業用}
+      - {model: MH series, pattern: "\\bMH\\d{1,3}\\b", class: 産業用}
+      - {model: SDA/SIA, pattern: "\\bS[DI]A\\d{1,2}[FD]?\\b", class: 産業用}
+  - name: ABB
+    aliases: [ABB]
+    models:
+      - {model: GoFa, pattern: "\\bGoFa\\b|\\bCRB ?15000\\b", class: 協働, payload: 5}
+      - {model: SWIFTI, pattern: "\\bSWIFTI\\b|\\bCRB ?1100\\b", class: 協働, payload: 4}
+      - {model: YuMi, pattern: "\\bYuMi\\b|\\bIRB ?14000\\b", class: 協働, payload: 0.5}
+      - {model: IRB 1200, pattern: "\\bIRB ?1200\\b", class: 産業用, payload: 7}
+      - {model: IRB 1300, pattern: "\\bIRB ?1300\\b", class: 産業用, payload: 11}
+      - {model: IRB 1600, pattern: "\\bIRB ?1600\\b", class: 産業用, payload: 10}
+      - {model: IRB 2600, pattern: "\\bIRB ?2600\\b", class: 産業用, payload: 20}
+      - {model: IRB 4600, pattern: "\\bIRB ?4600\\b", class: 産業用, payload: 60}
+      - {model: IRB 6700, pattern: "\\bIRB ?6700\\b", class: 産業用, payload: 235}
+      - {model: IRB 660, pattern: "\\bIRB ?660\\b", class: 産業用, payload: 250}
+      - {model: IRB 360 FlexPicker, pattern: "\\bIRB ?360\\b|\\bFlexPicker\\b", class: 産業用, payload: 8}
+      - {model: IRB series, pattern: "\\bIRB ?\\d{3,5}\\b", class: 産業用}
+  - name: KUKA
+    aliases: [KUKA, クーカ]
+    models:
+      - {model: LBR iisy, pattern: "\\bLBR ?iisy\\b", class: 協働, payload: 15}
+      - {model: LBR iiwa, pattern: "\\bLBR ?iiwa\\b", class: 協働, payload: 14}
+      - {model: KR AGILUS, pattern: "\\bKR ?AGILUS\\b|\\bKR ?(3|6|10) ?R\\d{3,4}\\b", class: 産業用, payload: 6}
+      - {model: KR CYBERTECH, pattern: "\\bKR ?CYBERTECH\\b", class: 産業用, payload: 20}
+      - {model: KR IONTEC, pattern: "\\bKR ?IONTEC\\b", class: 産業用, payload: 50}
+      - {model: KR QUANTEC, pattern: "\\bKR ?QUANTEC\\b", class: 産業用, payload: 210}
+      - {model: KR FORTEC, pattern: "\\bKR ?FORTEC\\b", class: 産業用, payload: 500}
+      - {model: KR series, pattern: "\\bKR ?\\d{1,4}\\b", class: 産業用}
+      - {model: KMR iiwa, pattern: "\\bKMR ?iiwa\\b|\\bKMR\\b", class: 協働, payload: 14, mobile: true}
+  - name: 川崎重工
+    aliases: [川崎重工, 川崎, Kawasaki, KAWASAKI]
+    models:
+      - {model: duAro, pattern: "\\bduAro ?[12]?\\b", class: 協働, payload: 2}
+      - {model: RS003N, pattern: "\\bRS003N\\b", class: 産業用, payload: 3}
+      - {model: RS005, pattern: "\\bRS005[NL]\\b", class: 産業用, payload: 5}
+      - {model: RS007, pattern: "\\bRS007[NL]\\b", class: 産業用, payload: 7}
+      - {model: RS013N, pattern: "\\bRS013N\\b", class: 産業用, payload: 13}
+      - {model: RS030N, pattern: "\\bRS030N\\b", class: 産業用, payload: 30}
+      - {model: RS050N, pattern: "\\bRS050N\\b", class: 産業用, payload: 50}
+      - {model: MC004N, pattern: "\\bMC004[NV]\\b", class: 産業用, payload: 4}
+      - {model: BX200L, pattern: "\\bBX(100|165|200|250)[LNXS]?\\b", class: 産業用, payload: 200}
+      - {model: ZX130L, pattern: "\\bZX(130|165|200)[LUS]?\\b", class: 産業用, payload: 130}
+      - {model: ZX300S, pattern: "\\bZX300S\\b", class: 産業用, payload: 300}
+      - {model: BA006L, pattern: "\\bBA006[LN]\\b", class: 産業用, payload: 6}
+      - {model: RS010, pattern: "\\bRS010[NL]\\b", class: 産業用, payload: 10}
+      - {model: RS020, pattern: "\\bRS020N\\b", class: 産業用, payload: 20}
+      - {model: RS025, pattern: "\\bRS025N\\b", class: 産業用, payload: 25}
+      - {model: RS080, pattern: "\\bRS080N\\b", class: 産業用, payload: 80}
+      - {model: CP180, pattern: "\\bCP(180|300|500|700)L\\b", class: 産業用, payload: 180}
+      - {model: RS series, pattern: "\\bRS\\d{3}[NL]\\b", class: 産業用}
+      - {model: BX series, pattern: "\\bBX\\d{3}[LN]\\b", class: 産業用}
+      - {model: Nyokkey, pattern: "\\bNyokkey\\b", class: 協働}
+  - name: デンソーウェーブ
+    aliases: [デンソーウェーブ, デンソー, DENSO WAVE, Denso Wave, DENSO]
+    models:
+      - {model: COBOTTA, pattern: "\\bCOBOTTA( PRO)?\\b", class: 協働, payload: 0.5}
+      - {model: COBOTTA PRO 900, pattern: "\\bCOBOTTA PRO ?900\\b", class: 協働, payload: 6}
+      - {model: COBOTTA PRO 1300, pattern: "\\bCOBOTTA PRO ?1300\\b", class: 協働, payload: 12}
+      - {model: VS series, pattern: "\\bVS-?0\\d{2}\\b", class: 産業用, payload: 7}
+      - {model: VM series, pattern: "\\bVM-?\\d{4}\\b", class: 産業用, payload: 13}
+      - {model: VP series, pattern: "\\bVP-?\\d{4}\\b", class: 産業用, payload: 3}
+      - {model: LPH series, pattern: "\\bLPH-?\\d{3}\\b", class: 産業用, payload: 5}
+  - name: 不二越
+    aliases: [不二越, NACHI, Nachi, ナチ]
+    models:
+      - {model: CZ10, pattern: "\\bCZ10\\b", class: 協働, payload: 10}
+      - {model: MZ04, pattern: "\\bMZ04\\b", class: 産業用, payload: 4}
+      - {model: MZ07, pattern: "\\bMZ07\\b", class: 産業用, payload: 7}
+      - {model: MZ12, pattern: "\\bMZ12\\b", class: 産業用, payload: 12}
+      - {model: MZ25, pattern: "\\bMZ25\\b", class: 産業用, payload: 25}
+      - {model: MZ series, pattern: "\\bMZ\\d{2}\\b", class: 産業用}
+      - {model: MC series, pattern: "\\bMC\\d{2,3}\\b", class: 産業用}
+  - name: 三菱電機
+    aliases: [三菱電機, MELFA, Mitsubishi Electric]
+    models:
+      - {model: MELFA ASSISTA, pattern: "\\bASSISTA\\b", class: 協働, payload: 5}
+      - {model: RV-7FR, pattern: "\\bRV-?\\d{1,2}FR?[LM]?\\b", class: 産業用, payload: 7}
+      - {model: RH series, pattern: "\\bRH-?\\d{1,2}FR?H?\\b", class: 産業用, payload: 6}
+  - name: Doosan Robotics
+    aliases: [Doosan, 斗山, Doosan Robotics, 두산로보틱스, 두산 로보틱스]
+    class: 協働
+    models:
+      - {model: M0609, pattern: "\\bM0609\\b", payload: 6}
+      - {model: M1013, pattern: "\\bM1013\\b", payload: 10}
+      - {model: M1509, pattern: "\\bM1509\\b", payload: 15}
+      - {model: M0617, pattern: "\\bM0617\\b", payload: 6}
+      - {model: H2017, pattern: "\\bH2017\\b", payload: 20}
+      - {model: H2515, pattern: "\\bH2515\\b", payload: 25}
+      - {model: A0509, pattern: "\\bA0(509|912)\\b", payload: 5}
+      - {model: E0509, pattern: "\\bE0509\\b", payload: 5}
+      - {model: P3020, pattern: "\\bP3020\\b", payload: 30}
+  - name: Techman Robot
+    aliases: [Techman, TM Robot, テックマン, 達明]
+    class: 協働
+    models:
+      - {model: TM5, pattern: "\\bTM5[SX]?(-?\\d{3,4})?\\b", payload: 6}
+      - {model: TM7, pattern: "\\bTM7[SX]?\\b", payload: 7}
+      - {model: TM12, pattern: "\\bTM12[SX]?\\b", payload: 12}
+      - {model: TM14, pattern: "\\bTM14[SX]?\\b", payload: 14}
+      - {model: TM20, pattern: "\\bTM20\\b", payload: 20}
+      - {model: TM25, pattern: "\\bTM25S?\\b", payload: 25}
+      - {model: TM30, pattern: "\\bTM30S?\\b", payload: 30}
+  - name: Franka
+    aliases: [Franka, Franka Emika, Franka Robotics]
+    class: 協働
+    models:
+      - {model: Panda, pattern: "\\bFranka ?(Emika )?Panda\\b|\\bPanda robot\\b", payload: 3}
+      - {model: FR3, pattern: "\\bFR3\\b", payload: 3}
+  - name: Kinova
+    aliases: [Kinova]
+    class: 協働
+    models:
+      - {model: Gen3, pattern: "\\bKinova ?Gen ?3\\b|\\bGen3\\b", payload: 4}
+      - {model: Link 6, pattern: "\\bLink ?6\\b", payload: 6}
+  - name: JAKA
+    aliases: [JAKA, 節卡]
+    class: 協働
+    models:
+      - {model: Zu 3, pattern: "\\bZu ?3\\b", payload: 3}
+      - {model: Zu 5, pattern: "\\bZu ?5\\b", payload: 5}
+      - {model: Zu 7, pattern: "\\bZu ?7\\b", payload: 7}
+      - {model: Zu 12, pattern: "\\bZu ?12\\b", payload: 12}
+      - {model: Zu 18, pattern: "\\bZu ?18\\b", payload: 18}
+      - {model: Zu 20, pattern: "\\bZu ?20\\b", payload: 20}
+  - name: AUBO
+    aliases: [AUBO, 遨博]
+    class: 協働
+    models:
+      - {model: i5, pattern: "\\bAUBO[- ]?i5\\b", payload: 5}
+      - {model: i10, pattern: "\\bAUBO[- ]?i10\\b", payload: 10}
+      - {model: i20, pattern: "\\bAUBO[- ]?i20\\b", payload: 20}
+  - name: Elite Robots
+    aliases: [Elite Robots, ELITE, 艾利特]
+    class: 協働
+    models:
+      - {model: EC63, pattern: "\\bEC63\\b", payload: 3}
+      - {model: EC66, pattern: "\\bEC66\\b", payload: 6}
+      - {model: EC612, pattern: "\\bEC612\\b", payload: 12}
+      - {model: CS63, pattern: "\\bCS63\\b", payload: 3}
+      - {model: CS66, pattern: "\\bCS66\\b", payload: 6}
+      - {model: CS612, pattern: "\\bCS612\\b", payload: 12}
+      - {model: CS620, pattern: "\\bCS620\\b", payload: 20}
+      - {model: CS625, pattern: "\\bCS625\\b", payload: 25}
+  - name: Dobot
+    aliases: [Dobot, 越疆]
+    class: 協働
+    models:
+      - {model: CR3, pattern: "\\bCR3[A]?\\b", payload: 3}
+      - {model: CR5, pattern: "\\bCR5[A]?\\b", payload: 5}
+      - {model: CR7, pattern: "\\bCR7[A]?\\b", payload: 7}
+      - {model: CR10, pattern: "\\bCR10[A]?\\b", payload: 10}
+      - {model: CR12, pattern: "\\bCR12[A]?\\b", payload: 12}
+      - {model: CR16, pattern: "\\bCR16[A]?\\b", payload: 16}
+      - {model: CR20, pattern: "\\bCR20A?\\b", payload: 20}
+      - {model: CR30, pattern: "\\bCR30H?\\b", payload: 30}
+      - {model: Nova, pattern: "\\bNova ?[25]\\b", payload: 5}
+      - {model: MG400, pattern: "\\bMG400\\b", payload: 0.75}
+  - name: NEURA Robotics
+    aliases: [NEURA, Neura Robotics]
+    class: 協働
+    models:
+      - {model: LARA, pattern: "\\bLARA ?\\d{1,2}?\\b", payload: 10}
+      - {model: MAiRA, pattern: "\\bMAiRA\\b", payload: 15}
+      - {model: MAV, pattern: "\\bMAV\\b", payload: 15, mobile: true}
+  - name: Rethink Robotics
+    aliases: [Rethink]
+    class: 協働
+    models:
+      - {model: Sawyer, pattern: "\\bSawyer\\b", payload: 4}
+      - {model: Baxter, pattern: "\\bBaxter\\b", payload: 2.2}
+  - name: Epson
+    aliases: [エプソン, Epson, EPSON]
+    models:
+      - {model: VT6L, pattern: "\\bVT6L\\b", class: 産業用, payload: 6}
+      - {model: C series, pattern: "\\bC(4|8|12)[LX]?[A-Z]?\\b-?", class: 産業用, payload: 8}
+      - {model: SCARA, pattern: "\\b(LS|G|T)\\d{1,2}-?[A-Z]?\\d{3}[A-Z]?\\b", class: 産業用, payload: 6}
+  - name: ヤマハ発動機
+    aliases: [ヤマハ発動機, Yamaha Motor, ヤマハロボット]
+    models:
+      - {model: YK series, pattern: "\\bYK\\d{3,4}X?[A-Z]*\\b", class: 産業用, payload: 10}
+  - name: ダイヘン
+    aliases: [ダイヘン, DAIHEN, OTC]
+    models:
+      - {model: FD series, pattern: "\\bFD-?[A-Z]\\d{1,3}\\b", class: 産業用, payload: 10}
+  - name: Stäubli
+    aliases: [Stäubli, Staubli, ストーブリ]
+    models:
+      - {model: TX2 touch, pattern: "\\bTX2 ?touch\\b", class: 協働, payload: 20}
+      - {model: TX2, pattern: "\\bTX2-?\\d{2,3}L?\\b", class: 産業用, payload: 20}
+      - {model: TS2, pattern: "\\bTS2-?\\d{2,3}\\b", class: 産業用, payload: 8}
+      - {model: HelMo, pattern: "\\bHelMo\\b", class: 協働, payload: 20, mobile: true}
+  - name: Omron
+    aliases: [Omron, オムロン, OMRON]
+    models:
+      - {model: TM series, pattern: "\\bOMRON ?TM\\d{1,2}\\b", class: 協働, payload: 12}
+      - {model: MoMa, pattern: "\\bMoMa\\b|\\bLD-?\\d{2,3}\\b.*\\bTM\\d{1,2}", class: 協働, payload: 12, mobile: true}
+  - name: Mobile Industrial Robots
+    aliases: [MiR, Mobile Industrial Robots]
+    models:
+      - {model: MiR, pattern: "\\bMiR ?(100|200|250|500|600|1000|1200|1350)\\b", class: 産業用, mobile: true}
+  - name: Comau
+    aliases: [Comau, コマウ]
+    models:
+      - {model: Racer, pattern: "\\bRacer-?\\d\\b", class: 産業用, payload: 5}
+      - {model: AURA, pattern: "\\bAURA\\b", class: 協働, payload: 170}
+  - name: Hyundai Robotics
+    aliases: [Hyundai Robotics, 現代ロボティクス, 현대로보틱스, 현대로보틱스]
+    models:
+      - {model: HS160, pattern: "\\bHS(160|180|220)L?\\b", class: 産業用, payload: 160}
+      - {model: HH7, pattern: "\\bHH(4|7|20)\\b", class: 産業用, payload: 7}
+      - {model: YL012, pattern: "\\bYL0(05|12|15)\\b", class: 協働, payload: 12}
+  - name: Hanwha
+    aliases: [Hanwha, ハンファ, 한화로보틱스, 한화]
+    class: 協働
+    models:
+      - {model: HCR-5, pattern: "\\bHCR-?(3|5|12)A?\\b", payload: 5}
+  - name: Kassow Robots
+    aliases: [Kassow]
+    class: 協働
+    models:
+      - {model: KR810, pattern: "\\bKR(810|1018|1205|1410|1805)\\b", payload: 10}
+  - name: Flexiv
+    aliases: [Flexiv]
+    class: 協働
+    models:
+      - {model: Rizon, pattern: "\\bRizon ?(4|10)s?\\b", payload: 4}
+  - name: Productive Robotics
+    aliases: [Productive Robotics]
+    class: 協働
+    models:
+      - {model: OB7, pattern: "\\bOB7\\b", payload: 5}
+  - name: Rainbow Robotics
+    aliases: [Rainbow Robotics, 레인보우로보틱스, 레인보우 로보틱스]
+    class: 協働
+    models:
+      - {model: RB3-1200, pattern: "\\bRB3[- ]1200\\b", payload: 3}
+      - {model: RB5-850, pattern: "\\bRB5[- ]850\\b", payload: 5}
+      - {model: RB10-1300, pattern: "\\bRB10[- ]1300\\b", payload: 10}
+      - {model: RB16-900, pattern: "\\bRB16[- ]900\\b", payload: 16}
+      - {model: RB20-1900, pattern: "\\bRB20[- ]1900\\b", payload: 20}
+      - {model: RB series, pattern: "\\bRB(3|5|10|16|20)\\b"}
+  - name: Neuromeka
+    aliases: [Neuromeka, 뉴로메카]
+    class: 協働
+    models:
+      - {model: Indy7, pattern: "\\bIndy ?7\\b", payload: 7}
+      - {model: Indy12, pattern: "\\bIndy ?12\\b", payload: 12}
+      - {model: Indy RP2, pattern: "\\bIndy ?RP2\\b", payload: 5}
+      - {model: Indy series, pattern: "\\bIndy\\b"}
+  - name: LexxPluss
+    aliases: [LexxPluss, レックスプラス]
+    models:
+      - {model: LexxMoMa, pattern: "\\bLexxMoMa\\b", class: 協働, payload: 20, mobile: true}
+# 型式が無くても区分の手がかりになる語(本文に明記されたときだけ採用)
+class_terms:
+  協働: [協働ロボット, 協働, 人協働, cobot, cobots, collaborative robot, collaborative robots, collaborative arm, 协作机器人, 협동로봇, 협동 로봇, 코봇]
+  産業用: [産業用ロボット, 多関節ロボット, 6軸ロボット, industrial robot, industrial robots, 6-axis robot, six-axis robot, articulated robot, SCARA, scara, delta robot, parallel robot, palletizing robot, 工业机器人, 六轴机器人, 산업용 로봇, 산업용로봇, 다관절 로봇, 6축 로봇]
+mobile_terms: [移動マニピュレータ, 复合机器人, 自律移動マニピュレータ, AMR + アーム, AMRにアーム, mobile manipulator, mobile manipulators, mobile manipulation, mobile cobot, AMR with arm, arm on AMR, MoMa, autonomous mobile manipulator, cobot on AMR, robot on an AMR, mobile robot with arm, 모바일 매니퓰레이터, 이동형 매니퓰레이터, AMR 로봇팔, 자율주행 로봇팔]

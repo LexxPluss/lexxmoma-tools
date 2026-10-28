@@ -1,0 +1,198 @@
+# ワークのカテゴリ(2階層)。key は保存用、label は表示用、terms は本文・タイトルからの判定語(日英・表記ゆれ。synonyms.yaml も併せて使う)。
+# 判定: terms のどれかが本文に出れば候補。複数出たら回数の多い順に最大 3 つ。
+groups:
+  - key: box
+    label: 箱・ケース
+    items:
+      - key: carton
+        label: 段ボール
+        terms: [段ボール, ダンボール, カートン, ケース詰め, carton, cardboard, corrugated, case packing, case pack, cases, boxes, box]
+      - key: tote
+        label: TPポリ箱・通い箱
+        terms: [通い箱, TPポリ箱, ポリ箱, 折りたたみコンテナ, オリコン, tote, totes, bin, bins, crate, crates, kLT, KLT, small load carrier]
+      - key: container
+        label: コンテナ
+        terms: [コンテナ, container, containers]
+      - key: tray
+        label: トレイ
+        terms: [トレイ, トレー, tray, trays]
+  - key: bag
+    label: 袋物
+    items:
+      - key: sack
+        label: 粉体袋・米袋
+        terms: [粉体袋, 米袋, 紙袋, クラフト袋, 飼料袋, sack, sacks, bag of, bags of, 25 kg bag, 25kg bag, 20kg bag, 20 kg bag, seed bag, feed bag]
+      - key: fibc
+        label: フレコン
+        terms: [フレコン, フレキシブルコンテナ, FIBC, big bag, bulk bag]
+      - key: pouch
+        label: パウチ・小袋
+        terms: [パウチ, 小袋, 袋詰め, pouch, pouches, sachet, flow pack, flow-wrap, polybag, poly bag, bagged]
+  - key: metal
+    label: 金属部品
+    items:
+      - key: round
+        label: 丸物・シャフト
+        terms: [丸物, シャフト, 丸棒, 旋盤, shaft, shafts, round bar, cylindrical, turned part, turned parts, lathe, CNC lathe, billet, billets]
+      - key: block
+        label: 角物・ブロック
+        terms: [角物, ブロック, ハウジング, block, blocks, housing, housings, machined part, machined parts, milled part, milled parts, billet block]
+      - key: sheet
+        label: 板金・薄板
+        terms: [板金, 薄板, 鋼板, ブランク材, sheet metal, sheet, sheets, blank, blanks, metal sheet, steel sheet, laminations, press brake, stamping]
+      - key: casting
+        label: 鋳物・鍛造品
+        terms: [鋳物, 鋳造, 鍛造, ダイカスト, casting, castings, forging, forgings, die cast, die-cast, cast iron, foundry]
+      - key: bulk_parts
+        label: ばら積み小物(ボルト等)
+        terms: [ばら積み, バラ積み, ボルト, ナット, ねじ, ネジ, ワッシャ, bin picking, bin-picking, bulk parts, bolts, screws, nuts, fasteners, random bin]
+      - key: gear
+        label: 歯車・ベアリング
+        terms: [歯車, ギア, ベアリング, gear, gears, bearing, bearings, gearbox]
+  - key: plastic
+    label: 樹脂部品
+    items:
+      - key: molded
+        label: 成形品
+        terms: [成形品, 射出成形, 樹脂成形, injection molding, injection moulding, molded part, moulded part, molded parts, moulded parts, plastic part, plastic parts, plastic component]
+      - key: film
+        label: フィルム・シート
+        terms: [フィルム, 樹脂シート, film, films, foil, foils, laminate]
+  - key: electronics
+    label: 電子部品・基板
+    items:
+      - key: pcb
+        label: 基板
+        terms: [基板, プリント基板, PCB, PCBs, printed circuit, circuit board]
+      - key: component
+        label: 電子部品・コネクタ
+        terms: [電子部品, コネクタ, ケーブルハーネス, electronic component, electronic components, connector, connectors, semiconductor, chip, chips, battery cell, battery cells, battery module]
+      - key: device
+        label: 電子機器・スマホ
+        terms: [スマートフォン, 携帯電話, smartphone, smartphones, mobile phone, phones, tablet, laptop, consumer electronics, electronic device]
+  - key: glass
+    label: ガラス・パネル・ウェハ
+    items:
+      - key: glass_plate
+        label: ガラス板
+        terms: [ガラス, glass, glass sheet, glass panel, windshield, windscreen]
+      - key: panel
+        label: パネル・ディスプレイ
+        terms: [パネル, ディスプレイ, 液晶, LCD, display panel, panels, solar panel, solar module, PV module]
+      - key: wafer
+        label: ウェハ
+        terms: [ウェハ, ウエハ, wafer, wafers]
+  - key: food
+    label: 食品
+    items:
+      - key: fresh
+        label: 生鮮・野菜・果物
+        terms: [生鮮, 野菜, 果物, 青果, トマト, いちご, リンゴ, きゅうり, produce, vegetable, vegetables, fruit, fruits, tomato, tomatoes, strawberry, strawberries, apple, apples, lettuce, cucumber, harvest, harvesting]
+      - key: meat_fish
+        label: 肉・魚
+        terms: [精肉, 食肉, 鶏肉, 魚, 刺身, meat, poultry, chicken, fish, fillet, fillets, seafood, sausage, sausages, deli, slices]
+      - key: bakery
+        label: 菓子・パン
+        terms: [菓子, パン, クッキー, ケーキ, チョコレート, bakery, bread, cookie, cookies, cake, cakes, pastry, pastries, chocolate, confectionery, snack, snacks, biscuit, biscuits]
+      - key: ready_meal
+        label: 弁当・トレー食品
+        terms: [弁当, 盛り付け, 惣菜, おにぎり, 麺, ready meal, ready meals, meal tray, meal trays, lunch box, bento, noodles]
+      - key: egg
+        label: 卵
+        terms: [卵, 鶏卵, egg, eggs]
+      - key: dairy
+        label: 乳製品・チーズ
+        terms: [乳製品, チーズ, ヨーグルト, dairy, cheese, yogurt, yoghurt, butter]
+  - key: pharma
+    label: 医薬・ラボ
+    items:
+      - key: vial
+        label: バイアル・アンプル
+        terms: [バイアル, アンプル, シリンジ, 注射器, vial, vials, ampoule, ampoules, syringe, syringes]
+      - key: tube
+        label: 試験管・チューブ
+        terms: [試験管, チューブ, 検体, test tube, test tubes, tubes, sample tube, specimen, blood sample]
+      - key: plate
+        label: マイクロプレート・ラボウェア
+        terms: [マイクロプレート, ウェルプレート, プレート, ピペット, microplate, microplates, well plate, labware, pipette, petri dish, petri dishes, lab automation, laboratory]
+      - key: medical
+        label: 医療機器・医薬品
+        terms: [医療機器, 医薬品, 錠剤, blister, blister pack, blister packs, tablet, tablets, pills, medical device, medical devices, pharmaceutical, pharmaceuticals, medicine]
+  - key: bottle
+    label: ボトル・缶・容器
+    items:
+      - key: bottle
+        label: ボトル
+        terms: [ボトル, ペットボトル, 瓶, びん, bottle, bottles, PET bottle, flask, flasks]
+      - key: can
+        label: 缶
+        terms: [缶, 缶詰, can, cans, canned, tin, tins, aerosol]
+      - key: cup
+        label: カップ・容器
+        terms: [カップ, 容器, cup, cups, jar, jars, tub, tubs, bucket, buckets, pail, pails, canister, canisters, drum, drums]
+  - key: flexible
+    label: 布・柔軟物・ケーブル
+    items:
+      - key: textile
+        label: 布・衣料
+        terms: [布, 繊維, 衣料, 衣類, 生地, 縫製, textile, textiles, fabric, fabrics, garment, garments, apparel, cloth, clothes, sewing, towel, towels]
+      - key: cable
+        label: ケーブル・ハーネス
+        terms: [ケーブル, ハーネス, 電線, cable, cables, harness, harnesses, wire, wires, wiring, hose, hoses]
+      - key: rubber
+        label: ゴム・シール
+        terms: [ゴム, シール材, パッキン, Oリング, rubber, gasket, gaskets, seal, seals, o-ring, o-rings, foam]
+  - key: wood
+    label: 木材・建材
+    items:
+      - key: timber
+        label: 木材・合板
+        terms: [木材, 合板, 木工, timber, lumber, wood, wooden, plywood, boards, panels of wood, MDF, furniture]
+      - key: building
+        label: 建材・石材
+        terms: [建材, 石材, タイル, レンガ, ブロック塀, building material, building materials, brick, bricks, tile, tiles, concrete, stone, drywall, gypsum, insulation]
+  - key: auto
+    label: 自動車部品
+    items:
+      - key: body_panel
+        label: ドア・パネル・ボディ
+        terms: [ドア, ボディパネル, 車体, ボンネット, バンパー, car door, doors, body panel, body panels, bumper, bumpers, hood, fender, fenders, car body, chassis, body-in-white]
+      - key: tire
+        label: タイヤ・ホイール
+        terms: [タイヤ, ホイール, tire, tires, tyre, tyres, wheel, wheels, rim, rims]
+      - key: engine
+        label: エンジン・駆動部品
+        terms: [エンジン部品, シリンダ, クランク, ピストン, トランスミッション, engine part, engine parts, engine block, cylinder head, crankshaft, piston, pistons, transmission, axle, brake, brakes, brake disc, brake discs]
+      - key: ev_battery
+        label: EV バッテリー
+        terms: [バッテリー, 電池, battery pack, battery packs, EV battery, lithium-ion, lithium ion, cell stacking]
+      - key: seat_interior
+        label: シート・内装
+        terms: [シート, 内装, 樹脂バンパー, seat, seats, interior, upholstery, dashboard, headliner, trim]
+  - key: pallet
+    label: パレット
+    items:
+      - key: pallet
+        label: パレット
+        terms: [パレット, 空パレット, pallet, pallets, empty pallet, empty pallets, skid, skids, slip sheet, slip sheets]
+  - key: logistics
+    label: 物流ピース(EC・混載)
+    items:
+      - key: piece
+        label: ピース(EC 商品・混載)
+        terms: [ピースピッキング, 混載, 多品種, 通販, EC, e-commerce, ecommerce, piece picking, piece-picking, each picking, order picking, order fulfillment, fulfilment, fulfillment, SKU, SKUs, mixed SKU, mixed-SKU, items, parcels, parcel, polybags, mailers]
+      - key: luggage
+        label: 荷物・手荷物
+        terms: [手荷物, 荷物, luggage, baggage, suitcase, suitcases, bags and parcels]
+  - key: other
+    label: その他
+    items:
+      - key: paper
+        label: 紙・印刷物
+        terms: [紙, 印刷物, 書類, 封筒, 冊子, paper, papers, magazines, books, book, envelopes, envelope, labels, label]
+      - key: cosmetics
+        label: 化粧品・日用品
+        terms: [化粧品, 日用品, シャンプー, 洗剤, cosmetics, cosmetic, personal care, shampoo, detergent, toiletries, soap]
+      - key: generic
+        label: 汎用(その他)
+        terms: []

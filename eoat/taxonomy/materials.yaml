@@ -1,0 +1,41 @@
+# ワークの材料。terms は本文からの判定語(日英)。
+materials:
+  - key: steel
+    label: 鉄・鋼
+    terms: [鉄, 鋼, 鋼材, 鉄製, スチール, 炭素鋼, steel, iron, carbon steel, ferrous, ferromagnetic, cast iron, metal part, metal parts, metal]
+  - key: stainless
+    label: ステンレス
+    terms: [ステンレス, SUS, stainless, stainless steel, inox]
+  - key: aluminum
+    label: アルミ
+    terms: [アルミ, アルミニウム, aluminum, aluminium, alu]
+  - key: copper
+    label: 銅・真鍮
+    terms: [銅, 真鍮, 黄銅, copper, brass, bronze]
+  - key: plastic
+    label: 樹脂
+    terms: [樹脂, プラスチック, ポリプロピレン, ポリエチレン, PP製, PE製, ABS, plastic, plastics, polymer, polypropylene, polyethylene, PET, nylon, acrylic, polycarbonate, HDPE]
+  - key: rubber
+    label: ゴム・シリコン
+    terms: [ゴム, シリコン, エラストマ, rubber, silicone, elastomer, latex, foam, sponge]
+  - key: paper
+    label: 紙・段ボール
+    terms: [紙, 段ボール, ダンボール, クラフト, 紙器, paper, cardboard, corrugated, carton, cartons, paperboard, kraft]
+  - key: glass
+    label: ガラス
+    terms: [ガラス, glass, glass sheet, glass panel, glass bottle, glass bottles]
+  - key: ceramic
+    label: セラミック・石
+    terms: [セラミック, 陶器, 磁器, 石材, ceramic, ceramics, porcelain, stone, granite, marble, tile, tiles, brick, bricks, concrete]
+  - key: wood
+    label: 木材
+    terms: [木材, 木製, 木, 合板, wood, wooden, timber, lumber, plywood, MDF]
+  - key: textile
+    label: 布・繊維
+    terms: [布, 繊維, 織物, 不織布, 衣料, textile, textiles, fabric, fabrics, cloth, nonwoven, non-woven, garment, garments, leather, 革]
+  - key: food
+    label: 食品
+    terms: [食品, 食材, 生鮮, 冷凍食品, 惣菜, food, foods, foodstuff, fresh produce, frozen, meat, fish, bakery, bread, cheese, vegetable, fruit, chocolate]
+  - key: composite
+    label: 複合材・その他
+    terms: [複合材, CFRP, カーボン, composite, composites, carbon fiber, carbon fibre, fiberglass, fibreglass, laminate]

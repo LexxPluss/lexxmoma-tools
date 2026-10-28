@@ -1,0 +1,53 @@
+# 作業(用途)。terms は本文からの判定語。
+tasks:
+  - key: pick_place
+    label: ピック&プレース
+    terms: [ピック&プレース, ピックアンドプレース, ピック・アンド・プレース, 取り出し, 移載, 投入取出, pick and place, pick-and-place, pick & place, pick-n-place, transfer, placing, picking and placing]
+  - key: machine_tending
+    label: マシンテンディング
+    terms: [マシンテンディング, 工作機械, 旋盤, マシニング, 射出成形機, プレス機, 加工機への供給, ワーク供給, ワーク着脱, machine tending, machine-tending, CNC, lathe, milling machine, machining center, machining centre, injection molding machine, injection moulding machine, press tending, press loading, loading and unloading, load/unload, tending]
+  - key: palletizing
+    label: パレタイズ
+    terms: [パレタイズ, パレタイジング, 積み付け, 段積み, palletizing, palletising, palletizer, palletiser, stacking, stack pallets]
+  - key: depalletizing
+    label: デパレタイズ
+    terms: [デパレタイズ, デパレ, 荷降ろし, 荷下ろし, 段ばらし, depalletizing, depalletising, depalletizer, depalletiser, unloading pallets, unstacking, truck unloading, container unloading]
+  - key: packing
+    label: 箱詰め・包装
+    terms: [箱詰め, 梱包, 包装, ケーサー, 袋詰め, packing, packaging, case packing, box packing, packer, bagging, cartoning, wrapping, kitting, tray packing, tray loading]
+  - key: bin_picking
+    label: ビンピッキング
+    terms: [ビンピッキング, ばら積みピッキング, バラ積み, bin picking, bin-picking, random bin picking, random picking, bulk picking, 3D vision picking]
+  - key: assembly
+    label: 組立
+    terms: [組立, 組み立て, 組付け, 組み付け, 嵌合, 挿入, assembly, assembling, assemble, insertion, inserting, mating, fitting, press-fit, snap-fit]
+  - key: transport
+    label: 工程間搬送
+    terms: [工程間搬送, 搬送, 運搬, 棚, 台車, AGV, AMR, 自律移動, 移動マニピュレータ, intralogistics, material transport, transport, transporting, mobile manipulator, mobile manipulation, autonomous mobile robot, AGV, AMR, shelf, shelves, cart, carts, conveying, line feeding]
+  - key: sorting
+    label: 仕分け
+    terms: [仕分け, 振り分け, 選別, sorting, sortation, sorter, sort, segregation, grading]
+  - key: inspection
+    label: 検査
+    terms: [検査, 測定, 計測, 外観検査, inspection, inspecting, measurement, measuring, quality check, quality control, QC, testing]
+  - key: order_picking
+    label: ピースピッキング(出荷)
+    terms: [ピースピッキング, ピッキング作業, 出荷, オーダーピッキング, piece picking, piece-picking, order picking, each picking, order fulfillment, order fulfilment, fulfillment, e-commerce picking, goods-to-person, goods to person]
+  - key: screwdriving
+    label: ねじ締め
+    terms: [ねじ締め, ネジ締め, screwdriving, screw driving, fastening, screwing, nut running]
+  - key: welding
+    label: 溶接
+    terms: [溶接, アーク溶接, スポット溶接, welding, arc welding, spot welding, MIG, TIG, weld]
+  - key: finishing
+    label: 研磨・バリ取り・塗装
+    terms: [研磨, バリ取り, 塗装, 塗布, 接着, sanding, polishing, grinding, deburring, painting, coating, dispensing, gluing, sealing, surface finishing]
+  - key: lab
+    label: ラボ・検体処理
+    terms: [検体, 分注, ラボ, 実験室, lab automation, laboratory, sample handling, sample preparation, pipetting, PCR, assay]
+  - key: harvesting
+    label: 収穫・農業
+    terms: [収穫, 農業, 農作業, harvesting, harvest, agriculture, agricultural, farming, greenhouse, picking fruit]
+  - key: food_handling
+    label: 食品の盛り付け・取り分け
+    terms: [盛り付け, 盛付, 取り分け, 食品ハンドリング, food handling, portioning, plating, topping, serving, food picking]

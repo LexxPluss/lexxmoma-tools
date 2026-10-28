@@ -1,0 +1,258 @@
+# 同義語辞書: 自由入力(UI)とクロール時の分類の両方で使う。
+# 左の語を右の正規語に寄せる(大文字小文字は区別しない。日本語は NFKC 正規化のうえで一致)。
+# canonical は categories / materials / principles / tasks の key か、その label。
+synonyms:
+  # ---- ワーク(カテゴリ)
+  - {canonical: category:carton, terms: [段ボール, ダンボール, 段ボール箱, ダンボール箱, カートン, ケース, carton, cartons, cardboard box, cardboard boxes, corrugated box, case, cases, box, boxes, shipping box]}
+  - {canonical: category:tote, terms: [通い箱, TPポリ箱, TP箱, ポリ箱, プラコン, 折りコン, オリコン, 折りたたみコンテナ, 番重, ばんじゅう, tote, totes, KLT, bin, bins, crate, crates, small load carrier]}
+  - {canonical: category:container, terms: [コンテナ, container, containers]}
+  - {canonical: category:tray, terms: [トレイ, トレー, tray, trays]}
+  - {canonical: category:sack, terms: [米袋, 粉体袋, 粉袋, 紙袋, 飼料袋, 肥料袋, 袋, sack, sacks, bag, bags, 25kg袋, 20kg袋]}
+  - {canonical: category:fibc, terms: [フレコン, フレコンバッグ, FIBC, big bag, bulk bag]}
+  - {canonical: category:pouch, terms: [パウチ, 小袋, レトルトパウチ, ピロー包装, pouch, pouches, sachet, flow pack, polybag]}
+  - {canonical: category:round, terms: [丸物, 丸棒, シャフト, 軸, 旋盤ワーク, 丸ワーク, 円筒, 円柱, shaft, shafts, round bar, cylinder, cylindrical part, turned part, billet]}
+  - {canonical: category:block, terms: [角物, ブロック, ハウジング, 角材, 四角いワーク, 角ワーク, 切削部品, block, housing, machined part, milled part, cube]}
+  - {canonical: category:sheet, terms: [板金, 薄板, 鋼板, 板材, ブランク, プレス品, 1枚取り, 一枚取り, sheet metal, sheet, blank, blanks, plate, plates, stamping, laminations]}
+  - {canonical: category:casting, terms: [鋳物, 鋳造品, 鍛造品, 鍛造, ダイカスト, casting, castings, forging, forgings, die cast]}
+  - {canonical: category:bulk_parts, terms: [ばら積み, バラ積み, 山積み, ボルト, ナット, ねじ, ネジ, ビス, ワッシャ, 小物部品, bulk parts, bolts, screws, nuts, fasteners, bin picking parts]}
+  - {canonical: category:gear, terms: [歯車, ギア, ギヤ, ベアリング, 軸受, gear, gears, bearing, bearings]}
+  - {canonical: category:molded, terms: [成形品, 樹脂成形品, 射出成形品, 樹脂部品, プラ部品, モールド品, molded part, moulded part, plastic part, plastic parts, injection molded]}
+  - {canonical: category:film, terms: [フィルム, 樹脂シート, 保護フィルム, film, foil, plastic sheet]}
+  - {canonical: category:pcb, terms: [基板, プリント基板, 回路基板, PCB, circuit board, board]}
+  - {canonical: category:component, terms: [電子部品, コネクタ, 半導体, チップ, 電池セル, electronic component, connector, semiconductor, chip, battery cell]}
+  - {canonical: category:device, terms: [スマホ, スマートフォン, 携帯, タブレット, ノートPC, 電子機器, smartphone, phone, tablet, laptop, device]}
+  - {canonical: category:glass_plate, terms: [ガラス, ガラス板, 板ガラス, 透明なガラス, 透明, 透明ワーク, glass, glass sheet, glass plate, transparent, windshield]}
+  - {canonical: category:panel, terms: [パネル, 液晶パネル, ディスプレイ, 太陽光パネル, 太陽電池, panel, display, LCD, solar panel, PV module]}
+  - {canonical: category:wafer, terms: [ウェハ, ウエハ, ウェーハ, wafer, wafers]}
+  - {canonical: category:fresh, terms: [野菜, 果物, 青果, 生鮮, トマト, いちご, イチゴ, りんご, リンゴ, みかん, きゅうり, ピーマン, レタス, 収穫物, produce, vegetable, vegetables, fruit, fruits, tomato, strawberry, apple, lettuce, cucumber]}
+  - {canonical: category:meat_fish, terms: [肉, 精肉, 鶏肉, 豚肉, 牛肉, 魚, 切り身, 刺身, 水産, meat, chicken, pork, beef, fish, fillet, seafood, sausage]}
+  - {canonical: category:bakery, terms: [パン, 菓子, お菓子, クッキー, ケーキ, チョコ, チョコレート, 饅頭, 和菓子, bread, bakery, cookie, cookies, cake, chocolate, pastry, confectionery, snack]}
+  - {canonical: category:ready_meal, terms: [弁当, お弁当, 惣菜, おにぎり, 麺, 盛り付け, 弁当盛り付け, 給食, ready meal, meal tray, lunch box, bento, noodles]}
+  - {canonical: category:egg, terms: [卵, たまご, タマゴ, 鶏卵, egg, eggs]}
+  - {canonical: category:dairy, terms: [チーズ, 乳製品, ヨーグルト, バター, cheese, dairy, yogurt, butter]}
+  - {canonical: category:vial, terms: [バイアル, アンプル, シリンジ, 注射器, vial, vials, ampoule, syringe]}
+  - {canonical: category:tube, terms: [試験管, チューブ, 検体, 採血管, test tube, tube, tubes, sample tube, specimen]}
+  - {canonical: category:plate, terms: [マイクロプレート, ウェルプレート, プレート, ピペット, シャーレ, microplate, well plate, pipette, petri dish, labware]}
+  - {canonical: category:medical, terms: [医薬品, 薬, 錠剤, 医療機器, ブリスター, PTP, medicine, pharmaceutical, tablet, blister, medical device]}
+  - {canonical: category:bottle, terms: [ボトル, ペットボトル, 瓶, ビン, びん, bottle, bottles, PET bottle, flask]}
+  - {canonical: category:can, terms: [缶, 缶詰, スプレー缶, can, cans, tin, aerosol]}
+  - {canonical: category:cup, terms: [カップ, 容器, 樽, ドラム缶, バケツ, ペール缶, cup, cups, jar, tub, bucket, pail, drum, canister]}
+  - {canonical: category:textile, terms: [布, 生地, 衣類, 衣料, 服, タオル, 縫製, 繊維, textile, fabric, garment, apparel, cloth, clothes, towel]}
+  - {canonical: category:cable, terms: [ケーブル, ハーネス, 電線, 配線, ホース, cable, cables, harness, wire, wires, hose]}
+  - {canonical: category:rubber, terms: [ゴム, ゴム部品, パッキン, Oリング, シール材, rubber, gasket, o-ring, seal, foam]}
+  - {canonical: category:timber, terms: [木材, 合板, 木工, 家具, 木の板, timber, lumber, wood, plywood, furniture]}
+  - {canonical: category:building, terms: [建材, 石材, タイル, レンガ, ブロック, コンクリート, 石膏ボード, 断熱材, building material, brick, tile, concrete, stone, drywall, insulation]}
+  - {canonical: category:body_panel, terms: [ドア, 車のドア, ボディ, ボディパネル, 車体, バンパー, ボンネット, フェンダー, car door, body panel, bumper, hood, fender, car body]}
+  - {canonical: category:tire, terms: [タイヤ, ホイール, tire, tyre, wheel, rim]}
+  - {canonical: category:engine, terms: [エンジン部品, シリンダ, シリンダヘッド, クランク, ピストン, ミッション, ブレーキ, engine part, cylinder head, crankshaft, piston, transmission, brake disc]}
+  - {canonical: category:ev_battery, terms: [バッテリー, 電池, EV電池, 電池パック, battery, battery pack, EV battery, lithium]}
+  - {canonical: category:seat_interior, terms: [シート, 座席, 内装, 内装部品, seat, interior, dashboard, trim]}
+  - {canonical: category:pallet, terms: [パレット, 空パレット, pallet, pallets, skid]}
+  - {canonical: category:piece, terms: [ピース, 商品, 通販, EC商品, 混載, 多品種, piece, item, items, SKU, e-commerce, parcel, parcels, order]}
+  - {canonical: category:luggage, terms: [手荷物, 荷物, スーツケース, luggage, baggage, suitcase]}
+  - {canonical: category:paper, terms: [紙, 用紙, 印刷物, 書類, 封筒, 冊子, 本, paper, book, books, envelope, magazine]}
+  - {canonical: category:cosmetics, terms: [化粧品, 日用品, シャンプー, 洗剤, cosmetics, shampoo, detergent, personal care]}
+  # ---- 材料
+  - {canonical: material:steel, terms: [鉄, 鉄製, 鋼, 鋼材, スチール, 鉄の, 鉄ワーク, 磁性, steel, iron, ferrous, metal]}
+  - {canonical: material:stainless, terms: [ステンレス, SUS, ステン, stainless]}
+  - {canonical: material:aluminum, terms: [アルミ, アルミニウム, アルミ製, aluminum, aluminium]}
+  - {canonical: material:copper, terms: [銅, 真鍮, copper, brass]}
+  - {canonical: material:plastic, terms: [樹脂, プラスチック, プラ, 樹脂製, plastic, polymer, PP, PE]}
+  - {canonical: material:rubber, terms: [ゴム, シリコン, ゴム製, rubber, silicone]}
+  - {canonical: material:paper, terms: [紙, 紙製, 段ボール, ダンボール, paper, cardboard, corrugated]}
+  - {canonical: material:glass, terms: [ガラス, ガラス製, glass]}
+  - {canonical: material:ceramic, terms: [セラミック, 陶器, 石, ceramic, stone]}
+  - {canonical: material:wood, terms: [木材, 木製, wood, wooden]}
+  - {canonical: material:textile, terms: [布, 繊維, 布製, 革, fabric, textile, cloth, leather]}
+  - {canonical: material:food, terms: [食品, 食べ物, 食材, food]}
+  # ---- 掴み方
+  - {canonical: principle:parallel2, terms: [2指, 二指, 2指ハンド, 平行ハンド, 平行グリッパ, 電動ハンド, 挟む, つまむ, parallel gripper, 2-finger, two finger, jaw gripper, finger gripper]}
+  - {canonical: principle:parallel3, terms: [3指, 三指, 3-finger, three finger, centric]}
+  - {canonical: principle:adaptive, terms: [多指, 人型ハンド, アダプティブ, adaptive, multi-finger, hand]}
+  - {canonical: principle:internal, terms: [内径, 内径把持, 内径チャック, internal grip, inside grip, mandrel]}
+  - {canonical: principle:clamp_fork, terms: [クランプ, フォーク, 爪, 差し込み, clamp, fork, forks]}
+  - {canonical: principle:single_pad, terms: [吸着, 真空, 真空吸着, 吸着パッド, バキューム, suction, vacuum, suction cup, pad]}
+  - {canonical: principle:area, terms: [フォーム吸着, 面吸着, エリア吸着, foam, area gripper]}
+  - {canonical: principle:bernoulli, terms: [ベルヌーイ, 非接触, bernoulli, non-contact, contactless]}
+  - {canonical: principle:electropermanent, terms: [磁石, マグネット, 磁気, 永電磁, 電磁, magnet, magnetic, electropermanent, electromagnet]}
+  - {canonical: principle:soft_finger, terms: [ソフト, ソフトハンド, ソフトグリッパ, 柔らかい, やわらかい, 柔軟ハンド, soft, soft gripper, soft robotic, finray]}
+  - {canonical: principle:needle, terms: [ニードル, 針, needle]}
+  - {canonical: principle:hybrid, terms: [複合, ハイブリッド, 吸着と把持, hybrid, combined]}
+  - {canonical: principle:tool_changer, terms: [ツールチェンジャ, ツールチェンジャー, ツール交換, tool changer, quick changer]}
+  # ---- 作業
+  - {canonical: task:pick_place, terms: [ピック&プレース, ピックアンドプレース, 取り出し, 移載, 置く, 置き換え, pick and place, pick-and-place, place]}
+  - {canonical: task:machine_tending, terms: [マシンテンディング, 工作機械, 旋盤, マシニング, 加工機, 射出成形機, プレス機, 投入, 着脱, ワーク供給, 旋盤投入, 加工機への投入, 機械への投入, machine tending, CNC, lathe, loading, unloading, tending]}
+  - {canonical: task:palletizing, terms: [パレタイズ, パレタイジング, 積み付け, 積む, 段積み, palletizing, palletising, stacking]}
+  - {canonical: task:depalletizing, terms: [デパレ, デパレタイズ, 荷降ろし, 荷下ろし, 段ばらし, 降ろす, depalletizing, depalletising, unloading]}
+  - {canonical: task:packing, terms: [箱詰め, 梱包, 包装, 袋詰め, 詰める, packing, packaging, case packing, bagging]}
+  - {canonical: task:bin_picking, terms: [ビンピッキング, ばら積みピッキング, バラ積み取り出し, bin picking, random picking]}
+  - {canonical: task:assembly, terms: [組立, 組み立て, 組付け, 嵌合, 挿入, assembly, insertion]}
+  - {canonical: task:transport, terms: [工程間搬送, 搬送, 運搬, 運ぶ, 棚から取る, 棚, 台車, transport, shelf, cart, intralogistics]}
+  - {canonical: task:sorting, terms: [仕分け, 選別, 振り分け, sorting, sort]}
+  - {canonical: task:inspection, terms: [検査, 測定, 計測, inspection, measurement]}
+  - {canonical: task:order_picking, terms: [ピースピッキング, オーダーピッキング, 出荷, ピッキング, piece picking, order picking, fulfillment]}
+  - {canonical: task:screwdriving, terms: [ねじ締め, ネジ締め, screwdriving]}
+  - {canonical: task:welding, terms: [溶接, welding]}
+  - {canonical: task:finishing, terms: [研磨, バリ取り, 塗装, 塗布, 接着, sanding, polishing, deburring, painting, gluing]}
+  - {canonical: task:lab, terms: [ラボ, 検体, 分注, 実験, lab, laboratory, sample]}
+  - {canonical: task:harvesting, terms: [収穫, 農業, harvest, harvesting, agriculture]}
+  - {canonical: task:food_handling, terms: [盛り付け, 取り分け, 盛付, food handling, portioning]}
+  # ---- ロボット区分・形態(自由入力用)
+  - {canonical: robot:協働, terms: [協働, 協働ロボット, コボット, cobot, collaborative]}
+  - {canonical: robot:産業用, terms: [産業用, 産業用ロボット, 産業ロボット, industrial, industrial robot]}
+  - {canonical: robot:mobile, terms: [移動マニピュレータ, 自走, AMR, AGV, 台車付き, LexxMoMa, mobile manipulator, mobile]}
+  # ---- 性質(properties)
+  - {canonical: property:oily, terms: [油, 油付き, 油の付いた, 切削油, 油まみれ, oily, oil, coolant, wet with oil]}
+  - {canonical: property:wet, terms: [濡れ, 濡れた, 水濡れ, 湿った, wet, moist, damp]}
+  - {canonical: property:fragile, terms: [壊れやすい, 割れやすい, 脆い, 繊細, fragile, delicate, brittle, breakable]}
+  - {canonical: property:soft, terms: [柔らかい, やわらかい, 柔軟, 変形する, soft, deformable, flexible, limp]}
+  - {canonical: property:transparent, terms: [透明, 透ける, transparent, clear, see-through]}
+  - {canonical: property:hot, terms: [高温, 熱い, 熱間, hot, high temperature, heated]}
+  - {canonical: property:variety, terms: [多品種, 多種, 種類が多い, いろいろな, high mix, high-mix, variety, mixed, random]}
+  - {canonical: property:porous, terms: [通気性, 多孔質, 穴あき, メッシュ, porous, breathable, perforated, mesh]}
+  - {canonical: property:heavy, terms: [重い, 重量物, 重量, heavy, heavy-duty]}
+  - {canonical: property:thin, terms: [薄い, 薄物, 1枚, 一枚, thin, single sheet]}
+  - {canonical: property:frozen, terms: [冷凍, 凍った, frozen]}
+  # ---- 中国語(简体)
+  - {canonical: category:carton, terms: [纸箱, 纸盒, 箱子, 包装箱]}
+  - {canonical: category:tote, terms: [周转箱, 料箱, 塑料箱, 胶箱]}
+  - {canonical: category:sack, terms: [袋装, 编织袋, 袋子, 麻袋, 粉料袋]}
+  - {canonical: category:round, terms: [轴类, 轴, 圆棒, 棒料, 车床工件]}
+  - {canonical: category:block, terms: [壳体, 方料, 铣削件, 块状]}
+  - {canonical: category:sheet, terms: [钣金, 板材, 薄板, 钢板, 冲压件]}
+  - {canonical: category:casting, terms: [铸件, 锻件, 压铸件]}
+  - {canonical: category:bulk_parts, terms: [散料, 螺栓, 螺丝, 螺母, 无序抓取]}
+  - {canonical: category:gear, terms: [齿轮, 轴承]}
+  - {canonical: category:molded, terms: [注塑件, 塑料件, 注塑]}
+  - {canonical: category:pcb, terms: [电路板, PCB板, 线路板]}
+  - {canonical: category:component, terms: [电子元件, 连接器, 电池, 电芯]}
+  - {canonical: category:device, terms: [手机, 平板, 笔记本]}
+  - {canonical: category:glass_plate, terms: [玻璃, 玻璃板]}
+  - {canonical: category:panel, terms: [面板, 显示屏, 液晶, 光伏板, 太阳能板]}
+  - {canonical: category:wafer, terms: [晶圆, 硅片]}
+  - {canonical: category:fresh, terms: [水果, 蔬菜, 果蔬, 生鲜]}
+  - {canonical: category:meat_fish, terms: [肉类, 鸡肉, 鱼]}
+  - {canonical: category:bakery, terms: [面包, 糕点, 饼干, 巧克力, 零食]}
+  - {canonical: category:egg, terms: [鸡蛋]}
+  - {canonical: category:vial, terms: [西林瓶, 安瓿, 注射器]}
+  - {canonical: category:tube, terms: [试管, 采血管, 样本管]}
+  - {canonical: category:medical, terms: [药品, 医疗器械, 药盒]}
+  - {canonical: category:bottle, terms: [瓶子, 瓶装, 塑料瓶]}
+  - {canonical: category:can, terms: [易拉罐, 罐装, 罐头]}
+  - {canonical: category:textile, terms: [布料, 纺织, 服装, 面料]}
+  - {canonical: category:cable, terms: [线缆, 线束, 电线]}
+  - {canonical: category:timber, terms: [木材, 木板, 家具]}
+  - {canonical: category:building, terms: [砖, 瓷砖, 建材]}
+  - {canonical: category:body_panel, terms: [车门, 车身, 保险杠, 覆盖件]}
+  - {canonical: category:tire, terms: [轮胎, 轮毂]}
+  - {canonical: category:engine, terms: [发动机, 缸体, 缸盖, 曲轴, 变速箱]}
+  - {canonical: category:ev_battery, terms: [电池包, 动力电池, 电池模组]}
+  - {canonical: category:pallet, terms: [托盘, 栈板]}
+  - {canonical: category:piece, terms: [电商, 快递, 包裹, SKU, 多品种]}
+  - {canonical: material:steel, terms: [钢, 铁, 金属]}
+  - {canonical: material:stainless, terms: [不锈钢]}
+  - {canonical: material:aluminum, terms: [铝, 铝合金]}
+  - {canonical: material:plastic, terms: [塑料, 塑胶]}
+  - {canonical: material:paper, terms: [纸, 纸板, 瓦楞]}
+  - {canonical: material:glass, terms: [玻璃]}
+  - {canonical: material:wood, terms: [木]}
+  - {canonical: material:food, terms: [食品]}
+  - {canonical: principle:parallel2, terms: [二指夹爪, 平行夹爪, 电动夹爪, 气动夹爪, 夹爪, 夹具]}
+  - {canonical: principle:parallel3, terms: [三指夹爪, 三爪]}
+  - {canonical: principle:adaptive, terms: [自适应夹爪, 灵巧手, 多指]}
+  - {canonical: principle:clamp_fork, terms: [夹抱, 叉式, 夹持]}
+  - {canonical: principle:single_pad, terms: [吸盘, 真空吸盘, 真空吸附, 吸附]}
+  - {canonical: principle:area, terms: [海绵吸盘, 泡棉吸盘, 大面积吸盘]}
+  - {canonical: principle:electropermanent, terms: [磁力夹具, 电永磁, 电磁吸盘, 磁吸]}
+  - {canonical: principle:soft_finger, terms: [柔性夹爪, 软体夹爪, 软夹爪]}
+  - {canonical: principle:tool_changer, terms: [快换, 工具快换]}
+  - {canonical: task:pick_place, terms: [抓取, 拾取, 搬运, 上下料, 取放]}
+  - {canonical: task:machine_tending, terms: [机床上下料, 机床, 数控, 注塑机, 冲压]}
+  - {canonical: task:palletizing, terms: [码垛, 堆垛]}
+  - {canonical: task:depalletizing, terms: [拆垛, 卸垛]}
+  - {canonical: task:packing, terms: [装箱, 包装, 装盒, 装袋]}
+  - {canonical: task:bin_picking, terms: [无序抓取, 散堆抓取, 3D视觉抓取]}
+  - {canonical: task:assembly, terms: [装配, 组装]}
+  - {canonical: task:transport, terms: [转运, 复合机器人, 移动机器人]}
+  - {canonical: task:sorting, terms: [分拣, 拣选]}
+  - {canonical: task:inspection, terms: [检测, 质检]}
+  - {canonical: task:screwdriving, terms: [拧螺丝, 锁螺丝]}
+  - {canonical: task:welding, terms: [焊接]}
+  - {canonical: task:finishing, terms: [打磨, 抛光, 去毛刺, 涂胶, 喷涂]}
+  - {canonical: robot:協働, terms: [协作机器人, 协作]}
+  - {canonical: robot:産業用, terms: [工业机器人]}
+  - {canonical: robot:mobile, terms: [复合机器人, 移动操作, AMR复合]}
+  # ---- 韓国語(ループ 9: 마로솔 myrobotsolution.com の事例 466 本が「語が無い」で 453 本落ちていた)
+  - {canonical: category:carton, terms: [박스, 골판지, 종이상자, 상자, 카톤]}
+  - {canonical: category:tote, terms: [토트, 플라스틱 박스, 플라스틱박스, 바구니, 컨테이너 박스, 물류박스, 바스켓]}
+  - {canonical: category:tray, terms: [트레이]}
+  - {canonical: category:sack, terms: [포대, 마대, 자루, 사료포대, 비료포대, 쌀포대]}
+  - {canonical: category:pouch, terms: [파우치, 봉지]}
+  - {canonical: category:round, terms: [샤프트, 환봉, 원통형, 선반 가공물]}
+  - {canonical: category:block, terms: [하우징, 가공품, 가공물, 블록]}
+  - {canonical: category:sheet, terms: [판금, 박판, 철판, 판재, 프레스물]}
+  - {canonical: category:casting, terms: [주물, 주조품, 단조품, 다이캐스팅]}
+  - {canonical: category:bulk_parts, terms: [볼트, 너트, 나사, 소형 부품]}
+  - {canonical: category:gear, terms: [기어, 베어링]}
+  - {canonical: category:molded, terms: [사출물, 사출품, 사출 성형품, 플라스틱 부품]}
+  - {canonical: category:pcb, terms: [기판, PCB]}
+  - {canonical: category:component, terms: [전자부품, 커넥터, 반도체, 배터리 셀]}
+  - {canonical: category:device, terms: [스마트폰, 태블릿, 노트북]}
+  - {canonical: category:glass_plate, terms: [유리, 유리판]}
+  - {canonical: category:panel, terms: [패널, 디스플레이, 태양광 패널]}
+  - {canonical: category:wafer, terms: [웨이퍼]}
+  - {canonical: category:fresh, terms: [과일, 채소, 농산물, 딸기, 토마토]}
+  - {canonical: category:meat_fish, terms: [육류, 고기, 닭고기, 생선]}
+  - {canonical: category:bakery, terms: [빵, 과자, 쿠키, 케이크, 초콜릿]}
+  - {canonical: category:ready_meal, terms: [도시락, 튀김, 조리, 반찬, 식판]}
+  - {canonical: category:egg, terms: [계란, 달걀]}
+  - {canonical: category:vial, terms: [바이알, 앰플, 주사기]}
+  - {canonical: category:tube, terms: [시험관, 튜브]}
+  - {canonical: category:medical, terms: [의약품, 의료기기]}
+  - {canonical: category:bottle, terms: [병, 보틀, 페트병]}
+  - {canonical: category:can, terms: [캔, 음료캔]}
+  - {canonical: category:cup, terms: [컵, 용기]}
+  - {canonical: category:textile, terms: [섬유, 원단, 의류, 직물]}
+  - {canonical: category:cable, terms: [케이블, 와이어 하네스, 전선]}
+  - {canonical: category:timber, terms: [목재, 가구]}
+  - {canonical: category:building, terms: [벽돌, 타일, 건자재]}
+  - {canonical: category:body_panel, terms: [차체, 범퍼, 도어 패널]}
+  - {canonical: category:tire, terms: [타이어, 휠]}
+  - {canonical: category:engine, terms: [엔진, 실린더 블록, 변속기]}
+  - {canonical: category:ev_battery, terms: [배터리 팩, 배터리 모듈]}
+  - {canonical: category:pallet, terms: [팔레트, 파레트]}
+  - {canonical: category:piece, terms: [이커머스, 택배, 물류센터, 다품종]}
+  - {canonical: material:steel, terms: [철, 강, 금속, 스틸]}
+  - {canonical: material:stainless, terms: [스테인리스]}
+  - {canonical: material:aluminum, terms: [알루미늄]}
+  - {canonical: material:plastic, terms: [플라스틱, 수지]}
+  - {canonical: material:paper, terms: [종이, 골판지]}
+  - {canonical: material:glass, terms: [유리]}
+  - {canonical: material:wood, terms: [목재, 나무]}
+  - {canonical: material:food, terms: [식품, 음식]}
+  - {canonical: principle:parallel2, terms: [2지 그리퍼, 2핑거, 평행 그리퍼, 전동 그리퍼, 공압 그리퍼, 그리퍼, 핑거 그리퍼]}
+  - {canonical: principle:parallel3, terms: [3지 그리퍼, 3핑거]}
+  - {canonical: principle:adaptive, terms: [적응형 그리퍼, 다지 핸드, 로봇 핸드]}
+  - {canonical: principle:clamp_fork, terms: [클램프, 포크, 집게]}
+  - {canonical: principle:single_pad, terms: [흡착, 진공 흡착, 진공 그리퍼, 흡착 패드, 석션, 석션컵, 진공패드, 흡착패드]}
+  - {canonical: principle:area, terms: [폼 그리퍼, 면 흡착, 에어리어 그리퍼]}
+  - {canonical: principle:electropermanent, terms: [마그넷, 자석, 전자석, 마그네틱 그리퍼]}
+  - {canonical: principle:soft_finger, terms: [소프트 그리퍼, 소프트 핸드]}
+  - {canonical: principle:tool_changer, terms: [툴체인저, 툴 체인저, 공구 교환]}
+  - {canonical: task:pick_place, terms: [픽앤플레이스, 픽 앤 플레이스, 피킹, 이송, 적재, 핸들링, 취출]}
+  - {canonical: task:machine_tending, terms: [머신텐딩, 머신 텐딩, 공작기계, 선반, CNC, 사출기, 프레스, 로딩, 언로딩]}
+  - {canonical: task:palletizing, terms: [팔레타이징, 파렛타이징, 적재]}
+  - {canonical: task:depalletizing, terms: [디팔레타이징, 하역]}
+  - {canonical: task:packing, terms: [포장, 박스 포장, 패킹, 박싱]}
+  - {canonical: task:bin_picking, terms: [빈피킹, 빈 피킹, 무작위 피킹]}
+  - {canonical: task:assembly, terms: [조립, 체결, 삽입]}
+  - {canonical: task:transport, terms: [운반, 공정간 이송, 물류 이송, 자율주행 로봇]}
+  - {canonical: task:sorting, terms: [분류, 선별]}
+  - {canonical: task:inspection, terms: [검사, 측정]}
+  - {canonical: task:screwdriving, terms: [나사 체결, 스크류]}
+  - {canonical: task:welding, terms: [용접]}
+  - {canonical: task:finishing, terms: [연마, 디버링, 도장, 도포, 폴리싱]}
+  - {canonical: task:food_handling, terms: [조리, 튀김, 커피, 배식]}
+  - {canonical: robot:協働, terms: [협동로봇, 협동 로봇, 코봇]}
+  - {canonical: robot:産業用, terms: [산업용 로봇, 산업용로봇]}
+  - {canonical: robot:mobile, terms: [모바일 매니퓰레이터, 자율주행 로봇 팔, AMR 로봇팔, 이동형 로봇]}
