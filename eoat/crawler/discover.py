@@ -116,7 +116,7 @@ def main():
         log.save()
         return
     sources = load_sources()
-    keys = a.source or [k for k, s in sources.items() if s.get("status") == "ok"]
+    keys = a.source or [k for k, s in sources.items() if s.get("status") == "ok" and s.get("index_urls")]   # 検索・SIer 発見の取得元(一覧ページ無し)は飛ばす
     log = RunLog("discover")
     cands = jload(CANDIDATES, {})
     with cf.ThreadPoolExecutor(a.workers) as ex:
