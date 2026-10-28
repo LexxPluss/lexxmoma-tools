@@ -50,6 +50,54 @@ def encrypt_json(data, key, salt, out_json):
     out_json.with_name("data.enc.js").write_text("window.EOAT_ENC=" + enc + ";\n", encoding="utf-8")
 
 
+def open_sealed(key, blob):
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+    return AESGCM(key).decrypt(blob[:12], blob[12:], None)
+
+
+def rekey(old_pw, new_pw, log):
+    """公開側の暗号化データと画像を、古いパスワードで復号して新しいパスワードで暗号化し直す(作業データ data/ が無い環境でもできる)。
+    パイロット用パスワードのまま配ったデータを共通パスワードに切り替えるときに使う。[iv][ct+tag] の長さは変わらないのでパックの位置(off/len)はそのまま。"""
+    import hashlib
+    enc = jload(SITE_OUT / "data.enc.json")
+    if not enc:
+        raise SystemExit("site/members/eoat-db/data.enc.json が無い")
+    old_key = derive_key(old_pw, base64.b64decode(enc["salt"]))
+    try:
+        plain = json.loads(zlib.decompress(open_sealed(old_key, base64.b64decode(enc["iv"]) + base64.b64decode(enc["ct"]))))
+    except Exception:
+        raise SystemExit("古いパスワードが合いません(data.enc.json を復号できない)")
+    salt = os.urandom(16)
+    new_key = derive_key(new_pw, salt)
+    thumb_dir, detail_dir = SITE_OUT / "img" / "thumb", SITE_OUT / "img" / "detail"
+    # サムネイルのパック: 事例の索引(pack/off/len)で 1 枚ずつ切り出して暗号化し直す
+    spans = {}
+    for r in plain["cases"]:
+        for im in r.get("images", []):
+            t = im.get("thumb") or {}
+            if t.get("pack"):
+                spans.setdefault(t["pack"], {})[t["off"]] = t["len"]
+    n_img = 0
+    for name, offs in spans.items():
+        src = (thumb_dir / name).read_bytes()
+        out = bytearray(src)
+        for off, ln in offs.items():
+            out[off:off + ln] = seal(new_key, open_sealed(old_key, src[off:off + ln]))
+            n_img += 1
+        (thumb_dir / name).write_bytes(bytes(out))
+    n_det = 0
+    for f in detail_dir.glob("*.bin"):
+        f.write_bytes(seal(new_key, open_sealed(old_key, f.read_bytes())))
+        n_det += 1
+    encrypt_json(plain, new_key, salt, SITE_OUT / "data.enc.json")
+    pidx = jload(DATA / "packs.json")
+    if pidx:
+        pidx["key_check"] = hashlib.sha256(new_key + b"eoat").hexdigest()[:16]
+        jdump(pidx, DATA / "packs.json")
+    log.ok("rekey", f"一覧 {n_img} 枚 / 詳細 {n_det} 枚 / 事例 {len(plain['cases'])} 件")
+    print(f"暗号化し直し: 事例 {len(plain['cases'])} 件、一覧の画像 {n_img} 枚、詳細の画像 {n_det} 枚 → {SITE_OUT.relative_to(SITE_OUT.parents[2])}")
+
+
 # ---------------------------------------------------------------- 文章(自分の言葉で。原文は写さない)
 class Labels:
     def __init__(self):
@@ -273,8 +321,17 @@ def main():
     ap.add_argument("--plain-only", action="store_true")
     ap.add_argument("--no-audit", action="store_true")
     ap.add_argument("--repack", action="store_true", help="画像パックを並び順どおりに作り直す(既定は追記。並びを変えたときに使う)")
+    ap.add_argument("--rekey", action="store_true", help="公開側のデータと画像を --old-password で復号して --password で暗号化し直す(data/ が無い環境でもできる)")
+    ap.add_argument("--old-password", help="--rekey のときの古いパスワード(既定はパイロット用 pilot-test)")
     a = ap.parse_args()
     log = RunLog("build")
+    if a.rekey:
+        pw = a.password or os.environ.get("EOAT_PW") or os.environ.get("FACTORY_PW") or os.environ.get("PEOPLE_PW")
+        if not pw:
+            raise SystemExit("新しいパスワードが必要です(--password か EOAT_PW)")
+        rekey(a.old_password or os.environ.get("EOAT_OLD_PW") or "pilot-test", pw, log)
+        log.save()
+        return
     cases, L, merged = assemble(log)
     plain = {"built_at": today(), "count": len(cases), "taxonomy": L.public(), "cases": cases}
     jdump(plain, DATA / "cases.json")
