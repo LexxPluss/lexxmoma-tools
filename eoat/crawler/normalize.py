@@ -39,16 +39,19 @@ def payload_class(kg):
     return ">100kg"
 
 
-_PAYLOAD_CTX = re.compile(r"(payload|可搬|搬送重量|最大重量|重さ|重量|weigh(?:s|ing|t)?|up to|最大|までの|lift(?:s|ing)?|carr(?:y|ies|ying)|handle[sd]?|heavy)", re.I)
+_PAYLOAD_CTX = re.compile(r"(重さ|重量|weigh(?:s|ing|t)?|up to|最大|までの|lift(?:s|ing)?|carr(?:y|ies|ying)|handle[sd]?|heavy)", re.I)
+# ロボット・ハンドの仕様の数値(可搬・本体重量・把持力・リーチ)はワークの重さではない(ループ 9: LLM レビューで規則の重さの大半が可搬重量だった)
+_NOT_WORKPIECE = re.compile(r"(payload|可搬|搬送重量|最大重量|本体重量|robot weight|把持力|grip(?:ping)? force|rated load|荷重|reach|リーチ|可搬質量|가반하중|负载|负荷)", re.I)
 
 
 def workpiece_mass(text):
-    """ワークの重さらしい重量(可搬重量の文脈にある数値)を min/max で返す。無ければ None。"""
+    """ワークの重さらしい重量(重さの文脈にあり、ロボットの可搬の文脈にない数値)を min/max で返す。無ければ None。"""
     t = nfkc(text)
     vals = []
     for m in _W.finditer(t):
         ctx = t[max(0, m.start() - 60): m.end() + 30]
-        if _PAYLOAD_CTX.search(ctx):
+        near = t[max(0, m.start() - 14): m.end() + 10]
+        if _PAYLOAD_CTX.search(ctx) and not _NOT_WORKPIECE.search(near):
             v = float(m.group(1).replace(",", ".")) * _UNIT.get(m.group(2).lower(), 0)
             if 0 < v < 5000:
                 vals.append(round(v, 3))

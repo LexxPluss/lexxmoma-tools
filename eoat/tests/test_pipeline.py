@@ -44,6 +44,8 @@ class TestNormalize(unittest.TestCase):
     def test_workpiece_mass_needs_context(self):
         self.assertEqual(normalize.workpiece_mass("The boxes weigh up to 12 kg each."), {"min": 12.0, "max": 12.0})
         self.assertIsNone(normalize.workpiece_mass("Founded in 1990, 12 kg of coffee per day"))   # 文脈語が無い
+        self.assertIsNone(normalize.workpiece_mass("UR10e with a payload of 12.5 kg and a reach of 1300 mm"))   # ロボットの可搬はワークの重さではない(ループ 9)
+        self.assertEqual(normalize.workpiece_mass("可搬重量 7 kg の協働ロボット。重さ 3 kg の段ボールを積む"), {"min": 3.0, "max": 3.0})
 
     def test_terms(self):
         t = normalize.norm_text("Ｄepalletizing  Cardboard BOXES")

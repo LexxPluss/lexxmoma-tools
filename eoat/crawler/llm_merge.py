@@ -64,12 +64,25 @@ def main():
                 r["fieldSources"]["robot.is_mobile_manipulator"] = src("robot.is_mobile_manipulator")
                 changed = True
             m = rv.get("mass_kg")
-            if isinstance(m, (int, float)) and m > 0 and not r["workpiece"].get("mass_kg"):
-                from normalize import payload_class
+            from normalize import payload_class
+            if isinstance(m, (int, float)) and m > 0 and (r["workpiece"].get("mass_kg") or {}).get("max") != float(m):
+                # レビューの数値は規則の値(可搬重量を拾いがち)より優先する
                 r["workpiece"]["mass_kg"] = {"min": float(m), "max": float(m)}
                 r["payload_class"] = payload_class(float(m))
                 r["fieldSources"]["workpiece.mass_kg"] = src("workpiece.mass_kg")
                 r["fieldSources"]["payload_class"] = {"source": 0, "method": "derived", "evidence": ["ワークの重さ(LLM が本文から読み取り)から"]}
+                changed = True
+            elif "mass_kg" in rv and m is None and r["workpiece"].get("mass_kg"):
+                # レビューが「本文に無い」と判断した重さは消し、可搬帯はロボット・ハンドの可搬から引き直す(ループ 9: 規則の重さの大半がロボットの可搬だった)
+                r["workpiece"]["mass_kg"] = None
+                r["fieldSources"].pop("workpiece.mass_kg", None)
+                rp = r["robot"].get("payload_kg")
+                if rp:
+                    r["payload_class"] = payload_class(rp)
+                    r["fieldSources"]["payload_class"] = {"source": 0, "method": "derived", "evidence": [f"ロボットの可搬 {rp} kg から"]}
+                else:
+                    r["payload_class"] = "不明"
+                    r["fieldSources"].pop("payload_class", None)
                 changed = True
             if rv.get("workpiece_name") and not r["workpiece"].get("name"):
                 r["workpiece"]["name"] = str(rv["workpiece_name"])[:40]
