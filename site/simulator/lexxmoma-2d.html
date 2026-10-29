@@ -585,19 +585,25 @@ function params() {
 }
 
 /* 走行速度の設定。標準値より大きい値・不正値は標準値に戻す（速度は下げる方向のみ変更可）。
+ * 走行ブロック個別の最大速度が新しい全体設定を超える場合は、全体設定値に書き換える
+ * （全体設定を上げ直しても個別値は元に戻らない）。
  * 戻り値は実際に設定された値。 */
 function setBodyVmax(v) {
   const b = SIM_PARAMS.body;
   v = parseFloat(v);
   if (!isFinite(v) || v <= 0 || v > b.vmaxStd) v = b.vmaxStd;
   b.vmax = Math.round(v * 1000) / 1000; // 1mm/s 単位に丸める
+  for (const st of state.program) for (const blk of st.blocks) {
+    if (blk.type !== "body") continue;
+    const bv = parseFloat(blk.vmax);
+    if (isFinite(bv) && bv > b.vmax) blk.vmax = b.vmax;
+  }
   return b.vmax;
 }
 
 /* 走行ブロック個別の最大並進速度 [m/s] を返す。
  * b.vmax が未設定（空欄）なら全体設定 SIM_PARAMS.body.vmax を使う。
- * 全体設定 vmax が上限で、それを超える値は全体設定値に丸める（速度は下げる方向のみ）。
- * b.vmax 自体は書き換えないので、全体設定を上げ直せば元の個別値に戻る。 */
+ * 全体設定 vmax が上限で、それを超える値は全体設定値に丸める（速度は下げる方向のみ）。 */
 function blockVmax(b) {
   const bd = SIM_PARAMS.body;
   const v = parseFloat(b && b.vmax);
@@ -1996,8 +2002,7 @@ function makeBlockEl(stage, b, si, bi) {
       vIn.max = String(SIM_PARAMS.body.vmax); // 全体設定の最大並進速度が上限
       vIn.placeholder = String(SIM_PARAMS.body.vmax); // 空欄時に実際に使われる値
       vIn.title = `空欄なら全体設定（${SIM_PARAMS.body.vmax} m/s）を使用。全体設定より大きい値は全体設定値に戻ります`;
-      // 個別値が全体設定を超えている場合（全体設定を後から下げた時）は、実際に使われる値を表示する
-      vIn.value = (b.vmax === undefined || b.vmax === null || b.vmax === "") ? "" : String(blockVmax(b));
+      vIn.value = (b.vmax === undefined || b.vmax === null || b.vmax === "") ? "" : String(b.vmax);
       // box-sizing:border-box なので上下paddingは内側の高さ（＝上下ボタンの描画領域）を削る。
       // 上下paddingを0にし、高さ24pxを確保して矢印が切れないようにする。
       vIn.style.cssText = "flex:1 1 76px; min-width:76px; width:auto; font-size:12px; padding:0 4px; height:26px; line-height:normal;";
@@ -2005,10 +2010,8 @@ function makeBlockEl(stage, b, si, bi) {
       const unit = document.createElement("span");
       unit.textContent = "m/s";
       unit.style.cssText = "font-size:11px; opacity:0.85;";
-      let shownVmax = vIn.value; // 最後に表示した値（触っただけで丸めた値が保存されないよう、変化時のみ確定する）
       const commitVmax = () => {
         const raw = vIn.value.trim();
-        if (raw === shownVmax) return;
         if (raw === "") { delete b.vmax; }
         else {
           const v = parseFloat(raw);
@@ -2020,7 +2023,6 @@ function makeBlockEl(stage, b, si, bi) {
             vIn.value = String(b.vmax);
           }
         }
-        shownVmax = vIn.value;
         recompute();
       };
       // 空欄のまま上下ボタン・矢印キーを操作すると min（0.1）に飛んでしまうので、
