@@ -273,7 +273,7 @@
           <tr><td>ズーム</td><td>ホイール ／ 左下の＋−</td></tr>
           <tr><td>姿勢の名前・数値を変更</td><td>左ペインのリストをダブルクリック</td></tr>
           <tr><td>最大並進速度を下げる</td><td>左下「シミュレートパラメータ」の値をダブルクリック</td></tr>
-          <tr><td>走行経路ごとに最大並進速度を下げる</td><td>Move Body ブロックの「最大速度」に入力（空欄なら全体設定値）</td></tr>
+          <tr><td>走行経路ごとに最大並進速度を下げる</td><td>Move Body ブロックの「最大速度」に入力（空欄なら「自動」で全体設定値に追従。「↺ 自動」で戻す）</td></tr>
           <tr><td>0.1m刻みで配置</td><td><kbd>Shift</kbd>＋クリック／ドラッグ（描画・移動時）</td></tr>
           <tr><td>シーケンスの段を並べ替え</td><td>段を長押し → ドラッグ</td></tr>
         </table>
@@ -1991,7 +1991,9 @@ function makeBlockEl(stage, b, si, bi) {
       dirRow.appendChild(lbl); dirRow.appendChild(dir);
       el.appendChild(dirRow);
 
-      // 車体のみ：この走行経路の最大並進速度（空欄なら全体設定値を使う）
+      // 車体のみ：この走行経路の最大並進速度。
+      // 空欄＝「自動」：全体設定値に上げ下げとも追従する。
+      // 値を入力＝「手動」：全体設定を下げると setBodyVmax() でそれを上限に書き換わり、上げても戻らない。
       const vRow = document.createElement("div");
       vRow.style.cssText = "display:flex; gap:4px; align-items:center; margin-top:3px; flex-wrap:wrap;";
       const vLbl = document.createElement("span");
@@ -2000,8 +2002,8 @@ function makeBlockEl(stage, b, si, bi) {
       const vIn = document.createElement("input");
       vIn.type = "number"; vIn.step = "0.1"; vIn.min = "0.1";
       vIn.max = String(SIM_PARAMS.body.vmax); // 全体設定の最大並進速度が上限
-      vIn.placeholder = String(SIM_PARAMS.body.vmax); // 空欄時に実際に使われる値
-      vIn.title = `空欄なら全体設定（${SIM_PARAMS.body.vmax} m/s）を使用。全体設定より大きい値は全体設定値に戻ります`;
+      vIn.placeholder = `自動 ${SIM_PARAMS.body.vmax}`; // 空欄＝自動。実際に使われる全体設定値も示す
+      vIn.title = `空欄なら自動（全体設定 ${SIM_PARAMS.body.vmax} m/s に追従）。全体設定より大きい値は全体設定値に戻ります`;
       vIn.value = (b.vmax === undefined || b.vmax === null || b.vmax === "") ? "" : String(b.vmax);
       // box-sizing:border-box なので上下paddingは内側の高さ（＝上下ボタンの描画領域）を削る。
       // 上下paddingを0にし、高さ24pxを確保して矢印が切れないようにする。
@@ -2010,6 +2012,21 @@ function makeBlockEl(stage, b, si, bi) {
       const unit = document.createElement("span");
       unit.textContent = "m/s";
       unit.style.cssText = "font-size:11px; opacity:0.85;";
+      // 手動のときだけ出す「自動に戻す」ボタン
+      const autoBtn = document.createElement("button");
+      autoBtn.type = "button";
+      autoBtn.textContent = "↺ 自動";
+      autoBtn.title = "全体設定に追従する自動に戻す";
+      autoBtn.style.cssText = "font-size:11px; padding:1px 6px; white-space:nowrap;";
+      const syncAutoBtn = () => { autoBtn.hidden = vIn.value.trim() === ""; };
+      autoBtn.addEventListener("click", () => {
+        if (b.vmax === undefined) return;
+        pushUndo();
+        delete b.vmax;
+        vIn.value = "";
+        syncAutoBtn();
+        recompute();
+      });
       const commitVmax = () => {
         const raw = vIn.value.trim();
         if (raw === "") { delete b.vmax; }
@@ -2023,6 +2040,7 @@ function makeBlockEl(stage, b, si, bi) {
             vIn.value = String(b.vmax);
           }
         }
+        syncAutoBtn();
         recompute();
       };
       // 空欄のまま上下ボタン・矢印キーを操作すると min（0.1）に飛んでしまうので、
@@ -2038,7 +2056,8 @@ function makeBlockEl(stage, b, si, bi) {
       });
       vIn.addEventListener("change", commitVmax);
       vIn.addEventListener("blur", commitVmax);
-      vRow.appendChild(vLbl); vRow.appendChild(vIn); vRow.appendChild(unit);
+      syncAutoBtn();
+      vRow.appendChild(vLbl); vRow.appendChild(vIn); vRow.appendChild(unit); vRow.appendChild(autoBtn);
       el.appendChild(vRow);
     }
   } else {
