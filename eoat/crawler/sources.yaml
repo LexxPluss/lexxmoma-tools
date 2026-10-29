@@ -3163,3 +3163,15 @@ sources:
     status: todo
     checked: 2026-10-29
     note: "/testimonianze-e-casi-studio/ は 1 ページに顧客名(Rupes, Cascina Italia など)と YouTube 動画を並べただけで、個別事例ページが無い(動画だけなので不可)。post-sitemap.xml の 280 本はブログ(製品・業界の話題)で、事例記事は URL で区別できない。取得元としては見送り。"
+  - key: bigwave_cases
+    label: Bigwave Robotics 導入事例(韓国 SIer・英語版)
+    type: sier
+    case_type: sier_case
+    region: その他アジア
+    country: 韓国
+    lang: en
+    index_urls: ["https://us.bigwaverobotics.com/sitemap.xml"]
+    article: "^https://us\\.bigwaverobotics\\.com/case-studies/[^/?#]+$"
+    status: ok
+    checked: 2026-10-29
+    note: 韓国語版(bigwaverobotics.com)は 403 なので触らない。英語版の sitemap に事例 248 本(asia3_l10 の検索で発見)
