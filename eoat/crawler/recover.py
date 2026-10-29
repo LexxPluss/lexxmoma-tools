@@ -49,7 +49,8 @@ def main():
     cands = jload(DATA / "candidates.json", {})
     search_src = jload(DATA / "search_sources.json", {})
     sier_src = jload(DATA / "sier_sources.json", {})
-    reviews, unknown = [], set()
+    reviews, unknown, photo = [], set(), {}
+    PGROUP = {it["key"]: g["key"] for g in yload(HERE.parent / "taxonomy" / "principles.yaml")["groups"] for it in g["items"]}
     for r in pub["cases"]:
         for i, so in enumerate(r["sources"]):
             pubn = so.get("publisher") or ""
@@ -84,7 +85,14 @@ def main():
                 ev, note = fs["evidence"][0], fs.get("note") or ""
                 break
         mass = r["workpiece"].get("mass_kg")
-        reviews.append({"id": r["id"], "is_case": True, "categories": r["workpiece"]["categories"], "principles": r["end_effector"]["principles"],
+        prs = r["end_effector"]["principles"]
+        pfs = r["fieldSources"].get("end_effector.principles") or {}
+        if pfs.get("method") == "photo":
+            # 写真から判定した掴み方はレビューの値に混ぜず、photo_grasp.py merge で付け直す(本文に記載が無いことを残す)
+            photo[r["id"]] = {"p1": {"group": PGROUP.get(prs[0], "unknown"), "subtype": None if prs[0].endswith("_photo") else prs[0], "conf": "high",
+                                     "seen": (pfs.get("evidence") or [""])[0], "sheet": "recovered"}}
+            prs = ["hand_unspecified"]
+        reviews.append({"id": r["id"], "is_case": True, "categories": r["workpiece"]["categories"], "principles": prs,
                         "tasks": r["tasks"], "materials": r["workpiece"]["materials"], "robot_class": r["robot"].get("class"),
                         "is_mobile": bool(r["robot"].get("is_mobile_manipulator")), "mass_kg": (mass["max"] if mass else None),
                         "workpiece_name": r["workpiece"].get("name") or "", "evidence": ev, "note": note or "(公開済みデータから復元)"})
@@ -92,6 +100,8 @@ def main():
     jdump(search_src, DATA / "search_sources.json")
     jdump(sier_src, DATA / "sier_sources.json")
     jdump(reviews, DATA / "llm_out" / "recovered_published.json")
+    if photo:
+        jdump(dict(jload(DATA / "photo_grasp" / "results.json", {}) or {}, **photo), DATA / "photo_grasp" / "results.json")
     bad = [r["id"] for r in pub["cases"] if url_id(r["sources"][0]["url"]) != r["id"]]
     print(f"公開 {len(pub['cases'])} 件 → 候補 {len(cands)} / 検索取得元 {len(search_src)} / SIer {len(sier_src)} / レビュー {len(reviews)}"
           f"(取得元が分からない publisher: {sorted(unknown)}、id の不一致 {len(bad)})")

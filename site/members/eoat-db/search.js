@@ -171,11 +171,12 @@
   /** 掴み方の傾向: 大分類ごとの件数・割合・代表事例(上位 1 件)と小分類の内訳 */
   function trend(list, tax) {
     var groups = {}, total = list.length;
-    (tax.principles || []).forEach(function (g) { groups[g.key] = { key: g.key, label: g.label, pictogram: g.pictogram, n: 0, rep: null, items: {} }; });
+    (tax.principles || []).forEach(function (g) { groups[g.key] = { key: g.key, label: g.label, pictogram: g.pictogram, n: 0, photo: 0, rep: null, items: {} }; });
     list.forEach(function (c) {
       var k = c.end_effector.principles[0], g = c._prGroups[0];
       if (!groups[g]) return;
       groups[g].n++;
+      if (c.end_effector.by_photo) groups[g].photo++;   // 本文に記載が無く、写真のハンドの形から判定した事例
       if (!groups[g].rep) groups[g].rep = c;
       groups[g].items[k] = (groups[g].items[k] || 0) + 1;
     });

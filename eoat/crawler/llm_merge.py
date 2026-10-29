@@ -13,7 +13,7 @@ CLASSES = {"産業用", "協働"}
 
 def main():
     cats = {it["key"] for g in yload(TAXONOMY / "categories.yaml")["groups"] for it in g["items"]}
-    prs = {it["key"] for g in yload(TAXONOMY / "principles.yaml")["groups"] for it in g["items"]}
+    prs = {it["key"] for g in yload(TAXONOMY / "principles.yaml")["groups"] for it in g["items"] if not it.get("photo_only")}
     mats = {m["key"] for m in yload(TAXONOMY / "materials.yaml")["materials"]}
     tasks = {t["key"] for t in yload(TAXONOMY / "tasks.yaml")["tasks"]}
     log = RunLog("llm_merge")
