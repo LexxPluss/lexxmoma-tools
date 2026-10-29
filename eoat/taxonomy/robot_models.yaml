@@ -227,7 +227,7 @@ makers:
     models:
       - {model: LARA, pattern: "\\bLARA ?\\d{1,2}?\\b", payload: 10}
       - {model: MAiRA, pattern: "\\bMAiRA\\b", payload: 15}
-      - {model: MAV, pattern: "\\bMAV\\b", payload: 15, mobile: true}
+      - {model: MAV, pattern: "(?-i:\\bMAV\\b)", payload: 15, mobile: true}
   - name: Rethink Robotics
     aliases: [Rethink]
     class: 協働
