@@ -222,6 +222,8 @@ img{max-width:100%}
   .hdr .count{display:none}
   .askbar .go{padding:0 12px}
   .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+  .tabs{max-width:100%;overflow-x:auto}
+  .tabs button{padding:6px 8px}   /* 件数が 4 桁になって 390px 幅で 4px はみ出した(ループ 10・関門 2,000) */
   .tb{grid-template-columns:44px minmax(0,1fr)}
   .tb-img{width:44px;height:34px}
   .tb-sub{display:none}
