@@ -303,6 +303,11 @@ def classify_one(rec, tx, cleaned=None, lenient=False):
     if cats and not prs and not lenient and robot_hit and {t[0] for t in tasks} & HANDLING_TASKS:
         prs = [("hand_unspecified", 0, ["(掴み方の記載なし: " + "・".join(tx.task_label[t[0]] for t in tasks if t[0] in HANDLING_TASKS) + " の事例)"])]
         pr_fallback = True
+    # 逆に、掴み方は書いてあるがワークの語が無い事例(「部品」「製品」とだけ書く。Robotiq のパレタイズ・OnRobot の CNC 投入など)も、扱う作業があれば「汎用(その他)」で残す
+    if prs and not cats and not lenient and robot_hit and {t[0] for t in tasks} & HANDLING_TASKS \
+            and any(tx.pr_group[p[0]] not in ("process", "unknown") for p in prs):
+        cats = [("generic", 0, ["(ワークの語なし: " + "・".join(tx.task_label[t[0]] for t in tasks if t[0] in HANDLING_TASKS) + " の事例)"])]
+        pr_fallback = True
     if (not cats or not prs) and lenient:
         cats = cats or [("generic", 0, ["(レビュー済み: 規則の一致なし)"])]
         prs = prs or [("hand_unspecified", 0, ["(レビュー済み: 規則の一致なし)"])]
