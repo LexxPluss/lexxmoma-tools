@@ -2728,3 +2728,238 @@ sources:
     status: ok
     checked: 2026-10-29
     note: "Doosan の協働ロボで Instant Palletiser を出している包装ラインの SIer。一覧で合うリンク 21 本(exclude 後 19 本前後)。例: /resources/palletising/bag-depalletising/、/resources/tirage-bin-loader/、/resources/line-integration/lion-case-study/。ライン一括・移設の事例も多く、ロボットの把持(パレタイズ・袋のデパレ)は 3〜4 割。本文に <img>(s3-ap-southeast-2 の写真 4 枚)あり"
+  - key: brillopak
+    label: Brillopak 事例(blog の case-studies タグ)
+    type: sier
+    case_type: sier_case
+    region: 欧州
+    country: イギリス
+    lang: en
+    index_urls: ["https://www.brillopak.co.uk/blog/tag/case-studies"]
+    paginate: "https://www.brillopak.co.uk/blog/tag/case-studies/page/{n}"
+    max_pages: 3
+    article: "^https://www\\.brillopak\\.co\\.uk/blog/(?!tag/|rss)[^/?#]+$"
+    status: ok
+    checked: 2026-10-29
+    note: "HubSpot ブログ。case-studies タグの 1 ページ目で article に合うリンク 10 本(例 /blog/rowpaker-reduces-labour-costs-for-soft-fruit-grower-edward-vinson, /blog/albert-bartlett-boosts-potato-packing, /blog/morrisons-robotic-palletiser-increases-safety)、/page/2 あり → 計 15〜20 件の見当。青果・食品の箱詰めロボット(UniPaker/RowPaker の吸着・指ハンド)とパレタイザで、把持は 7 割前後(半自動 PakStation・デスタッカは対象外)。本文に <img>(hubfs の現場写真)。robots は /*archive・/*author だけ禁止。ブログ全体(sitemap.xml の /blog/ 113 本)にも導入ニュースが混じるが、まずはタグで絞る"
+  - key: amp_automation
+    label: A.M.P Automation 事例(case studies)
+    type: sier
+    case_type: sier_case
+    region: 欧州
+    country: イギリス
+    lang: en
+    index_urls: ["https://ampautomation.co.uk/case_studies/"]
+    article: "^https://ampautomation\\.co\\.uk/case_studies/(?!feed/)[^/?#]+/$"
+    status: ok
+    checked: 2026-10-29
+    note: "一覧の素の HTML に 6 本(case_studies-sitemap.xml とも一致。例 /cobot-palletising-system/, /depalletising-repalletising-mixed-case-system/, /soft-robotics-integrator/)。食品のピック&プレース・パレタイズで把持は 4〜5 件(/the-power-of-remote-access/ は遠隔保守で対象外)。本文に <img>(ABB ロボットの写真)。robots は全許可。サーバーが時々 Connection reset を返す(同じ URL で 2 回に 1 回ほど)ので、取りこぼしたら日をおいて再取得"
+  - key: gosiger
+    label: Gosiger 事例(case studies)
+    type: sier
+    case_type: sier_case
+    region: 北米
+    country: アメリカ
+    lang: en
+    index_urls: ["https://www.gosiger.com/resources/case-studies"]
+    article: "^https://www\\.gosiger\\.com/case-study-[^/?#]+$"
+    status: ok
+    checked: 2026-10-29
+    note: "一覧の素の HTML で article に合うリンク 5 本(例 /case-study-glacier-tool, /case-study-hypertherm, /case-study-cnc-machine-shop-meets-customer-demand-with-robotic-automation-saves-500000-in-operating-costs)。Stratasys の 3D プリント治具 2 本は article から外れる。CNC のロボットによるワーク搬入出(マシンテンディング)が中心で把持は 3 件前後。本文に <img>(hubfs)。/news/ 80 本は製品・ノウハウ記事が大半で対象外"
+  - key: phs_innovate
+    label: PHS Innovate 事例(projects / case studies)
+    type: sier
+    case_type: sier_case
+    region: その他
+    country: ニュージーランド
+    lang: en
+    index_urls: ["https://phsinnovate.com/page-sitemap.xml", "https://phsinnovate.com/post-sitemap.xml"]
+    article: "^https://phsinnovate\\.com/(projects/case-study-[^/?#]+|foodstuffssouthisland)/$"
+    status: ok
+    checked: 2026-10-29
+    note: "一覧 /case-studies/・/projects/ は素の HTML に個別リンクが無い(/foodstuffssouthisland/ だけ)ので sitemap を index にする。合うのは 4 本(/projects/case-study-griffins-foods/, /projects/case-study-cloudy-bay/, /projects/case-study-talleys/, /foodstuffssouthisland/)。ABB ロボットのパレタイズ・ケース詰めで把持は 3 件前後(Foodstuffs は倉庫自動化)。本文に <img>(griffins-cs-robot-palletizing-system-thumb.jpg など)"
+  - key: techman_lgmotion
+    label: LG Motion(Techman Robot 英国代理店)アプリケーション事例
+    type: sier
+    case_type: sier_case
+    region: 欧州
+    country: イギリス
+    lang: en
+    index_urls: ["https://techman.lg-motion.co.uk/solutions/"]
+    article: "^https://techman\\.lg-motion\\.co\\.uk/solution/[^/?#]+/$"
+    status: ok
+    checked: 2026-10-29
+    note: "/solutions/ の素の HTML に 29 本(例 /solution/onrobot-rg2-gripper/, /solution/palletizing-operator/, /solution/streamline-food-and-beverage-palletising-with-stacksmart/)。/applications/ は新しい 6 本だけ。顧客名のある導入事例ではなく応用紹介が中心で、AI 検査・溶接・研磨・ネジ締めも多く、把持は 1/3 程度。cobot-weekly-* などは YouTube 埋め込みだけで本文画像が無いものが多い(RG2 のページは <img> あり、assembling-plastic-parts は動画だけ)→ 画像の無いページは後段で落とす"
+  - key: ras_eoat_showcase
+    label: Robotic Automation Systems(旧 Geiger Handling USA)ソリューション紹介
+    type: sier
+    case_type: maker_product
+    region: 北米
+    country: アメリカ
+    lang: en
+    index_urls: ["https://www.roboticautomationsystems.com/page-sitemap.xml"]
+    article: "^https://www\\.roboticautomationsystems\\.com/solutions-showcase/[^/?#]+/$"
+    status: skip   # 1 ページに複数の事例(見出しごとに分ける仕組みが無いので巡回しない)
+    checked: 2026-10-29
+    note: "個別事例ページは無く、solutions-showcase の分類ページ 6 本(例 /end-of-arm-tooling-solutions/, /insert-loading-automation-solutions/, /turnkey-automation-cell-solutions/)にそれぞれ EOAT・セルが写真付きで数件ずつ並ぶ(射出成形の取り出し・インサート挿入用の真空・平行グリッパ)。1 ページ = 複数事例なので、取り込み時に見出し単位で分ける必要あり。画像は lazy load(data-src に wp-content/uploads の実画像、src はプレースホルダ)。/blog/ 37 本は解説記事で対象外"
+  - key: ptonline_automation
+    label: Plastics Technology(ptonline)automation トピック
+    type: media
+    case_type: user_case
+    region: 北米
+    country: アメリカ
+    lang: en
+    index_urls: ["https://www.ptonline.com/topics/automation"]
+    article: "^https://www\\.ptonline\\.com/(articles/(?!issues$)[^/?#]+|blog/post/[^/?#]+)$"
+    status: ok
+    checked: 2026-10-29
+    note: "トピック一覧の素の HTML で article に合うリンク約 33 本(例 /articles/how-to-plan-and-implement-automation-in-an-injection-molding-plant, /articles/automationpart-2-when-to-use-six-axis-articulated-arm-robots, /blog/post/how-to-automate-high-precision-micro-insert-molding)。トピックの付け方が広く、樹脂価格・展示会告知も混じるので把持事例は 1 割未満の見当。?page=2 は 1 ページ目と同じ(続きは JS)→ paginate なし。網羅するなら sitemap/sitemap-content.xml(全記事、トピックで絞れない)。本文に <img>(d2n4wb9orp1vta.cloudfront.net/cms/…、広告画像も多い)。robots は * に対し /search 等だけ禁止(ClaudeBot 名指しは全禁止だが当方 UA は対象外)"
+  - key: productionmachining_automation
+    label: Production Machining automation トピック
+    type: media
+    case_type: user_case
+    region: 北米
+    country: アメリカ
+    lang: en
+    index_urls: ["https://www.productionmachining.com/topics/automation"]
+    article: "^https://www\\.productionmachining\\.com/(articles/(?!issues$)[^/?#]+|blog/post/[^/?#]+)$"
+    status: ok
+    checked: 2026-10-29
+    note: "トピック一覧の素の HTML で article に合うリンク約 55 本(例 /articles/an-automation-option-when-floorspace-is-limited-2, /articles/one-shop-multiple-new-examples-of-automation, /blog/post/parts-accumulator-allows-for-unattended-machining)。?page=2 は 1 ページ目と同じ 55 本(ページ送り無効)。バーフィーダ・工具・計測・人物紹介も多く、ロボットハンドの事例は 1 割前後。本文に <img>(cloudfront の cms 画像、広告混在)。robots は ptonline と同じ Gardner 共通"
+  - key: nomagic
+    label: Nomagic 事例(case studies)
+    type: maker_robot
+    case_type: maker_product
+    region: 欧州
+    country: ポーランド
+    lang: en
+    index_urls: ["https://nomagic.ai/case-study-sitemap1.xml"]
+    article: "^https://nomagic\\.ai/case-study/[^/?#]+/$"
+    status: ok
+    checked: 2026-10-29
+    note: "case-study-sitemap1.xml で英語版 6 本(/case-study/arvato/, /case-study/zalando/, /case-study/komplett_robot/ ほか asos・brack-ch・fiege)。de/es/fr/pl は同じ事例の訳なので外す。EC 倉庫の AI ピッキング(吸着ハンド)で全件が把持。本文に <img>(case-study-komplett-cover.jpg など。他はロゴと lazy のプレースホルダ)。末尾は PDF ダウンロードのフォーム"
+  - key: knapp_cases
+    label: KNAPP 事例(case studies、Pick-it-Easy Robot を含む)
+    type: sier
+    case_type: sier_case
+    region: 欧州
+    country: オーストリア
+    lang: en
+    index_urls: ["https://www.knapp.com/case-study-sitemap.xml"]
+    article: "^https://www\\.knapp\\.com/en/insights/case-studies/[^/?#]+/$"
+    status: ok
+    checked: 2026-10-29
+    note: "case-study-sitemap.xml で英語版 56 本(独 /wissen/case-studies/・西・仏も各 56 本の訳)。例 /pick-it-easy-robot-edeka-nordfrische/, /shuttle-and-robotics-solution-for-south-korean-cosmetics-company/, /community-pharmacy-apotheke-lind-gets-dispensing-robot/。大半は自動倉庫・シャトル・AMR・ソフトウェアで、ロボットが掴む事例は 3〜5 件(1 割未満)。本文に <img>(wp-content/uploads)。robots は Crawl-delay: 10 → 間隔は 10 秒以上あける"
+  - key: sereact
+    label: Sereact 事例(case study 記事)
+    type: maker_robot
+    case_type: maker_product
+    region: 欧州
+    country: ドイツ
+    lang: en
+    index_urls: ["https://sereact.ai/sitemaps/posts.xml"]
+    article: "^https://sereact\\.ai/posts/(case-study-[^/?#]+|deltilog-[^/?#]+|otto-group-returns-handling|zalando-ceva-returns-handling|transforming-kitting-processes-with-daimler-truck|sereact-and-rohlik-deploy-[^/?#]+)$"
+    status: ok
+    checked: 2026-10-29
+    note: "/case-studies は JS 描画で素の HTML に個別リンクが無い → posts.xml(英語 71 本、ほか de/es/fr)から導入事例だけ正規表現で拾う。合うのは 8 本(例 /posts/case-study-ludwig-meister, /posts/case-study-daimler-truck, /posts/zalando-ceva-returns-handling)。他はモデル・資金調達・社員紹介。AI ピッキング(3 連吸着グリッパなど)で全件が把持。本文の画像は _next/image 経由の ctfassets のサムネイル 1 枚+動画埋め込み"
+  - key: robotsystem_3kei
+    label: 三慶 箱詰めロボット自動化.com 導入事例
+    type: sier
+    case_type: sier_case
+    region: 日本
+    country: 日本
+    lang: ja
+    index_urls:
+      - "https://robotsystem-3kei.com/use/use_01/"
+      - "https://robotsystem-3kei.com/use/use_02/"
+      - "https://robotsystem-3kei.com/use/use_03/"
+      - "https://robotsystem-3kei.com/use/use_04/"
+      - "https://robotsystem-3kei.com/use/use_05/"
+      - "https://robotsystem-3kei.com/use/use_06/"
+      - "https://robotsystem-3kei.com/use/use_07/"
+      - "https://robotsystem-3kei.com/use/use_08/"
+      - "https://robotsystem-3kei.com/use/use_09/"
+      - "https://robotsystem-3kei.com/industry_work/iw_01/"
+      - "https://robotsystem-3kei.com/industry_work/iw_02/"
+      - "https://robotsystem-3kei.com/industry_work/iw_03/"
+      - "https://robotsystem-3kei.com/industry_work/iw_04/"
+      - "https://robotsystem-3kei.com/industry_work/iw_05/"
+      - "https://robotsystem-3kei.com/industry_work/iw_06/"
+    article: "^https://robotsystem-3kei\\.com/(use/use_0[1-9]|industry_work/iw_0[1-6])/[0-9]+/?$"
+    status: ok
+    checked: 2026-10-29
+    note: "WordPress。/use/(用途別 9 カテゴリ)と /industry_work/(業種別 6 カテゴリ)の各一覧に個別事例 /use/use_0N/<id>/ が絶対 URL で並ぶ(素の HTML)。/use/・/industry_work/ の親ページには個別リンク 0 件なのでカテゴリを全部並べる。確かめたのは use_01 で 7 本(134,137,144,147,240,259,283)、iw_01 で 3 本(use_01/144, use_01/240, use_04/236)、use_05 で 4 本(use_04/131, use_04/255, use_05/249, use_05/252)。業種別は用途別と同じ記事を指すので重複は discover が畳む。投稿 ID は 131〜283 の範囲で、全体は 30〜50 本の見当。箱詰め・パレタイズ・ピッキングなど包装ラインのロボット事例が中心で把持の割合は高い(7 割ほど)。本文に <img>(例 use_01/134 箱詰めロボットシステムに wp/wp-content/uploads/2018/05/…-350x262.jpg)。sitemap.xml の投稿用 sitemap-posttype-post.2018.xml は 404、wp-json は 403(再試行せず)"
+  - key: shokuhin_butsuryu_navi_robot
+    label: 食品工場物流ナビ(板橋工業)ロボット関連の事例
+    type: sier
+    case_type: sier_case
+    region: 日本
+    country: 日本
+    lang: ja
+    index_urls: ["https://shokuhinkojo-butsuryu-navi.com/tag/%E3%83%AD%E3%83%9C%E3%83%83%E3%83%88/"]
+    paginate: "https://shokuhinkojo-butsuryu-navi.com/tag/%E3%83%AD%E3%83%9C%E3%83%83%E3%83%88/page/{n}/"
+    max_pages: 4
+    article: "^https://shokuhinkojo-butsuryu-navi\\.com/(success-stories|equipment-feature)/[0-9]+/$"
+    status: ok
+    checked: 2026-10-29
+    note: "WordPress(Yoast)。全事例のカテゴリ /category/success-stories/ は 10 ページ・約 140 本あるが乾燥機・コンベヤ・洗浄機など設備の事例が大半なので、タグ「ロボット」(3 ページ)を一覧にする。1 ページ目で合うリンク 30 本(success-stories 11 本、equipment-feature 19 本。例 /success-stories/6943/, /success-stories/1139/, /equipment-feature/3285/)。ただしサイドバーの新着(equipment-feature/8087〜8282 など)も混ざる。題はロボットケーサー・ロボットパレタイザー・直交ロボットパレタイザーの事例、清掃ロボ・小型 AMR など。把持の事例は 10〜15 本の見当。本文に <img>(例 success-stories/8260 に uploads/2026/10/package_dryer_case_study02.jpg)"
+  - key: logi_raku
+    label: ロジらく(3D ロボットビジョンのメディア)
+    type: media
+    case_type: sier_case
+    region: 日本
+    country: 日本
+    lang: ja
+    index_urls: ["https://www.logi-raku.net/3drobotvision-usage-ex/"]
+    article: "^https://www\\.logi-raku\\.net/3drobotvision-usage-ex/[a-z0-9-]+\\.html$"
+    status: todo
+    checked: 2026-10-29
+    note: "事例一覧は無い。構成は 3drobotvision-knowledge(解説)・3drobotvision-makers(メーカー紹介 約 55 本)・3drobotvision-usage-ex(用途別の活用例 6 本: piece-picking, box-depalletizing など)。usage-ex は用途ごとにメーカーの事例を数行ずつまとめたもので、画像はメーカー HP のスクリーンショット(mujin_hp.jpg 等)だけ。1 ページ 1 事例の形でなく、写真も二次利用の画面写しなので入れない"
+  - key: glory_robot
+    label: グローリー ロボット事例
+    type: maker_robot
+    case_type: sier_case
+    region: 日本
+    country: 日本
+    lang: ja
+    index_urls: []
+    article: "^$"
+    status: todo
+    checked: 2026-10-29
+    note: "https://www.glory.co.jp/robot/case/ と /robot/ はどちらも 404。sitemap.xml の事例は /product/case/detail/id=N(約 40 本、貨幣処理機など)、/food/case/(券売機・KIOSK)、/buyzo/case/ 等でロボットの事例は無い(/robot/ 配下は privacy だけ)。対象外"
+  - key: yamazen_tfs
+    label: 山善 TFS 支社 導入事例
+    type: sier
+    case_type: sier_case
+    region: 日本
+    country: 日本
+    lang: ja
+    index_urls: ["https://tfs.yamazen.co.jp/sitemap.xml"]
+    article: "^https://tfs\\.yamazen\\.co\\.jp/case/[a-z0-9-]+$"
+    status: todo
+    checked: 2026-10-29
+    note: "一覧 /case は JS 描画(ferret-one)で素の HTML に個別リンク 0 件、/industry/* や /collaborative-robots, /handling-packing にも 0 件。sitemap.xml は S3 の sitemap.xml.gz(application/gzip)へリダイレクトし、discover.py の links_of は gzip を展開しないので今は取れない(展開すれば /case/<slug> が 18 本: yonkei-01, cosmosfoods, enomoto1, food-automation, saishunkan, shinfuji など)。個別ページは素の HTML に本文と <img>(ferret-one.akamaized.net/images/…)あり。外観検査・AMR・生産管理の事例も混ざり、把持は半分ほどの見当。discover が .gz を展開できるようになれば status: ok にできる"
+  - key: robotsystem_th
+    label: Robot System(タイ)
+    type: sier
+    case_type: sier_case
+    region: その他アジア
+    country: タイ
+    lang: th
+    index_urls: []
+    article: "^$"
+    status: todo
+    checked: 2026-10-29
+    note: "robotsystem.co.th はドメインが別用途に使われており、トップはスペイン語の通販(薬局・自動車部品)の複製ページ。sitemap も sitemap-goods-index.xml。ロボット SI の事例は無い。対象外"
+  - key: revistaderobots
+    label: Revista de Robots(スペイン)
+    type: media
+    case_type: sier_case
+    region: 欧州
+    country: スペイン
+    lang: es
+    index_urls: []
+    article: "^https://revistaderobots\\.com/robots-y-robotica/[^/?#]+/$"
+    status: todo
+    checked: 2026-10-29
+    note: "事例(casos de éxito)のカテゴリは無い。post-sitemap 1〜4 に 621 本で、robots-y-robotica 353・comprar-robots 169・industria 53・cobots 12・paletizado-automatico 4 など。中身はニュース・製品紹介・解説・購入ガイドで、導入事例の題は数本(例 asi-fue-la-exitosa-ampliacion-de-un-almacen-automatico-en-plena-pandemia)だけ。一覧ごと巡回する効率が悪いので入れない"

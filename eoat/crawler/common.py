@@ -65,7 +65,18 @@ def _robots_ok(url):
         return True
 
 
-def _reserve_shared(host, slot):
+def crawl_delay(url):
+    """robots.txt の Crawl-delay(ループ 10: knapp.com が 10 秒)。無ければ MIN_INTERVAL。_robots_ok の後に呼ぶ。"""
+    parts = urllib.parse.urlsplit(url)
+    rp = _robots.get(f"{parts.scheme}://{parts.netloc}")
+    try:
+        d = rp.crawl_delay(USER_AGENT) if rp else None
+    except Exception:
+        d = None
+    return max(MIN_INTERVAL, float(d or 0))
+
+
+def _reserve_shared(host, slot, interval=MIN_INTERVAL):
     """別のプロセス(discover と crawl、取得元を調べるエージェント)が同じドメインに同時に行っても 2 秒あくよう、
     ドメインごとの予約時刻を logs/.ratelimit/<host> に置いてファイルロックで回す(ループ 10)。使えない環境ではプロセス内の予約だけ。"""
     try:
@@ -79,7 +90,7 @@ def _reserve_shared(host, slot):
                 prev = float(f.read().strip() or 0)
             except ValueError:
                 prev = 0.0
-            slot = max(slot, prev + MIN_INTERVAL)
+            slot = max(slot, prev + interval)
             f.seek(0)
             f.truncate()
             f.write(f"{slot:.3f}")
@@ -89,11 +100,12 @@ def _reserve_shared(host, slot):
 
 
 def polite_wait(url):
-    """同一ドメインへの前回アクセスから MIN_INTERVAL 秒以上あける。並列実行でも守れるよう、ロックの中で次の枠を予約してから待つ。"""
+    """同一ドメインへの前回アクセスから MIN_INTERVAL 秒(robots.txt に Crawl-delay があればその秒数)以上あける。並列実行でも守れるよう、ロックの中で次の枠を予約してから待つ。"""
     host = urllib.parse.urlsplit(url).netloc.replace("www.", "")
     with _hit_lock:
-        slot = max(time.time(), _last_hit.get(host, 0) + MIN_INTERVAL)
-        slot = _reserve_shared(host, slot)
+        interval = crawl_delay(url)
+        slot = max(time.time(), _last_hit.get(host, 0) + interval)
+        slot = _reserve_shared(host, slot, interval)
         _last_hit[host] = slot
     w = slot - time.time()
     if w > 0:
