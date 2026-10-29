@@ -12,7 +12,9 @@ import concurrent.futures as cf
 import hashlib
 import io
 from pathlib import Path
+import re
 import threading
+import urllib.parse
 
 from PIL import Image, ImageOps, ImageStat
 
@@ -30,6 +32,7 @@ try:
 except Exception:   # open_clip が無い環境
     BAD_LABELS = []
 MODELS = Path(__file__).resolve().parent / "models"
+VIDEO_THUMB = re.compile(r"ytimg\.com|youtube|youtu\.be|vimeocdn\.com|vimeo\.com|(hq|mq|sd|maxres)default\.(jpe?g|webp)|/yt_[A-Za-z0-9_-]{11}_", re.I)
 MIN_CLIP = 0.60   # 画像の中身判定(imgjudge): 「ハンドがワークを扱っている写真」らしさがこれ未満なら使わない(ループ 8: 0.52 → 0.60(文を足して再判定した後の点数で)。0.52〜0.66 の帯は 81 枚中 73 枚が人物・縦長の帯・画面だった)
 _idx_lock = threading.Lock()
 
@@ -194,6 +197,8 @@ def process_case(rec, idx, policy, log, force=False, generic=None):
     for c in cands:
         if len(kept) >= MAX_PER_CASE or tried >= MAX_TRY:
             break
+        if VIDEO_THUMB.search(urllib.parse.unquote(c["url"])):
+            continue   # 動画のサムネイル(YouTube・Vimeo)は動画の静止画なので使わない(ループ 10: Bigwave の事例 94 件が YouTube のサムネイルだった)
         tried += 1
         key, r = fetch_image(c["url"], idx)
         if not r.get("ok"):

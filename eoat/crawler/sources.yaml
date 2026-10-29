@@ -3175,3 +3175,42 @@ sources:
     status: ok
     checked: 2026-10-29
     note: 韓国語版(bigwaverobotics.com)は 403 なので触らない。英語版の sitemap に事例 248 本(asia3_l10 の検索で発見)
+  - key: jyga_realisations
+    label: JYGA réalisations(仏 SIer、パレタイズ・箱詰め)
+    type: sier
+    case_type: sier_case
+    region: 欧州
+    country: フランス
+    lang: fr
+    index_urls: ["https://www.jyga.fr/nos-reussites"]
+    paginate: "https://www.jyga.fr/nos-reussites?page={n}"
+    max_pages: 6
+    article: "^https://www\\.jyga\\.fr/realisations/[^/]+/[^/?#]+$"
+    status: ok
+    checked: 2026-10-29
+    note: 一覧 1 ページ目で事例 12 本(eu5_l10 の検索で発見)
+  - key: gurpea_casos
+    label: Gurpea casos de éxito(西 SIer)
+    type: sier
+    case_type: sier_case
+    region: 欧州
+    country: スペイン
+    lang: es
+    index_urls: ["https://www.gurpea.com/casos-de-exito"]
+    article: "^https://(www\\.)?gurpea\\.com/casos-de-exito/[^/?#]+/?$"
+    status: ok
+    checked: 2026-10-29
+    note: 一覧に事例 47 本(溶接・型抜きの専用機も多い。eu5_l10 の検索で発見)
+  - key: mmci_cases
+    label: MMCI Automation 事例(米国 SIer、食品・飲料のパレタイズ)
+    type: sier
+    case_type: sier_case
+    region: 北米
+    country: 米国
+    lang: en
+    index_urls: ["https://www.mmci-automation.com/case-studies.html"]
+    article: "^https://www\\.mmci-automation\\.com/[a-z0-9-]+\\.html$"
+    exclude: "case-studies|contact|about|careers|news|index|privacy|services|parts|support|modifications|order-management"
+    status: ok
+    checked: 2026-10-29
+    note: 一覧ページから 104 本(サイトの固定ページも混じる。規則とレビューで選別。na5_l10 の検索で発見)
