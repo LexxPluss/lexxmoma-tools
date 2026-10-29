@@ -151,6 +151,12 @@ def strip_boilerplate(recs):
     return out
 
 
+# 掴み方の記載が無くても「ワークを扱う事例」とみなす作業(溶接・研磨・塗装・検査だけの事例は入れない)
+HANDLING_TASKS = {"pick_place", "machine_tending", "palletizing", "depalletizing", "packing", "bin_picking", "order_picking", "assembly",
+                  "transport", "sorting", "harvesting", "food_handling", "lab"}
+ROBOT_WORDS = ["ロボット", "robot", "robots", "robotic", "cobot", "cobots", "机器人", "로봇", "Roboter", "Industrieroboter", "robota", "roboty", "robotti", "robô"]
+
+
 def classify_one(rec, tx, cleaned=None, lenient=False):
     """lenient=True: LLM レビューで「事例」と確定した id は、規則の足切り(語が無い・一致が弱い)で落とさない(値はレビューで置き換わる)。"""
     text, heads, alts = cleaned or (rec.get("text") or "", rec.get("headings") or [], [i.get("alt") or "" for i in rec.get("images", []) if i.get("in_main")][:4])
@@ -280,7 +286,8 @@ def classify_one(rec, tx, cleaned=None, lenient=False):
         case_type = "user_custom"
 
     # ロボットの語がまったく無いページ(SIer サイトから自動発見した会社案内・製品一覧など)は事例ではない。画像取得・LLM レビューの前に落とす
-    if not robot["maker"] and not count_terms(full, ["ロボット", "robot", "robots", "robotic", "cobot", "cobots", "机器人", "로봇", "アーム", "manipulator",
+    robot_hit = bool(robot["maker"]) or bool(count_terms(full, ROBOT_WORDS))
+    if not robot_hit and not count_terms(full, ["ロボット", "robot", "robots", "robotic", "cobot", "cobots", "机器人", "로봇", "アーム", "manipulator",
                                                       "ハンド", "gripper", "grippers", "吸着", "suction", "夹爪", "把持", "end effector",
                                                       # 欧州の言語(ループ 10)
                                                       "Roboter", "Roboterzelle", "Robotersystem", "Roboterlösung", "Roboterarm", "Robotik", "Industrieroboter", "robotter", "robotar", "robota", "roboty", "robotem", "robotti", "robô", "robots",
@@ -290,6 +297,12 @@ def classify_one(rec, tx, cleaned=None, lenient=False):
     # 掴み方の種類が書かれていない(「ロボットハンド」「把持」とだけある)事例: 「記載なし(写真で確認)」として残す。種類が分かるものが 1 つでもあれば使わない
     prs = [p for p in prs if p[0] != "hand_unspecified"] or [p for p in prs if p[0] == "hand_unspecified"]
     # 事例ではない(カテゴリも掴み方も付かない)ページは落とす。本文だけの弱い一致しか無いページ(業界紹介・会社案内)も落とす
+    # 掴み方の語が本文に無い事例(「ロボットがワークを取り出す」とだけ書く。ループ 10: UR 123・KUKA 94・Mech-Mind 97・Yaskawa 60・FANUC 40・마로솔 158 ページが
+    # 「掴み方 0」で落ちていた)。ワークと扱う作業とロボットの語がそろっていれば「記載なし(写真で確認)」で残し、事例かどうかは LLM レビューで決める
+    pr_fallback = False
+    if cats and not prs and not lenient and robot_hit and {t[0] for t in tasks} & HANDLING_TASKS:
+        prs = [("hand_unspecified", 0, ["(掴み方の記載なし: " + "・".join(tx.task_label[t[0]] for t in tasks if t[0] in HANDLING_TASKS) + " の事例)"])]
+        pr_fallback = True
     if (not cats or not prs) and lenient:
         cats = cats or [("generic", 0, ["(レビュー済み: 規則の一致なし)"])]
         prs = prs or [("hand_unspecified", 0, ["(レビュー済み: 規則の一致なし)"])]
@@ -299,7 +312,7 @@ def classify_one(rec, tx, cleaned=None, lenient=False):
     strong_pr = bool(count_terms(title_side, [t for _, it in tx.pr_items for t in it["terms"]]))
     total = cats[0][1] + prs[0][1]
     need = 4 if (strong_cat or strong_pr) else 8
-    if total < need and not lenient:
+    if total < need and not lenient and not pr_fallback:
         return None, f"一致が弱い(カテゴリ {cats[0][1]} + 掴み方 {prs[0][1]} < {need}、見出しの語: ワーク {strong_cat} / 掴み方 {strong_pr})"
 
     cat_keys = [c[0] for c in cats]
