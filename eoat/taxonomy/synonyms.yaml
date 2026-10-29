@@ -256,3 +256,48 @@ synonyms:
   - {canonical: robot:協働, terms: [협동로봇, 협동 로봇, 코봇]}
   - {canonical: robot:産業用, terms: [산업용 로봇, 산업용로봇]}
   - {canonical: robot:mobile, terms: [모바일 매니퓰레이터, 자율주행 로봇 팔, AMR 로봇팔, 이동형 로봇]}
+  # ---- 欧州の言語(ループ 10: ドイツ語圏の事例一覧 jk.de・fpt.de・asa-automation と業界誌 121 本、北欧・東欧の SIer が「カテゴリ 0 / 掴み方 0」で全部落ちていた)
+  # 独 de・蘭 nl・丁 da・瑞 sv・波 pl・捷 cs・伊 it・西 es・仏 fr・葡 pt。英数字の語は単語境界で一致するので、独語の複合語は形ごとに書く
+  - {canonical: category:carton, terms: [Karton, Kartons, Kartonagen, Schachtel, Schachteln, Faltschachtel, Faltschachteln, Pakete, Paket, doos, dozen, kartonnen, kasse, kasser, papkasse, kartong, kartonger, karton, kartony, krabice, krabic, scatola, scatole, cartone, cartoni, caja, cajas, carton ondulé, cartons ondulés, caisse, caisses, caixa, caixas, papelão]}
+  - {canonical: category:tote, terms: [Kiste, Kisten, Behälter, Kleinladungsträger, Kunststoffkiste, Kunststoffkisten, krat, kratten, kasse, plastkasser, låda, lådor, skrzynka, skrzynki, pojemnik, pojemniki, přepravka, přepravky, cassetta, cassette, contenitore, contenitori, caja de plástico, bac, bacs, caixote]}
+  - {canonical: category:sack, terms: [Sack, Säcke, Sackware, Gebinde, zak, zakken, sæk, sække, säck, säckar, worek, worki, workami, pytel, pytle, sacco, sacchi, saco, sacos, sac, sacs, saca, sacas]}
+  - {canonical: category:round, terms: [Welle, Wellen, Rundteil, Rundteile, Drehteil, Drehteile, Rundmaterial, assen, aksel, aksler, axel, wał, wały, hřídel, hřídele, albero, alberi, eje, ejes, arbre, arbres, eixo, eixos]}
+  - {canonical: category:block, terms: [Gehäuse, Frästeil, Frästeile, Bauteil, Bauteile, Werkstück, Werkstücke, Rohteil, Rohteile, werkstuk, werkstukken, emne, emner, arbetsstycke, detal, detale, obrobek, obrobky, pezzo, pezzi, pieza, piezas, pièce, pièces, peça, peças]}
+  - {canonical: category:sheet, terms: [Blech, Bleche, Blechteil, Blechteile, Blechbearbeitung, Platine, Platinen, plaat, plaatwerk, plade, plader, plåt, blacha, blachy, plech, plechy, lamiera, lamiere, chapa, chapas, tôle, tôles, chapas metálicas]}
+  - {canonical: category:casting, terms: [Gussteil, Gussteile, Guss, Schmiedeteil, Schmiedeteile, Druckguss, gietstuk, gietstukken, støbegods, gjutgods, odlew, odlewy, odlitek, odlitky, getto, getti, fusione, fundición, piezas fundidas, pièce de fonderie, fonderie, fundição]}
+  - {canonical: category:molded, terms: [Spritzgussteil, Spritzgussteile, Kunststoffteil, Kunststoffteile, Spritzguss, spuitgietproduct, spuitgieten, sprøjtestøbning, formsprutning, wypraska, wypraski, výlisek, výlisky, stampaggio, stampati, inyección de plástico, pièces plastiques, injeção plástica]}
+  - {canonical: category:fresh, terms: [Obst, Gemüse, Früchte, groente, fruit, frugt, grøntsager, grönsaker, owoce, warzywa, ovoce, zelenina, frutta, verdura, frutas, verduras, fruits, légumes, legumes]}
+  - {canonical: category:meat_fish, terms: [Fleisch, Wurst, Würste, Fisch, vlees, worst, kød, pølse, kött, mięso, kiełbasa, maso, carne, salsiccia, pesce, carne, pescado, viande, poisson, carne, peixe]}
+  - {canonical: category:bakery, terms: [Backwaren, Brot, Gebäck, Süßwaren, Schokolade, brood, banket, brød, bröd, pieczywo, ciastka, pečivo, dolci, prodotti da forno, bollería, boulangerie, pâtisserie, pão]}
+  - {canonical: category:bottle, terms: [Flasche, Flaschen, fles, flessen, flaske, flasker, flaska, flaskor, butelka, butelki, láhev, lahve, bottiglia, bottiglie, botella, botellas, bouteille, bouteilles, garrafa, garrafas]}
+  - {canonical: category:pallet, terms: [Palette, Paletten, pallet, pallets, palle, paller, pall, pallar, paleta, palety, paletta, palette, palé, palés, palette, palettes]}
+  - {canonical: category:glass_plate, terms: [Glas, Glasscheibe, Glasscheiben, glas, glasplaat, glasplade, glasskiva, szkło, sklo, vetro, lastra di vetro, vidrio, verre, vidro]}
+  - {canonical: category:body_panel, terms: [Karosserie, Karosserieteile, Tür, Türen, carrosserie, karosseri, karoseria, karoserie, carrozzeria, carrocería]}
+  - {canonical: category:tire, terms: [Reifen, banden, dæk, däck, opona, opony, pneumatika, pneumatiky, pneumatico, pneumatici, neumático, neumáticos, pneu, pneus]}
+  - {canonical: category:piece, terms: [Kommissionierung, Versandhandel, E-Commerce, Einzelstück, orderpicking, plukning, plockning, kompletacja, vychystávání, picking e-commerce, preparación de pedidos, préparation de commandes]}
+  - {canonical: category:medical, terms: [Medizinprodukte, Pharma, Arzneimittel, medicijnen, lægemidler, läkemedel, farmaceutyki, léčiva, farmaceutico, farmacéutico, pharmaceutique, farmacêutico]}
+  - {canonical: material:steel, terms: [Stahl, staal, stål, stal, ocel, acciaio, acero, acier, aço]}
+  - {canonical: material:aluminum, terms: [Aluminium, aluminium, aluminio, alluminio, hliník, aluminiowe]}
+  - {canonical: material:plastic, terms: [Kunststoff, kunststof, plast, plastik, tworzywo, plastica, plástico, plastique]}
+  - {canonical: material:wood, terms: [Holz, hout, træ, trä, drewno, dřevo, legno, madera, bois, madeira]}
+  - {canonical: material:food, terms: [Lebensmittel, voedsel, levnedsmidler, livsmedel, żywność, potraviny, alimentare, alimentos, alimentaire, alimentos]}
+  - {canonical: principle:parallel2, terms: [Greifer, Parallelgreifer, Backengreifer, Zweifingergreifer, Elektrogreifer, Pneumatikgreifer, grijper, grijpers, griber, gribere, gripdon, chwytak, chwytaki, chwytakiem, uchopovač, uchopovače, chapadlo, pinza, pinze, pinza elettrica, pinza neumática, préhenseur, préhenseurs, pince, pinces, garra, garras]}
+  - {canonical: principle:parallel3, terms: [Dreifingergreifer, Dreibackengreifer, Zentrischgreifer]}
+  - {canonical: principle:single_pad, terms: [Vakuumgreifer, Sauggreifer, Sauger, Saugnapf, Saugnäpfe, Vakuum, zuignap, zuignappen, vacuümgrijper, sugekop, sugekopper, vakuumgriber, sugkopp, vakuumgripdon, przyssawka, przyssawki, chwytak podciśnieniowy, přísavka, přísavky, vakuový, ventosa, ventose, pinza a vuoto, ventosas, ventouse, ventouses, préhenseur à vide, garra de vácuo]}
+  - {canonical: principle:area, terms: [Flächengreifer, Flächensauggreifer, Schaumgreifer]}
+  - {canonical: principle:electropermanent, terms: [Magnetgreifer, Elektropermanentmagnet, magneetgrijper, magnetgriber, chwytak magnetyczny, magnetický uchopovač, pinza magnetica, garra magnética, préhenseur magnétique]}
+  - {canonical: principle:soft_finger, terms: [Softgreifer, Weichgreifer, pinza morbida, pinza soft, garra suave, préhenseur souple]}
+  - {canonical: principle:clamp_fork, terms: [Klemmgreifer, Gabelgreifer, Sackgreifer, Lagengreifer, Klammergreifer, Zangengreifer]}
+  - {canonical: principle:tool_changer, terms: [Werkzeugwechsler, gereedschapswisselaar, værktøjsskifter, verktygsväxlare, cambio utensile, cambiador de herramientas, changeur d'outils]}
+  - {canonical: task:pick_place, terms: [Handling, Handhabung, Pick-and-Place, Umsetzen, oppakken, håndtering, hantering, manipulacja, manipulace, movimentazione, manipulación, manipulation, manuseio]}
+  - {canonical: task:machine_tending, terms: [Maschinenbeschickung, Maschinenbestückung, Beladung, Entladung, Be- und Entladung, CNC-Beladung, Werkzeugmaschine, Werkzeugmaschinen, machinebelading, maskinbetjening, maskinpassning, obsługa maszyn, obsluha strojů, asservimento, asservimento macchine, carga de máquinas, alimentación de máquinas, chargement machine, alimentation de machines, carregamento de máquinas]}
+  - {canonical: task:palletizing, terms: [Palettierung, Palettieren, Palettierroboter, Palettieranlage, palletiseren, palletering, palletisering, paletyzacja, paletizace, paletizzazione, pallettizzazione, paletizado, paletización, palettisation, paletização]}
+  - {canonical: task:depalletizing, terms: [Depalettierung, Depalettieren, depalletiseren, depalletering, depaletyzacja, depaletizace, depallettizzazione, despaletizado, dépalettisation]}
+  - {canonical: task:packing, terms: [Verpackung, Verpacken, Kartonieren, Einlegen, verpakken, verpakking, emballering, pakning, förpackning, pakowanie, balení, confezionamento, imballaggio, envasado, embalaje, emballage, conditionnement, embalagem]}
+  - {canonical: task:bin_picking, terms: [Griff in die Kiste, Bin-Picking, Bin Picking]}
+  - {canonical: task:assembly, terms: [Montage, Fügen, assemblage, montering, montaż, montáž, assemblaggio, montaje, assemblage, montagem]}
+  - {canonical: task:inspection, terms: [Prüfung, Qualitätsprüfung, inspectie, inspektion, kontrola jakości, kontrola, ispezione, inspección, contrôle qualité]}
+  - {canonical: task:finishing, terms: [Entgraten, Schleifen, Polieren, ontbramen, afgratning, slipning, gratowanie, odjehlování, sbavatura, desbarbado, ébavurage, rebarbação]}
+  - {canonical: task:welding, terms: [Schweißen, svejsning, svetsning, spawanie, svařování, saldatura, soldadura, soudage, soldagem]}
+  - {canonical: robot:協働, terms: [kollaborativer Roboter, kollaborative Roboter, Cobots, kobot, koboty, kolaborativní robot, robot collaborativo, robot colaborativo, robot collaboratif, robô colaborativo]}
+  - {canonical: robot:産業用, terms: [Industrieroboter, industriële robot, industrirobot, robot przemysłowy, průmyslový robot, robot industriale, robot industrial, robot industriel, robô industrial]}

@@ -195,6 +195,11 @@ def extract_one(pid, meta, html, sources):
     text = "\n".join(paras)
     if len(text) < 200:
         text = clean_text(main.get_text("\n", strip=True))
+    elif len(text) < 600:
+        # 本文を <p> でなく <div> に直接書くサイト(ループ 10: jk.de の Referenzen は見出しだけ 247 字しか取れていなかった)
+        full = clean_text(main.get_text("\n", strip=True))
+        if len(full) > 3 * len(text):
+            text = full
     text = text[:30000]
     images = extract_images(main, soup, base)
     if ld.get("image") and not any(i["url"] == ld["image"] for i in images):

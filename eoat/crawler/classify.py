@@ -281,7 +281,10 @@ def classify_one(rec, tx, cleaned=None, lenient=False):
 
     # ロボットの語がまったく無いページ(SIer サイトから自動発見した会社案内・製品一覧など)は事例ではない。画像取得・LLM レビューの前に落とす
     if not robot["maker"] and not count_terms(full, ["ロボット", "robot", "robots", "robotic", "cobot", "cobots", "机器人", "로봇", "アーム", "manipulator",
-                                                      "ハンド", "gripper", "grippers", "吸着", "suction", "夹爪", "把持", "end effector"]):
+                                                      "ハンド", "gripper", "grippers", "吸着", "suction", "夹爪", "把持", "end effector",
+                                                      # 欧州の言語(ループ 10)
+                                                      "Roboter", "Roboterzelle", "Robotersystem", "Roboterlösung", "Roboterarm", "Robotik", "Industrieroboter", "robotter", "robotar", "robota", "roboty", "robotem", "robotti", "robô", "robots",
+                                                      "Greifer", "grijper", "griber", "gripdon", "chwytak", "uchopovač", "pinza", "ventosa", "préhenseur", "garra", "Cobot", "kobot"]):
         if not lenient:
             return None, "ロボット・ハンドの語が無い"
     # 掴み方の種類が書かれていない(「ロボットハンド」「把持」とだけある)事例: 「記載なし(写真で確認)」として残す。種類が分かるものが 1 つでもあれば使わない
