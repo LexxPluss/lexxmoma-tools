@@ -1,7 +1,20 @@
 # -*- coding: utf-8 -*-
 """重複判定(4-5): 同じ出典 URL / 同じ画像(phash) / メーカー+型式+ワーク+用途 が同じ事例を 1 件に束ねる。
 束ねられた側の出典は sources に残す。build.py から呼ぶ。"""
+import re
+import urllib.parse
+
 from common import canon_url
+
+# 記事の中身を変えないクエリ(一覧の何ページ目・どのタグから来たか)。ループ 10: ロボットダイジェストの同じ記事が &r= と &ca=5 で 21 件重複していた
+NAV_PARAMS = {"r", "ca", "cat", "category", "tag", "from", "src"}
+
+
+def url_key(u):
+    """重複判定用の URL: canon_url から上の一覧用クエリも落とす(url_id は変えない)。"""
+    p = urllib.parse.urlsplit(canon_url(u))
+    q = [(k, v) for k, v in urllib.parse.parse_qsl(p.query, keep_blank_values=True) if k.lower() not in NAV_PARAMS]
+    return urllib.parse.urlunsplit((p.scheme, p.netloc, p.path, urllib.parse.urlencode(q), ""))
 
 
 def _key_mmwt(r):
@@ -38,7 +51,7 @@ def dedupe(cases, image_thr=4):
     kept, by_url, by_key, merged, reasons = [], {}, {}, 0, []
     phashes = []   # (phash, kept_index)
     for r in cases:
-        urls = [canon_url(s["url"]) for s in r.get("sources", [])]
+        urls = [url_key(s["url"]) for s in r.get("sources", [])]
         target, why = None, None
         for u in urls:
             if u in by_url:
@@ -57,9 +70,9 @@ def dedupe(cases, image_thr=4):
                     break
         if target is not None:
             t = kept[target]
-            known = {canon_url(s["url"]) for s in t["sources"]}
+            known = {url_key(s["url"]) for s in t["sources"]}
             for s in r.get("sources", []):
-                if canon_url(s["url"]) not in known:
+                if url_key(s["url"]) not in known:
                     t["sources"].append(s)
             merged += 1
             reasons.append({"kept": t["id"], "dropped": r["id"], "why": why})
