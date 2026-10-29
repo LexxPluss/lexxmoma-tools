@@ -45,6 +45,12 @@ BAD = [
     "a wide view of a factory floor with machines and no gripper visible",
     "a cartoon mascot or illustration",
     "a photo of a machine tool or CNC machine with its door closed",
+    # ループ 10c の抜き取りで残っていた誤り(メーカーの事例ページの代表画像が設備・看板になりやすい)
+    "a conveyor belt system with no robot arm",
+    "the outside of an enclosed industrial machine or cabinet",
+    "a banner or poster with large text",
+    "a stack of products, cans or boxes with no robot",
+    "a camera or sensor product photo",
 ]
 
 

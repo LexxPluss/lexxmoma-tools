@@ -154,6 +154,7 @@ def strip_boilerplate(recs):
 # 掴み方の記載が無くても「ワークを扱う事例」とみなす作業(溶接・研磨・塗装・検査だけの事例は入れない)
 HANDLING_TASKS = {"pick_place", "machine_tending", "palletizing", "depalletizing", "packing", "bin_picking", "order_picking", "assembly",
                   "transport", "sorting", "harvesting", "food_handling", "lab"}
+CORE_TASKS = {"palletizing", "depalletizing", "machine_tending", "bin_picking", "pick_place", "packing"}
 ROBOT_WORDS = ["ロボット", "robot", "robots", "robotic", "cobot", "cobots", "机器人", "로봇", "Roboter", "Industrieroboter", "robota", "roboty", "robotti", "robô"]
 
 
@@ -307,6 +308,12 @@ def classify_one(rec, tx, cleaned=None, lenient=False):
     if prs and not cats and not lenient and robot_hit and {t[0] for t in tasks} & HANDLING_TASKS \
             and any(tx.pr_group[p[0]] not in ("process", "unknown") for p in prs):
         cats = [("generic", 0, ["(ワークの語なし: " + "・".join(tx.task_label[t[0]] for t in tasks if t[0] in HANDLING_TASKS) + " の事例)"])]
+        pr_fallback = True
+    # ワークの語も掴み方の語も無いが、扱う作業の中心(パレタイズ・マシンテンディング・ばら積み・ピック&プレース・箱詰め)とロボットの語がある事例
+    # (「Cobot palletizing」「터닝센터 금속가공 보조작업」など。ループ 10d)。ワーク・掴み方はレビューで本文から埋める
+    if not cats and not prs and not lenient and robot_hit and {t[0] for t in tasks} & CORE_TASKS:
+        cats = [("generic", 0, ["(ワークの語なし: " + "・".join(tx.task_label[t[0]] for t in tasks if t[0] in CORE_TASKS) + " の事例)"])]
+        prs = [("hand_unspecified", 0, ["(掴み方の記載なし)"])]
         pr_fallback = True
     if (not cats or not prs) and lenient:
         cats = cats or [("generic", 0, ["(レビュー済み: 規則の一致なし)"])]
