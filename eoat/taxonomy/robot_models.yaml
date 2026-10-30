@@ -7,10 +7,13 @@ makers:
     aliases: [Universal Robots, ユニバーサルロボット, UR社]
     class: 協働
     models:
-      - {model: UR3e, pattern: "\\bUR3e?\\b", payload: 3}
-      - {model: UR5e, pattern: "\\bUR5e?\\b", payload: 5}
+      - {model: UR3e, pattern: "\\bUR3e\\b", payload: 3}
+      - {model: UR3, pattern: "\\bUR3\\b", payload: 3}      # CB3 系(e シリーズの前)。ループ 14: UR3 を UR3e と取り違えていた
+      - {model: UR5e, pattern: "\\bUR5e\\b", payload: 5}
+      - {model: UR5, pattern: "\\bUR5\\b", payload: 5}
       - {model: UR7e, pattern: "\\bUR7e\\b", payload: 7}
-      - {model: UR10e, pattern: "\\bUR10e?\\b", payload: 12.5}
+      - {model: UR10e, pattern: "\\bUR10e\\b", payload: 12.5}
+      - {model: UR10, pattern: "\\bUR10\\b", payload: 10}
       - {model: UR12e, pattern: "\\bUR12e\\b", payload: 12.5}
       - {model: UR15, pattern: "\\bUR15\\b", payload: 15}
       - {model: UR16e, pattern: "\\bUR16e\\b", payload: 16}

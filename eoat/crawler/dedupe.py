@@ -2,6 +2,7 @@
 """重複判定(4-5): 同じ出典 URL / 同じ画像(phash) / メーカー+型式+ワーク+用途 が同じ事例を 1 件に束ねる。
 束ねられた側の出典は sources に残す。build.py から呼ぶ。"""
 import re
+from collections import Counter
 import urllib.parse
 
 from common import canon_url
@@ -45,11 +46,24 @@ def _hamming(a, b):
     return bin(int(a, 16) ^ int(b, 16)).count("1")
 
 
+def _slug(u):
+    """URL の末尾(言語・地域のパスを除いた最後の部分)。/case-stories/evco-plastics と /ja/case-stories/evco-plastics を同じと見る。"""
+    p = urllib.parse.urlsplit(u)
+    path = [x for x in p.path.lower().split("/") if x]
+    last = path[-1].split(".")[0] if path else ""
+    # 記事をクエリで区別するサイト(robot-digest の /contents/?id=…、detail.html?p_id=…)は id もスラッグに含める。
+    # ループ 14: 「contents」が同じで、サイト共通の画像 1 枚を共有する別の記事を束ねていた
+    q = sorted((k, v) for k, v in urllib.parse.parse_qsl(p.query) if k.lower() not in NAV_PARAMS)
+    slug = last + ("?" + urllib.parse.urlencode(q) if q else "")
+    return slug if len(last) >= 6 or q else ""   # index / top のような短い名前は使わない
+
+
 def dedupe(cases, image_thr=4):
     """cases(list) → (残した list, 束ねた件数, 理由の一覧)。先に出てきた(=出典の多い・画像の多い)方を残す。"""
     cases = sorted(cases, key=lambda r: (-len(r.get("images", [])), -len(r.get("sources", [])), r["id"]))
     kept, by_url, by_key, merged, reasons = [], {}, {}, 0, []
     phashes = []   # (phash, kept_index)
+    all_ph = []    # 残した事例のすべての画像 (phash, kept_index)
     for r in cases:
         urls = [url_key(s["url"]) for s in r.get("sources", [])]
         target, why = None, None
@@ -67,6 +81,20 @@ def dedupe(cases, image_thr=4):
             for p, ki in phashes:
                 if _hamming(ph, p) <= image_thr and kept[ki]["case_type"] == r["case_type"] and set(kept[ki]["workpiece"]["categories"]) & set(r["workpiece"]["categories"]):
                     target, why = ki, "同じ画像"
+                    break
+        if target is None and r.get("images"):
+            # 言語・地域違いの同じ事例(UR の英語版と日本語版、安川の各国サイト、SIer の記事と業界誌の転載。ループ 14 で 176 組):
+            # ほぼ同じ画像を 2 枚以上共有するか、1 枚共有して URL の末尾が同じなら同じ事例。1 枚だけの共有は共通の宣材写真のことがあるので束ねない
+            mine = [im["phash"] for im in r["images"]]
+            shared = Counter(ki for p, ki in all_ph for q in mine if _hamming(p, q) <= image_thr)
+            slugs = {_slug(s["url"]) for s in r.get("sources", [])} - {""}
+            doms = {urllib.parse.urlsplit(s["url"]).netloc.lower().removeprefix("www.") for s in r.get("sources", [])}
+            for ki, n in shared.most_common():
+                same_slug = bool(slugs & {_slug(s["url"]) for s in kept[ki]["sources"]})
+                same_dom = bool(doms & {urllib.parse.urlsplit(s["url"]).netloc.lower().removeprefix("www.") for s in kept[ki]["sources"]})
+                # 同じサイトの別の記事は宣材写真を 2 枚共有することがある(Schmalz の Halloren と Woitinek)ので、同じドメインなら末尾が同じか 3 枚以上
+                if same_slug or (n >= 3) or (n >= 2 and not same_dom):
+                    target, why = ki, f"同じ画像 {n} 枚" + (" + 同じ URL の末尾" if same_slug else "")
                     break
         if target is not None:
             t = kept[target]
@@ -86,4 +114,6 @@ def dedupe(cases, image_thr=4):
             by_key[k] = ki
         for im in r.get("images", [])[:1]:
             phashes.append((im["phash"], ki))
+        for im in r.get("images", []):
+            all_ph.append((im["phash"], ki))
     return kept, merged, reasons

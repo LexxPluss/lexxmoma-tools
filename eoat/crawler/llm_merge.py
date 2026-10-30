@@ -11,7 +11,31 @@ from common import DATA, TAXONOMY, RunLog, jdump, jload, yload
 CLASSES = {"産業用", "協働"}
 
 
+def robot_matcher():
+    """robot_models.yaml の型式(長い pattern を先に)。レビューが書いたメーカー・型式の文字列から、正式な型式・区分・可搬を引く(ループ 14)。"""
+    import re
+    models = []
+    for mk in yload(TAXONOMY / "robot_models.yaml")["makers"]:
+        for m in mk.get("models", []):
+            models.append({"maker": mk["name"], "model": m["model"], "re": re.compile(m["pattern"], re.I),
+                           "class": m.get("class") or mk.get("class"), "payload": m.get("payload"), "mobile": m.get("mobile", False), "n": len(m["pattern"])})
+    models.sort(key=lambda m: -m["n"])
+    makers = [(mk["name"], [a.lower() for a in mk.get("aliases", [mk["name"]])], mk.get("class")) for mk in yload(TAXONOMY / "robot_models.yaml")["makers"]]
+
+    def match(maker, model):
+        s = f"{maker or ''} {model or ''}".strip()
+        for m in models:
+            if model and m["re"].search(s):
+                return m
+        for name, aliases, cls in makers:
+            if maker and (maker.lower() in aliases or any(a in maker.lower() for a in aliases)):
+                return {"maker": name, "model": None, "class": cls, "payload": None, "mobile": False}
+        return None
+    return match
+
+
 def main():
+    rmatch = robot_matcher()
     cats = {it["key"] for g in yload(TAXONOMY / "categories.yaml")["groups"] for it in g["items"]}
     prs = {it["key"] for g in yload(TAXONOMY / "principles.yaml")["groups"] for it in g["items"] if not (it.get("photo_only") or it.get("estimate_only"))}
     mats = {m["key"] for m in yload(TAXONOMY / "materials.yaml")["materials"]}
@@ -62,6 +86,21 @@ def main():
                 r["workpiece"]["materials"] = []
                 r["fieldSources"].pop("workpiece.materials", None)
                 changed = True
+            if rv.get("robot_maker") or rv.get("robot_model"):
+                # ロボット本体のメーカー・型式(全文の見直しで本文から。ハンドのメーカーではない)
+                mm = rmatch(rv.get("robot_maker"), rv.get("robot_model"))
+                rb = r["robot"]
+                new = {"maker": (mm or {}).get("maker") or str(rv.get("robot_maker") or "")[:40] or rb.get("maker"),
+                       "model": str(rv.get("robot_model") or "")[:40] or (mm or {}).get("model") or rb.get("model")}   # 型式の表記は本文のもの(辞書は KR series のような系列名になることがある)
+                if mm and mm.get("class") and not rv.get("robot_class"):
+                    new["class"] = mm["class"]
+                if mm and mm.get("payload"):
+                    new["payload_kg"] = mm["payload"]
+                for k, v in new.items():
+                    if v and v != rb.get(k):
+                        rb[k] = v
+                        r["fieldSources"][f"robot.{k}"] = src(f"robot.{k}")
+                        changed = True
             rc = rv.get("robot_class")
             if rc in CLASSES and rc != r["robot"].get("class"):
                 r["robot"]["class"] = rc
