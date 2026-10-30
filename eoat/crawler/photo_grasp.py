@@ -273,6 +273,8 @@ def merge(a):
         fs = (r.get("fieldSources") or {}).get("end_effector.principles") or {}
         if not (unspecified(r) or fs.get("method") in ("photo", "estimated")):   # 推定より写真の判定を優先
             continue
+        if "事例ごとの見直し" in (fs.get("note") or ""):   # case_photo_review.py(題名・本文と写真 3 枚を合わせて見た判定)を優先
+            continue
         d, rule = decide(v, v.get("clip"))
         key = (d["subtype"] or fallback[d["group"]]) if d and d["group"] in APPLY_GROUPS else None
         if key not in known_keys:

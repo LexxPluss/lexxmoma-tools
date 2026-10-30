@@ -13,11 +13,14 @@
 使い方: python case_photo_review.py sheets / python case_photo_review.py merge [--dry-run]
 """
 import argparse
+import re
 
 from common import DATA, MANUAL, TAXONOMY, jdump, jload, today, yload
 
 D = DATA / "case_review"
 PER = 8
+LOGO = re.compile(r"ロゴ|logo", re.I)
+DESIGN_OK = {"Universal Robots", "KUKA", "FANUC"}
 
 
 def labels():
@@ -103,7 +106,9 @@ def merge(a):
                 rb["class"] = v["robot_class"]
                 r["fieldSources"]["robot.class"] = src(note)
                 n["class"] += 1
-            if v.get("robot_maker") and not rb.get("maker"):
+            mk = str(v.get("robot_maker") or "")
+            # メーカーはロゴが読めたときか、色・形で取り違えようの無い 3 社(UR の水色の関節・KUKA の橙・FANUC の黄)だけ
+            if mk and not rb.get("maker") and (LOGO.search(note) or mk in DESIGN_OK):
                 rb["maker"] = str(v["robot_maker"])[:40]
                 r["fieldSources"]["robot.maker"] = src(note)
                 n["maker"] += 1
