@@ -3214,3 +3214,136 @@ sources:
     status: ok
     checked: 2026-10-29
     note: 一覧ページから 104 本(サイトの固定ページも混じる。規則とレビューで選別。na5_l10 の検索で発見)
+
+  # ---------------------------------------------------------------- ループ 12(+500 件): 取得元の開拓 5 分担
+  - key: ufactory_cases
+    label: UFACTORY ケーススタディ
+    type: maker_robot
+    case_type: maker_product
+    region: 中国
+    country: 中国
+    lang: en
+    index_urls:
+    - https://www.ufactory.cc/case-studies
+    article: ^https://(www\.)?ufactory\.cc/case-studies/[a-z0-9-]+/?$
+    status: ok
+    checked: 2026-10-29
+    note: '一覧 1 ページ (ページ送りなし、製品・用途・地域のタブはクライアント側) で 17 件 (例: /case-studies/bin-picking, /case-studies/machine-tending)。一覧のリンクは相対パス。事例ページに写真はあるが引きの構図が多く、ハンドの名前や掴み方の記述は少ない (bin-picking: xArm 6 + 金属部品の写真あり、グリッパ記述なし)。研究・テレオペ・塗装など把持でないものも混じる。把持の事例は 4〜5 割の見当'
+  - key: flexiv_cases
+    label: Flexiv User Cases
+    type: maker_robot
+    case_type: maker_product
+    region: 中国
+    country: 中国
+    lang: en
+    index_urls:
+    - https://www.flexiv.com/partner/case
+    - https://www.flexiv.com/sitemap.xml
+    article: ^https://www\.flexiv\.com/partner/case/[^/?#]+$
+    status: ok
+    checked: 2026-10-29
+    note: '一覧は 2 ページあるがページ送りの URL が出ない (JS) ので sitemap.xml を併用。sitemap に /partner/case/ が 16 件 (例: /partner/case/Automated_Tube_Plugging_Solution_for_Compressors, /partner/case/Automated_Voice_Coil_Assembly_for_Audio_Devices)。URL に '' や : や空白を含むものあり (ADEPT の 1 件は外部リンク扱い)。事例ページに本文画像あり (alt 空)、ワーク (銅管・ゴム栓など) とロボット (Rizon 4/10) の記述あり、ハンドの記述は薄い。研磨・検査・アート展示など把持でないものが多く、把持の事例は 3〜4 割の見当'
+  - key: fipa_press_cases
+    label: FIPA プレス記事(アプリケーションレポート)
+    type: maker_gripper
+    case_type: maker_product
+    region: 欧州
+    country: ドイツ
+    lang: en
+    index_urls:
+    - https://fipa.com/en/about-us/press-news/
+    - https://fipa.com/en/about-us/press-news/?sf_paged=2
+    - https://fipa.com/en/about-us/press-news/?sf_paged=3
+    - https://fipa.com/en/about-us/press-news/?sf_paged=4
+    article: ^https://(www\.)?fipa\.com/en/press-article/[^/?#]+/?$
+    status: ok
+    checked: 2026-10-29
+    note: 一覧 4 ページ × 8 件 = 約 32 件(1 ページ目と 3 ページ目で確認)。製品発表・展示会・インタビューも混ざり、事例は約半分(15 件前後)。ロボットのグリッパ事例は 3〜4 割(例 /press-article/from-mold-to-piggy-bank/ 射出成形品の取り出し EOAT、/press-article/needle-gripper-for-self-adhesive-carpet-tiles/、/press-article/application-report-fsg-area-gripper/)。チューブリフタ(人が操作)の事例は対象外。写真は本文末のギャラリー(<img>)にあり、本文中には無い。件数が少ないので優先度は低め
+  - key: iroobo_fs
+    label: iRooBO ネットワークフォーラム FS(事業化可能性調査)事例
+    type: public
+    case_type: sier_case
+    region: 日本
+    country: 日本
+    lang: ja
+    index_urls:
+    - https://iroobo.jp/project/smart_factory/fs/problem/
+    - https://iroobo.jp/project/smart_factory/fs/
+    - https://iroobo.jp/project/smart_factory/fs/unused
+    - https://iroobo.jp/project/smart_factory/fs/undeveloped
+    article: ^https://iroobo\.jp/project/smart_factory/fs/(problem|unused|undeveloped)/[a-z_]+\d+/?$
+    status: ok
+    checked: 2026-10-29
+    note: '課題別一覧 /fs/problem/ に 35 件(供給・移載 4、ピッキング 1、組立 2、検査 7、マテハン 2、包装 2 ほか)。/fs/ にも unused・undeveloped 側の 5 件(manufacturing2・8・16・18、consultant17)があるが、unused・undeveloped の一覧ページには個別リンクが出ない。合計約 40 件。例: /fs/problem/manufacturing9/(ブリッジ・ソリューションによる豚ロースの吸着ハンド、FANUC CR-15iA、本文に試作ハンドの写真 10 枚)、/fs/undeveloped/manufacturing18/(機械加工)。大阪の SIer による実証報告でハンド・ワーク・試験写真が多い。把持の事例は 4 割の見当(サービス・教育・検査も混じる)'
+  - key: qkm_customers
+    label: QKM 李群自动化 客户案例
+    type: maker_robot
+    case_type: maker_product
+    region: 中国
+    country: 中国
+    lang: zh
+    index_urls:
+    - https://www.qkmtech.com/customers/
+    paginate: https://www.qkmtech.com/customers/?pagenum={n}
+    max_pages: 8
+    article: ^https://www\.qkmtech\.com/case/[^/?#]+/?$
+    status: ok
+    checked: 2026-10-29
+    note: 'SCARA/小型6軸メーカー。一覧は ?pagenum=1..6(1 ページ 6 本+注目 8 本)で約 40 件。例: /case/suliaohuabaipan/(塑料花摆盘, AH6+視覚で取り出し・挿入), /case/shoujipingmufumojishangliao/(手机屏幕覆膜机上料)。個別ページは本文に表紙写真 1 枚(wp-content/uploads)+mp4、ワーク・ロボット機種・工程の説明あり、ハンド種別の記述は少ない。分拣・上料・插装・摆盘が多く、把持の事例は 6 割の見当。robots.txt は /wp-admin/ と検索だけ禁止。WordPress なので /sitemap.xml もあり'
+  - key: shanghai_fanuc_cases
+    label: 上海发那科 客户案例
+    type: maker_robot
+    case_type: maker_product
+    region: 中国
+    country: 中国
+    lang: zh
+    index_urls:
+    - https://www.shanghai-fanuc.com.cn/case-index.html
+    article: ^https://www\.shanghai-fanuc\.com\.cn/case-index-details/\d+\.html$
+    status: ok
+    checked: 2026-10-29
+    note: 'FANUC 中国合弁(fanuc.co.jp 等とは別ドメイン)。一覧は 4 ページだがページ送りは javascript:; で、素の HTML から取れる個別は 17 本(注目 15 + 一覧 9 の重複込み)。個別 ID は 4〜42 の連番なので、取りこぼしは /case-index-details/{1..45}.html を直接列挙すれば約 35 件。例: /case-index-details/35.html(威斯卡特排气歧管, R-2000iC+LR Mate 200iD, 本文に現場写真 3 枚 thefastimg.com), /case-index-details/29.html(继电器检测包装线)。溶接の事例が多く、把持(搬送・上下料・組立・压铸取出し)は 4 割の見当'
+  - key: tmrobotics_cases
+    label: TM Robotics(Shibaura Machine 販売・SIer)導入事例
+    type: sier
+    case_type: sier_case
+    region: 欧州
+    country: 英国
+    lang: en
+    index_urls:
+    - https://www.tmrobotics.com/case-studies/
+    - https://www.tmrobotics.com/case-studies/2/
+    article: ^https://www\.tmrobotics\.com/case-studies/(?![0-9]+/?$)[A-Za-z0-9-]+/?$
+    status: ok
+    checked: 2026-10-29
+    note: '一覧 2 ページで 23 件(1 ページ目 12、2 ページ目 11。/case-studies/?fid=N は地域フィルタなので巡回不要)。例: /case-studies/pick-and-place-robot-case-study/(SCARA THE400 が吸着カップで金属キーを袋へ入れる), /case-studies/robotic-automation-saves-time-and-money-in-shrimp-plant/。本文の写真は製品画像(例 /uploads/THE400_SCARA_robot_Shibaura_Ma.png)が中心で、把持の現場写真は少なめ。ワーク・掴み方・ロボットの記述はある。把持の事例は 4〜5 割の見当(切削・塗装・組立も含む)。robots.txt は /firebrick だけ禁止。件数が少なく 1 回巡回で足りる'
+
+  # ---------------------------------------------------------------- ループ 12(+500 件): 取得元の開拓 5 分担
+  - key: wittmann_reports
+    label: WITTMANN 導入事例 (Application reports)
+    type: maker_robot
+    case_type: maker_product
+    region: 欧州
+    country: オーストリア
+    lang: en
+    index_urls:
+    - https://www.wittmann-group.com/sitemap.xml
+    article: ^https://www\.wittmann-group\.com/en/report-?[a-z0-9-]+$
+    status: ok
+    checked: 2026-10-29
+    note: '一覧ページは無く、sitemap.xml (1 ファイル、33 万字) から取る。先頭 2/3 で /en/report-* が 49 本あり、全体では 60〜70 本の見当 (例: /en/report-schauenburg, /en/report-hugo-ackermann-gmbh-co-kg)。de_at/bericht-* は同じ内容のドイツ語版なので取らない。事例ページには写真ギャラリーがある (report-schauenburg に「WITTMANN Greifer」の写真)。射出成形機と取出しロボットの事例が中心で、乾燥機・温調機だけの事例も混じる。把持 (取出しハンド) の事例は 4 割の見当。本文は把持方法を書かないことが多い'
+  - key: omron_eu_references
+    label: OMRON Industrial Automation Europe Customer references
+    type: maker_robot
+    case_type: maker_product
+    region: 欧州
+    country: 欧州各国
+    lang: en
+    index_urls:
+    - https://industrial.omron.eu/en/news-discover/customer-reference
+    - https://industrial.omron.eu/en/news-discover/customer-reference?page=2
+    - https://industrial.omron.eu/en/news-discover/customer-reference?page=3
+    article: ^https://industrial\.omron\.eu/en/(news-discover/customer-reference|industries/[^/]+/customer-references)/[^/?#]+$
+    status: ok
+    checked: 2026-10-29
+    note: '1 ページ目で 44 本 (customer-reference 38 本と industries/*/customer-references 6 本)。ページ送りは ?page=2 と ?page=3。robots.txt は /en/news-discover/ を禁止していない。例: /en/news-discover/customer-reference/cp-foods-uk-meets-retail-demand-with-high-speed-poultry-packing (Gripple のマルチスタックグリッパ、写真あり), .../brillopak-pick-and-place。robotics.omron.com (除外済み) とはドメインが別で、PLC やサーボ、AMR の事例が多い。アーム型ロボットの事例は 3 割、把持の事例は 2 割の見当。industrial.omron.co.uk なども同じ内容の地域版と見て、提案しない'
