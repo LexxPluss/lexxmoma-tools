@@ -100,7 +100,17 @@ def main():
     W, b = fit(X, Y)
     Pu = prob(W, b, np.stack([vec(r) for r in unk])) if unk else []
     n_set, by = 0, Counter()
+    # カテゴリごとの教師の群: 教師が 5 件以上あって一度も使われていない群は、そのカテゴリでは推定しない
+    # (ループ 15 の採点: 鋳物・エンジン部品・歯車に「吸着(推定)」が付いていた。写真の特徴に引っぱられる)
+    seen = {}
+    for r, y in zip(lab, Y):
+        seen.setdefault(r["workpiece"]["categories"][0], Counter())[y] += 1
     for r, p in zip(unk, Pu):
+        cc = seen.get(r["workpiece"]["categories"][0])
+        if cc and sum(cc.values()) >= 5:
+            for i in range(len(C)):
+                if not cc[i]:
+                    p[i] = 0   # 割り直さない(残りの群の確率を水増ししない)
         g = C[int(p.argmax())]
         if p.max() < a.min_prob:
             if r["end_effector"].pop("estimated", None) and not a.dry_run:   # 前回は付けたが今回は確率が足りない: 記載なしに戻す
