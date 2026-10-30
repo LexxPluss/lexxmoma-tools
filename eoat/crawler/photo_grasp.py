@@ -271,16 +271,21 @@ def merge(a):
             continue
         r = jload(p)
         fs = (r.get("fieldSources") or {}).get("end_effector.principles") or {}
-        if not (unspecified(r) or fs.get("method") == "photo"):
+        if not (unspecified(r) or fs.get("method") in ("photo", "estimated")):   # 推定より写真の判定を優先
             continue
         d, rule = decide(v, v.get("clip"))
         key = (d["subtype"] or fallback[d["group"]]) if d and d["group"] in APPLY_GROUPS else None
         if key not in known_keys:
             n_skip += 1
+            if r["end_effector"].pop("by_photo", None) and not a.dry_run:   # 前回は付けたが今回の規則では付かない: 印と根拠を外して記載なしに戻す
+                r["end_effector"]["principles"] = ["hand_unspecified"]
+                r["fieldSources"].pop("end_effector.principles", None)
+                jdump(r, p)
             continue
         r["end_effector"]["principles"] = [key]
         r["end_effector"]["subtype"] = None
         r["end_effector"]["by_photo"] = True     # 一覧用データで「写真から判定」を数える(fieldSources は詳細用にだけある)
+        r["end_effector"].pop("estimated", None)
         r["fieldSources"]["end_effector.principles"] = {"source": 0, "method": "photo", "evidence": [d["seen"]] if d["seen"] else [],
                                                         "note": f"写真に写ったハンドの形から判定({rule})"}
         r["quality"].setdefault("confidence", {})["principle"] = 0.7 if "high" in rule else 0.6

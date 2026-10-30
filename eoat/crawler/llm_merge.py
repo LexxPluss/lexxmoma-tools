@@ -13,7 +13,7 @@ CLASSES = {"産業用", "協働"}
 
 def main():
     cats = {it["key"] for g in yload(TAXONOMY / "categories.yaml")["groups"] for it in g["items"]}
-    prs = {it["key"] for g in yload(TAXONOMY / "principles.yaml")["groups"] for it in g["items"] if not it.get("photo_only")}
+    prs = {it["key"] for g in yload(TAXONOMY / "principles.yaml")["groups"] for it in g["items"] if not (it.get("photo_only") or it.get("estimate_only"))}
     mats = {m["key"] for m in yload(TAXONOMY / "materials.yaml")["materials"]}
     tasks = {t["key"] for t in yload(TAXONOMY / "tasks.yaml")["tasks"]}
     log = RunLog("llm_merge")
@@ -50,6 +50,9 @@ def main():
             if setlist(r["end_effector"], "principles", rv.get("principles"), prs):
                 r["fieldSources"]["end_effector.principles"] = src("end_effector.principles")
                 r["end_effector"]["subtype"] = None
+                # 写真からの判定・推定で付けた印は、本文の値で置き換えたら外す(ループ 13: 「記載なし」に写真判定の印が残っていた)
+                r["end_effector"].pop("by_photo", None)
+                r["end_effector"].pop("estimated", None)
             if setlist(r, "tasks", rv.get("tasks"), tasks):
                 r["fieldSources"]["tasks"] = src("tasks")
             if setlist(r["workpiece"], "materials", rv.get("materials"), mats):

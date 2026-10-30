@@ -30,6 +30,10 @@ groups:
         label: 機械式(指の形は写真で不明)
         photo_only: true    # 写真から判定したときだけ使う(photo_grasp.py)。本文の語・LLM レビューでは付けない
         terms: []
+      - key: mech_est
+        label: 機械式(推定)
+        estimate_only: true   # 本文にも写真にも手がかりが無い事例に、用途・ワーク・取得元・写真の特徴から推定したときだけ使う(grasp_estimate.py)
+        terms: []
   - key: vacuum
     label: 真空吸着
     pictogram: vacuum
@@ -53,6 +57,10 @@ groups:
         label: 吸着(パッドの形は写真で不明)
         photo_only: true
         terms: []
+      - key: vacuum_est
+        label: 吸着(推定)
+        estimate_only: true
+        terms: []
   - key: magnet
     label: 磁石
     pictogram: magnet
@@ -66,6 +74,10 @@ groups:
       - key: permanent
         label: 永久磁石
         terms: [永久磁石, permanent magnet, permanent magnets, magnetic pickup]
+      - key: magnet_est
+        label: 磁石(推定)
+        estimate_only: true
+        terms: []
   - key: soft
     label: ソフトハンド
     pictogram: soft
@@ -82,6 +94,10 @@ groups:
       - key: inflatable
         label: バルーン・膨張式
         terms: [バルーン, 膨張, balloon gripper, inflatable gripper, bladder gripper, bladder]
+      - key: soft_est
+        label: ソフトハンド(推定)
+        estimate_only: true
+        terms: []
   - key: combo
     label: 複合・ツールチェンジャ
     pictogram: combo

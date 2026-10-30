@@ -92,6 +92,8 @@ def main():
             photo[r["id"]] = {"p1": {"group": PGROUP.get(prs[0], "unknown"), "subtype": None if prs[0].endswith("_photo") else prs[0], "conf": "high",
                                      "seen": (pfs.get("evidence") or [""])[0], "sheet": "recovered"}}
             prs = ["hand_unspecified"]
+        elif pfs.get("method") == "estimated":
+            prs = ["hand_unspecified"]     # 推定は grasp_estimate.py で付け直す(レビューの値に混ぜない)
         reviews.append({"id": r["id"], "is_case": True, "categories": r["workpiece"]["categories"], "principles": prs,
                         "tasks": r["tasks"], "materials": r["workpiece"]["materials"], "robot_class": r["robot"].get("class"),
                         "is_mobile": bool(r["robot"].get("is_mobile_manipulator")), "mass_kg": (mass["max"] if mass else None),

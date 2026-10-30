@@ -342,7 +342,7 @@
     if (!t.total) { el.innerHTML = '<div class="trend-empty">この条件の事例はまだありません。</div>'; return; }
     el.innerHTML = t.groups.map(function (g) {
       var on = eff.pr.indexOf(g.key) >= 0;
-      var sub = g.sub.slice(0, 3).map(function (s) { return s.label + ' ' + s.n; }).join(' · ') + (g.photo ? ' ／ うち写真から判定 ' + g.photo + ' 件' : '');
+      var sub = g.sub.slice(0, 3).map(function (s) { return s.label + ' ' + s.n; }).join(' · ') + (g.photo ? ' ／ うち写真から判定 ' + g.photo + ' 件' : '') + (g.est ? ' ／ うち推定 ' + g.est + ' 件' : '');
       var rep = g.rep && g.rep.images[0];
       return '<button type="button" class="tb' + (on ? ' on' : '') + '" data-g="' + g.key + '" style="--c:' + GCOL[g.key] + '">' +
         '<span class="tb-img">' + (rep ? '<img alt="" data-img="' + rep.id + '" data-pack="' + esc(rep.thumb.pack) + '">' : '<span class="pict">' + (PICT[g.pictogram] || '') + '</span>') + '</span>' +
@@ -445,7 +445,7 @@
       var s = fs[key]; if (!s) return '';
       var src = c.sources[s.source || 0] || c.sources[0];
       var txt = (s.evidence || []).join(' / ');
-      return '<span class="ev">' + (s.method === 'inferred' ? '推定: ' : s.method === 'photo' ? '写真から判定: ' : '') + esc(txt) + (txt ? ' ' : '') + '<a href="' + esc(src.url) + '" target="_blank" rel="noopener">出典 ↗</a></span>';
+      return '<span class="ev">' + (s.method === 'inferred' ? '本文から読み取り: ' : s.method === 'photo' ? '写真から判定: ' : s.method === 'estimated' ? '推定(用途・ワークから): ' : '') + esc(txt) + (txt ? ' ' : '') + '<a href="' + esc(src.url) + '" target="_blank" rel="noopener">出典 ↗</a></span>';
     }
     var wp = c.workpiece, ee = c.end_effector, rb = c.robot;
     var mass = wp.mass_kg ? (wp.mass_kg.min === wp.mass_kg.max ? wp.mass_kg.max + ' kg' : wp.mass_kg.min + '〜' + wp.mass_kg.max + ' kg') : '';

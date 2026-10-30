@@ -2,7 +2,7 @@
 """事例の画像を取得・確認・縮小する(4-3 / 4-4 の方針)。
 
 - 候補(classify の image_candidates)を og:image → 本文の画像 の順に試し、最大 3 枚まで採用
-- 元画像は raw/images/ にだけ置く(gitignore)。公開側に置くのは縮小版(一覧 240px / 詳細 400px、WebP、EXIF 除去)だけ
+- 元画像は raw/images/ にだけ置く(gitignore)。公開側に置くのは縮小版(一覧 320px / 詳細 800px、WebP、EXIF 除去。ループ 13 で 240 / 400 から上げた)だけ
 - 確認: 画像として開ける・長辺 200px 以上・極端な縦横比でない・単色でない(ロゴ・プレースホルダ)・同じ事例内で phash が近いものは 1 枚に
 - robots.txt・noimageindex・manual/image_policy.json(link_only)に従う。link_only の事例は画像を置かず、出典リンクだけにする
 使い方: python images.py [--ids ...] [--workers 8] [--force]
@@ -25,7 +25,7 @@ RAW_IMG = RAW / "images"
 IDX = RAW_IMG / "index.json"
 THUMB = DATA / "img" / "thumb"
 DETAIL = DATA / "img" / "detail"
-THUMB_PX, DETAIL_PX = 240, 400
+THUMB_PX, DETAIL_PX = 320, 800
 MAX_PER_CASE, MAX_TRY = 3, 7
 try:
     from imgjudge import BAD as BAD_LABELS
@@ -255,13 +255,44 @@ def process_case(rec, idx, policy, log, force=False, generic=None):
     return rec, "none"
 
 
+def rerender(idx):
+    """縮小版の大きさを変えたとき(ループ 13: 240 / 400 → 320 / 800)、採用済みの画像を元画像から作り直す。
+    画像 id(最初に作った一覧用のハッシュ)は変えない: 削除依頼(manual/suppressions.json)・写真の判定・CLIP 特徴が画像 id で結び付いているため。
+    元画像が raw/images/ に無いものは古い縮小版のまま。作り直した後は build.py が画像パックを作り直す(data/packs.json を消してから)。"""
+    n, kept_old = 0, 0
+    for p in sorted((DATA / "classified").glob("*.json")):
+        r = jload(p)
+        changed = False
+        for im in r.get("images", []):
+            k = hashlib.sha256(im["source_image_url"].encode("utf-8")).hexdigest()[:16]
+            f = (idx.get(k) or {}).get("file")
+            if not f or not (RAW_IMG / f).exists():
+                kept_old += 1
+                continue
+            src = ImageOps.exif_transpose(Image.open(RAW_IMG / f)).convert("RGB")
+            tb, (tw, th) = shrink(src, THUMB_PX)
+            db, (dw, dh) = shrink(src, DETAIL_PX)
+            (THUMB / f"{im['id']}.webp").write_bytes(tb)
+            (DETAIL / f"{im['id']}.webp").write_bytes(db)
+            im["thumb"] = {"w": tw, "h": th, "bytes": len(tb)}
+            im["detail"] = {"w": dw, "h": dh, "bytes": len(db)}
+            changed = True
+            n += 1
+        if changed:
+            jdump(r, p)
+    print(f"作り直し {n} 枚(元画像が無く古いまま {kept_old} 枚)→ data/img/ 。次に data/packs.json を消して build.py")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--ids", nargs="*")
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--force", action="store_true")
+    ap.add_argument("--rerender", action="store_true", help="採用済みの画像を元画像から今の THUMB_PX / DETAIL_PX で作り直す(画像 id は変えない)")
     a = ap.parse_args()
     idx = jload(IDX, {})
+    if a.rerender:
+        return rerender(idx)
     policy = load_image_policy()
     log = RunLog("images")
     import imgjudge

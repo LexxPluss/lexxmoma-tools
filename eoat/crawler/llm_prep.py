@@ -28,7 +28,7 @@ def main():
     prs = yload(TAXONOMY / "principles.yaml")["groups"]
     legend = {
         "categories": {it["key"]: f"{g['label']}>{it['label']}" for g in cats for it in g["items"]},
-        "principles": {it["key"]: f"{g['label']}>{it['label']}" for g in prs for it in g["items"] if not it.get("photo_only")},
+        "principles": {it["key"]: f"{g['label']}>{it['label']}" for g in prs for it in g["items"] if not (it.get("photo_only") or it.get("estimate_only"))},
         "materials": {m["key"]: m["label"] for m in yload(TAXONOMY / "materials.yaml")["materials"]},
         "tasks": {t["key"]: t["label"] for t in yload(TAXONOMY / "tasks.yaml")["tasks"]},
     }
