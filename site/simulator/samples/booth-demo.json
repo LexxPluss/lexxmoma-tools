@@ -1,0 +1,365 @@
+{
+  "version": 1,
+  "rev": "rev.63",
+  "savedAt": "2026-11-02T00:00:00.000Z",
+  "bodyPoses": [
+    {
+      "name": "Init",
+      "x": 326.13,
+      "y": -631.88,
+      "th": 1.5707963267948966
+    },
+    {
+      "name": "Start",
+      "x": 326.13,
+      "y": -285.56,
+      "th": 1.5707963267948966
+    },
+    {
+      "name": "P3",
+      "x": 326.13,
+      "y": 1765.8,
+      "th": 1.5707963267948966
+    },
+    {
+      "name": "P4",
+      "x": -739.88,
+      "y": 1039.28,
+      "th": 4.71238898038469
+    },
+    {
+      "name": "P5",
+      "x": -739.88,
+      "y": -1012.16,
+      "th": 4.71238898038469
+    },
+    {
+      "name": "2",
+      "x": -739.88,
+      "y": 1039.28,
+      "th": 0
+    }
+  ],
+  "armPoses": [
+    {
+      "name": "F_1",
+      "q1": 0,
+      "reach": 330
+    },
+    {
+      "name": "F_2",
+      "q1": 0,
+      "reach": 920
+    },
+    {
+      "name": "B_1",
+      "q1": -3.141592653589793,
+      "reach": 420
+    },
+    {
+      "name": "B_2",
+      "q1": -3.141592653589793,
+      "reach": 900
+    },
+    {
+      "name": "R_1",
+      "q1": -1.5707963267948966,
+      "reach": 350
+    },
+    {
+      "name": "R_2",
+      "q1": -1.5707963267948966,
+      "reach": 790
+    }
+  ],
+  "initial": {
+    "bodyPose": "Init",
+    "armPose": "F_1"
+  },
+  "program": [
+    {
+      "blocks": [
+        {
+          "type": "body",
+          "pose": "Start",
+          "mode": "auto",
+          "reverse": false
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "body",
+          "pose": "P3",
+          "mode": "auto",
+          "reverse": false
+        },
+        {
+          "type": "arm",
+          "pose": "F_1"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "other",
+          "name": "撮像（位置確認）",
+          "wait": 1
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "arm",
+          "pose": "F_2"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "other",
+          "name": "把持",
+          "wait": 1.5
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "arm",
+          "pose": "F_1"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "body",
+          "pose": "2",
+          "mode": "backward",
+          "reverse": true
+        },
+        {
+          "type": "arm",
+          "pose": "B_1"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "arm",
+          "pose": "B_2"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "other",
+          "name": "リリース",
+          "wait": 1
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "arm",
+          "pose": "B_1"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "other",
+          "name": "加工機の動作",
+          "wait": 3
+        },
+        {
+          "type": "body",
+          "pose": "P4",
+          "mode": "auto",
+          "reverse": false
+        },
+        {
+          "type": "arm",
+          "pose": "R_1"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "other",
+          "name": "撮像（位置確認）",
+          "wait": 1
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "arm",
+          "pose": "R_2"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "other",
+          "name": "把持",
+          "wait": 1.5
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "arm",
+          "pose": "R_1"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "body",
+          "pose": "P5",
+          "mode": "auto",
+          "reverse": false
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "arm",
+          "pose": "R_2"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "other",
+          "name": "リリース",
+          "wait": 1
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "arm",
+          "pose": "R_1"
+        }
+      ]
+    },
+    {
+      "blocks": [
+        {
+          "type": "body",
+          "pose": "Start",
+          "mode": "backward",
+          "reverse": true
+        },
+        {
+          "type": "arm",
+          "pose": "F_1"
+        }
+      ]
+    }
+  ],
+  "bgRects": [
+    {
+      "x1": -2000,
+      "y1": -2000,
+      "x2": 2500,
+      "y2": 3000,
+      "color": "#84e7b3"
+    },
+    {
+      "x1": -1871.56,
+      "y1": 1488.8,
+      "x2": -1350.03,
+      "y2": 503.74,
+      "color": "#e7d184"
+    },
+    {
+      "x1": -2000,
+      "y1": 3000,
+      "x2": 2500,
+      "y2": 3932.09,
+      "color": "#e68282"
+    },
+    {
+      "x1": 877.84,
+      "y1": 2218.54,
+      "x2": -426.94,
+      "y2": 2918.01,
+      "color": "#848ae7"
+    },
+    {
+      "x1": -1841.77,
+      "y1": -516.48,
+      "x2": -1299.42,
+      "y2": -1561.75,
+      "color": "#84e7b3"
+    }
+  ],
+  "bgLines": [],
+  "bgTexts": [
+    {
+      "x": 265.21,
+      "y": 3502.82,
+      "text": "バックヤード",
+      "size": 300,
+      "color": "#888888",
+      "vertical": false
+    },
+    {
+      "x": 233.31,
+      "y": 2580.07,
+      "text": "Pick",
+      "size": 300,
+      "color": "#888888",
+      "vertical": false
+    },
+    {
+      "x": -1629.55,
+      "y": 1008.22,
+      "text": "加工",
+      "size": 300,
+      "color": "#888888",
+      "vertical": true
+    },
+    {
+      "x": -1574.53,
+      "y": -1011.61,
+      "text": "Drop",
+      "size": 200,
+      "color": "#888888",
+      "vertical": true
+    }
+  ],
+  "robot": {
+    "body": {
+      "x": 326.13,
+      "y": -631.88,
+      "th": 1.5707963267948966
+    },
+    "arm": {
+      "q1": 0,
+      "reach": 330
+    }
+  },
+  "bgImage": null,
+  "bodyVmax": 1.5
+}
