@@ -3,6 +3,7 @@
 // - 設備の四角に高さを付ける（Pick 台 800、加工機 900、Drop 台 800 mm）
 // - アーム姿勢を 6 軸で作り直す（各作業位置に「上空で待つ姿勢」と「台の上の把持位置」）
 // - 撮像・把持・リリース・加工の待ち時間を入れ、ピックが一瞬で終わらないようにする
+// - 走行中は手先を J1 軸から半径 1 m 以内（600 mm）に畳み、着いてから台の上空へ伸ばす
 const fs = require("fs");
 const path = require("path");
 const CRX = require("../crx-kinematics.js");
@@ -16,6 +17,8 @@ const TOOL = 150;                 // グリッパ長 [mm]
 const TABLE = { pick: 800, machine: 900, drop: 800 }; // 台の高さ [mm]
 const GRIP_ABOVE = 20;            // 把持時に TCP を台の天面からどれだけ上に置くか
 const APPROACH = 300;             // 把持位置の上空で待つ高さ
+const TRAVEL_R = 600;             // 走行中の手先の水平距離 [mm]（J1 軸から。1 m 以内に引っ込める）
+const TRAVEL_Z = 1300;            // 走行中の手先の床からの高さ [mm]
 
 /* アーム基準座標での TCP 目標 → IK。dirDeg: 水平方向（0=前、180=後、-90=右）、reach: 水平距離 */
 function pose(name, dirDeg, reach, zFloor, seedQ) {
@@ -44,7 +47,11 @@ const armPoses = [
   pose("R_1", -90, 850, TABLE.machine + GRIP_ABOVE + APPROACH),  // 右側の上空（加工機／Drop 台）
   pose("R_2", -90, 850, TABLE.machine + GRIP_ABOVE),             // 加工機から取る位置（右向き）
   pose("R_3", -90, 850, TABLE.drop + GRIP_ABOVE),                // Drop 台に置く位置（右向き）
-  pose("Home", 0, 450, J1_Z + 150, [0, 10 * D2R, -40 * D2R, 0, -60 * D2R, 0]), // 走行中の畳んだ姿勢
+  // 走行中の姿勢: 手先を J1 軸から半径 1 m 以内（ここでは 600 mm）に引っ込め、次の作業方向に向けておく
+  pose("T_F", 0, TRAVEL_R, TRAVEL_Z),                             // 前向きに畳む
+  pose("T_B", 180, TRAVEL_R, TRAVEL_Z),                           // 後ろ向きに畳む
+  pose("T_R", -90, TRAVEL_R, TRAVEL_Z),                           // 右向きに畳む
+  pose("Home", 0, 450, J1_Z + 150, [0, 10 * D2R, -40 * D2R, 0, -60 * D2R, 0]), // 開始・終了の畳んだ姿勢
 ];
 
 const body = (poseName, mode) => ({ type: "body", pose: poseName, mode, reverse: mode === "backward" });
@@ -54,26 +61,30 @@ const st = (...blocks) => ({ blocks });
 
 const program = [
   st(body("Start", "auto")),
-  // ① Pick 台からワークを取る
-  st(body("P3", "auto"), arm("F_1")),
+  // ① Pick 台へ。走行中は前向きに畳み、着いてから台の上空へ伸ばす
+  st(body("P3", "auto"), arm("T_F")),
+  st(arm("F_1")),
   st(wait("撮像（位置確認）", 1.0)),
   st(arm("F_2")),
   st(wait("把持", 1.5)),
   st(arm("F_1")),
-  // ② 後退しながら加工機の上空へ構え、ワークを加工機に置く
-  st(body("2", "backward"), arm("B_1")),
+  // ② 畳んで後退し、加工機の上空へ伸ばしてワークを置く
+  st(body("2", "backward"), arm("T_B")),
+  st(arm("B_1")),
   st(arm("B_2")),
   st(wait("リリース", 1.0)),
   st(arm("B_1")),
-  st(wait("加工機の動作", 3.0)),
-  // ③ 向きを変えて加工機からワークを取る（右側）
-  st(body("P4", "auto"), arm("R_1")),
+  st(wait("加工機の動作", 3.0), arm("T_B")),   // 加工を待つ間に畳む
+  // ③ 向きを変え（右向きに畳んだまま）、加工機からワークを取る
+  st(body("P4", "auto"), arm("T_R")),
+  st(arm("R_1")),
   st(wait("撮像（位置確認）", 1.0)),
   st(arm("R_2")),
   st(wait("把持", 1.5)),
   st(arm("R_1")),
-  // ④ Drop 台へ移動して置く
-  st(body("P5", "auto")),
+  // ④ 畳んで Drop 台へ移動し、置く
+  st(body("P5", "auto"), arm("T_R")),
+  st(arm("R_1")),
   st(arm("R_3")),
   st(wait("リリース", 1.0)),
   st(arm("R_1")),
