@@ -66,6 +66,8 @@ header{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--panel
 .nav .lx-theme-btn{color:var(--muted);border-color:var(--line)}
 @media (max-width:760px){.nav a.ghost{display:none}.logo .mark{height:28px}}
 @media (max-width:480px){.logo .divider,.logo .mark~*{display:none}}
+/* 狭い画面: ダークでは白い台座の分ロゴが広くなり、右端のテーマ切替がはみ出していた。ロゴを縮められるようにし、間隔も詰める */
+@media (max-width:760px){.nav{gap:10px}.logo{min-width:0;flex:0 1 auto;overflow:hidden;text-overflow:ellipsis;gap:8px}}
 
 /* hero */
 .hero{padding:40px 0 24px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:32px;align-items:center}
