@@ -15,6 +15,7 @@ const MOUNT_Z = 750;              // アーム取付面の床からの高さ（�
 const J1_Z = MOUNT_Z + CRX.MODEL.L.base; // アーム基準座標の原点の床からの高さ = 995
 const TOOL = 150;                 // グリッパ長 [mm]
 const TABLE = { pick: 800, machine: 900, drop: 800 }; // 台の高さ [mm]
+const WALL_H = 2500;              // バックヤードの仕切り（実質は壁）の高さ [mm]
 const GRIP_ABOVE = 20;            // 把持時に TCP を台の天面からどれだけ上に置くか
 const APPROACH = 300;             // 把持位置の上空で待つ高さ
 const TRAVEL_R = 600;             // 走行中の手先の水平距離 [mm]（J1 軸から。1 m 以内に引っ込める）
@@ -93,8 +94,8 @@ const program = [
 ];
 
 // オブジェクト（version 3）: 旧 bgRects/bgTexts を名前付きの箱・区画・文字にする
-// [0]=ブース床（区画）、[1]=加工機（黄）、[2]=バックヤード（区画）、[3]=Pick 台（青）、[4]=Drop 台（緑）
-const RECT_META = [["ブース床", 0], ["加工機", TABLE.machine], ["バックヤード", 0], ["Pick 台", TABLE.pick], ["Drop 台", TABLE.drop]];
+// [0]=ブース床（区画）、[1]=加工機（黄）、[2]=バックヤード（壁、高さ 2.5 m）、[3]=Pick 台（青）、[4]=Drop 台（緑）
+const RECT_META = [["ブース床", 0], ["加工機", TABLE.machine], ["バックヤード（壁）", WALL_H], ["Pick 台", TABLE.pick], ["Drop 台", TABLE.drop]];
 let n = 0;
 const uid = () => "booth" + (++n).toString(36).padStart(3, "0");
 const objects = [];
