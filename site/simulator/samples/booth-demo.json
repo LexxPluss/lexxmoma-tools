@@ -1,7 +1,7 @@
 {
   "version": 3,
-  "rev": "rev.66",
-  "savedAt": "2026-11-02T06:39:50.575Z",
+  "rev": "rev.67",
+  "savedAt": "2026-11-02T06:55:28.440Z",
   "armModel": "FANUC CRX-20iA/L",
   "toolLen": 150,
   "bodyPoses": [

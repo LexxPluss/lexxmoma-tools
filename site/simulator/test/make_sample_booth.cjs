@@ -1,5 +1,5 @@
 // 展示会レイアウト（sample_booth_rev61.json、旧形式）を 3D 向けに作り直す:
-//   node site/simulator/test/make_sample_booth.cjs  →  sample_booth_rev66.json
+//   node site/simulator/test/make_sample_booth.cjs  →  samples/booth-demo.json（「📂 サンプル」の展示会デモ）
 // - 設備の四角に高さを付ける（Pick 台 800、加工機 900、Drop 台 800 mm）
 // - アーム姿勢を 6 軸で作り直す（各作業位置に「上空で待つ姿勢」と「台の上の把持位置」）
 // - 撮像・把持・リリース・加工の待ち時間を入れ、ピックが一瞬で終わらないようにする
@@ -131,7 +131,7 @@ src.bgRects.forEach((r, i) => {
 
 const out = {
   version: 3,
-  rev: "rev.66",
+  rev: "rev.67",
   savedAt: new Date().toISOString(),
   armModel: CRX.MODEL.name,
   toolLen: TOOL,
@@ -145,6 +145,6 @@ const out = {
   bodyVmax: 1.5,
 };
 delete out.robot.body.name;
-const dst = path.join(__dirname, "sample_booth_rev66.json");
+const dst = path.join(__dirname, "..", "samples", "booth-demo.json");
 fs.writeFileSync(dst, JSON.stringify(out, null, 2) + "\n");
 console.log("wrote", dst);

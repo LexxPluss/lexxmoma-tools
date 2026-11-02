@@ -38,8 +38,8 @@
 - `version: 3`（rev.66〜）: 背景の四角・直線・文字を `objects[]` に統合。共通 `id, type, name, visible`。
   `box`（設備・区画）: 中心 `x,y`、向き `yaw`、`w,d,h`、底面の高さ `z0`（0=床に接地）、`color`。`h=0` は床の区画。
   `line`: `x1,y1,x2,y2,color`。`text`: `x,y,text,size,color,vertical`。旧 `bgRects/bgLines/bgTexts`（rev.65 の `h` 含む）は読込時に変換。
-  `test/sample_booth_rev61.json` は旧形式の実例（展示会のレイアウト）、`test/sample_booth_rev66.json` は
-  それを `test/make_sample_booth.cjs` で 3D 向けに作り直したもの（名前付きの設備、6 軸姿勢、待ち時間入り）。
+  `test/sample_booth_rev61.json` は旧形式の実例（展示会のレイアウト）。`test/make_sample_booth.cjs` がそれを
+  3D 向けに作り直して `samples/booth-demo.json` を生成する（名前付きの設備、6 軸姿勢、待ち時間入り）。
 
 ## オブジェクト（右ペインのタブ）
 
@@ -63,3 +63,11 @@
 - テスト: `node --test site/simulator/test/kinematics.test.cjs`
 - 変更のたびにヘッダーの `rev.N` を上げる。保存 JSON にも rev が記録される
 - 行末は CRLF（`lexxmoma-2d.html`）
+
+## サンプル（`samples/`）
+
+- シミュレーターの「📂 サンプル」ボタン（`samples.js`）が `samples/index.json` の一覧をカードで出し、選んだ JSON を本体の
+  `applyLoadedData()` に渡す。カードにはレイアウトの簡易プレビューとサイクルタイム（本体の計算で算出）が出る
+- `?sample=<id>`（`&play=1` で再生まで）を URL に付けると起動時にそのサンプルを開く。共有リンクやツアーから使う
+- サンプルを足すときは JSON を `samples/` に置き、`index.json` に 1 件追加する。形式は「設定保存」と同じ
+- `test/make_samples.cjs` が入門用の 2 本（最小のピック＆プレース、同時動作なしの比較）、`test/make_sample_booth.cjs` が展示会デモを再生成する
