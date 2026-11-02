@@ -176,6 +176,27 @@
   #armCtrl .tcpinfo { font-size: 11px; color: #345; margin-top: 4px; font-variant-numeric: tabular-nums; line-height: 1.5; }
   #armCtrl .ikng { color: var(--danger); font-weight: 600; }
   #armCtrl .jogrow { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+  /* ---- 右ペインのタブ（シーケンス／オブジェクト） ---- */
+  #rightTabs { display: flex; gap: 6px; align-items: center; }
+  #rightTabs .seg button { padding: 4px 14px; font-size: 12px; }
+  .rtab { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  .rtab[hidden] { display: none; }
+  /* ---- オブジェクト一覧 ---- */
+  #objList { overflow-y: auto; flex: 1; min-height: 80px; max-height: 40%; margin-top: 6px; border: 1px solid var(--border); border-radius: 6px; background: #fbfcfd; }
+  .obj-item { display: flex; align-items: center; gap: 6px; padding: 3px 6px; border-bottom: 1px dashed #e2e6ea; cursor: pointer; font-size: 12px; }
+  .obj-item:hover { background: var(--accent2); }
+  .obj-item.sel { background: #dcebf7; outline: 1px solid var(--accent); }
+  .obj-item.hidden-obj { opacity: 0.45; }
+  .obj-item .sw { width: 12px; height: 12px; border-radius: 3px; border: 1px solid rgba(0,0,0,.2); flex: 0 0 auto; }
+  .obj-item .ty { font-size: 10px; color: #567; background: #eef1f4; border-radius: 3px; padding: 0 4px; flex: 0 0 auto; }
+  .obj-item .nm { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .obj-item .dim { font-size: 11px; color: #667; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  #objProps { margin-top: 6px; border-top: 1px solid var(--border); padding-top: 6px; overflow-y: auto; }
+  #objProps .pgrid { display: grid; grid-template-columns: auto 1fr auto 1fr; gap: 3px 6px; align-items: center; font-size: 12px; }
+  #objProps .pgrid input[type=number], #objProps .pgrid input[type=text] { width: 100%; min-width: 50px; }
+  #objProps .pgrid .full { grid-column: 2 / 5; }
+  #objProps .ptitle { font-weight: 600; font-size: 12px; margin-bottom: 4px; display: flex; gap: 6px; align-items: center; }
+  #objProps .ptitle .ty { font-size: 10px; color: #567; background: #eef1f4; border-radius: 3px; padding: 0 4px; }
 </style>
 <!-- CRX-20iA/L 運動学（依存なし・古典スクリプト。本体と Node のテストで共用） -->
 <script src="crx-kinematics.js"></script>
@@ -191,7 +212,7 @@
   <img id="corpLogo" src="data:image/png;base64,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" alt="LexxPluss">
   <div>
     <h1>LexxMoMa 動作シミュレーター</h1>
-    <div id="revDisp">rev.65</div>
+    <div id="revDisp">rev.66</div>
   </div>
   <div class="time-box">経過時間 <b id="elapsedDisp">0.00</b> s</div>
   <div class="time-box">トータル <b id="totalDisp">0.00</b> s</div>
@@ -251,7 +272,7 @@
     </fieldset>
 
     <fieldset id="paneBg">
-      <legend>背景</legend>
+      <legend>背景とオブジェクト</legend>
       <div style="font-weight:600;">背景画像取り込み</div>
       <div style="display:flex; gap:4px; margin-top:4px;">
         <button id="btnBgImgLoad" class="primary" style="flex:1">画像を読込 (PNG)</button>
@@ -281,39 +302,33 @@
       <div class="hint" style="margin-top:4px;">レイアウト図などを背景に表示できます。</div>
 
       <div style="border-top:1px solid var(--border); margin-top:10px;"></div>
-      <div style="font-weight:600; margin-top:8px;">図形描画</div>
-      <div style="display:flex; gap:6px; align-items:center; margin-top:4px;">
+      <div style="font-weight:600; margin-top:8px;">オブジェクトの追加（2D で描く）</div>
+      <div class="hint">描いたあとの位置・寸法・高さ・名前は、右ペインの「オブジェクト」タブで直せます。</div>
+      <div style="display:flex; gap:6px; align-items:center; margin-top:4px; flex-wrap:wrap;">
         <label>色 <input type="color" id="bgShapeColor" value="#e68282"></label>
-        <button id="btnBgDraw" style="flex:1">四角描画</button>
-        <button id="btnBgLine" style="flex:1">直線描画</button>
+        <button id="btnBgBox" style="flex:1" title="設備・机・加工機など。高さを持ち 3D では箱になります">箱</button>
+        <button id="btnBgZone" style="flex:1" title="床の区画・目印（高さ 0）">区画</button>
+        <button id="btnBgLine" style="flex:1">直線</button>
       </div>
       <div style="display:flex; gap:6px; align-items:center; margin-top:4px;">
-        <label style="font-size:11px;">四角の高さ <input type="number" id="bgRectH" step="50" min="0" value="500" style="width:62px"> mm</label>
-        <span class="hint" style="flex:1;">0 で床の区画。3D では高さ分の箱になります。既存の四角は「オブジェクト移動」でダブルクリックして変更</span>
-      </div>
-
-      <div style="border-top:1px solid var(--border); margin-top:10px;"></div>
-      <div style="font-weight:600; margin-top:8px;">文字描画</div>
-      <div style="display:flex; gap:6px; align-items:center; margin-top:4px;">
-        <label>色 <input type="color" id="bgTextColor" value="#888888"></label>
-        <button id="btnBgText" style="flex:1">文字描画</button>
+        <label style="font-size:11px;">箱の高さ <input type="number" id="bgRectH" step="50" min="0" value="500" style="width:62px"> mm</label>
+        <span class="hint" style="flex:1;">次に描く箱の高さ</span>
       </div>
       <div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap; margin-top:6px;">
-        <input type="text" id="bgText" placeholder="文字 (例: 棚A)" style="flex:1; min-width:80px;">
+        <label>色 <input type="color" id="bgTextColor" value="#888888"></label>
+        <button id="btnBgText" style="flex:1">文字</button>
+        <input type="text" id="bgText" placeholder="文字 (例: 棚A)" style="flex:2; min-width:80px;">
         <label>サイズ[m] <input type="number" id="bgTextSize" step="0.1" min="0.1" value="0.5" style="width:52px"></label>
         <select id="bgTextDir" title="文字の向き">
           <option value="h" selected>横書き</option>
           <option value="v">縦書き</option>
         </select>
       </div>
-
-      <div style="border-top:1px solid var(--border); margin-top:10px;"></div>
       <div style="display:flex; margin-top:8px;">
-        <button id="btnBgMove" style="flex:1">オブジェクト移動</button>
+        <button id="btnBgMove" style="flex:1" title="クリックで選択、ドラッグで移動。選択は何もしていない時のクリックでもできます">選択／移動</button>
       </div>
-      <div style="display:flex; margin-top:4px;">
-        <button id="btnBgErase" style="flex:1">オブジェクト削除</button>
-      </div>
+      <div class="hint" id="bgHint" style="margin-top:4px;"></div>
+    </fieldset>
       <div class="hint" id="bgHint" style="margin-top:4px;"></div>
     </fieldset>
 
@@ -327,7 +342,8 @@
           <tr><td>アーム 回転（J1）</td><td><kbd>Shift</kbd>＋<kbd>←</kbd> / <kbd>→</kbd></td></tr>
           <tr><td>アーム 伸縮（手先を水平に出し入れ）</td><td><kbd>Shift</kbd>＋<kbd>↑</kbd> / <kbd>↓</kbd></td></tr>
           <tr><td>アーム 上下（手先の高さ）</td><td><kbd>Shift</kbd>＋<kbd>PgUp</kbd> / <kbd>PgDn</kbd></td></tr>
-          <tr><td>背景描画モードを解除</td><td><kbd>Esc</kbd></td></tr>
+          <tr><td>描画モードを解除</td><td><kbd>Esc</kbd></td></tr>
+          <tr><td>選択したオブジェクトを削除</td><td><kbd>Delete</kbd></td></tr>
           <tr><td>元に戻す / やり直す</td><td><kbd>Ctrl</kbd>＋<kbd>Z</kbd> / <kbd>Y</kbd></td></tr>
         </table>
         <div style="font-weight:600; margin-top:6px;">マウス（中央ペイン）</div>
@@ -401,8 +417,16 @@
 
   <div class="splitter" id="splitR" title="ドラッグで幅を調整"></div>
 
-  <!-- ============ 右：動作ブロック ============ -->
+  <!-- ============ 右：動作ブロック／オブジェクト ============ -->
   <div class="col" id="colRight">
+    <div id="rightTabs">
+      <div class="seg">
+        <button data-tab="seq" class="on">動作シーケンス</button>
+        <button data-tab="obj">オブジェクト</button>
+      </div>
+      <span class="hint" id="rightTabHint" style="flex:1;"></span>
+    </div>
+    <div class="rtab" id="tabSeq">
     <fieldset style="flex:1; display:flex; flex-direction:column; min-height:0;">
       <legend>動作シーケンス</legend>
       <div class="hint">縦に並べた段は順次実行、同じ段に並べたブロックは並列実行されます。段の時間＝ブロックの最大値。</div>
@@ -420,6 +444,37 @@
         <table id="statsTable"></table>
       </details>
     </fieldset>
+    </div>
+    <div class="rtab" id="tabObj" hidden>
+    <fieldset style="flex:1; display:flex; flex-direction:column; min-height:0;">
+      <legend>オブジェクト（設備・区画・直線・文字）</legend>
+      <div class="hint">レイアウト上の物の一覧です。選んで下で位置・寸法・高さ・名前を直せます。2D／3D のクリックでも選べます。</div>
+      <div style="display:flex; gap:4px; align-items:center; margin-top:6px; flex-wrap:wrap;">
+        <select id="objFilter" title="種類で絞り込み">
+          <option value="all">すべて</option>
+          <option value="box">設備（箱）</option>
+          <option value="zone">区画</option>
+          <option value="line">直線</option>
+          <option value="text">文字</option>
+        </select>
+        <span style="flex:1"></span>
+        <span style="font-size:11px; color:#567;">追加:</span>
+        <button class="small" data-addobj="box">＋箱</button>
+        <button class="small" data-addobj="zone">＋区画</button>
+        <button class="small" data-addobj="line">＋直線</button>
+        <button class="small" data-addobj="text">＋文字</button>
+      </div>
+      <div id="objList"></div>
+      <div style="display:flex; gap:4px; margin-top:6px;">
+        <button id="btnObjDup" class="small">複製</button>
+        <button id="btnObjVis" class="small">表示／非表示</button>
+        <button id="btnObjFocus" class="small" title="2D の表示をこのオブジェクトに合わせる">表示位置へ</button>
+        <span style="flex:1"></span>
+        <button id="btnObjDel" class="small danger">削除</button>
+      </div>
+      <div id="objProps"><div class="hint">一覧から選ぶと、ここに設定が出ます。</div></div>
+    </fieldset>
+    </div>
   </div>
 </main>
 
@@ -579,9 +634,13 @@ const state = {
   toolLen: 0,      // ツール長 [mm]（FANUC フランジの z 方向。TCP の位置に効く）
   initial: { bodyPose: null, armPose: null }, // サイクル開始状態（登録姿勢名。null=現在位置）
   program: [],     // [{blocks:[{type:'body'|'arm'|'other', pose?, name?, wait?}]}]
-  bgRects: [],     // {x1,y1,x2,y2,color,h} 対角2点 [mm]、h: 高さ [mm]（0 または未指定 = 床の区画。3D では箱）
-  bgLines: [],     // {x1,y1,x2,y2,color} 直線（連続描画の各区間） [mm]
-  bgTexts: [],     // {x,y,text,size,color,vertical} 中心位置 [mm]、size: 文字高さ [mm]、vertical: 縦書き
+  // レイアウト上のオブジェクト（旧 bgRects / bgLines / bgTexts を統合。読込時に変換）
+  //  共通: id, type, name, visible
+  //  box : 設備・区画。中心 x,y [mm]、向き yaw [rad]、幅 w（x 方向）・奥行 d（y 方向）・高さ h [mm]、底面の高さ z0 [mm]（0=床に接地）、color
+  //        h=0 は床の区画（3D では床の塗り）、h>0 は 3D で箱
+  //  line: x1,y1,x2,y2 [mm]、color
+  //  text: 中心 x,y [mm]、text、size: 文字高さ [mm]、color、vertical: 縦書き
+  objects: [],
   bgImage: null,   // {src(dataURL), pxPerM, x, y, opacity}  x,y: 画像中心のワールド座標 [mm]
 };
 
@@ -598,9 +657,7 @@ function snapState() {
     toolLen: state.toolLen,
     initial: state.initial,
     program: state.program,
-    bgRects: state.bgRects,
-    bgLines: state.bgLines,
-    bgTexts: state.bgTexts,
+    objects: state.objects,
     bgImage: state.bgImage,
   });
 }
@@ -617,12 +674,11 @@ function applySnap(s) {
   state.toolLen = c.toolLen || 0;
   state.initial = c.initial || { bodyPose: null, armPose: null };
   state.program = c.program;
-  state.bgRects = c.bgRects;
-  state.bgLines = c.bgLines || [];
-  state.bgTexts = c.bgTexts;
+  state.objects = c.objects || [];
+  if (selectedId && !state.objects.some(o => o.id === selectedId)) selectedId = null;
   setBgImage(c.bgImage);
   stopPlayback(false);
-  renderPoseLists(); renderProgram(); recompute(); armCtrlRefresh();
+  renderPoseLists(); renderProgram(); recompute(); armCtrlRefresh(); renderObjectList();
 }
 function doUndo() {
   if (!undoStack.length) return;
@@ -962,46 +1018,9 @@ function draw() {
     ctx.beginPath(); ctx.arc(ox, oy, 5, 0, TAU); ctx.stroke();
   }
 
-  // 背景の四角（薄い塗り＋枠線）
-  for (const R of state.bgRects) {
-    const [sx1, sy1] = w2s(R.x1, R.y1), [sx2, sy2] = w2s(R.x2, R.y2);
-    const x = Math.min(sx1, sx2), y = Math.min(sy1, sy2);
-    const w = Math.abs(sx2 - sx1), h = Math.abs(sy2 - sy1);
-    ctx.save(); ctx.globalAlpha = 0.10; ctx.fillStyle = R.color; ctx.fillRect(x, y, w, h); ctx.restore();
-    ctx.strokeStyle = R.color; ctx.lineWidth = 2;
-    ctx.strokeRect(x, y, w, h);
-    if (R.h > 0) { // 高さのある四角（3D では箱）: 太枠＋高さの表示
-      ctx.lineWidth = 3.5; ctx.strokeRect(x, y, w, h);
-      ctx.fillStyle = R.color; ctx.font = "11px sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "top";
-      ctx.fillText(`h ${(R.h / 1000).toFixed(2)}m`, x + 4, y + 3);
-    }
-  }
-  // 背景の直線
-  for (const L of state.bgLines) {
-    const [sx1, sy1] = w2s(L.x1, L.y1), [sx2, sy2] = w2s(L.x2, L.y2);
-    ctx.strokeStyle = L.color; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2); ctx.stroke();
-  }
-  // 背景の文字（中心位置基準・高さはワールド寸法でズームに追従）
-  if (state.bgTexts.length || (bgMode === "text" && bgMouse)) {
-    ctx.save();
-    ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    for (const T of state.bgTexts) drawBgTextItem(T);
-    // 文字配置プレビュー（マウス位置に半透明表示）
-    if (bgMode === "text" && bgMouse) {
-      const txt = document.getElementById("bgText").value.trim();
-      if (txt) {
-        ctx.globalAlpha = 0.5;
-        drawBgTextItem({
-          x: bgMouse[0], y: bgMouse[1], text: txt, size: bgTextSizeMm(),
-          color: document.getElementById("bgTextColor").value,
-          vertical: document.getElementById("bgTextDir").value === "v",
-        });
-      }
-    }
-    ctx.restore();
-  }
-  // 四角 描画途中：1点目の印＋マウス位置までのプレビュー
+  // オブジェクト: 区画（h=0）→ 箱 → 直線 → 文字 の順に描く（上にある物ほど後）
+  drawObjects();
+  // 箱・区画 描画途中：1点目の印＋マウス位置までのプレビュー
   if (bgTemp) {
     const color = document.getElementById("bgShapeColor").value;
     const [px, py] = w2s(bgTemp[0], bgTemp[1]);
@@ -1082,6 +1101,78 @@ function draw() {
 
   // スケール表示（左下・最前面）：1グリッド = 1m
   drawScaleBar();
+}
+
+/* オブジェクト（箱・区画・直線・文字）の 2D 描画。選択中は青の破線で囲む */
+function drawObjects() {
+  const objs = state.objects.filter(o => o.visible !== false);
+  const boxes = objs.filter(o => o.type === "box").sort((a, b) => (a.h > 0) - (b.h > 0) || (a.z0 || 0) - (b.z0 || 0));
+  for (const o of boxes) {
+    const [sx, sy] = w2s(o.x, o.y);
+    const W = o.w * view.scale, D = o.d * view.scale;
+    ctx.save();
+    ctx.translate(sx, sy); ctx.rotate(-(o.yaw || 0));
+    ctx.globalAlpha = o.h > 0 ? 0.18 : 0.10; ctx.fillStyle = o.color; ctx.fillRect(-W / 2, -D / 2, W, D);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = o.color; ctx.lineWidth = o.h > 0 ? 3.5 : 2;
+    ctx.strokeRect(-W / 2, -D / 2, W, D);
+    if (o.id === selectedId) drawSelectionRect(-W / 2, -D / 2, W, D);
+    // 名前と高さ（箱は「h 0.50m」、浮いていれば底面高さも）
+    ctx.fillStyle = o.color; ctx.font = "11px sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "top";
+    let label = o.name || "";
+    if (o.h > 0) label += (label ? "  " : "") + `h ${(o.h / 1000).toFixed(2)}m` + (o.z0 > 0 ? ` ↑${(o.z0 / 1000).toFixed(2)}m` : "");
+    if (label && W > 30 && D > 14) ctx.fillText(label, -W / 2 + 4, -D / 2 + 3);
+    ctx.restore();
+  }
+  for (const o of objs) {
+    if (o.type !== "line") continue;
+    const [sx1, sy1] = w2s(o.x1, o.y1), [sx2, sy2] = w2s(o.x2, o.y2);
+    if (o.id === selectedId) {
+      ctx.strokeStyle = "rgba(10,110,189,0.9)"; ctx.lineWidth = 7; ctx.setLineDash([6, 4]);
+      ctx.beginPath(); ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2); ctx.stroke(); ctx.setLineDash([]);
+    }
+    ctx.strokeStyle = o.color; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2); ctx.stroke();
+  }
+  ctx.save();
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  for (const o of objs) {
+    if (o.type !== "text") continue;
+    drawBgTextItem(o);
+    if (o.id === selectedId) {
+      const b = textBoundsMm(o);
+      const [sx, sy] = w2s(o.x, o.y);
+      drawSelectionRect(sx - b.w * view.scale / 2, sy - b.h * view.scale / 2, b.w * view.scale, b.h * view.scale);
+    }
+  }
+  // 文字配置プレビュー（マウス位置に半透明表示）
+  if (bgMode === "text" && bgMouse) {
+    const txt = document.getElementById("bgText").value.trim();
+    if (txt) {
+      ctx.globalAlpha = 0.5;
+      drawBgTextItem({
+        x: bgMouse[0], y: bgMouse[1], text: txt, size: bgTextSizeMm(),
+        color: document.getElementById("bgTextColor").value,
+        vertical: document.getElementById("bgTextDir").value === "v",
+      });
+    }
+  }
+  ctx.restore();
+}
+function drawSelectionRect(x, y, w, h) {
+  ctx.save();
+  ctx.strokeStyle = "#0a6ebd"; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+  ctx.strokeRect(x - 5, y - 5, w + 10, h + 10);
+  ctx.setLineDash([]);
+  ctx.fillStyle = "#0a6ebd";
+  for (const [cx, cy] of [[x - 5, y - 5], [x + w + 5, y - 5], [x - 5, y + h + 5], [x + w + 5, y + h + 5]]) ctx.fillRect(cx - 3, cy - 3, 6, 6);
+  ctx.restore();
+}
+/* 文字の表示枠 [mm]（当たり判定・選択枠に使う） */
+function textBoundsMm(T) {
+  if (T.vertical) { const n = Math.max(1, Array.from(T.text || "").length); return { w: T.size, h: n * T.size }; }
+  ctx.font = `${Math.max(2, T.size * view.scale)}px sans-serif`;
+  return { w: ctx.measureText(T.text || "").width / view.scale, h: T.size };
 }
 
 // 背景文字1件を描画（textAlign=center / textBaseline=middle 前提）
@@ -1257,6 +1348,7 @@ window.addEventListener("keydown", (e) => {
   if (e.key === "Escape") cancelStageDrag(); // ドラッグ中の段があれば解除
   if (e.key === "Escape" && bgMode) { setBgMode(bgMode); return; } // 描画系モードを解除（入力中でも有効）
   if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.target.tagName === "TEXTAREA") return;
+  if ((e.key === "Delete" || e.key === "Backspace") && selectedId && !playing) { e.preventDefault(); deleteSelectedObject(); return; }
   // Undo / Redo（Ctrl+Z / Ctrl+Y、Ctrl+Shift+Z も Redo）
   if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === "z") { e.preventDefault(); doUndo(); return; }
   if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === "y" || (e.shiftKey && e.key.toLowerCase() === "z"))) { e.preventDefault(); doRedo(); return; }
@@ -2331,32 +2423,37 @@ document.getElementById("bgImgOpacity").addEventListener("input", () => {
   state.bgImage.opacity = parseFloat(document.getElementById("bgImgOpacity").value) || 0.6;
 });
 
-/* ---------------- 背景描画（四角・文字） ---------------- */
-let bgMode = null;      // null | 'draw' | 'line' | 'text' | 'erase'
-let bgTemp = null;      // 四角描画の1点目 [x,y] mm
+/* ---------------- オブジェクトの追加・選択・移動（2D） ----------------
+ * bgMode: null（通常: クリックで選択、ドラッグでパン） | 'box' | 'zone' | 'line' | 'text' | 'move' | 'calib' */
+let bgMode = null;
+let bgTemp = null;      // 箱・区画描画の1点目 [x,y] mm
 let bgLineStart = null; // 直線描画の直前の頂点 [x,y] mm（連続描画用）
 let bgMouse = null;     // 描画モード中のマウス位置 [x,y] mm（プレビュー用）
-const btnBgDraw = document.getElementById("btnBgDraw");
+let selectedId = null;  // 選択中のオブジェクト id
+const btnBgBox = document.getElementById("btnBgBox");
+const btnBgZone = document.getElementById("btnBgZone");
 const btnBgLine = document.getElementById("btnBgLine");
 const btnBgText = document.getElementById("btnBgText");
 const btnBgMove = document.getElementById("btnBgMove");
-const btnBgErase = document.getElementById("btnBgErase");
 
-function bgRectHeightMm() { // 四角の高さ入力 [mm]（空欄・不正は 0 = 床の区画）
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function bgRectHeightMm() { // 箱の高さ入力 [mm]（空欄・不正は 0 = 床の区画）
   return Math.max(0, parseFloat(document.getElementById("bgRectH").value) || 0);
-}
-/* 既存の四角の高さを変える（オブジェクト移動モードでダブルクリック） */
-function editRectHeight(R) {
-  const cur = R.h || 0;
-  const v = prompt("この四角の高さ [mm]（0 で床の区画）", String(cur));
-  if (v === null) return;
-  const h = Math.max(0, parseFloat(v) || 0);
-  if (h === cur) return;
-  pushUndo();
-  R.h = h;
 }
 function bgTextSizeMm() { // 文字サイズ入力 [m] → 文字高さ [mm]
   return Math.max(0.05, parseFloat(document.getElementById("bgTextSize").value) || 0.5) * 1000;
+}
+/* 種類ごとの連番の名前（箱1、区画2 …） */
+function autoObjName(type, h) {
+  const base = type === "box" ? (h > 0 ? "箱" : "区画") : type === "line" ? "直線" : "文字";
+  let i = 1;
+  while (state.objects.some(o => o.name === base + i)) i++;
+  return base + i;
+}
+/* 対角 2 点から箱（または区画）を作る */
+function makeBox(x1, y1, x2, y2, h, color) {
+  return { id: uid(), type: "box", name: autoObjName("box", h), visible: true,
+           x: (x1 + x2) / 2, y: (y1 + y2) / 2, yaw: 0, w: Math.abs(x2 - x1), d: Math.abs(y2 - y1), h: Math.max(0, h || 0), z0: 0, color };
 }
 
 function setBgMode(m) {
@@ -2364,159 +2461,147 @@ function setBgMode(m) {
   bgTemp = null; bgLineStart = null; bgMouse = null; bgDrag = null;
   resetCalib();
   document.getElementById("btnBgCalib").classList.toggle("primary", bgMode === "calib");
-  btnBgDraw.classList.toggle("primary", bgMode === "draw");
+  btnBgBox.classList.toggle("primary", bgMode === "box");
+  btnBgZone.classList.toggle("primary", bgMode === "zone");
   btnBgLine.classList.toggle("primary", bgMode === "line");
   btnBgText.classList.toggle("primary", bgMode === "text");
   btnBgMove.classList.toggle("primary", bgMode === "move");
-  btnBgErase.classList.toggle("primary", bgMode === "erase");
   cv.classList.toggle("drawmode", bgMode !== null);
   cv.classList.toggle("movemode", bgMode === "move");
   document.getElementById("bgHint").textContent =
     bgMode === "calib" ? "背景画像の長さが分かっている箇所（柱間・通路幅など）の始点 → 終点をクリックしてください。Shiftで水平・垂直に固定。Escで中止。" :
-    bgMode === "draw" ? "1つ目の角をクリック → 対角の角をクリックで四角を追加します。" :
+    bgMode === "box" ? `1つ目の角をクリック → 対角の角をクリックで箱（高さ ${bgRectHeightMm()} mm）を追加します。` :
+    bgMode === "zone" ? "1つ目の角をクリック → 対角の角をクリックで床の区画を追加します。" :
     bgMode === "line" ? "クリックするたびに頂点を追加して連続で直線を引きます。ダブルクリックまたはEscで終了。" :
     bgMode === "text" ? "配置したい位置をクリックすると入力欄の文字を置きます（連続配置できます）。" :
-    bgMode === "move" ? "移動したい四角・直線・文字をドラッグしてください。四角はダブルクリックで高さを変更できます。" :
-    bgMode === "erase" ? "削除したい四角・直線・文字をクリックしてください。" :
+    bgMode === "move" ? "クリックで選択、ドラッグで移動。Delete キーで削除。Escで終了。" :
     "";
 }
-btnBgDraw.addEventListener("click", () => setBgMode("draw"));
+btnBgBox.addEventListener("click", () => setBgMode("box"));
+btnBgZone.addEventListener("click", () => setBgMode("zone"));
 btnBgLine.addEventListener("click", () => setBgMode("line"));
 btnBgText.addEventListener("click", () => setBgMode("text"));
 btnBgMove.addEventListener("click", () => setBgMode("move"));
-btnBgErase.addEventListener("click", () => setBgMode("erase"));
 
 // Shiftキー押下中は 0.1m（100mm）グリッドにスナップして配置できる
 const SNAP_GRID = 100;
 function snapToGrid(w) { return [Math.round(w[0] / SNAP_GRID) * SNAP_GRID, Math.round(w[1] / SNAP_GRID) * SNAP_GRID]; }
 
 cv.addEventListener("mousemove", (e) => {
-  if (bgMode !== "draw" && bgMode !== "line" && bgMode !== "text" && bgMode !== "calib") { bgMouse = null; return; }
+  if (!["box", "zone", "line", "text", "calib"].includes(bgMode)) { bgMouse = null; return; }
   const [px, py] = cvPixel(e);
   if (bgMode === "calib") { bgMouse = calibConstrain(s2w(px, py), e.shiftKey); return; }
   bgMouse = e.shiftKey ? snapToGrid(s2w(px, py)) : s2w(px, py);
 });
 
-cv.addEventListener("dblclick", (e) => {
-  if (bgMode === "move") { // 四角をダブルクリック → 高さの変更
-    const [px, py] = cvPixel(e);
-    const hit = hitTestBgObject(...s2w(px, py));
-    if (hit && hit.kind === "rect") editRectHeight(state.bgRects[hit.index]);
-    return;
-  }
+cv.addEventListener("dblclick", () => {
   if (bgMode !== "line") return;
   // ダブルクリック＝click2回分が先に発火するため、末尾にできた長さ0の区間を取り除いてから終了
-  const last = state.bgLines[state.bgLines.length - 1];
-  if (last && Math.hypot(last.x2 - last.x1, last.y2 - last.y1) < 1e-6) {
-    state.bgLines.pop();
+  const last = state.objects[state.objects.length - 1];
+  if (last && last.type === "line" && Math.hypot(last.x2 - last.x1, last.y2 - last.y1) < 1e-6) {
+    state.objects.pop();
     undoStack.pop(); // その区間追加時に積んだ履歴も取り消す
   }
   bgLineStart = null; // 連続描画を終了（モードは維持。次のクリックから新しい線を開始）
 });
 
+function selectObject(id, opts) {
+  selectedId = id;
+  renderObjectList();
+  if (id && !(opts && opts.keepTab)) showRightTab("obj");
+}
+
 cv.addEventListener("click", (e) => {
   cv.focus();
-  if (!bgMode) return;
   const r = cv.getBoundingClientRect();
   let [wx, wy] = s2w((e.clientX - r.left) * cv.width / r.width, (e.clientY - r.top) * cv.height / r.height);
-  if (bgMode === "calib") { calibClick([wx, wy], e.shiftKey); return; }
-  // 配置系モードでShift押下中は 0.1m グリッドにスナップ（削除の当たり判定には適用しない）
-  if (e.shiftKey && (bgMode === "draw" || bgMode === "line" || bgMode === "text")) {
-    [wx, wy] = snapToGrid([wx, wy]);
+  if (!bgMode) { // 通常モード: ドラッグ（パン）でなければクリック位置のオブジェクトを選択
+    if (lastPanMoved > 4) return;
+    const hit = hitTestObject(wx, wy);
+    selectObject(hit ? hit.id : null, { keepTab: !hit });
+    return;
   }
-  if (bgMode === "draw") {
+  if (bgMode === "calib") { calibClick([wx, wy], e.shiftKey); return; }
+  // 配置系モードでShift押下中は 0.1m グリッドにスナップ
+  if (e.shiftKey && ["box", "zone", "line", "text"].includes(bgMode)) [wx, wy] = snapToGrid([wx, wy]);
+  if (bgMode === "box" || bgMode === "zone") {
     if (!bgTemp) { bgTemp = [wx, wy]; }
     else {
       pushUndo();
-      state.bgRects.push({ x1: bgTemp[0], y1: bgTemp[1], x2: wx, y2: wy, color: document.getElementById("bgShapeColor").value, h: bgRectHeightMm() });
+      const o = makeBox(bgTemp[0], bgTemp[1], wx, wy, bgMode === "box" ? bgRectHeightMm() : 0, document.getElementById("bgShapeColor").value);
+      state.objects.push(o);
       bgTemp = null;
+      selectObject(o.id, { keepTab: true });
     }
   } else if (bgMode === "line") {
     // 連続直線：最初のクリックで始点、以降クリックごとに区間を追加して繋いでいく
     if (!bgLineStart) { bgLineStart = [wx, wy]; }
     else {
       pushUndo();
-      state.bgLines.push({ x1: bgLineStart[0], y1: bgLineStart[1], x2: wx, y2: wy, color: document.getElementById("bgShapeColor").value });
+      state.objects.push({ id: uid(), type: "line", name: autoObjName("line"), visible: true,
+                           x1: bgLineStart[0], y1: bgLineStart[1], x2: wx, y2: wy, color: document.getElementById("bgShapeColor").value });
       bgLineStart = [wx, wy];
+      renderObjectList();
     }
   } else if (bgMode === "text") {
     const txt = document.getElementById("bgText").value.trim();
     if (!txt) { document.getElementById("bgHint").textContent = "先に入力欄へ文字を入力してください。"; return; }
     pushUndo();
-    state.bgTexts.push({
-      x: wx, y: wy, text: txt, size: bgTextSizeMm(),
-      color: document.getElementById("bgTextColor").value,
-      vertical: document.getElementById("bgTextDir").value === "v",
-    });
-  } else if (bgMode === "erase") {
-    const hit = hitTestBgObject(wx, wy);
-    if (!hit) return;
-    pushUndo();
-    if (hit.kind === "text") state.bgTexts.splice(hit.index, 1);
-    else if (hit.kind === "line") state.bgLines.splice(hit.index, 1);
-    else state.bgRects.splice(hit.index, 1);
+    const o = { id: uid(), type: "text", name: txt, visible: true, x: wx, y: wy, text: txt, size: bgTextSizeMm(),
+                color: document.getElementById("bgTextColor").value, vertical: document.getElementById("bgTextDir").value === "v" };
+    state.objects.push(o);
+    selectObject(o.id, { keepTab: true });
   }
 });
 
-/* 背景オブジェクトの当たり判定（移動・削除で共用）。優先順: 文字 → 直線 → 四角 */
-function hitTestBgObject(wx, wy) {
+/* オブジェクトの当たり判定（選択・移動で共用）。優先順: 文字 → 直線 → 箱（面積が小さい＝内側の物を優先）。非表示は除く */
+function hitTestObject(wx, wy) {
   const tolMm = 8 / view.scale;
-  // 文字（表示中の文字枠＋許容量。面積が小さいものを優先）
-  let bestTi = -1, bestTa = Infinity;
-  state.bgTexts.forEach((T, i) => {
-    let wMm, hMm;
-    if (T.vertical) { // 縦書き：幅≒1文字分、高さ＝文字数分
-      const n = Math.max(1, Array.from(T.text).length);
-      wMm = T.size; hMm = n * T.size;
-    } else {
-      ctx.font = `${Math.max(2, T.size * view.scale)}px sans-serif`;
-      wMm = ctx.measureText(T.text).width / view.scale; hMm = T.size;
+  const objs = state.objects.filter(o => o.visible !== false);
+  let best = null, bestA = Infinity;
+  for (const o of objs) {
+    if (o.type !== "text") continue;
+    const b = textBoundsMm(o);
+    if (Math.abs(wx - o.x) <= b.w / 2 + tolMm && Math.abs(wy - o.y) <= b.h / 2 + tolMm) {
+      const a = (b.w + 2 * tolMm) * (b.h + 2 * tolMm);
+      if (a < bestA) { bestA = a; best = o; }
     }
-    const xlo = T.x - wMm / 2 - tolMm, xhi = T.x + wMm / 2 + tolMm;
-    const ylo = T.y - hMm / 2 - tolMm, yhi = T.y + hMm / 2 + tolMm;
-    if (wx >= xlo && wx <= xhi && wy >= ylo && wy <= yhi) {
-      const a = (xhi - xlo) * (yhi - ylo);
-      if (a < bestTa) { bestTa = a; bestTi = i; }
-    }
-  });
-  if (bestTi >= 0) return { kind: "text", index: bestTi };
-  // 直線（最も近い区間、許容距離内）
-  let bestLi = -1, bestLd = tolMm;
-  state.bgLines.forEach((L, i) => {
-    const dx = L.x2 - L.x1, dy = L.y2 - L.y1;
+  }
+  if (best) return best;
+  let bestD = tolMm;
+  for (const o of objs) {
+    if (o.type !== "line") continue;
+    const dx = o.x2 - o.x1, dy = o.y2 - o.y1;
     const len2 = dx * dx + dy * dy;
-    const t = len2 ? clamp(((wx - L.x1) * dx + (wy - L.y1) * dy) / len2, 0, 1) : 0;
-    const d = Math.hypot(wx - (L.x1 + t * dx), wy - (L.y1 + t * dy));
-    if (d <= bestLd) { bestLd = d; bestLi = i; }
-  });
-  if (bestLi >= 0) return { kind: "line", index: bestLi };
-  // 四角（クリック点を含むもののうち面積最小＝内側のもの）
-  let bestI = -1, bestA = Infinity;
-  state.bgRects.forEach((R, i) => {
-    const xlo = Math.min(R.x1, R.x2) - tolMm, xhi = Math.max(R.x1, R.x2) + tolMm;
-    const ylo = Math.min(R.y1, R.y2) - tolMm, yhi = Math.max(R.y1, R.y2) + tolMm;
-    if (wx >= xlo && wx <= xhi && wy >= ylo && wy <= yhi) {
-      const a = (xhi - xlo) * (yhi - ylo);
-      if (a < bestA) { bestA = a; bestI = i; }
+    const t = len2 ? clamp(((wx - o.x1) * dx + (wy - o.y1) * dy) / len2, 0, 1) : 0;
+    const d = Math.hypot(wx - (o.x1 + t * dx), wy - (o.y1 + t * dy));
+    if (d <= bestD) { bestD = d; best = o; }
+  }
+  if (best) return best;
+  for (const o of objs) {
+    if (o.type !== "box") continue;
+    // 箱の向きに合わせた座標系で判定
+    const c = Math.cos(-(o.yaw || 0)), s = Math.sin(-(o.yaw || 0));
+    const lx = (wx - o.x) * c - (wy - o.y) * s, ly = (wx - o.x) * s + (wy - o.y) * c;
+    if (Math.abs(lx) <= o.w / 2 + tolMm && Math.abs(ly) <= o.d / 2 + tolMm) {
+      const a = (o.w + 2 * tolMm) * (o.d + 2 * tolMm);
+      if (a < bestA) { bestA = a; best = o; }
     }
-  });
-  if (bestI >= 0) return { kind: "rect", index: bestI };
-  return null;
+  }
+  return best;
 }
 
-/* オブジェクト移動モード：ドラッグで四角・直線・文字を動かす */
-let bgDrag = null; // {kind, obj, lastW:[x,y], snap, moved}
+/* 選択／移動モード: ドラッグで箱・直線・文字を動かす */
+let bgDrag = null; // {obj, startW:[x,y], orig, snap, moved}
 cv.addEventListener("mousedown", (e) => {
   if (bgMode !== "move" || e.button !== 0) return;
   e.preventDefault();
   const [px, py] = cvPixel(e);
   const [wx, wy] = s2w(px, py);
-  const hit = hitTestBgObject(wx, wy);
-  if (!hit) return;
-  const obj = hit.kind === "text" ? state.bgTexts[hit.index]
-            : hit.kind === "line" ? state.bgLines[hit.index]
-            : state.bgRects[hit.index];
-  bgDrag = { kind: hit.kind, obj, startW: [wx, wy], orig: { ...obj }, snap: snapState(), moved: false };
+  const hit = hitTestObject(wx, wy);
+  selectObject(hit ? hit.id : null, { keepTab: true });
+  if (!hit || hit.locked) return;
+  bgDrag = { obj: hit, startW: [wx, wy], orig: { ...hit }, snap: snapState(), moved: false };
 });
 window.addEventListener("mousemove", (e) => {
   if (!bgDrag) return;
@@ -2526,20 +2611,19 @@ window.addEventListener("mousemove", (e) => {
   if (!dx && !dy && !bgDrag.moved) return;
   if (!bgDrag.moved) { pushUndo(bgDrag.snap); bgDrag.moved = true; } // 実際に動かした時だけ履歴を積む
   const o = bgDrag.obj, g = bgDrag.orig;
-  if (bgDrag.kind === "text") {
+  if (o.type === "line") {
+    // 基準点(x1,y1)をスナップし、形状は保ったまま平行移動
+    let nx1 = g.x1 + dx, ny1 = g.y1 + dy;
+    if (e.shiftKey) [nx1, ny1] = snapToGrid([nx1, ny1]);
+    o.x1 = nx1; o.y1 = ny1; o.x2 = g.x2 + (nx1 - g.x1); o.y2 = g.y2 + (ny1 - g.y1);
+  } else {
     let nx = g.x + dx, ny = g.y + dy;
     if (e.shiftKey) [nx, ny] = snapToGrid([nx, ny]); // Shift中は0.1mグリッドへスナップ
     o.x = nx; o.y = ny;
-  } else {
-    // 基準点(x1,y1)をスナップし、形状（サイズ・向き）は保ったまま平行移動
-    let nx1 = g.x1 + dx, ny1 = g.y1 + dy;
-    if (e.shiftKey) [nx1, ny1] = snapToGrid([nx1, ny1]);
-    o.x1 = nx1; o.y1 = ny1;
-    o.x2 = g.x2 + (nx1 - g.x1);
-    o.y2 = g.y2 + (ny1 - g.y1);
   }
+  if (objPropsId === o.id) renderObjProps(); // 設定欄の数値も追従
 });
-window.addEventListener("mouseup", () => { bgDrag = null; });
+window.addEventListener("mouseup", () => { bgDrag = null; });window.addEventListener("mouseup", () => { bgDrag = null; });
 
 /* ---------------- ペイン幅のドラッグ調整 ---------------- */
 function initSplitter(splitId, colId, dir) { // dir: ドラッグ量を幅に足す符号（左ペイン+1／右ペイン-1）
@@ -2573,6 +2657,7 @@ document.getElementById("btnZoomOut").addEventListener("click", () => { view.sca
 
 /* ---------------- マウスで視点移動（パン）・ホイールでズーム ---------------- */
 let panDrag = null; // ドラッグ中の状態
+let lastPanMoved = 0; // 直前の左ドラッグの移動量 [px]（小さければクリック＝選択）
 function cvPixel(e) { // クライアント座標 → キャンバスのバッキングストア座標
   const r = cv.getBoundingClientRect();
   return [(e.clientX - r.left) * cv.width / r.width,
@@ -2585,6 +2670,7 @@ cv.addEventListener("mousedown", (e) => {
   e.preventDefault();
   cv.focus();
   panDrag = { mx: e.clientX, my: e.clientY, cx: view.cx, cy: view.cy };
+  lastPanMoved = 0;
   cv.style.cursor = "grabbing";
 });
 window.addEventListener("mousemove", (e) => {
@@ -2592,6 +2678,7 @@ window.addEventListener("mousemove", (e) => {
   const r = cv.getBoundingClientRect();
   const dpx = (e.clientX - panDrag.mx) * cv.width / r.width;
   const dpy = (e.clientY - panDrag.my) * cv.height / r.height;
+  lastPanMoved = Math.max(lastPanMoved, Math.hypot(e.clientX - panDrag.mx, e.clientY - panDrag.my));
   view.cx = panDrag.cx - dpx / view.scale;   // 画面座標→ワールド座標（scale: px/mm）
   view.cy = panDrag.cy + dpy / view.scale;   // 画面y反転のため符号は＋
 });
@@ -2612,6 +2699,24 @@ cv.addEventListener("wheel", (e) => {
 }, { passive: false });
 
 /* ---------------- 保存・読込 ---------------- */
+/* 保存データ → objects。version 3 はそのまま（欠けた項目を補う）、それ以前は bgRects / bgLines / bgTexts から変換 */
+function objectsFromSave(data) {
+  if (Array.isArray(data.objects)) {
+    return data.objects.map(o => Object.assign({ id: uid(), visible: true }, o, { h: Math.max(0, +o.h || 0), z0: Math.max(0, +o.z0 || 0), yaw: +o.yaw || 0 }))
+      .filter(o => ["box", "line", "text"].includes(o.type));
+  }
+  const out = [];
+  let rects = data.bgRects, lines = data.bgLines || [];
+  if (rects === undefined && data.bgLines) { rects = data.bgLines; lines = []; } // 最古の形式: bgLines が四角の対角2点
+  (rects || []).forEach((R, i) => {
+    const o = makeBox(R.x1, R.y1, R.x2, R.y2, R.h || 0, R.color || "#e68282");
+    o.name = R.name || o.name; out.push(o);
+  });
+  lines.forEach((L, i) => out.push({ id: uid(), type: "line", name: L.name || `直線${i + 1}`, visible: true, x1: L.x1, y1: L.y1, x2: L.x2, y2: L.y2, color: L.color || "#888" }));
+  (data.bgTexts || []).forEach((T) => out.push({ id: uid(), type: "text", name: T.name || T.text, visible: true, x: T.x, y: T.y, text: T.text, size: T.size || 500, color: T.color || "#888", vertical: !!T.vertical }));
+  return out;
+}
+
 // ファイル名用のローカル日時文字列（YYYYMMDD_HHMM）
 function timestampStr() {
   const d = new Date();
@@ -2625,7 +2730,7 @@ function currentRev() {
 
 document.getElementById("btnSave").addEventListener("click", () => {
   const data = {
-    version: 2,                  // 2: アーム姿勢が 6 関節角 q[6]（1: q1, reach）
+    version: 3,                  // 3: objects（箱・区画・直線・文字を統合）／ 2: アーム姿勢が 6 関節角 q[6] ／ 1: q1, reach
     rev: currentRev(),           // どの版で作成したデータか記録
     savedAt: new Date().toISOString(),
     armModel: ARM.name,
@@ -2636,9 +2741,7 @@ document.getElementById("btnSave").addEventListener("click", () => {
     program: state.program.map(s => ({
       blocks: s.blocks.map(b => ({ type: b.type, pose: b.pose, name: b.name, wait: b.wait, reverse: b.reverse, mode: b.mode, vmax: b.vmax })),
     })),
-    bgRects: state.bgRects,
-    bgLines: state.bgLines,
-    bgTexts: state.bgTexts,
+    objects: state.objects,
     bgImage: state.bgImage,
     robot: state.robot,
     bodyVmax: SIM_PARAMS.body.vmax, // 走行速度（標準値から下げている場合に復元するため）
@@ -2700,7 +2803,8 @@ const TOUR_STEPS = [
   { target: "#paneRegister", title: "① まず位置を登録", text: "キーボードの矢印キーでロボットを動かし（車体は↑↓←→、アームはShift＋矢印）、「車体位置を登録」「アーム位置を登録」で名前を付けて登録します。ここが動作の目的地になります。" },
   { target: "#canvasWrap", title: "② 中央ビューの操作", text: "ロボットとレイアウトを表示します。ドラッグで画面移動、マウスホイールまたは左下の＋−で拡大縮小できます。" },
   { target: "#ctrl3d", title: "②' 3D 表示とアームの手先操作", text: "「3D」に切り替えると自由な視点でロボットを見られます（左ドラッグで回転、右ドラッグで移動）。アームは FANUC CRX-20iA/L の 6 軸で、手先のギズモをドラッグするか左ペインの「アーム手先コントローラ」で位置・姿勢（X/Y/Z/W/P/R）や各関節角を指定すると、逆運動学で姿勢が決まります。届く高さ・距離の確認に使ってください。" },
-  { target: "#paneBg", title: "③ 背景でレイアウトを作成", text: "顧客のレイアウト図（PNG）を取り込んだり（「📏 線を引いて縮尺を合わせる」で寸法が分かる箇所に線を引き、実寸を入力すると縮尺が自動で合います）、四角・直線・文字で棚や加工機などの目印を描けます。Shiftを押しながらだと0.1m刻みで配置できます。" },
+  { target: "#paneBg", title: "③ レイアウトを作る", text: "顧客のレイアウト図（PNG）を取り込んだり（「📏 線を引いて縮尺を合わせる」で寸法が分かる箇所に線を引き、実寸を入力すると縮尺が自動で合います）、「箱」（設備・机。高さを持ち 3D では箱）、「区画」（床の目印）、直線、文字を描けます。Shiftを押しながらだと0.1m刻みで配置できます。" },
+  { target: "#rightTabs", title: "③' オブジェクトの一覧と設定", text: "描いた物は右ペインの「オブジェクト」タブに一覧で並びます。選ぶと名前・位置・寸法・高さ・床に接地しているかを数値で直せ、複製・削除・表示切替もできます。2D や 3D の画面でクリックしても選べます。" },
   { target: "#colRight", title: "④ 動作シーケンスを組む", text: "「＋段を追加」で工程を並べます。各段にMove Body（移動）・Move Arm（アーム）・Other Action（撮影など任意の待ち）を追加します。同じ段に並べたブロックは同時実行、段は上から順に実行されます。一番上で開始位置も指定できます。" },
   { target: "#playbar", title: "⑤ 再生して確認", text: "「再生」で動きを確認できます。「録画して再生」を押すと、動きを動画（WebM）として保存できます。" },
   { target: "#statsDetails", title: "⑥ サイクルタイムの確認", text: "合計時間がここに出ます。開くと、アーム・車体・同時動作などの内訳も見られます。「シーケンスをCSV出力」で各工程の時間をExcel用に書き出せます。" },
@@ -2792,22 +2896,15 @@ document.getElementById("fileLoad").addEventListener("change", (e) => {
       state.armPoses = (data.armPoses || []).map(migrateArmPose); // 旧形式 {q1, reach} は 6 軸へ変換
       state.initial = data.initial || { bodyPose: null, armPose: null };
       state.program = (data.program || []).map(s => ({ blocks: s.blocks || [] }));
-      if (data.bgRects === undefined && data.bgLines) {
-        // 旧形式（bgRectsが無くbgLinesのみ＝線の始点終点）は対角2点の四角として引き継ぐ
-        state.bgRects = data.bgLines;
-        state.bgLines = [];
-      } else {
-        state.bgRects = data.bgRects || [];
-        state.bgLines = data.bgLines || [];
-      }
-      state.bgTexts = data.bgTexts || [];
+      state.objects = objectsFromSave(data);
+      selectedId = null;
       setBgImage(data.bgImage || null);
       if (data.robot) state.robot = { body: data.robot.body || { x: 0, y: 0, th: 0 }, arm: migrateArm(data.robot.arm) };
       // 走行速度：記録が無ければ標準値。標準値超えは setBodyVmax 内で標準値に戻る
       setBodyVmax(data.bodyVmax !== undefined ? data.bodyVmax : SIM_PARAMS.body.vmaxStd);
       renderSimParams();
       stopPlayback(false);
-      renderPoseLists(); renderProgram(); recompute(); armCtrlRefresh();
+      renderPoseLists(); renderProgram(); recompute(); armCtrlRefresh(); renderObjectList();
     } catch (err) {
       alert("読込に失敗しました: " + err.message);
     }
@@ -2845,6 +2942,16 @@ function ensure3D() {
     s.setEnvelope(document.getElementById("chkEnvelope").checked);
     s.setRobot(state.robot.body, state.robot.arm.q, state.toolLen);
     s.setView("iso");
+    // 3D のクリック（ドラッグでない）でオブジェクトを選択
+    let dn = null;
+    s.canvas.addEventListener("pointerdown", (e) => { dn = [e.clientX, e.clientY]; });
+    s.canvas.addEventListener("pointerup", (e) => {
+      if (!dn || Math.hypot(e.clientX - dn[0], e.clientY - dn[1]) > 4 || e.button !== 0) { dn = null; return; }
+      dn = null;
+      if (s.dragging) return;
+      const id = s.pick(e.clientX, e.clientY);
+      selectObject(id, { keepTab: !id });
+    });
   }
   return true;
 }
@@ -2861,8 +2968,8 @@ function setViewMode(m) {
   document.querySelectorAll("#viewSeg button").forEach(b => b.classList.toggle("on", b.dataset.mode === m));
   // 背景の図形・文字の編集（クリック位置が要る）は 2D 表示でだけ行う
   if (m === "3d" && bgMode) setBgMode(bgMode);
-  for (const id of ["btnBgDraw", "btnBgLine", "btnBgText", "btnBgMove", "btnBgErase", "btnBgCalib"]) document.getElementById(id).disabled = (m === "3d");
-  document.getElementById("bgHint").textContent = m === "3d" ? "背景の図形・文字・画像の編集は 2D 表示で行ってください（3D にも反映されます）。" : "";
+  for (const id of ["btnBgBox", "btnBgZone", "btnBgLine", "btnBgText", "btnBgMove", "btnBgCalib"]) document.getElementById(id).disabled = (m === "3d");
+  document.getElementById("bgHint").textContent = m === "3d" ? "オブジェクトの描画・ドラッグ移動は 2D 表示で。3D ではクリックで選択し、右ペインの数値で動かせます。" : "";
   if (m === "3d") { window.LexxSim3D.resize(); sync3D(); }
   else draw();
 }
@@ -2898,7 +3005,7 @@ function sync3D() {
   if (gz !== gizmoShown) { gizmoShown = gz; s.setGizmoMode(gz); }
   s.setRobot(state.robot.body, state.robot.arm.q, state.toolLen);
   s.syncScene({
-    bgRects: state.bgRects, bgLines: state.bgLines, bgTexts: state.bgTexts, bgImage: state.bgImage,
+    objects: state.objects, selectedId, bgImage: state.bgImage,
     bodyPoses: state.bodyPoses, paths: pathsForScene(), dims: dims3d(),
   });
   s.render();
@@ -3000,6 +3107,187 @@ document.getElementById("btnArmReady").addEventListener("click", () => { if (pla
   });
 }
 
+/* ---------------- 右ペインのタブ ---------------- */
+function showRightTab(t) {
+  document.getElementById("tabSeq").hidden = t !== "seq";
+  document.getElementById("tabObj").hidden = t !== "obj";
+  document.querySelectorAll("#rightTabs .seg button").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
+}
+document.querySelectorAll("#rightTabs .seg button").forEach(b => b.addEventListener("click", () => showRightTab(b.dataset.tab)));
+
+/* ---------------- オブジェクトの一覧と設定 ----------------
+ * 一覧で選ぶ → selectedId。2D/3D のハイライトと設定欄が追従する */
+let objPropsId = null; // 設定欄に出しているオブジェクト
+const OBJ_TYPE_LABEL = (o) => o.type === "box" ? (o.h > 0 ? "設備" : "区画") : o.type === "line" ? "直線" : "文字";
+function objKind(o) { return o.type === "box" ? (o.h > 0 ? "box" : "zone") : o.type; }
+
+function renderObjectList() {
+  const list = document.getElementById("objList");
+  const filter = document.getElementById("objFilter").value;
+  list.innerHTML = "";
+  const objs = state.objects.filter(o => filter === "all" || objKind(o) === filter);
+  if (!objs.length) {
+    const d = document.createElement("div"); d.className = "hint"; d.style.padding = "8px";
+    d.textContent = state.objects.length ? "この種類のオブジェクトはありません。" : "まだオブジェクトがありません。左ペインの「箱」「区画」「直線」「文字」か、上の「追加」で描いてください。";
+    list.appendChild(d);
+  }
+  for (const o of objs) {
+    const row = document.createElement("div");
+    row.className = "obj-item" + (o.id === selectedId ? " sel" : "") + (o.visible === false ? " hidden-obj" : "");
+    const sw = document.createElement("span"); sw.className = "sw"; sw.style.background = o.color;
+    const ty = document.createElement("span"); ty.className = "ty"; ty.textContent = OBJ_TYPE_LABEL(o);
+    const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = o.name || "（名前なし）"; nm.title = o.name || "";
+    const dim = document.createElement("span"); dim.className = "dim";
+    if (o.type === "box") dim.textContent = `${(o.w / 1000).toFixed(2)}×${(o.d / 1000).toFixed(2)}` + (o.h > 0 ? `×${(o.h / 1000).toFixed(2)} m` : " m");
+    else if (o.type === "line") dim.textContent = `${(Math.hypot(o.x2 - o.x1, o.y2 - o.y1) / 1000).toFixed(2)} m`;
+    else dim.textContent = `${(o.size / 1000).toFixed(1)} m`;
+    row.append(sw, ty, nm, dim);
+    row.addEventListener("click", () => selectObject(o.id, { keepTab: true }));
+    row.addEventListener("dblclick", () => focusObject(o));
+    list.appendChild(row);
+  }
+  const sel = state.objects.find(o => o.id === selectedId);
+  const row = list.querySelector(".obj-item.sel");
+  if (row) row.scrollIntoView({ block: "nearest" });
+  for (const id of ["btnObjDup", "btnObjVis", "btnObjDel", "btnObjFocus"]) document.getElementById(id).disabled = !sel;
+  renderObjProps();
+}
+document.getElementById("objFilter").addEventListener("change", renderObjectList);
+
+/* 2D の表示をオブジェクトの位置に合わせる */
+function focusObject(o) {
+  if (viewMode === "3d") setViewMode("2d");
+  if (o.type === "line") { view.cx = (o.x1 + o.x2) / 2; view.cy = (o.y1 + o.y2) / 2; }
+  else { view.cx = o.x; view.cy = o.y; }
+}
+
+function selectedObject() { return state.objects.find(o => o.id === selectedId) || null; }
+function deleteSelectedObject() {
+  const o = selectedObject(); if (!o) return;
+  pushUndo();
+  state.objects = state.objects.filter(q => q !== o);
+  selectedId = null;
+  renderObjectList();
+}
+document.getElementById("btnObjDel").addEventListener("click", deleteSelectedObject);
+document.getElementById("btnObjDup").addEventListener("click", () => {
+  const o = selectedObject(); if (!o) return;
+  pushUndo();
+  const c = structuredClone(o); c.id = uid(); c.name = (o.name || "") + " のコピー";
+  const off = 300; // 少しずらして置く
+  if (c.type === "line") { c.x1 += off; c.x2 += off; c.y1 -= off; c.y2 -= off; } else { c.x += off; c.y -= off; }
+  state.objects.splice(state.objects.indexOf(o) + 1, 0, c);
+  selectObject(c.id, { keepTab: true });
+});
+document.getElementById("btnObjVis").addEventListener("click", () => {
+  const o = selectedObject(); if (!o) return;
+  pushUndo(); o.visible = o.visible === false; renderObjectList();
+});
+document.getElementById("btnObjFocus").addEventListener("click", () => { const o = selectedObject(); if (o) focusObject(o); });
+document.querySelectorAll("#tabObj button[data-addobj]").forEach(b => b.addEventListener("click", () => {
+  if (viewMode === "3d") setViewMode("2d"); // 描くのは 2D
+  if (bgMode !== b.dataset.addobj) setBgMode(b.dataset.addobj);
+  if (b.dataset.addobj === "text") document.getElementById("bgText").focus();
+}));
+
+/* 設定欄: 選択中のオブジェクトの種類に応じた入力欄を作る。値を変えるとその場で反映（Undo 対象） */
+function renderObjProps() {
+  const box = document.getElementById("objProps");
+  const o = selectedObject();
+  objPropsId = o ? o.id : null;
+  if (!o) { box.innerHTML = '<div class="hint">一覧から選ぶと、ここに設定が出ます。2D・3D 上のクリックでも選べます。</div>'; return; }
+  // 入力中の欄があれば作り直さず値だけ更新する（ドラッグ移動中の追従）
+  if (box.dataset.id === o.id && box.contains(document.activeElement)) { syncObjPropValues(o); return; }
+  box.dataset.id = o.id;
+  box.innerHTML = "";
+  const title = document.createElement("div"); title.className = "ptitle";
+  const ty = document.createElement("span"); ty.className = "ty"; ty.textContent = OBJ_TYPE_LABEL(o);
+  const tt = document.createElement("span"); tt.textContent = "設定";
+  title.append(ty, tt);
+  box.appendChild(title);
+  const grid = document.createElement("div"); grid.className = "pgrid";
+  box.appendChild(grid);
+  // 行の追加ヘルパ。conv: 表示値→内部値、disp: 内部値→表示値
+  const field = (label, key, opts) => {
+    opts = opts || {};
+    const lb = document.createElement("span"); lb.textContent = label + (opts.unit ? ` [${opts.unit}]` : "");
+    let el;
+    if (opts.type === "color") { el = document.createElement("input"); el.type = "color"; }
+    else if (opts.type === "checkbox") { el = document.createElement("input"); el.type = "checkbox"; }
+    else if (opts.type === "text") { el = document.createElement("input"); el.type = "text"; }
+    else { el = document.createElement("input"); el.type = "number"; el.step = opts.step || "any"; if (opts.min !== undefined) el.min = opts.min; }
+    el.dataset.key = key; el.dataset.scale = opts.scale || 1; el.dataset.kind = opts.type || "number";
+    if (opts.full) el.classList.add("full");
+    const apply = () => {
+      const cur = selectedObject(); if (!cur || cur.id !== o.id) return;
+      let v;
+      if (el.type === "checkbox") v = el.checked;
+      else if (el.type === "color" || el.type === "text") v = el.value;
+      else { v = parseFloat(el.value); if (!isFinite(v)) return; v = v * (opts.scale || 1); if (opts.min !== undefined && v < opts.min * (opts.scale || 1)) v = opts.min * (opts.scale || 1); }
+      if (opts.set) { pushUndo(); opts.set(cur, v); } else { if (cur[key] === v) return; pushUndo(); cur[key] = v; }
+      if (opts.rebuild) renderObjProps(); else syncObjPropValues(cur);
+      renderObjectList();
+    };
+    el.addEventListener("change", apply);
+    if (el.type === "text") el.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); apply(); el.blur(); } });
+    grid.append(lb, el);
+    return el;
+  };
+  field("名前", "name", { type: "text", full: true });
+  const visLb = document.createElement("span"); visLb.textContent = "表示";
+  const vis = document.createElement("input"); vis.type = "checkbox"; vis.dataset.key = "visible"; vis.dataset.kind = "checkbox"; vis.className = "full";
+  vis.addEventListener("change", () => { const cur = selectedObject(); if (!cur) return; pushUndo(); cur.visible = vis.checked; renderObjectList(); });
+  grid.append(visLb, vis);
+  field("色", "color", { type: "color", full: true });
+  if (o.type === "box") {
+    field("中心 X", "x", { scale: 1000, step: 0.05, unit: "m" }); field("中心 Y", "y", { scale: 1000, step: 0.05, unit: "m" });
+    field("向き", "yaw", { scale: Math.PI / 180, step: 5, unit: "°", full: true });
+    field("幅 (x)", "w", { step: 50, min: 10, unit: "mm" }); field("奥行 (y)", "d", { step: 50, min: 10, unit: "mm" });
+    field("高さ", "h", { step: 50, min: 0, unit: "mm", rebuild: true });
+    const grounded = document.createElement("input"); grounded.type = "checkbox"; grounded.checked = !(o.z0 > 0);
+    grounded.dataset.key = "grounded"; grounded.dataset.kind = "checkbox";
+    const gl = document.createElement("span"); gl.textContent = "床に接地";
+    grid.append(gl, grounded);
+    const z0 = field("底面の高さ", "z0", { step: 50, min: 0, unit: "mm", full: true });
+    z0.disabled = !(o.z0 > 0);
+    grounded.addEventListener("change", () => {
+      const cur = selectedObject(); if (!cur) return;
+      pushUndo();
+      if (grounded.checked) { cur.z0 = 0; z0.disabled = true; z0.value = 0; }
+      else { cur.z0 = Math.max(cur.z0 || 0, 100); z0.disabled = false; z0.value = cur.z0; } // 浮かせる: まず 100 mm
+      renderObjectList();
+    });
+    const hint = document.createElement("div"); hint.className = "hint"; hint.style.gridColumn = "1 / 5";
+    hint.textContent = "高さ 0 は床の区画（3D では床の塗り）。底面の高さは棚の上の物や吊り下げ設備に使います。2D でドラッグしても動かせます。";
+    grid.appendChild(hint);
+  } else if (o.type === "line") {
+    field("始点 X", "x1", { scale: 1000, step: 0.05, unit: "m" }); field("始点 Y", "y1", { scale: 1000, step: 0.05, unit: "m" });
+    field("終点 X", "x2", { scale: 1000, step: 0.05, unit: "m" }); field("終点 Y", "y2", { scale: 1000, step: 0.05, unit: "m" });
+  } else if (o.type === "text") {
+    field("文字", "text", { type: "text", full: true });
+    field("中心 X", "x", { scale: 1000, step: 0.05, unit: "m" }); field("中心 Y", "y", { scale: 1000, step: 0.05, unit: "m" });
+    field("文字の高さ", "size", { scale: 1000, step: 0.1, min: 0.05, unit: "m" });
+    const vl = document.createElement("span"); vl.textContent = "縦書き";
+    const vv = document.createElement("input"); vv.type = "checkbox"; vv.dataset.key = "vertical"; vv.dataset.kind = "checkbox";
+    vv.addEventListener("change", () => { const cur = selectedObject(); if (!cur) return; pushUndo(); cur.vertical = vv.checked; });
+    grid.append(vl, vv);
+  }
+  syncObjPropValues(o);
+}
+/* 設定欄の値を内部値から更新（フォーカス中の欄は触らない） */
+function syncObjPropValues(o) {
+  document.querySelectorAll("#objProps [data-key]").forEach(el => {
+    if (el === document.activeElement) return;
+    const k = el.dataset.key;
+    if (k === "grounded") { el.checked = !(o.z0 > 0); return; }
+    if (el.dataset.kind === "checkbox") { el.checked = k === "visible" ? o.visible !== false : !!o[k]; return; }
+    if (el.dataset.kind === "color" || el.dataset.kind === "text") { el.value = o[k] || (el.dataset.kind === "color" ? "#888888" : ""); return; }
+    const sc = parseFloat(el.dataset.scale) || 1;
+    const v = (o[k] || 0) / sc;
+    el.value = sc === 1 ? Math.round(v) : Math.round(v * 1000) / 1000;
+  });
+}
+
 /* ---------------- 起動 ---------------- */
 renderSimParams();
 renderPoseLists();
@@ -3007,10 +3295,11 @@ renderProgram();
 resizeCanvas();
 recompute();
 armCtrlRefresh();
+renderObjectList();
 requestAnimationFrame(loop);
 
 /* テスト用フック（自動検証で使用） */
-window.__sim = { state, SIM_PARAMS, ARM, setBodyVmax, renderSimParams, dubinsShortest, dubinsSample, trapDur, trapPos, compileProgram, stateAtTime, recompute, renderPoseLists, renderProgram, mod2pi, angDiff, setBgImage, pushUndo, doUndo, doRedo, undoStack, redoStack, setViewMode, setArmQ, armCtrlRefresh, jogTcp, migrateArm, get viewMode() { return viewMode; } };
+window.__sim = { state, SIM_PARAMS, ARM, setBodyVmax, renderSimParams, dubinsShortest, dubinsSample, trapDur, trapPos, compileProgram, stateAtTime, recompute, renderPoseLists, renderProgram, mod2pi, angDiff, setBgImage, pushUndo, doUndo, doRedo, undoStack, redoStack, setViewMode, setArmQ, armCtrlRefresh, jogTcp, migrateArm, selectObject, renderObjectList, objectsFromSave, get viewMode() { return viewMode; }, get selectedId() { return selectedId; } };
 </script>
 </body>
 </html>

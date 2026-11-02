@@ -1,5 +1,5 @@
 // 展示会レイアウト（sample_booth_rev61.json、旧形式）を 3D 向けに作り直す:
-//   node site/simulator/test/make_sample_booth.cjs  →  sample_booth_rev65.json
+//   node site/simulator/test/make_sample_booth.cjs  →  sample_booth_rev66.json
 // - 設備の四角に高さを付ける（Pick 台 800、加工機 900、Drop 台 800 mm）
 // - アーム姿勢を 6 軸で作り直す（各作業位置に「上空で待つ姿勢」と「台の上の把持位置」）
 // - 撮像・把持・リリース・加工の待ち時間を入れ、ピックが一瞬で終わらないようにする
@@ -81,12 +81,23 @@ const program = [
   st(body("Start", "backward"), arm("Home")),
 ];
 
-// 設備の四角に高さ: [0]=ブース床（区画）、[1]=加工（黄）、[2]=バックヤード（区画）、[3]=Pick（青）、[4]=Drop（緑）
-const bgRects = src.bgRects.map((r, i) => ({ ...r, h: [0, TABLE.machine, 0, TABLE.pick, TABLE.drop][i] || 0 }));
+// オブジェクト（version 3）: 旧 bgRects/bgTexts を名前付きの箱・区画・文字にする
+// [0]=ブース床（区画）、[1]=加工機（黄）、[2]=バックヤード（区画）、[3]=Pick 台（青）、[4]=Drop 台（緑）
+const RECT_META = [["ブース床", 0], ["加工機", TABLE.machine], ["バックヤード", 0], ["Pick 台", TABLE.pick], ["Drop 台", TABLE.drop]];
+let n = 0;
+const uid = () => "booth" + (++n).toString(36).padStart(3, "0");
+const objects = [];
+src.bgRects.forEach((r, i) => {
+  const [name, h] = RECT_META[i] || [`箱${i + 1}`, 0];
+  objects.push({ id: uid(), type: "box", name, visible: true, x: (r.x1 + r.x2) / 2, y: (r.y1 + r.y2) / 2, yaw: 0,
+                 w: Math.abs(r.x2 - r.x1), d: Math.abs(r.y2 - r.y1), h, z0: 0, color: r.color });
+});
+(src.bgLines || []).forEach((l, i) => objects.push({ id: uid(), type: "line", name: `直線${i + 1}`, visible: true, x1: l.x1, y1: l.y1, x2: l.x2, y2: l.y2, color: l.color }));
+(src.bgTexts || []).forEach((t) => objects.push({ id: uid(), type: "text", name: t.text, visible: true, x: t.x, y: t.y, text: t.text, size: t.size, color: t.color, vertical: !!t.vertical }));
 
 const out = {
-  version: 2,
-  rev: "rev.65",
+  version: 3,
+  rev: "rev.66",
   savedAt: new Date().toISOString(),
   armModel: CRX.MODEL.name,
   toolLen: TOOL,
@@ -94,14 +105,12 @@ const out = {
   armPoses,
   initial: { bodyPose: "Init", armPose: "Home" },
   program,
-  bgRects,
-  bgLines: src.bgLines,
-  bgTexts: src.bgTexts,
+  objects,
   bgImage: null,
   robot: { body: { ...src.bodyPoses[0] }, arm: { q: armPoses.find(p => p.name === "Home").q } },
   bodyVmax: 1.5,
 };
 delete out.robot.body.name;
-const dst = path.join(__dirname, "sample_booth_rev65.json");
+const dst = path.join(__dirname, "sample_booth_rev66.json");
 fs.writeFileSync(dst, JSON.stringify(out, null, 2) + "\n");
 console.log("wrote", dst);

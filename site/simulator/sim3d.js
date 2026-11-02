@@ -309,10 +309,10 @@ class Sim3D {
 
   /* 背景（四角・直線・文字・画像）、登録済み車体位置（ゴースト）、予定パスを同期。
    * 変化の検出はキー文字列の比較で行う（本体側のあちこちから呼ばれるため）。 */
-  syncScene({ bgRects, bgLines, bgTexts, bgImage, bodyPoses, paths, dims }) {
+  syncScene({ objects, selectedId, bgImage, bodyPoses, paths, dims }) {
     if (!this.ready) return;
-    const bgKey = JSON.stringify([bgRects, bgLines, bgTexts, bgImage && [bgImage.pxPerM, bgImage.x, bgImage.y, bgImage.opacity, bgImage.src.length]]);
-    if (bgKey !== this.bgKey) { this.bgKey = bgKey; this.rebuildBackground(bgRects, bgLines, bgTexts, bgImage); }
+    const bgKey = JSON.stringify([objects, selectedId, bgImage && [bgImage.pxPerM, bgImage.x, bgImage.y, bgImage.opacity, bgImage.src.length]]);
+    if (bgKey !== this.bgKey) { this.bgKey = bgKey; this.rebuildBackground(objects, selectedId, bgImage); }
     const gKey = JSON.stringify(bodyPoses.map(p => [p.x, p.y, p.th, p.name]));
     if (gKey !== this.ghostKey) { this.ghostKey = gKey; this.rebuildGhosts(bodyPoses, dims); }
     const pKey = JSON.stringify(paths);
@@ -326,38 +326,57 @@ class Sim3D {
     }
   }
 
-  rebuildBackground(rects, lines, texts, img) {
+  /* objects: 本体の state.objects（box / line / text）。selectedId の物は青い縁取りで強調 */
+  rebuildBackground(objects, selectedId, img) {
     this.clearGroup(this.bgGroup);
-    // 四角: 高さ h [mm] があれば箱（設備・机など）、無ければ床に薄い塗り＋枠（区画）
-    for (const R of rects) {
-      const w = Math.abs(R.x2 - R.x1), d = Math.abs(R.y2 - R.y1), hz = Math.max(0, R.h || 0);
+    this.pickables = [];
+    const SEL = 0x0a6ebd;
+    const objs = (objects || []).filter(o => o.visible !== false);
+    // 箱: 高さ h [mm] があれば箱（設備・机など）、無ければ床に薄い塗り＋枠（区画）。z0 は底面の高さ、yaw は向き
+    for (const o of objs) {
+      if (o.type !== "box") continue;
+      const w = o.w, d = o.d, hz = Math.max(0, o.h || 0), z0 = Math.max(0, o.z0 || 0);
       if (w < 1 || d < 1) continue;
-      const cx = (R.x1 + R.x2) / 2, cy = (R.y1 + R.y2) / 2;
-      const col = new THREE.Color(R.color);
+      const col = new THREE.Color(o.color);
+      const sel = o.id === selectedId;
+      let m, ed;
       if (hz > 0) {
         const geo = new THREE.BoxGeometry(w, d, hz);
-        const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: col, transparent: true, opacity: 0.45, roughness: 0.9, depthWrite: false }));
-        m.position.set(cx, cy, hz / 2);
-        this.bgGroup.add(m);
-        const ed = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: col }));
-        ed.position.copy(m.position);
-        this.bgGroup.add(ed);
+        m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: col, transparent: true, opacity: sel ? 0.6 : 0.45, roughness: 0.9, depthWrite: false, emissive: sel ? new THREE.Color(SEL) : new THREE.Color(0), emissiveIntensity: 0.25 }));
+        m.position.set(o.x, o.y, z0 + hz / 2);
+        ed = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: sel ? SEL : col }));
       } else {
-        const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.12, depthWrite: false }));
-        m.position.set(cx, cy, 2);
-        this.bgGroup.add(m);
-        const ed = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry), new THREE.LineBasicMaterial({ color: col }));
-        ed.position.copy(m.position);
-        this.bgGroup.add(ed);
+        const geo = new THREE.PlaneGeometry(w, d);
+        m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: sel ? SEL : col, transparent: true, opacity: sel ? 0.25 : 0.12, depthWrite: false }));
+        m.position.set(o.x, o.y, 2);
+        ed = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: sel ? SEL : col }));
+      }
+      m.rotation.z = o.yaw || 0; ed.rotation.z = o.yaw || 0;
+      ed.position.copy(m.position);
+      m.userData.id = o.id;
+      this.bgGroup.add(m, ed);
+      this.pickables.push(m);
+      // 名前ラベル（箱の上）
+      if (o.name) this.bgGroup.add(this.makeLabel(o.name, o.x, o.y, z0 + hz + 120, col.getStyle()));
+    }
+    // 直線（選択中は太く見せるため床に細長い板も置く）
+    for (const o of objs) {
+      if (o.type !== "line") continue;
+      const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(o.x1, o.y1, 3), new THREE.Vector3(o.x2, o.y2, 3)]);
+      this.bgGroup.add(new THREE.Line(g, new THREE.LineBasicMaterial({ color: new THREE.Color(o.id === selectedId ? SEL : o.color) })));
+      // クリック用の当たり板
+      const len = Math.hypot(o.x2 - o.x1, o.y2 - o.y1);
+      if (len > 1) {
+        const pm = new THREE.Mesh(new THREE.PlaneGeometry(len, 80), new THREE.MeshBasicMaterial({ color: SEL, transparent: true, opacity: o.id === selectedId ? 0.35 : 0, depthWrite: false }));
+        pm.position.set((o.x1 + o.x2) / 2, (o.y1 + o.y2) / 2, 2.5);
+        pm.rotation.z = Math.atan2(o.y2 - o.y1, o.x2 - o.x1);
+        pm.userData.id = o.id;
+        this.bgGroup.add(pm); this.pickables.push(pm);
       }
     }
-    // 直線
-    for (const L of lines) {
-      const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(L.x1, L.y1, 3), new THREE.Vector3(L.x2, L.y2, 3)]);
-      this.bgGroup.add(new THREE.Line(g, new THREE.LineBasicMaterial({ color: new THREE.Color(L.color) })));
-    }
     // 文字: Canvas に描いて床に貼る
-    for (const T of texts) {
+    for (const T of objs) {
+      if (T.type !== "text") continue;
       const chars = Array.from(T.text || "");
       if (!chars.length) continue;
       const fontPx = 64;
@@ -377,7 +396,14 @@ class Sim3D {
       const m = new THREE.Mesh(new THREE.PlaneGeometry(cv.width * scale, cv.height * scale),
         new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }));
       m.position.set(T.x, T.y, 4);
+      m.userData.id = T.id;
       this.bgGroup.add(m);
+      this.pickables.push(m);
+      if (T.id === selectedId) {
+        const ed = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry), new THREE.LineBasicMaterial({ color: SEL }));
+        ed.position.copy(m.position); ed.position.z = 5;
+        this.bgGroup.add(ed);
+      }
     }
     // 背景画像: 床に貼る
     if (img && img.src) {
@@ -411,12 +437,13 @@ class Sim3D {
     }
   }
 
-  makeLabel(text, x, y, z) {
+  /* 画面上で一定の大きさに見えるビルボード文字 */
+  makeLabel(text, x, y, z, color) {
     const cv = document.createElement("canvas");
     const g2 = cv.getContext("2d");
     g2.font = "bold 40px sans-serif";
     cv.width = Math.ceil(g2.measureText(text).width + 24); cv.height = 56;
-    g2.font = "bold 40px sans-serif"; g2.fillStyle = "rgba(36,113,163,0.9)"; g2.textBaseline = "middle";
+    g2.font = "bold 40px sans-serif"; g2.fillStyle = color || "rgba(36,113,163,0.9)"; g2.textBaseline = "middle";
     g2.fillText(text, 12, 28);
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthTest: false }));
     sp.scale.set(cv.width * 4, cv.height * 4, 1);
@@ -437,6 +464,16 @@ class Sim3D {
   }
 
   /* ---------------- 操作 ---------------- */
+  /* 画面座標のクリック位置にあるオブジェクトの id（無ければ null） */
+  pick(clientX, clientY) {
+    if (!this.ready || !this.pickables || !this.pickables.length) return null;
+    const r = this.renderer.domElement.getBoundingClientRect();
+    const ndc = new THREE.Vector2(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
+    const rc = new THREE.Raycaster();
+    rc.setFromCamera(ndc, this.camera);
+    const hits = rc.intersectObjects(this.pickables, false);
+    return hits.length ? hits[0].object.userData.id : null;
+  }
   setGizmoMode(mode) { // 'translate' | 'rotate' | null
     this.gizmoMode = mode;
     if (!this.gizmo) return;
