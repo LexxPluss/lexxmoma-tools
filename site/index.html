@@ -355,6 +355,13 @@ const TOOLS = [
     icon:"ticket", href:"library/index.html"
   },
   {
+    id:"sketch", cat:"SIMULATION", name:"工程シミュレーター(2D)",
+    desc:"設備と作業者を置いてつなぎ、工程図を作成。人とモノの動きや生産数をシミュレーションし、LexxMoMa導入前後を比較できます。",
+    solves:"<b>工程図と導入前後の比較</b>を打合せで共有する。",
+    phases:["assess","design"], worries:["layout","cycle"], status:"web", ver:"ベータ版",
+    icon:"flow", href:"process-sketch/dist/process-sketch.html"
+  },
+  {
     id:"sim2d", cat:"SIMULATION", name:"LexxMoMa 動作シミュレーター(2D)",
     desc:"工場図面の上で、LexxMoMaの走行とアーム動作を組み立てるツール。動きと所要時間を確認し、導入する工程のサイクルタイムを試算できます。",
     solves:"<b>動線とサイクルタイム</b>を検討する。",
@@ -362,11 +369,18 @@ const TOOLS = [
     icon:"grid", href:"simulator/lexxmoma-2d.html"
   },
   {
-    id:"sketch", cat:"SIMULATION", name:"工程シミュレーター(2D)",
-    desc:"設備と作業者を置いてつなぎ、工程図を作成。人とモノの動きや生産数をシミュレーションし、LexxMoMa導入前後を比較できます。",
-    solves:"<b>工程図と導入前後の比較</b>を打合せで共有する。",
-    phases:["assess","design"], worries:["layout","cycle"], status:"web", ver:"ベータ版",
-    icon:"flow", href:"process-sketch/dist/process-sketch.html"
+    id:"roi", cat:"BUSINESS", name:"何年で元が取れる？ 自走マニピュレータ 回収シミュレーター",
+    desc:"人件費・省人化人数・導入費から、投資回収年数と年間効果を試算（ROI 計算）。条件を変えて比較し、導入判断に使う結果を印刷・保存できます。",
+    solves:"<b>導入コストと期待効果</b>を数字で比較する。",
+    phases:["assess","deploy"], worries:["roi"], status:"web", ver:"v1",
+    icon:"yen", href:"lexxmoma-roi/dist/lexxmoma_roi.html"
+  },
+  {
+    id:"sier", cat:"PARTNER", name:"ロボットSIerデータベース",
+    desc:"全国のロボットSIer・自動化装置メーカーを地図で検索。地域や得意工程などで絞り込み、各社の公開情報を確認して導入パートナーを探せます。",
+    solves:"<b>地域や工程に合う導入パートナー</b>を探す。",
+    phases:["deploy"], worries:["partner"], status:"web", ver:"v1",
+    icon:"map", href:"robot-sier-map/index.html"
   },
   {
     id:"eoatdb", cat:"DESIGN", name:"エンドエフェクタ事例データベース",
@@ -380,20 +394,6 @@ const TOOLS = [
     desc:"ワークのCADデータをもとに、ハンドや吸着パッド、搭載機器を検討するツール。部品の選定から把持の確認、設計データの出力まで支援する予定です。",
     solves:"<b>ワークのつかみ方と必要な機器</b>を検討する。",
     phases:["design"], worries:["grip","equip","teach"], status:"plan", ver:"近日公開", icon:"hand"
-  },
-  {
-    id:"sier", cat:"PARTNER", name:"ロボットSIerデータベース",
-    desc:"全国のロボットSIer・自動化装置メーカーを地図で検索。地域や得意工程などで絞り込み、各社の公開情報を確認して導入パートナーを探せます。",
-    solves:"<b>地域や工程に合う導入パートナー</b>を探す。",
-    phases:["deploy"], worries:["partner"], status:"web", ver:"v1",
-    icon:"map", href:"robot-sier-map/index.html"
-  },
-  {
-    id:"roi", cat:"BUSINESS", name:"何年で元が取れる？ 自走マニピュレータ 回収シミュレーター",
-    desc:"人件費・省人化人数・導入費から、投資回収年数と年間効果を試算（ROI 計算）。条件を変えて比較し、導入判断に使う結果を印刷・保存できます。",
-    solves:"<b>導入コストと期待効果</b>を数字で比較する。",
-    phases:["assess","deploy"], worries:["roi"], status:"web", ver:"v1",
-    icon:"yen", href:"lexxmoma-roi/dist/lexxmoma_roi.html"
   },
   {
     id:"parts", cat:"MAINTENANCE", name:"サービスパーツカタログ",
