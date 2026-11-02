@@ -123,6 +123,30 @@ section{padding:22px 0}
   .phases,.chips{flex-wrap:nowrap;overflow-x:auto;width:100%;padding-bottom:4px;scrollbar-width:thin}
 }
 
+/* 新しいツールのお知らせ(ポップアップ・NEW の印)。NEWS に 1 件足すと出る */
+.badge.b-new,.nav .newdot{background:#e8590c;color:#fff;font-weight:700;letter-spacing:.04em}
+.nav .newdot{font-size:10px;border-radius:999px;padding:1px 6px;margin-left:4px;vertical-align:2px}
+.card.hl{animation:hl 2.4s ease-out 1}
+@keyframes hl{0%,40%{box-shadow:0 0 0 4px color-mix(in srgb,#e8590c 55%,transparent)}100%{box-shadow:0 0 0 0 transparent}}
+.lx-news{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:2147482000;width:360px;max-width:calc(100vw - 32px);background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 48px rgba(16,32,48,.22);overflow:hidden;opacity:0;transform:translateY(12px);transition:opacity .3s,transform .3s}
+.lx-news.show{opacity:1;transform:none}
+.lx-news .shot{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;object-position:top left;border-bottom:1px solid var(--line);background:var(--panel-2)}
+.lx-news .bd{padding:14px 16px 16px}
+.lx-news .kick{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.06em}
+.lx-news .kick b{background:#e8590c;color:#fff;border-radius:999px;padding:2px 8px;letter-spacing:.08em}
+.lx-news h3{margin:6px 0 4px;font-size:16px;line-height:1.45}
+.lx-news p{margin:0 0 12px;font-size:13px;color:var(--muted);line-height:1.6}
+.lx-news .acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.lx-news .x{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;border:0;background:rgba(0,0,0,.55);color:#fff;font-size:16px;line-height:30px;cursor:pointer}
+.lx-news .x:hover{background:rgba(0,0,0,.75)}
+.lx-news .later{margin-left:auto;background:none;border:0;color:var(--muted);font:inherit;font-size:12px;cursor:pointer;padding:4px}
+.lx-news .later:hover{color:var(--text);text-decoration:underline}
+@media (max-width:560px){
+  .lx-news{left:8px;right:8px;width:auto;max-width:none;bottom:calc(8px + env(safe-area-inset-bottom,0px))}
+  .lx-news .shot{aspect-ratio:16/7}
+}
+@media (prefers-reduced-motion:reduce){.lx-news{transition:none}.card.hl{animation:none;outline:3px solid #e8590c}}
+
 /* toolbar */
 .bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px}
 .bar .res{font-size:13px;color:var(--muted)}
@@ -218,7 +242,7 @@ footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--faint);f
   <div class="wrap nav">
     <a class="logo" href="#top"><img class="mark" src="assets/lexxpluss-logo.png" alt="LexxPluss" width="480" height="154"><span class="divider"></span>LexxMoMa Tools</a>
     <span class="sp"></span>
-    <a class="ghost" href="#tools">ツールを探す</a>
+    <a class="ghost" href="#tools" id="navTools">ツールを探す</a>
     <a class="tourlink" href="library/index.html" id="navTour">🎫 見学ツアー</a>
     <button type="button" class="lx-theme-btn" data-lx-theme-toggle aria-label="ライト / ダーク切替"></button>
   </div>
@@ -336,6 +360,15 @@ const WORRIES = [
   {id:"parts",  t:"交換部品はすぐ手に入る?"},
 ];
 
+// ===== 新しいツールのお知らせ(ここに 1 件足すと、トップで 1 回だけポップアップ + until まで NEW の印) =====
+// id: お知らせごとに変える(見た・閉じたの記録のキー) / tool: TOOLS の id / until: NEW の印を出す最終日(この日を過ぎるとポップアップも出さない)
+const NEWS = [
+  {id:"eoatdb-2026-11", tool:"eoatdb", until:"2026-12-02", kicker:"新しいツール",
+   title:"エンドエフェクタ事例データベースを公開しました",
+   desc:"掴みたいモノを入れると、世界のロボット導入事例 1,920 件から、どの掴み方が使われているかの傾向が画像付きで分かります。",
+   img:"assets/news/eoatdb.webp"},
+];
+
 // ===== ツール一覧(ここに1件足すとカードが増える) =====
 // status: web=ブラウザで即実行 / local=ローカル実行(Python) / plan=開発中
 const TOOLS = [
@@ -443,6 +476,9 @@ function matches(t){
   if(state.worries.size && ![...state.worries].some(w=>t.worries.includes(w))) return false;
   return true;
 }
+// 有効なお知らせ(until の日まで)
+const today = new Date().toISOString().slice(0,10);
+const newsFor = id => NEWS.find(n=>n.tool===id && today<=n.until);
 function card(t){
   const [cls,label] = STATUS[t.status];
   const phaseBadges = t.phases.map(p=>`<span class="badge b-phase">${PHASES.find(x=>x.id===p).t}</span>`).join("");
@@ -458,9 +494,9 @@ function card(t){
   }
   if(t.help && t.status!=="plan") actions += `<a class="btn s" href="${enc(t.help)}" target="_blank" rel="noopener" ${ev("help")}>使い方</a>`;
   const note = t.note ? `<br><span class="note">※ ${t.note}</span>` : "";
-  return `<article class="card ${t.status==="plan"?"plan":""}">
+  return `<article class="card ${t.status==="plan"?"plan":""}" id="tool-${t.id}">
     <div class="top"><div class="icon">${ICONS[t.icon]}</div><div><div class="cat">${t.cat}</div><h3>${t.name}</h3></div></div>
-    <div class="badges">${t.ver==="ベータ版"?'<span class="badge b-beta">ベータ版</span>':""}<span class="badge ${cls}">${label}</span>${phaseBadges}</div>
+    <div class="badges">${newsFor(t.id)?'<span class="badge b-new">NEW</span>':""}${t.ver==="ベータ版"?'<span class="badge b-beta">ベータ版</span>':""}<span class="badge ${cls}">${label}</span>${phaseBadges}</div>
     <p>${t.desc}</p>
     <div class="solves">${t.solves}${note}</div>
     <div class="actions">${actions}${t.ver==="ベータ版"?"":`<span class="ver">${t.ver}</span>`}</div>
@@ -533,6 +569,55 @@ $("#clear").onclick=()=>{state.phase=null; state.worries.clear(); render();};
   if (robot) robot.addEventListener("click", () => { if (++pets % 3 === 0) setTimeout(() => say("下で私の本気の映像が観られます！", 2.4), 1700); });
 })();
 render();
+
+// ===== 新しいツールのお知らせ(ポップアップ) =====
+// 導線: トップを開いて 1.5 秒後に左下(スマホは下)に出す。画面は塞がない
+//   「使ってみる」→ ツールを新しいタブで / 「一覧で見る」→ カードまでスクロールして光らせる / × ・「あとで」・Esc → 閉じる
+//   どれを押してもこのお知らせは二度と出さない(localStorage lx_news_seen に id)。NEW の印はカードとメニューに until まで残る
+//   同じ訪問で常連パスのカード(assets/keep.js)が自動で開く予定でも、お知らせを出したときはパスを次の訪問に回す
+// 確認用: ?lx_news=1 で必ず出す、?lx_news=reset で見た記録を消す
+(function(){
+  const KEY = "lx_news_seen";
+  const q = new URLSearchParams(location.search).get("lx_news");
+  const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch(e) { return []; } };
+  const mark = id => { try { const a = load(); if (!a.includes(id)) localStorage.setItem(KEY, JSON.stringify(a.concat(id).slice(-20))); } catch(e) {} };
+  if (q === "reset") { try { localStorage.removeItem(KEY); } catch(e) {} }
+  const active = NEWS.filter(n => today <= n.until && TOOLS.some(t => t.id === n.tool));
+  if (active.length) { const m = $("#navTools"); if (m) m.insertAdjacentHTML("beforeend", '<span class="newdot">NEW</span>'); }
+  const n = active.find(x => q === "1" || !load().includes(x.id));
+  if (!n) return;
+  const t = TOOLS.find(x => x.id === n.tool);
+  window.__lxNewsOpen = true;   // keep.js: 常連パスの自動表示をこの訪問では見送る
+  setTimeout(() => {
+    const el = document.createElement("aside");
+    el.className = "lx-news"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "新しいツールのお知らせ");
+    el.innerHTML = `${n.img ? `<img class="shot" src="${n.img}" alt="${t.name} の画面">` : ""}
+      <button type="button" class="x" aria-label="閉じる">×</button>
+      <div class="bd"><div class="kick"><b>NEW</b>${n.kicker}</div><h3>${n.title}</h3><p>${n.desc}</p>
+      <div class="acts"><a class="btn p" href="${enc(t.href)}" target="_blank" rel="noopener" data-a="open">使ってみる ↗</a><button type="button" class="btn s" data-a="list">一覧で見る</button><button type="button" class="later" data-a="close">あとで</button></div></div>`;
+    document.body.appendChild(el);
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("show")));
+    track(`news/${n.id}/show`, n.title);
+    const close = how => {
+      mark(n.id); track(`news/${n.id}/${how}`, n.title);
+      el.classList.remove("show"); setTimeout(() => el.remove(), 300);
+      document.removeEventListener("keydown", onKey);
+    };
+    const onKey = e => { if (e.key === "Escape") close("close"); };
+    document.addEventListener("keydown", onKey);
+    el.querySelector(".x").onclick = () => close("close");
+    el.addEventListener("click", e => {
+      const b = e.target.closest("[data-a]"); if (!b) return;
+      if (b.dataset.a === "list") {
+        // 絞り込みでカードが隠れていたら外してから
+        if (!TOOLS.filter(matches).includes(t)) { state.phase = null; state.worries.clear(); render(); }
+        const c = document.getElementById("tool-" + t.id);
+        if (c) { c.scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center"}); c.classList.remove("hl"); void c.offsetWidth; c.classList.add("hl"); }
+      }
+      close(b.dataset.a);
+    });
+  }, 1500);
+})();
 </script>
 </body>
 </html>
