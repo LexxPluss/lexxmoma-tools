@@ -154,7 +154,36 @@
   #tourBox .tour-step { font-size: 11px; color: #789; margin-right: auto; font-variant-numeric: tabular-nums; }
   #tourBackdrop { position: fixed; inset: 0; z-index: 9997; display: none; pointer-events: none; } /* クリック透過（ツアー中もアプリ操作可） */
   #tourBackdrop.solid { background: rgba(15, 30, 45, 0.55); }
+  /* ---- 2D / 3D 表示 ---- */
+  #view3d { position: absolute; inset: 0; display: none; background: #fff; }
+  #view3d canvas { outline: none; }
+  #canvasWrap.mode3d #cv { visibility: hidden; }
+  #canvasWrap.mode3d #view3d { display: block; }
+  #canvasWrap.mode3d #zoomCtrl { display: none; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; padding: 3px 10px; }
+  .seg button + button { border-left: 1px solid var(--border); }
+  .seg button.on { background: var(--accent); color: #fff; }
+  #ctrl3d { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  #ctrl3d label { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; }
+  #view3dHint { position: absolute; left: 8px; bottom: 8px; z-index: 4; background: rgba(255,255,255,.85); border: 1px solid #ccd4da; border-radius: 6px; padding: 4px 8px; font-size: 11px; color: #31485c; pointer-events: none; }
+  /* ---- アーム手先コントローラ ---- */
+  #armCtrl .grid6 { display: grid; grid-template-columns: auto 1fr auto; gap: 3px 6px; align-items: center; font-size: 12px; }
+  #armCtrl .grid6 input[type=range] { width: 100%; min-width: 60px; }
+  #armCtrl .grid6 .val { font-variant-numeric: tabular-nums; font-size: 11px; min-width: 44px; text-align: right; }
+  #armCtrl .xyz { display: grid; grid-template-columns: auto 1fr auto 1fr; gap: 3px 4px; align-items: center; font-size: 12px; margin-top: 4px; }
+  #armCtrl .xyz input { width: 100%; min-width: 50px; }
+  #armCtrl .tcpinfo { font-size: 11px; color: #345; margin-top: 4px; font-variant-numeric: tabular-nums; line-height: 1.5; }
+  #armCtrl .ikng { color: var(--danger); font-weight: 600; }
+  #armCtrl .jogrow { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
 </style>
+<!-- CRX-20iA/L 運動学（依存なし・古典スクリプト。本体と Node のテストで共用） -->
+<script src="crx-kinematics.js"></script>
+<!-- Three.js は同梱（vendor/）。オフラインでも動く -->
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js", "three/addons/": "./vendor/addons/" } }
+</script>
+<script type="module" src="sim3d.js"></script>
 </head>
 <body>
 
@@ -162,7 +191,7 @@
   <img id="corpLogo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASsAAABgCAYAAABFTFSvAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAACNuSURBVHhe7X0LdBxXeb8dChQCbYH/vxRCSkmDVtpZWbQuwTjaeUh+iEg7j7UUP7TzWicG+1871q4kO8GJAvQQCqSUR09PTulJW6BYspPYllaSJSt27DgOkKa8gknAkWQb23Gexk7ixCTzP9+dHUX6dnZ3djW72l3P75zfcaKde+ebO3t/e+93v/vdefNKBAvvWff22gdvbaT2dXdTQ/G7qKH4Nv9gbKs/Eb+14ByMbaWG4nfWDMS+TA3FuqnB+AZquGtl7b6uYO3o1muuHdz4TmyvBw8eLkP4h2Kra/dtObrgoduMukduN+oOb5tTLnh4m7Hg0OeN2ge3GtRg/BI13DlBDXcN+vd23w4C5omXBw+XIahE7CsgULUHbgVhKC0OdRqBvV1G7b4txoKDppASARvuerp2tOvb1Fj3Yvw8Hjx4qEBQg7H1dY/2EEFIEYpS5VCnUTu2xag7bApXYLTrcGC4q31eW9vb8PN58OChAhDYvemDgeHO84F9W1IFoVw41GnA1BWmjYHR7p/WjnS14ef04MFDmcM/GO+oO3JHqgCUKWEaa4rWlsGa3Zsp/LwePHgoU1CJ+G5wYuNOX9YcipuCNdb9MjXUdQt+Zg8ePJQh/IOxR0vSqT5bJuIwJTTqHrnDqB3t7rv2exv/BD+7Bw8eygj+ROwg+HtSOnsFkUxzR7t/Rt2/8a/x83vw4KFMQA3F7oFQANzBK4qJOInXCuzrPuV/4JZP4Dbw4MFDGYAa3Lys4nxWdkzEyIphYKz7Oar/7+twO3jw4KH0MZ9KdBwio6tELLWTVxItwRrtPl21O/4x3BAePHgocVCDnX8dGOl+FlbQUjp4pREE69A2gxrufMK/v+c9uC08ePBQ4qju3xSgxrb8rO7RO8zRx0g3iWifS0KwZ4rYuMGE6XT3J2L34Xbw4MFDGeCjPeofB0a7NwVGtxwO7O16nhqMv+ZPxF+fC1KJ2BsQerDg4OfJpmYIryAChoVnFqw7crvh3x3biNvBgwcPZQT/Iz3vrxmLf5RwoPj0D3dcWzMQ/1RgKH4jtbfrLmq481BguPM1shdwzJ2tQSCGgdHuizUjXR/Hz+/BgwcPecO/f+u11Ej356mR7qdBtEBsYEqHRcgxIaTh8DaDGujYh+/lwYMHD7PGgr3xK6m9XV2B0e4XZ70oYG3NScREfB8PHjx4cAW1A5uvCYx07yVhF7NwxoM/zD/QcbStz0sv48GDhwKCGu66m4yOhvN3wJPpYCK2EtftwYMHD67Cn+i8vQ6mhHmOsCBcw5+I/RjX68GDBw+ugxqM3533PkfIPPrgVgNWIHG9Hjx4KEF86J7H3l2962yz74HTd1bvPPUt8u/9p1vg7/jaUgQ1FN9HnO55rBKC0PmHYv+C66wULFgaubIhvDbUuGKtSkvaJ/Hnc4nGFWtZJqxqDK/ohSTNy1FWirYzYbUa22AHTlQXNrbepLCiJlzX1F6QNEMLli69snGF3gLvpUFUrsOf24EJRa5tlKLtjeG1Kxmp/SP4c7fACCoLdjFhfcm8efOuwJ/PGXw7jkerd5095h88Z/j3XjD8w+fNfwfPGfB3346TUVym1FDX33FVYKTrXGA091gsiN/yD8ROVOKpOUyLXM9J0WNL2tYZS25cZzSsWGuwgta3sGXdnP4IQUfjJO3hxtabjSVtxeI6oyGsX2J4+R+xPRaamja+kxGU70M7QXtBOU7SJ+lQZCm+djaoD625ngvrvyF2Tb0X9b6lkciV+FoLNB/p4cL6RWLXjesMLhw9F+Qj/w9fNxswTe0fYSX9YGPrTeQejeT5tZ9wojL3aZaq+ia/SY28YtTsec7w9U2mEP4On8N1uGypwb8nFstrOjgUN0/NSXRej+ssZzA3qH/BiuoL0CEYQSFkRdVYvnqDQfPyv+HriwWGYf6I5uUjy1Z+bsquYpGVNGPZqvUGLcgbsF0Amle+Be0D7WSVgY7LhfXX6ZY1n8HX5wNaaA9yUvQC1Dtl19R7Uf4DXw9gRCUC7cVJ2lQZLqwTAaZ5OYavzwdBYeXVrKg+tfTGdTPabOnKzxoML/8cX19UVG0f30zte83w7TyRIlIzuPOEAddVbZ/cjOsoJcDIiBqMTybPG8yJZCo4GL8D11nOYHilY6mNIECHZXj59aDU/iFcphhgRLl+ekctNmEUQwvy0TZ0IlKjKH+AFuSXOUlPLROOGpwUfe36WQoW3QxCpZ8HG/A94L3QvPIHm+ndfJqXH7NrMyhDfox4pQOVyQlwT1bSnpz+wzad8Hdcpmjw/ffkh307T75S/cCZVHGyIblu58lXoByuq5TgH4xvyWd0BXsR/YnYXlxfOYMV1G/DLy/+4sGvOOmQvPx3uEwxwAiynK5TFIPw7LSgvLCYj753hl1SNACdf/qoajotwaoPRZqml3OKTEJFKKrkHkyofdH0cgsXrns7Iyi/g5FUShkXBItM/UT9qUzvBEZbuFzR4Os93gnTO1/fRIow2XOCTAd9O4534rpKCdQDsaup4c6LuW5+hoNU/YnK8lsxgvLN9GKlGXRL+5w424NCZLHdKKFYbGxdCx37Vz09PTMcx8ta176f5pULdiMri/kKVlahskZWgnKpoVm5CpdnBPnHmdqMFfMTLNNHlX5EZXFOR1ZVfRN7wIGeKkrpCddDOVxXqYHKI798Utz+ADm+cH3limxiNVcjK5h+0bxyaNmq1ClqoQnPTXxWYmQdtgtAC/I/wee43HSagqU7FiwnQgWE9kjnS2REZfXSGz+bdtQHfGuEFXEkWI6FyvRhPY7LFw1VfZNHavqfTxGkTCTX904+iusqNVCJ2BdgwzMWpIy0nOxDcRbXV64oVbECgL+MlbQHyapT281k1amQNFcDbwan9EWaV76I7bGwcB1MudRdxKls03EtOh1hORUqECJGVPYtam19F67DAs3LX84qWA5HWE6FCtqOk7SnGUH9K1xH0VDVO/lIXmK1ffJHuK5SQ00iJi44mNvICgg56f1DsdW4vnJFKYuVBTasXk/inwRZhhWvglFQ5YbWtW1OluBh5McI6m4iIDYd2KI1wgoK8nJcB8AMG3EqVNo+hlH/GNeBQQvKXeA/ciZY9iOsXISKlbSng6HI3KYCz1usymBk5R/o/ASZ1g3ntgUH9gn6E/G/x/WVK8pBrEoVuQoWHmHlIlScqO1btCj9iArDFCynI6yZgpWLUMGIas6FClDJYkWS+CXir+fqZDfFquNWXF+5whOr2YEIluhcsNjkCAtCM5wKFSOqY05GVBiskxGW5cMSVBJytISPftiRULWSQNjSECpAJYtVXf9nr6IG4y8HRnITK0ij7B/qvB3XV67wxGr2yEWwaF5+leHlrTQvv+hUqHIZUWEwvPwVJ4IFtgRD8p3gJM8mVEtKTagAlSxW/j2b/pJKxHMOXwCxohKx23B95QpPrNwBRNyzDgQLpl6wYECCbm0+t5icwo1lcqY7RdCBYEH8VjIKP/WzaSy5EZWFShar6v54IAD+qjx8VlQidguur1xR6mL1qdCqDzaEo7ewovYtWpC/TfOFIwTIcpL2dVrSJWyHEyRHWHuyCVY2JoVlViMqDHOEldmHlY1JoRovOaECVLJYUUOx5ZAFFMIRsCBlIjmhOtGh4PrKFaUsVkxIXcRJ0dMQImBuGC48QSiSIQJ78vETJUdYe7KFNaSjmyMqjNkIVtKZPl7fvOYaXG9JoKLFKhHrXpBPnBUI3GDnMlxfuaJUxWrp0siVNC9PZPOfFIrLV68H/9KXsV1OMCVYOY6wpkZUBRAqC/kIljWiKlmhAlSyWPkH4/2w1y9FkDIRpoyQbXSguwbXV64oVbFiQpEm+DXHdhWLxBkuKBMQAIptcwIiWIL2Qy4cfRPXbUcuHAV/1u5CCpUFRlC+wIWjrzkRLPBhcZL+vyU59ZuOShWr2oGt76MS8XNwsnSKIGUgHO/lH4id9fdtqJij5UtXrJTIXI2qgNZGZqatLe93HeTX0A3h6KXsoqDCatwb17esDuE6CoFPNoof4CTt2empZNIRfjCCocgXcB0lh0oVK38irhNHuY0gZSLZS5iIH8L1lTNKVazqQ8oCGN1k7+iFIQglLSjwPZ6PbXMCkjhP0l/ItOF5Okn4gKSfD7a0F9TFsKi59SpW0n7VsCKaYoMdof1JuhxeKe1FpUoVK2og/rjpe0oVpEwk+awS8a/h+soZpSpWAJpX/guSzYEdYE+xCBkXYERBi0peeanMDJ/a77PFUWGSwNGwfrFQggVCxUn60VxHrFbgaEkLViWKlb9/cytZ0bMRo2yEkVVNIp7XF7hUUcpi5W9rewcjKt/hwvqLpmAVWLTgHpIG/qMn6/nIKmyPE0BqGy6s5yxUFgslWIv5VR/OR6gsQrsQAecjm3DdJYFKE6uP9Ha8ixruHK/dn3uWUOKvSsReuHZwY0EOBpgrlLJYWfi0FPnzhhVrF3BSpI5rLiAlva6hVfcvXLgwL6e6U6HKFhBqCZZbOd2dChWxK8O0+60RVgkKVqWJVU0idg/JEJrH6TZwKo5/ML4d11nuKAexKgc4FSqS5VNQzsHqH/4MX+eGYBGhErWsQpVc/byQKQsqsGRHWJUkVlQidhOZ/uV70OnBzxs1gx034HrLHZ5YzR5EqKTsPqrkIQtjkPeJ5pVd2eKwZitYIFSsA6Ei2UVFdaJelKsgrCFbHBYRrNYSE6xKESuqP7a89sGtb+YaqmAREu75B2K/Zfb3/BGuu9yRTazgbDxcxsNbCN4AIyonQgUCoO23jjeDnOmsoPYXSrByESpW0iYWN72Vw4sWlK86ESzY0FwyglUJYnVN35Y/pYbip8nqXx7TP2DdEYh07yjpU3vyRTaxYpojAVzGgwm6Rf40J+nnnAtVy4xzGCFwlBGVAbcFiwiVpP0qq1CZifMmFosrU5INOhUsM3BX3ojLFx2VIFY1A/FNdUfuSBEgpySHmw7Gz/j3V04g6HSkEytC84v6OCPID7lKUTnIhfUBVlLh8M2McUzmFEu/l5HUAwwvH0ypy03yykFW0kY5SftCffOa92FbpoOMqGYhVBbAmc8IDgRrRRRE69VsguVYqKwRVYasqGUlWJUgVlQivi/nbTXTCKMq/0Bsbl9EAZFRrJKdBL7Y7tKMYzIPElX6GcZ+es2ElNUgBtBhSBlCXJebNOuHQxlgCsW0qX+BbQIwgvoJZ0IFe/3SC5UFIlii5kiwSFiDEFmM6wAsal37fkZUn3AmVPokZzOiwjAFK3N6GWuVkOHlm3H5oqGqb/JwXmLVN3kE1zUXaOvre5t/MH6sdiz3UAUgiVgfij1Rib4qC9nEqtAkp9fw8uewXfVN+v9lBCWrL6hQBCFleeVebNe8np4rILI9eZpLWhLhkdQDlo8qG8i5fw4Ey4ysl38J1+M64KTobKcBgWOclbRJJhS5FpdPB5qXv5ZNsMzVTfU1XLZoKPeRFYgMNRibhKkcFqKsHO4kGRYCgx0MrreSQKc55LRYTI4CRlLs4hUp2wihkIQNvDQvn8ZpYoKhmz4Gn2fquOaqHwhV5hEVhhPBMn2JusFIM32JJJcWrxzLtI3GHFHlJlQWTMHKPCW0PeTU98Pxv6rZdWab7/5To74dJ37h65v8la938gn3OfGKb0eWY+Mx4Xool1KXC4TnhOe9/9Rozf1ntlX916+z7gSnBmOP1h7I8RSbRNyoe/QOw98f+yaur9LACMrdSzJ0jkITOhAjKAdS7OIjq+ZUrMyNzM/ikdFiPuoj0e5pOi0RqhxGVBjZpoRErMK6EZS0v51ejjjrefl4uvgtS6gW5SFUFlhezShYKWJVvXMyVr3rzHk4+bgm8aJRs+fZgtG3E4TK6WnMFidIOVyXq0y8SE5+hnbw9R2Pz2ggBCoRv4s42J2uBCZixoKHSTzW4/6+nnfg+ioNtBAJJeN/5oRk2hKS78R2QUoSRlDfdJIZoBCETkkLyhC2q62t7R00L/82KbKojClUC5ZGrsTlcoE5wlITdoJlbiqWT0O+L1yOEeQ+u6R/lo8qnxEVRpBXvm4nWLAVCkR06sKq7ce+Ro1eNKofOJOHiFQaJ0g7UPsuGtAuM1p0GhbsjX+M2tv1OmyXSREmzETcqN1/q0GNdr1QO7C5dBONuYv5NB/ZBcnmiANXIvmLCs+wbjqyBeVoupU3mlfvgGugs6WULxTDuukYl/QLsL0H2wSgeYUHZzyM/KAMhBYQH5eo7Z+tUFkwBUsZgHqt92IdxAonL+PrARDUyUraCyBYJA8VtPFKslgw4YZQWSBTwpWw6GG+FxBQsljCy2Y/rN4xHvbvfdmo3nnSpuNevoT2IO2y40QYN6qFmj0dXXU/6jFIznUsUNOFamyrERjbconqv6ViTlx2gmSA4pdYSfs1IypnaEEuKBlBOQMpcrmw/m+QYx3bMx20qK5rCOuPsaJyGtfjNsEuVtROsGF9N82v+htsy3TAoaWcpD/IidopLqw/yYjqV5qamt6Jr5sNwA8FYRSwr8+8T/RgMCQL+LrpqOfb/Vw4uoMVtZMw7eMk/T/gHEB83WzBCMpNXFh/jJP002w4+lOaV83g0IX3PPb2qt6JJ2sGXkjprB4nDWgXaB9oJ9yoFvyJ2FfhZBpzhW+maIGIwWeBsa2vU3s6VuCylw96rmDaNryn0FzMR98L0yl890zAdRSCYNei1o6cMnUujcSvBFHBf3cXxny4D/5rJrS2dryraeNGV8XTDhFsV9XOietr+p8zfDuOp3RUj+DUP25A+1T1TdbPaDgEarhzRWBsy//A6iAk3yPi9fA2IzDS/YfA2JbB6oG4t7XEg4fZwNc7sck/fCG1k3qcImmf3glH+5QC+7v+LjDSrQdGuzdR+7pXBYZvrcbXePDgIQ/4+o5v8w+fT+mgHt8itE/VDyfuwG3nwYOHIqKqd3K9N7LKTGifqu3jG3DbefDgoYio7ptcWLP7rBlwadNRL3vuOG5U7z5rQDvhtvPgwUMxYRjzq3rH/8c/eM6Lr0rhhOEffMmA9oF2wk1XqoDVMMgxni/zPc8uG9ra+gq8spUfYJ8n/lsh0NPTcwX+Wz6Aemb7ji1CPW6uOOL6Z0Pb76Fv+zgHkdvV95/yBGuKE6Q9oF2gfXCblRoYQf0zTlLv5kTtF4ygTNC8PJ4nJxhBeZoR1F+yojLCSdo/MmF9CWy5wPd0ClZQ45yk/YSTtN9wK/Q99S1ySeyJDArySk7S97OS/tsGSX8IzhPE18wW1zW1/wkr6V9lRe2XrKQ9yYaj/0k3r/44vi4bOElrYMPaN1hRPcgIylM0P6t3PI3KBCNov+XC0X6aX5Pz95zm5b+BeC1WVEdoQTmaWn/enGBF9Wl4LzSvKDNuWvXDYzFwJNfsec6m415+hHYwHevHYjMaqgQBMTysoD4+FZGcjDDOn9Gp9C2QASC59+sJRlTWZ8sRhUHz8veWr1pvNK5YS+qG+qDuIN/ejK8tJmhejpmR0jcTu+AZl678HGyDuQ1fmy/gEFNWUH5ivReIRod7sJL+HMe3+/D1dmAElWUl/fBb72KtlTDPRUYN2HCePMOPxzbYAQSXk/SdEGUOUflgn/t2me8FIuVpPtIzw4Cq3smVNbvPjvv3XiAdlewPLBBJtHxvjqM4uH7nyZS63CQ8Nzx/9a5nJj6+fTyvI5OKDUZUtkGHwPu23KSV+4kL60fqQ6sWYBvswArycpLuBO31gi8gLcjHmpoKH1hoh6CgXU0LyiXoDNPtgo7HiuqbjWHdle1QQV7eavdeyB47XtmFr8dgQsqt0O52ewULweR9JrMdM0/z7RIX1l+Cd4v38RWC1jFm2I55vu8efW/1rlNK9QNn/r36vpPDvr7jo76+CffYCzw+4uubfCnX7T3J618i5aEeXPeseHwUnpc8965nFGgH3DalCppX9hfrC032rIX139Mta7KeccgkN6biOkhmAdhEjFKRFAsMr7Smy7pg5pJSZVwmH9C8vM/uvYBI0oJyhlFnpoiZDhhJgKhlO1rLTVpZFyABILbHAmzJAQFNnqRTNKZkXSgmfL3HD9X057bFB66v7j1+GNd1uYMWlEMwPcAvuFCEL2pDWL/ENLdn3OfIpslnZeVgp1vaP4nLFAO0IK+xExEgiFi9qLqSlZIWlAN294ERHM0rZ8GfhcsAmJDcAnYUY9QynVY+q/qQYjtyrm9ecw1swi62UAHnVKzKPfleKQFyfBdTrIDw68pK2nNL+OiHsT0W0mUKtcRqro7ignxWdiICBJEICupaXCYfMIL8oN19kmL1DPgacRmYgsFUbC6ymJIjsATlN+n2VjK8vGcuUv4kp+tvYHuKBk+s3EM2sSLO3RwJHQrXg0nyMvHyA9geC55Y5S5WDK/odlPnGeXDkDol9Z3lzyl/5OusoDZimwDkxOow8eml2PPWc2k2dc+O8D7I1JxXOrBNRYMnVu4hvVip4Mi+BHm1GV7+uVPSvPILWpBPE99Epl94USWrfGxIvR7bBPDEKg+xEpQRGOHgMoTJ9qZ55QR+Z/lT+Tkrao9z4ej3Fn9mVdr3QfPylzOJqPmc8vOp9edLsEv9GSdp/dlS1xQcnli5h3RiZXaK1FzfTkDCISS1mRXVH6dzRgNBjGhB3oHLAzyxyk2sINSBFuRn041qYaQBK792mTwLjXT+NyD5u6hu/7QU+XNcriLgiZV7yCZWixZlXorOBJI8T9R2pxMsMzWw/Hs4qgmX9cQqR7EKrb2WEeQ37KZa5vuVH5p+fdHQ1vY28GXZOdaJsIrqmWzhDmUNT6zcQzaxmu0vMfziM6J6EsclTXWkFWuNoKgsSynniVVOYnX9CoViRPvTbcgINqT86/TriwXY+gJOf7sDI0ggaSjyE1ymouCJlXsotFgBGF7ZZic8Vkdi+EiKA9QTq9zEigtHP8oI8utwQAIuY45q1F+7uY/POYz5tCAfJdPQlHdJAjYvZDp9uezhiZV7KIZYBXmFtvuyAs3VGvkruIwnVrmJFYQMpBvBAGEECyfTwKnJdFj7eK4EMWxq32gb25UNtCAPmEe5p9pFwlhE9QlakG/A93TC+rB+TaMofwDfs2TgiZV7KIZY1YtrFhKBsZuikC01ytdxGU+schMrAM0r2+3azCK856QD/s08+BojqM+wovYQJ2mdQan9Q/j+6cAI8ub0q4GyGShs/pjhe2YlbH1iRfUFTtIea5Cid3EhhcL3n1N4YuUeiiFWDC+3pVtSJ/4UXpm50dQTq7zEKtiiLEs3gpli8iDU3KmRe4NNJK5K0p9nBKUT22CHhmblKkZULmY7azH1ng5JYrQg3msd2HWJlfRvM0zbe7AdcwJPrNxDMcQKzv+z63hA6OApaTw8scpLrABBXj5o125uExZMzP2H6n1OjvoK8pGvQwYEXI/bBFEl2SnC2k+5G9Z8FNtRdHhi5R4KLVawy96M8UmdAk79YtsM3UtWrELtq+1EBEiEV9SiuEw+YARlzO4+yfdyNp1YMS2rqzlJe9kuVKAQNAVI3o3twIDvERwcmy6MxW0mszo8Nef+LE+s3EMmsWJC8u/w9bmAE7Q1nKS/mvSTpJAsXQvyE/NssmCWqlixgrzSTkSApCOGSN6uWYPhlcPEKW7zXsjBp23ppzmQ76shHL1kV74QJIIVityK7cCA05c5UTthZqdIrcdtmlu6IlnT6RQUnli5h3RiBSMempdfhAyYkBYF/E7ZqbRCZ6ZDkW5GUA9Mc+jakjhdebkL2wQoYbFanm4bUdLeu3GZXAEpeWlePmEXmwYjJgiyzJbmmOYVrkHSJ8iR7RnegRuE+llRezUorLwa24ERDEU+BgkB4d2nWyF2k/ADAu8M21E0eGLlHtKJFSHsJ2u9KWfCFyRtnUkmpylnl7S1/Sm2CVCqYkWLco3l2MW2gYgFQ5HHcZlcwYnqQiJUNveA9qV55QAuY4dFy1rfD6mlWUk7A453GNHAu8mHcF+7Z7YI4hMUIv+AbUiDK1hJ3cRK+pMw+pu1XRkc93AN7JnEBhQNnli5h4xiVUCaQ/RUx7qFUhUr2CtJC/Lv7EY9IC4gwiwf+RQulwvoUORf7Z4daE6h5H/GZTKhvnnN+1hRE1hJ/RIrKvfSvPzfDK/8wDEF5fsML++dansbu5JpjX+RS+pqiG4n+eEl7TZGVL6bct9sFOTv07yyixaU8+l8dCBktKBcxPcuGjyxcg9zIVbg4wgK8n9iW6ajVMUKwPDKzuQvdgrNkY+8H5dxCnCQs5J20S4S3ayfrJ46ynXuNmhBuwF8kHYjLOI2EOSLmXKUFQqQk54V1eO2PyDJd4LLFA2eWLmHooqVqJrLyoLan+3Em1IWKzjZxs42iyBkNC/nfAr3wpaWd7Oi9r/QuXCdQJLSmFeeS7cSWAwE+cgP7ITaei9Bqf1vcZligAnJG9O9E7AXX180eGLlHoolVjBNgC8TKyj32K3+YZSyWLW0rHs3wyun0k49kr6+XE67+VRo1Qc5STtgJwQWyYJEKLcpoNug+cg30r8XHTalX4fLFAN0SLkxXdt5YlUhKKRYgb+AONzNyOKnYKUQ3z8dsomV0+OoCgWI3iYnzdg8t2UndBJW0veAwxyXtwArf0xYlVlJP56us1ltyYrqxSUt8l/iOooFOF+SFbVxu+lWcmr4JoQn4HLFACOoe9N9j+darI7kJVbbJ3+E67rckVGskh0uH5INqoJ6nhX1MTasrs01Z1EmsTI7hrwZNr+yvNrsGqVoMyvqzAIHgbBwFBgcGJpuymYRVuFIdgFRfZAR5NthCgk+J5qXo3AoBiOoT0Id6UZpFkEYaV75IrbDDnA4Q6O0tinl+fIktDMjKDcxovLzdGEb5hRVPpnpiDSmZfX/aQzrS0hiRpv75EpiF6+uYkQlkc4u8/ticxRXsZD3yKpv8giu63JHOrEy46yUcyyv3MLw6uccU1TWc5KiNISjXFC62fFmV4x0YmURYnRg2dtVJkMvuHB0nBYiIWwTBiPK9cnDL1Lsm9mW5rQQnmd6eAcR9SwiBYTrGEH5qe2R6DMxnxWVb7Bh/aJ5H5tnzJPmD1B6W8m74pUfYIMs0C3yhoZw9Fnr+XH9eTNZH7bHYjLw+Ci2p2io6p28zz/0+xRBykS4vqpv8j5c1+WOdGLlRgT7bJBNrApJIliS9gYcdIDtwoBcXOBLslshc4PQIVlJe97JsfF0SP7S8tUbsoqn65zy0bUHsU0ARoiIsMnYiTC7TTIiDclxbFPRULV9fAM18orh63N6KvOEAddDOVzX5Y5MYuXG3sB8MZdiBUyevnMvtssO1oEIbouEKZr6OSbUvgjfEwP8SbSgnLPzJxWayW0t/dgmCwyvPJI1G0QBmBxxTczVd5igdmDyfb4dJ56v2f2sjTClkly348Tz/t5fpuT6vtzBCPLD6cSK4eWzc/WiGUH5zlyKFfmi84rjQ3FpQe3OeqJPDkwebzVe37wmrXN+OuCE6qQTPqWuQhLaCSLk08VXQR5+Jl0QbQFpHTlWL8oMtqno8PVNtFN7Xzaq7z+VYYQ1QT6H63zbJ9pxHR6IKNxnt7HUmutn24NWKNBCpDvTaluhmWyTPmxXJjChSBMn6b9J5ntKqdMJLX8WK+l9uZz4AtfSgvxqugjzQhDs5ML6s1nCSObTvJw2dqwQhKkzTDnrQ+0RbMycoar36S3+xIuGP/ESjJxmCtWOE+Tv8Dlch8t6MEGHIkuTX7qplw2/zstWrTfAuY6vLxaCgnY1IyovF/NLbhHaAtoENgNju7JhMc+/l5H0O9mw/gwIXnLkQc5hxPcBklAMcj/rWv1HNK9IuF4nYHj5u8tXr0+5h5u0FgvMRHfaofrPrKzCdmDQorqOfJ/SROW7QtjqtCJKfFScFD0G32tsx5zDt/348ppdZx+p3vWM4R8+b/iHL5B/4f99u84+UtU73oTLeJgJcBJz4ehFGBGYu+HJVOY7+Lpig4xUwvoZsMnc7Fpg3rjOfP5w9FWab5+VUMMyPSfq61lRH2FF5UX4pTdXAM37wH8TcSJhDdo4K2n3smFtVtkBIG0M7A6AukFMXGuzqXogDEN9k5O0RzlJ1/H9M4EW5H8iYuKmXcBkW4Lgc5J+lJWit13X1J6SK/7/A6zQEoHWvREKAAAAAElFTkSuQmCC" alt="LexxPluss">
   <div>
     <h1>LexxMoMa 動作シミュレーター</h1>
-    <div id="revDisp">rev.62</div>
+    <div id="revDisp">rev.63</div>
   </div>
   <div class="time-box">経過時間 <b id="elapsedDisp">0.00</b> s</div>
   <div class="time-box">トータル <b id="totalDisp">0.00</b> s</div>
@@ -190,6 +219,35 @@
       <div class="poselist" id="bodyPoseList"></div>
       <div style="margin-top:6px; font-weight:600;">アーム位置</div>
       <div class="poselist" id="armPoseList"></div>
+    </fieldset>
+
+    <fieldset id="armCtrl">
+      <details open>
+        <summary>アーム手先コントローラ（FANUC CRX-20iA/L）</summary>
+        <div class="hint" style="margin-top:4px;">手先（TCP）の位置・姿勢を直接指定すると逆運動学で 6 軸を解きます。3D 表示では手先のギズモをドラッグしても動かせます。座標はアーム基準（J1 回転中心、x 前・y 左・z 上）です。</div>
+        <div style="display:flex; gap:4px; align-items:center; margin-top:6px; flex-wrap:wrap;">
+          <span style="font-size:12px;">ギズモ</span>
+          <div class="seg" id="gizmoSeg">
+            <button data-gz="translate">移動</button>
+            <button data-gz="rotate">回転</button>
+            <button data-gz="">なし</button>
+          </div>
+          <label style="font-size:12px;"><input type="checkbox" id="gizmoLocal"> ツール座標で回す</label>
+        </div>
+        <div class="xyz">
+          <span>X</span><input type="number" id="tcpX" step="10"><span>W</span><input type="number" id="tcpW" step="5">
+          <span>Y</span><input type="number" id="tcpY" step="10"><span>P</span><input type="number" id="tcpP" step="5">
+          <span>Z</span><input type="number" id="tcpZ" step="10"><span>R</span><input type="number" id="tcpR" step="5">
+        </div>
+        <div class="hint">位置 [mm]、姿勢 W/P/R [°]（FANUC の表記）。値を変えると IK で動きます。</div>
+        <div class="tcpinfo" id="tcpInfo"></div>
+        <div class="grid6" id="jointSliders" style="margin-top:6px;"></div>
+        <div class="jogrow">
+          <button id="btnArmHome" class="small">全軸 0°</button>
+          <button id="btnArmReady" class="small">待機姿勢</button>
+          <label style="font-size:11px; margin-left:auto;">ツール長 <input type="number" id="toolLen" step="10" min="0" style="width:60px"> mm</label>
+        </div>
+      </details>
     </fieldset>
 
     <fieldset id="paneBg">
@@ -262,8 +320,9 @@
         <table class="keyhelp" style="margin-top:2px;">
           <tr><td>車体 前後移動</td><td><kbd>↑</kbd> / <kbd>↓</kbd></td></tr>
           <tr><td>車体 回転</td><td><kbd>←</kbd> / <kbd>→</kbd></td></tr>
-          <tr><td>アーム 回転（1軸目）</td><td><kbd>Shift</kbd>＋<kbd>←</kbd> / <kbd>→</kbd></td></tr>
-          <tr><td>アーム 伸縮（2・3軸目）</td><td><kbd>Shift</kbd>＋<kbd>↑</kbd> / <kbd>↓</kbd></td></tr>
+          <tr><td>アーム 回転（J1）</td><td><kbd>Shift</kbd>＋<kbd>←</kbd> / <kbd>→</kbd></td></tr>
+          <tr><td>アーム 伸縮（手先を水平に出し入れ）</td><td><kbd>Shift</kbd>＋<kbd>↑</kbd> / <kbd>↓</kbd></td></tr>
+          <tr><td>アーム 上下（手先の高さ）</td><td><kbd>Shift</kbd>＋<kbd>PgUp</kbd> / <kbd>PgDn</kbd></td></tr>
           <tr><td>背景描画モードを解除</td><td><kbd>Esc</kbd></td></tr>
           <tr><td>元に戻す / やり直す</td><td><kbd>Ctrl</kbd>＋<kbd>Z</kbd> / <kbd>Y</kbd></td></tr>
         </table>
@@ -271,6 +330,7 @@
         <table class="keyhelp" style="margin-top:2px;">
           <tr><td>画面移動（パン）</td><td>ドラッグ（中ボタンも可）</td></tr>
           <tr><td>ズーム</td><td>ホイール ／ 左下の＋−</td></tr>
+          <tr><td>3D: 視点を回す／パン</td><td>左ドラッグ／右ドラッグ</td></tr>
           <tr><td>姿勢の名前・数値を変更</td><td>左ペインのリストをダブルクリック</td></tr>
           <tr><td>最大並進速度を下げる</td><td>左下「シミュレートパラメータ」の値をダブルクリック</td></tr>
           <tr><td>走行経路ごとに最大並進速度を下げる</td><td>Move Body ブロックの「最大速度」に入力（空欄なら全体設定値）</td></tr>
@@ -300,6 +360,8 @@
         <button id="btnZoomOut">－</button>
       </div>
       <div id="speedWarn" hidden></div>
+      <div id="view3d"></div>
+      <div id="view3dHint" hidden>左ドラッグ: 回転 ／ 右ドラッグ: 移動 ／ ホイール: 拡大縮小 ／ 矢印キー: 車体・アームのティーチ</div>
     </div>
     <div id="playbar">
       <button id="btnPlay" class="primary">▶ 再生</button>
@@ -315,6 +377,21 @@
         </select>
       </label>
       <div style="flex:1"></div>
+      <div id="ctrl3d">
+        <span id="view3dPresets" style="display:none; gap:4px; align-items:center;">
+          <span style="font-size:12px;">視点</span>
+          <button class="small" data-view="iso">斜め</button>
+          <button class="small" data-view="front">正面</button>
+          <button class="small" data-view="side">側面</button>
+          <button class="small" data-view="top">上</button>
+          <label><input type="checkbox" id="chkFollow" checked> 追従</label>
+          <label><input type="checkbox" id="chkEnvelope"> 可動範囲</label>
+        </span>
+        <div class="seg" id="viewSeg" title="2D（上から）と 3D（自由視点）を切り替えます">
+          <button data-mode="2d" class="on">2D</button>
+          <button data-mode="3d">3D</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -350,10 +427,11 @@
  * ========================================================= */
 
 const TAU = Math.PI * 2;
-const LINK = 709;          // リンク長 [mm]（1,418mm を半分ずつ）
-const REACH_MAX = 2 * LINK;
+const ARM = CRX.MODEL;     // FANUC CRX-20iA/L の運動学モデル（crx-kinematics.js）
 const BODY_LEN = 750;      // 車体 前後 [mm]
 const BODY_WID = 600;      // 車体 左右 [mm]
+const ARM_MOUNT_Z = 750;   // アーム取付面の床からの高さ [mm]（Output/02 の案。要確認）
+const ARM_READY_Q = [0, 20, -30, 0, -40, 0].map(d => d * Math.PI / 180); // 待機姿勢（前方に軽く構える）
 
 function mod2pi(x) { let r = x % TAU; if (r < 0) r += TAU; return r; }
 function angDiff(a, b) { // b-a を [-π, π] に正規化
@@ -490,10 +568,11 @@ function dubinsSample(path, s) {
 const state = {
   robot: {
     body: { x: 0, y: 0, th: 0 },       // ワールド [mm, rad]
-    arm: { q1: 0, reach: 1000 },       // q1: 車体相対 [rad], reach [mm]
+    arm: { q: ARM_READY_Q.slice() },   // 6 関節角 [rad]（J1〜J6、車体相対）。旧形式 {q1, reach} は読込時に変換
   },
   bodyPoses: [],   // {name, x, y, th}
-  armPoses: [],    // {name, q1, reach}
+  armPoses: [],    // {name, q:[6]}
+  toolLen: 0,      // ツール長 [mm]（FANUC フランジの z 方向。TCP の位置に効く）
   initial: { bodyPose: null, armPose: null }, // サイクル開始状態（登録姿勢名。null=現在位置）
   program: [],     // [{blocks:[{type:'body'|'arm'|'other', pose?, name?, wait?}]}]
   bgRects: [],     // {x1,y1,x2,y2,color} 対角2点 [mm]
@@ -512,6 +591,7 @@ function snapState() {
     robot: state.robot,
     bodyPoses: state.bodyPoses,
     armPoses: state.armPoses,
+    toolLen: state.toolLen,
     initial: state.initial,
     program: state.program,
     bgRects: state.bgRects,
@@ -530,6 +610,7 @@ function applySnap(s) {
   state.robot = c.robot;
   state.bodyPoses = c.bodyPoses;
   state.armPoses = c.armPoses;
+  state.toolLen = c.toolLen || 0;
   state.initial = c.initial || { bodyPose: null, armPose: null };
   state.program = c.program;
   state.bgRects = c.bgRects;
@@ -537,7 +618,7 @@ function applySnap(s) {
   state.bgTexts = c.bgTexts;
   setBgImage(c.bgImage);
   stopPlayback(false);
-  renderPoseLists(); renderProgram(); recompute();
+  renderPoseLists(); renderProgram(); recompute(); armCtrlRefresh();
 }
 function doUndo() {
   if (!undoStack.length) return;
@@ -560,17 +641,13 @@ function bindUndoOnEdit(el) {
  * 例外として車体の最大並進速度 body.vmax は、左ペイン「シミュレートパラメータ」の値を
  * ダブルクリックすると編集できる。ただし標準値 body.vmaxStd（1.5 m/s）を超える値は
  * 入力しても標準値に戻す（下げる方向のみ許可）。
- * アームは FANUC CRX-20iA/L の J1〜J3 最大速度（データシート値）。
+ * アームは FANUC CRX-20iA/L の J1〜J6 最大速度（FANUC 公式 ROS 記述の値。crx-kinematics.js）。
  * 角加速度は非公開のため「最大速度に0.4秒で到達」と仮定した推定値。 */
 const SIM_PARAMS = {
   // その場旋回: 角速度 = 7rad/s の75% = 5.25rad/s ≒ 300.8°/s
   //            角加速度 = 車輪加速度1.5m/s² ÷ 車輪間距離600mmの半分0.3m = 5rad/s² ≒ 286.5°/s²
   body: { turnR: 0.5, acc: 1.5, vmax: 1.5, vmaxStd: 1.5, spinW: 300.8, spinA: 286.5 }, // [m] [m/s²] [m/s] [m/s] ／ その場旋回 [°/s] [°/s²]
-  arm: [
-    { a: 200, w: 80 },   // 1軸 [°/s²] [°/s]
-    { a: 200, w: 80 },   // 2軸
-    { a: 300, w: 120 },  // 3軸
-  ],
+  arm: ARM.vmaxDeg.map((w, i) => ({ a: ARM.accDeg[i], w })), // J1〜J6 [°/s²] [°/s]
 };
 
 function params() {
@@ -617,7 +694,7 @@ function renderSpeedWarn() {
 function renderSimParams() {
   const b = SIM_PARAMS.body;
   const rows = SIM_PARAMS.arm
-    .map((x, i) => `${i + 1}軸: 最大角速度 ${x.w}°/s ／ 角加速度 ${x.a}°/s²`)
+    .map((x, i) => `J${i + 1}: 最大角速度 ${x.w}°/s ／ 角加速度 ${x.a}°/s² ／ 可動範囲 ±${ARM.limitsDeg[i][1]}°`)
     .join("<br>");
   document.getElementById("simParamsText").innerHTML =
     `<b>車体（Move Body）</b><br>` +
@@ -627,8 +704,11 @@ function renderSimParams() {
     `並進加減速度 ${b.acc} m/s²<br>` +
     `超信地旋回時 最大角速度 ${b.spinW}°/s<br>` +
     `超信地旋回時 角加減速度 ${b.spinA}°/s²<br>` +
-    `<b style="display:inline-block; margin-top:4px;">アーム（Move Arm）— FANUC CRX-20iA/L J1〜J3 相当</b><br>` +
+    `<b style="display:inline-block; margin-top:4px;">アーム（Move Arm）— FANUC CRX-20iA/L（6 軸）</b><br>` +
+    `リンク: 取付面→J2 ${ARM.L.base} mm、上腕 ${ARM.L.l2} mm、前腕 ${ARM.L.l4} mm、手首オフセット ${ARM.L.l5} mm、フランジ ${ARM.L.l6} mm（最大リーチ ${ARM.reach} mm）<br>` +
+    `取付: 車体中心、床から ${ARM_MOUNT_Z} mm（案・要確認）<br>` +
     rows +
+    `<br>※関節配置・可動範囲・最大速度は FANUC 公式の ROS 2 記述（fanuc_description, Apache-2.0）の値` +
     `<br>※角加速度は非公開のため、最大速度に0.4秒で到達する想定の推定値` +
     `<br>※最大並進速度はダブルクリックで下げられます（${b.vmaxStd} m/s より大きい値は ${b.vmaxStd} に戻ります）`;
 
@@ -665,8 +745,14 @@ function renderSimParams() {
   renderSpeedWarn();
 }
 
-/* reach [mm] → 2軸角度 q2 [rad]（対称姿勢 r = 2L·cos(q2)、3軸角度 = 2·q2 とみなす） */
-function reachToQ2(r) { return Math.acos(clamp(r / REACH_MAX, -1, 1)); }
+/* 旧形式のアーム姿勢 {q1, reach} → 6 関節 {q}。新形式ならそのまま */
+function migrateArm(a) {
+  if (!a) return { q: ARM_READY_Q.slice() };
+  if (Array.isArray(a.q) && a.q.length === 6) return { q: a.q.map(v => +v || 0) };
+  const q = CRX.fromLegacy(+a.q1 || 0, +a.reach || 1000, 0);
+  return { q };
+}
+function migrateArmPose(p) { return Object.assign({ name: p.name }, migrateArm(p)); }
 
 /* ---------------- シーケンスのコンパイル ----------------
  * 現在のロボット状態を初期状態として、各段・各ブロックの
@@ -678,7 +764,7 @@ function initialBody() {
 }
 function initialArm() {
   const p = state.armPoses.find(q => q.name === state.initial.armPose);
-  return p ? { q1: p.q1, reach: p.reach } : { ...state.robot.arm };
+  return p ? { q: p.q.slice() } : { q: state.robot.arm.q.slice() };
 }
 
 function compileProgram() {
@@ -766,20 +852,15 @@ function compileProgram() {
         const pose = state.armPoses.find(p => p.name === b.pose);
         if (!pose) { err = true; }
         else {
-          const q1s = arm.q1, q1g = pose.q1;
-          const d1 = angDiff(q1s, q1g);
-          const q2s = reachToQ2(arm.reach), q2g = reachToQ2(pose.reach);
-          const d2 = q2g - q2s;
-          const dur1 = trapDur(Math.abs(d1), P.j[0].a, P.j[0].w);
-          const dur2 = trapDur(Math.abs(d2), P.j[1].a, P.j[1].w);
-          const dur3 = trapDur(Math.abs(2 * d2), P.j[2].a, P.j[2].w); // 3軸目は2軸の2倍角
-          dur = Math.max(dur1, dur2, dur3);
-          anim = (tl) => {
-            const q1 = (tl >= dur1) ? q1g : q1s + Math.sign(d1) * trapPos(tl, Math.abs(d1), P.j[0].a, P.j[0].w);
-            const q2 = (tl >= dur2) ? q2g : q2s + Math.sign(d2) * trapPos(tl, Math.abs(d2), P.j[1].a, P.j[1].w);
-            return { arm: { q1, reach: REACH_MAX * Math.cos(q2) } };
-          };
-          armEnd = { q1: pose.q1, reach: pose.reach };
+          // 6 軸が同時に動き、各軸は台形速度プロファイル。所要時間は各軸の最大値
+          const qs = arm.q.slice(), qg = pose.q.slice();
+          const dq = qg.map((v, i) => v - qs[i]);
+          const durs = dq.map((d, i) => trapDur(Math.abs(d), P.j[i].a, P.j[i].w));
+          dur = Math.max(...durs);
+          anim = (tl) => ({
+            arm: { q: qs.map((v, i) => (tl >= durs[i]) ? qg[i] : v + Math.sign(dq[i]) * trapPos(tl, Math.abs(dq[i]), P.j[i].a, P.j[i].w)) },
+          });
+          armEnd = { q: qg };
         }
       } else { // other action
         dur = Math.max(0, parseFloat(b.wait) || 0);
@@ -799,7 +880,7 @@ function compileProgram() {
 /* 時刻 t におけるロボット状態を返す */
 function stateAtTime(compiled, t) {
   let body = { ...compiled.startBody };
-  let arm = { ...compiled.startArm };
+  let arm = { q: compiled.startArm.q.slice() };
   for (const st of compiled.stages) {
     if (t >= st.t0 + st.dur) {
       for (const cb of st.blocks) {
@@ -832,6 +913,7 @@ function resizeCanvas() {
   const r = wrap.getBoundingClientRect();
   cv.width = Math.max(200, Math.floor(r.width));
   cv.height = Math.max(200, Math.floor(r.height));
+  if (window.LexxSim3D && window.LexxSim3D.ready) window.LexxSim3D.resize();
   draw();
 }
 window.addEventListener("resize", resizeCanvas);
@@ -1106,88 +1188,57 @@ function drawBodyShape(pose, fill, stroke, ghost) {
   ctx.restore();
 }
 
-/* アーム描画：アーム座標系（x=アーム方向, y=肩オフセット方向, 単位mm）に変換してから、
- * 軸平行の（角丸）矩形の組み合わせで構成する。
- * 各パーツは「輪郭ぶん拡張したグレー矩形 → 白矩形」の2度塗りで輪郭付きに見せる。
- * 複数矩形を1パスにまとめて塗ると継ぎ目なしの一体パーツになる。
- * レイヤー順（下から）: 基部関節 → スタブ → 2軸マーカー → 上腕(平行部+ジョグ)
- *                     → リンク2 → 3軸マーカー → 手先フランジ */
+/* アーム描画（2D・上から見た図）: 6 軸の順運動学で各関節の位置を求め、車体座標に投影して描く。
+ * リンクは太い線、関節は丸。下側（取付面に近い）から順に描き、上のリンクが下を隠す。
+ * 車体の回転に合わせて ctx を回し、y を反転して車体座標 [mm] をそのまま使う */
 function drawArm(body, arm) {
-  const dir = body.th + arm.q1;            // ワールドでのアーム方向
-  const r = clamp(arm.reach, 0, REACH_MAX);
-  const OFF = 160;                         // 肩の横オフセット [mm]
-  const HW = 60;                           // リンク半幅（幅120mm）
-  const EDGE = 14;                         // 輪郭線の太さ [mm]
-  const xj3 = r - LINK;                    // 肘（3軸）のアーム方向位置 [mm]
-  const green = "#43b02a";                 // FANUC CRX グリーン（3軸）
-  const dgreen = "#2e7d32";                // 濃い緑（2軸）
-  const GRAY = "#9aa5ad", WHITE = "#f6f8f9";
+  const P = CRX.topViewPoints(arm.q, state.toolLen); // base_link 基準 [mm]
   const [sbx, sby] = w2s(body.x, body.y);
   ctx.save();
   ctx.translate(sbx, sby);
-  ctx.rotate(-dir);                        // 画面はy反転のため回転符号も反転
-  ctx.scale(view.scale, view.scale);       // 以降の座標・寸法は mm
-
-  // ベース関節（1軸）：濃色サークル＋緑リング（最下層）
-  ctx.fillStyle = "#3a4145";
-  ctx.beginPath(); ctx.arc(0, 0, 100, 0, TAU); ctx.fill();
-  ctx.strokeStyle = green; ctx.lineWidth = 18;
-  ctx.beginPath(); ctx.arc(0, 0, 60, 0, TAU); ctx.stroke();
-
-  // 矩形群を1パーツとして「グレー(輪郭ぶん拡張) → 白」の順に塗るヘルパ
-  // rects: [x, y, w, h, 角丸半径] の配列。半径は数値（全角）または [tl,tr,br,bl] の配列
-  const fillPart = (rects) => {
-    for (const [color, e] of [[GRAY, EDGE / 2], [WHITE, 0]]) {
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      for (const [x, y, w, h, rr] of rects) {
-        const rad = Array.isArray(rr) ? rr.map(v => v + e) : (rr || 0) + e;
-        ctx.roundRect(x - e, y - e, w + 2 * e, h + 2 * e, rad);
-      }
-      ctx.fill();
+  ctx.rotate(-body.th);                      // 画面は y 反転のため回転符号も反転
+  ctx.scale(view.scale, -view.scale);        // 以降は車体座標 [mm]（x 前・y 左）
+  ctx.lineCap = "round"; ctx.lineJoin = "round";
+  const GRAY = "#9aa5ad", WHITE = "#f6f8f9", GREEN = "#43b02a", DGREEN = "#2e7d32";
+  // 輪郭付きの太い線分（グレーで太く → 白で細く）
+  const link = (a, b, w) => {
+    for (const [c, e] of [[GRAY, 14], [WHITE, 0]]) {
+      ctx.strokeStyle = c; ctx.lineWidth = w + e;
+      ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
     }
   };
-
-  // リンクの境界＝緑のジョイントマーカー位置。境界線（グレー）はそこにだけ出る。
-  // J2境界: スタブ上の y=58（マーカー y36..80 の中央）／ J3境界: ジョグ上の y=80（マーカー y58..102 の中央）
-  const J2Y = OFF / 2 - 22; // 58
-  const J3Y = OFF / 2;      // 80
-
-  // リンク1（基部側）：基部 → J2マーカー下端（y=80）まで。基部側の端は丸める
-  // （マーカー全体がリンク1の上に乗り、隠れず全部見える）
-  fillPart([[-HW, -HW, HW * 2, J3Y + HW, [HW, HW, 0, 0]]]);
-  // 肩（2軸）マーカー：リンク1の上・以降のリンクの下（濃い緑）
-  ctx.fillStyle = dgreen;
-  ctx.fillRect(-65, J2Y - 22, 130, 44);
-  // リンク2（中間）：J2マーカー下端 → 肩の曲がり → 平行部 → ジョグ → J3境界。1パスで一体形状。
-  // 外周に見える曲がり角だけ丸める
-  const runL = Math.min(0, xj3) - HW, runR = Math.max(0, xj3) + HW;
-  fillPart([
-    [-HW, J3Y, HW * 2, OFF + HW - J3Y, [0, 0, HW, HW]],     // スタブ上部（y80..220）
-    [runL, OFF - HW, runR - runL, HW * 2, [0, 0, HW, HW]],  // 平行部
-    [xj3 - HW, J3Y, HW * 2, OFF + HW - J3Y, [0, 0, HW, HW]],// ジョグ上部
-  ]);
-  // リンク3（先端側）：J3境界 → 肘の曲がり → 先端。1パスで一体形状（肘に境界線は出ない）
-  fillPart([
-    [xj3 - HW, -HW, HW * 2, J3Y + HW, [40, 0, 0, 0]],       // ジョグ下部（露出する角を丸め）
-    [xj3, -HW, LINK, HW * 2, 0],                            // 前腕（肘→先端）
-  ]);
-  // 肘（3軸）マーカー：リンク3との相対位置は姿勢によらず一定のため、常に見えるよう上に描く
-  ctx.fillStyle = green;
-  ctx.fillRect(xj3 - 65, J3Y - 22, 130, 44);
-  // 手先フランジ：リンク3と同じ幅（±60mm）にして、つなぎ目に段差が出ないようにする。
-  // 輪郭もリンクと同じ「拡張グレー→本体色」方式で塗り、外形線が面一につながる
-  for (const [color, e] of [[GRAY, EDGE / 2], ["#7f8c8d", 0]]) {
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.rect(r - 55 - e, -HW - e, 110 + 2 * e, HW * 2 + 2 * e);
-    ctx.fill();
+  const dot = (p, r, fill, stroke) => {
+    ctx.fillStyle = fill; ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, TAU); ctx.fill();
+    if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 14; ctx.stroke(); }
+  };
+  // ベース（J1）: 濃色円＋緑リング
+  dot(P.j1, 110, "#3a4145");
+  ctx.strokeStyle = GREEN; ctx.lineWidth = 18; ctx.beginPath(); ctx.arc(P.j1[0], P.j1[1], 70, 0, TAU); ctx.stroke();
+  // 上腕（J2→J3）、前腕（J3→J5）、手首（J5→J6→フランジ）
+  link(P.j2, P.j3, 120);
+  dot(P.j3, 75, DGREEN);
+  link(P.j3, P.j5, 110);
+  dot(P.j5, 70, GREEN);
+  link(P.j5, P.j6, 90);
+  link(P.j6, P.flange, 90);
+  dot(P.flange, 55, "#7f8c8d", GRAY);
+  // ツール（フランジ→TCP）と TCP の印
+  if (state.toolLen > 1) {
+    ctx.strokeStyle = "#5d6d7e"; ctx.lineWidth = 28;
+    ctx.beginPath(); ctx.moveTo(P.flange[0], P.flange[1]); ctx.lineTo(P.tcp[0], P.tcp[1]); ctx.stroke();
   }
+  dot(P.tcp, 24, "#d6336c");
   ctx.restore();
+  // 手先の高さ（床から）を TCP の横に表示
+  const [tx, ty] = w2s(body.x + P.tcp[0] * Math.cos(body.th) - P.tcp[1] * Math.sin(body.th),
+                       body.y + P.tcp[0] * Math.sin(body.th) + P.tcp[1] * Math.cos(body.th));
+  ctx.fillStyle = "rgba(214,51,108,0.9)"; ctx.font = "11px sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+  ctx.fillText(`h ${((P.tcp[2] + ARM_MOUNT_Z) / 1000).toFixed(2)}m`, tx + 6, ty - 6);
 }
 
 /* ---------------- キーボード操作（ティーチ） ---------------- */
 const pressed = new Set();
+const TEACH_KEYS = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown"];
 window.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && tourIdx >= 0) { endTour(); return; } // ツアー中はEscで閉じる
   if (e.key === "Escape") cancelStageDrag(); // ドラッグ中の段があれば解除
@@ -1196,9 +1247,9 @@ window.addEventListener("keydown", (e) => {
   // Undo / Redo（Ctrl+Z / Ctrl+Y、Ctrl+Shift+Z も Redo）
   if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === "z") { e.preventDefault(); doUndo(); return; }
   if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === "y" || (e.shiftKey && e.key.toLowerCase() === "z"))) { e.preventDefault(); doRedo(); return; }
-  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+  if (TEACH_KEYS.includes(e.key)) {
     // ティーチ移動の開始時（矢印キーが押されていない状態からの押下）に1回だけ履歴を積む
-    if (!playing && !["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].some(k => pressed.has(k))) pushUndo();
+    if (!playing && !TEACH_KEYS.some(k => pressed.has(k))) pushUndo();
     pressed.add(e.key);
     pressed[e.shiftKey ? "add" : "delete"]("Shift");
     e.preventDefault();
@@ -1222,9 +1273,9 @@ function teachStep(dt) {
   // 回転キーを離した瞬間：角度を5度刻みにスナップ（直角などに合わせやすくする）
   const SNAP = deg2rad(5);
   if (rotatingBody && !rotBodyNow) { b.th = Math.round(b.th / SNAP) * SNAP; moved = true; }
-  if (rotatingArm && !rotArmNow)   { a.q1 = Math.round(a.q1 / SNAP) * SNAP; moved = true; }
+  if (rotatingArm && !rotArmNow)   { a.q[0] = clamp(Math.round(a.q[0] / SNAP) * SNAP, ARM.limits[0][0], ARM.limits[0][1]); moved = true; }
   rotatingBody = rotBodyNow; rotatingArm = rotArmNow;
-  if (pressed.size === 0) return moved;
+  if (pressed.size === 0) { if (moved) armCtrlRefresh(); return moved; }
   const V = 800, W = deg2rad(90), AV = deg2rad(90), RV = 600; // 操作速度
   if (!shift) {
     if (pressed.has("ArrowUp"))    { b.x += V * dt * Math.cos(b.th); b.y += V * dt * Math.sin(b.th); moved = true; }
@@ -1232,12 +1283,33 @@ function teachStep(dt) {
     if (pressed.has("ArrowLeft"))  { b.th += W * dt; moved = true; }
     if (pressed.has("ArrowRight")) { b.th -= W * dt; moved = true; }
   } else {
-    if (pressed.has("ArrowLeft"))  { a.q1 += AV * dt; moved = true; }
-    if (pressed.has("ArrowRight")) { a.q1 -= AV * dt; moved = true; }
-    if (pressed.has("ArrowUp"))    { a.reach = clamp(a.reach + RV * dt, 100, REACH_MAX); moved = true; }
-    if (pressed.has("ArrowDown"))  { a.reach = clamp(a.reach - RV * dt, 100, REACH_MAX); moved = true; }
+    if (pressed.has("ArrowLeft"))  { a.q[0] = clamp(a.q[0] + AV * dt, ARM.limits[0][0], ARM.limits[0][1]); moved = true; }
+    if (pressed.has("ArrowRight")) { a.q[0] = clamp(a.q[0] - AV * dt, ARM.limits[0][0], ARM.limits[0][1]); moved = true; }
+    // 伸縮・上下: 手先（TCP）を姿勢そのままで水平／鉛直に動かし、IK で 6 軸を解く
+    let dR = 0, dZ = 0;
+    if (pressed.has("ArrowUp"))   dR += RV * dt;
+    if (pressed.has("ArrowDown")) dR -= RV * dt;
+    if (pressed.has("PageUp"))    dZ += RV * dt;
+    if (pressed.has("PageDown"))  dZ -= RV * dt;
+    if (dR || dZ) { jogTcp(dR, dZ); moved = true; }
   }
+  if (moved) armCtrlRefresh();
   return moved;
+}
+
+/* 手先を「J1 軸からの半径方向に dR」「鉛直に dZ」[mm] 動かす（姿勢は保つ）。届かない時は動かさない */
+function jogTcp(dR, dZ) {
+  const a = state.robot.arm;
+  const info = CRX.tcpInfo(a.q, state.toolLen);
+  let ux, uy;
+  if (info.horizontal > 1) { ux = info.x / info.horizontal; uy = info.y / info.horizontal; }
+  else { ux = Math.cos(a.q[0]); uy = Math.sin(a.q[0]); }
+  const Tw = CRX.toWbase(info.fk.tcp);
+  const R = CRX.rotOf(Tw);
+  const target = CRX.fromWbase(CRX.fromRotPos(R, [info.x + ux * dR, info.y + uy * dR, info.z + dZ]));
+  const res = CRX.ik(target, a.q, state.toolLen, { iters: 40 });
+  if (res.posErr < 3 && res.rotErr < 0.01) { a.q = res.q; return true; }
+  return false;
 }
 
 /* ---------------- 再生 ---------------- */
@@ -1369,8 +1441,10 @@ function compositeRecFrame() {
   g.fillStyle = "#f4f6f8";
   g.fillRect(0, 0, w, h);
   if (recSnapshot) g.drawImage(recSnapshot, 0, 0, w, h);
-  const r = cv.getBoundingClientRect();
-  g.drawImage(cv, r.left, r.top, r.width, r.height);
+  // 表示中のキャンバス（2D または 3D）を貼る
+  const srcCv = (viewMode === "3d" && window.LexxSim3D && window.LexxSim3D.canvas) ? window.LexxSim3D.canvas : cv;
+  const r = srcCv.getBoundingClientRect();
+  g.drawImage(srcCv, r.left, r.top, r.width, r.height);
   // ヘッダーの時間表示はスナップショット更新間隔ぶん遅れるため、毎フレーム描き直す
   const times = [
     ["経過時間 ", playT.toFixed(2), document.getElementById("elapsedDisp")],
@@ -1446,7 +1520,7 @@ function stopPlayback(restore) {
   playing = false; paused = false; playT = 0;
   document.getElementById("elapsedDisp").textContent = "0.00";
   highlightActive(-1);
-  recompute();
+  recompute(); armCtrlRefresh();
 }
 
 let lastActiveStageIdx = -1; // 自動スクロールは段が切り替わった瞬間だけ行う
@@ -1504,10 +1578,11 @@ function loop(ts) {
     const s = stateAtTime(currentCompiled, playT);
     state.robot.body = s.body; state.robot.arm = s.arm;
     document.getElementById("elapsedDisp").textContent = playT.toFixed(2);
+    if (!playing) armCtrlRefresh(); // 再生完了
   } else if (teachStep(dt)) {
     recompute(); // 初期姿勢が変わると各ブロック時間も変わる
   }
-  draw();
+  if (viewMode === "3d") sync3D(); else draw();
   if (recorder && recorder.state === "recording") compositeRecFrame(); // 録画中は画面全体を合成
   requestAnimationFrame(loop);
 }
@@ -1531,7 +1606,7 @@ document.getElementById("btnRegArm").addEventListener("click", () => {
   const nm = uniqueName(document.getElementById("poseName").value.trim(), state.armPoses);
   const a = state.robot.arm;
   pushUndo();
-  state.armPoses.push({ name: nm, q1: a.q1, reach: a.reach });
+  state.armPoses.push({ name: nm, q: a.q.slice() });
   document.getElementById("poseName").value = "";
   renderPoseLists(); renderProgram(); recompute();
 });
@@ -1586,10 +1661,13 @@ function renderPoseLists() {
     div.querySelector(".nm").textContent = p.name;
     const co = document.createElement("span");
     co.className = "co";
-    appendEditableValues(co, [
-      ["1軸 ", (p.q1 * 180 / Math.PI).toFixed(0), "°, ", v => p.q1 = deg2rad(v)],
-      ["リーチ ", (p.reach / 1000).toFixed(2), "m", v => p.reach = clamp(v * 1000, 100, REACH_MAX)],
-    ]);
+    {
+      // 手先（TCP）のアーム基準座標と、床からの高さ。関節角はツールチップに
+      const info = CRX.tcpInfo(p.q, state.toolLen);
+      co.textContent = `TCP x ${(info.x / 1000).toFixed(2)} y ${(info.y / 1000).toFixed(2)} z ${(info.z / 1000).toFixed(2)} m`;
+      co.title = "関節角 " + p.q.map((v, i) => `J${i + 1} ${(v * 180 / Math.PI).toFixed(1)}°`).join(", ") +
+        `\n床からの高さ ${((info.z + ARM.L.base + ARM_MOUNT_Z) / 1000).toFixed(2)} m ／ 水平リーチ ${(info.horizontal / 1000).toFixed(2)} m`;
+    }
     div.appendChild(co);
     makeNameEditable(div.querySelector(".nm"), p, state.armPoses, (oldN, newN) => {
       for (const st of state.program) for (const b of st.blocks) {
@@ -1602,10 +1680,19 @@ function renderPoseLists() {
     jump.addEventListener("click", () => {
       if (playing) stopPlayback(false);
       pushUndo();
-      state.robot.arm = { q1: p.q1, reach: p.reach };
-      recompute();
+      state.robot.arm = { q: p.q.slice() };
+      recompute(); armCtrlRefresh();
     });
     div.appendChild(jump);
+    const ovw = document.createElement("button");
+    ovw.className = "small"; ovw.textContent = "↻"; ovw.title = "現在のアーム姿勢でこの登録を上書き";
+    ovw.addEventListener("click", () => {
+      if (playing) return;
+      pushUndo();
+      p.q = state.robot.arm.q.slice();
+      renderPoseLists(); recompute();
+    });
+    div.appendChild(ovw);
     const del = document.createElement("button");
     del.className = "small danger"; del.textContent = "×";
     del.addEventListener("click", () => {
@@ -2506,9 +2593,11 @@ function currentRev() {
 
 document.getElementById("btnSave").addEventListener("click", () => {
   const data = {
-    version: 1,
+    version: 2,                  // 2: アーム姿勢が 6 関節角 q[6]（1: q1, reach）
     rev: currentRev(),           // どの版で作成したデータか記録
     savedAt: new Date().toISOString(),
+    armModel: ARM.name,
+    toolLen: state.toolLen,
     bodyPoses: state.bodyPoses,
     armPoses: state.armPoses,
     initial: state.initial,
@@ -2578,6 +2667,7 @@ const TOUR_STEPS = [
   { target: null, title: "LexxMoMa 動作シミュレーターへようこそ", text: "このツールでは、モバイルマニピュレータ（走行台車＋アーム）の動作シーケンスを組み立て、サイクルタイムを見積もれます。基本の使い方を順番に案内します。" },
   { target: "#paneRegister", title: "① まず位置を登録", text: "キーボードの矢印キーでロボットを動かし（車体は↑↓←→、アームはShift＋矢印）、「車体位置を登録」「アーム位置を登録」で名前を付けて登録します。ここが動作の目的地になります。" },
   { target: "#canvasWrap", title: "② 中央ビューの操作", text: "ロボットとレイアウトを表示します。ドラッグで画面移動、マウスホイールまたは左下の＋−で拡大縮小できます。" },
+  { target: "#ctrl3d", title: "②' 3D 表示とアームの手先操作", text: "「3D」に切り替えると自由な視点でロボットを見られます（左ドラッグで回転、右ドラッグで移動）。アームは FANUC CRX-20iA/L の 6 軸で、手先のギズモをドラッグするか左ペインの「アーム手先コントローラ」で位置・姿勢（X/Y/Z/W/P/R）や各関節角を指定すると、逆運動学で姿勢が決まります。届く高さ・距離の確認に使ってください。" },
   { target: "#paneBg", title: "③ 背景でレイアウトを作成", text: "顧客のレイアウト図（PNG）を取り込んだり（「📏 線を引いて縮尺を合わせる」で寸法が分かる箇所に線を引き、実寸を入力すると縮尺が自動で合います）、四角・直線・文字で棚や加工機などの目印を描けます。Shiftを押しながらだと0.1m刻みで配置できます。" },
   { target: "#colRight", title: "④ 動作シーケンスを組む", text: "「＋段を追加」で工程を並べます。各段にMove Body（移動）・Move Arm（アーム）・Other Action（撮影など任意の待ち）を追加します。同じ段に並べたブロックは同時実行、段は上から順に実行されます。一番上で開始位置も指定できます。" },
   { target: "#playbar", title: "⑤ 再生して確認", text: "「再生」で動きを確認できます。「録画して再生」を押すと、動きを動画（WebM）として保存できます。" },
@@ -2666,7 +2756,8 @@ document.getElementById("fileLoad").addEventListener("change", (e) => {
       // data.params（旧形式）は読み捨てる：パラメータは SIM_PARAMS の固定値を使う
       pushUndo();
       state.bodyPoses = data.bodyPoses || [];
-      state.armPoses = data.armPoses || [];
+      state.toolLen = Math.max(0, parseFloat(data.toolLen) || 0);
+      state.armPoses = (data.armPoses || []).map(migrateArmPose); // 旧形式 {q1, reach} は 6 軸へ変換
       state.initial = data.initial || { bodyPose: null, armPose: null };
       state.program = (data.program || []).map(s => ({ blocks: s.blocks || [] }));
       if (data.bgRects === undefined && data.bgLines) {
@@ -2679,12 +2770,12 @@ document.getElementById("fileLoad").addEventListener("change", (e) => {
       }
       state.bgTexts = data.bgTexts || [];
       setBgImage(data.bgImage || null);
-      if (data.robot) state.robot = data.robot;
+      if (data.robot) state.robot = { body: data.robot.body || { x: 0, y: 0, th: 0 }, arm: migrateArm(data.robot.arm) };
       // 走行速度：記録が無ければ標準値。標準値超えは setBodyVmax 内で標準値に戻る
       setBodyVmax(data.bodyVmax !== undefined ? data.bodyVmax : SIM_PARAMS.body.vmaxStd);
       renderSimParams();
       stopPlayback(false);
-      renderPoseLists(); renderProgram(); recompute();
+      renderPoseLists(); renderProgram(); recompute(); armCtrlRefresh();
     } catch (err) {
       alert("読込に失敗しました: " + err.message);
     }
@@ -2693,16 +2784,201 @@ document.getElementById("fileLoad").addEventListener("change", (e) => {
   rd.readAsText(f);
 });
 
+/* ---------------- 2D / 3D 表示の切替 ----------------
+ * 3D は sim3d.js（ES モジュール、Three.js 同梱）が window.LexxSim3D を用意する。
+ * 本体の状態は毎フレーム sync3D() で流し込み、ギズモ操作は onTcpTarget で受けて IK を解く */
+let viewMode = "2d";
+let gizmoMode = "translate";
+let ikStatus = null; // 直近の IK 結果（コントローラの表示用）
+let gizmoShown = null;
+function dims3d() { return { bodyLen: BODY_LEN, bodyWid: BODY_WID, mountZ: ARM_MOUNT_Z }; }
+
+function ensure3D() {
+  const s = window.LexxSim3D;
+  if (!s) return false;
+  if (!s.ready) {
+    s.setDims(dims3d());
+    s.init(document.getElementById("view3d"), {
+      onTcpDragStart: () => { if (!playing) pushUndo(); },
+      onTcpTarget: (T) => {
+        if (playing) return;
+        const res = CRX.ik(T, state.robot.arm.q, state.toolLen, { iters: 60 });
+        state.robot.arm.q = res.q;
+        ikStatus = res;
+        recompute(); armCtrlRefresh();
+      },
+    });
+    s.setGizmoSpace(document.getElementById("gizmoLocal").checked ? "local" : "world");
+    s.setFollow(document.getElementById("chkFollow").checked);
+    s.setEnvelope(document.getElementById("chkEnvelope").checked);
+    s.setRobot(state.robot.body, state.robot.arm.q, state.toolLen);
+    s.setView("iso");
+  }
+  return true;
+}
+
+function setViewMode(m) {
+  if (m === "3d" && !ensure3D()) {
+    alert("3D 表示をまだ読み込めていません。ローカルサーバー（scripts/serve.py）経由で開いているか、ES モジュール対応のブラウザか確認してください。");
+    return;
+  }
+  viewMode = m;
+  document.getElementById("canvasWrap").classList.toggle("mode3d", m === "3d");
+  document.getElementById("view3dPresets").style.display = m === "3d" ? "inline-flex" : "none";
+  document.getElementById("view3dHint").hidden = m !== "3d";
+  document.querySelectorAll("#viewSeg button").forEach(b => b.classList.toggle("on", b.dataset.mode === m));
+  // 背景の図形・文字の編集（クリック位置が要る）は 2D 表示でだけ行う
+  if (m === "3d" && bgMode) setBgMode(bgMode);
+  for (const id of ["btnBgDraw", "btnBgLine", "btnBgText", "btnBgMove", "btnBgErase", "btnBgCalib"]) document.getElementById(id).disabled = (m === "3d");
+  document.getElementById("bgHint").textContent = m === "3d" ? "背景の図形・文字・画像の編集は 2D 表示で行ってください（3D にも反映されます）。" : "";
+  if (m === "3d") { window.LexxSim3D.resize(); sync3D(); }
+  else draw();
+}
+
+/* 予定パス（2D の破線と同じもの）を 3D 用の点列にする */
+function pathsForScene() {
+  if (!currentCompiled) return [];
+  const out = [];
+  let firstBodyPathSkipped = state.bodyPoses.some(p => p.name === state.initial.bodyPose);
+  for (const st of currentCompiled.stages) {
+    for (const cb of st.blocks) {
+      const hasDubins = cb.path && cb.path.length > 0;
+      if (!hasDubins && !cb.line) continue;
+      if (!firstBodyPathSkipped) { firstBodyPathSkipped = true; continue; }
+      const reverse = !!(cb.reverse || (cb.line && cb.line.back));
+      let pts;
+      if (cb.line) pts = [[Math.round(cb.line.x1), Math.round(cb.line.y1)], [Math.round(cb.line.x2), Math.round(cb.line.y2)]];
+      else {
+        const n = Math.max(2, Math.ceil(cb.path.length / 40));
+        pts = [];
+        for (let i = 0; i <= n; i++) { const q = dubinsSample(cb.path, cb.path.length * i / n); pts.push([Math.round(q.x), Math.round(q.y)]); }
+      }
+      out.push({ pts, reverse });
+    }
+  }
+  return out;
+}
+
+function sync3D() {
+  const s = window.LexxSim3D;
+  if (!s || !s.ready) return;
+  const gz = playing ? null : gizmoMode;
+  if (gz !== gizmoShown) { gizmoShown = gz; s.setGizmoMode(gz); }
+  s.setRobot(state.robot.body, state.robot.arm.q, state.toolLen);
+  s.syncScene({
+    bgRects: state.bgRects, bgLines: state.bgLines, bgTexts: state.bgTexts, bgImage: state.bgImage,
+    bodyPoses: state.bodyPoses, paths: pathsForScene(), dims: dims3d(),
+  });
+  s.render();
+}
+
+document.querySelectorAll("#viewSeg button").forEach(b => b.addEventListener("click", () => setViewMode(b.dataset.mode)));
+document.querySelectorAll("#view3dPresets button[data-view]").forEach(b => b.addEventListener("click", () => { if (ensure3D()) window.LexxSim3D.setView(b.dataset.view); }));
+document.getElementById("chkFollow").addEventListener("change", (e) => { if (window.LexxSim3D) window.LexxSim3D.setFollow(e.target.checked); });
+document.getElementById("chkEnvelope").addEventListener("change", (e) => { if (window.LexxSim3D) window.LexxSim3D.setEnvelope(e.target.checked); });
+document.querySelectorAll("#gizmoSeg button").forEach(b => b.addEventListener("click", () => {
+  gizmoMode = b.dataset.gz || null;
+  document.querySelectorAll("#gizmoSeg button").forEach(x => x.classList.toggle("on", x === b));
+}));
+document.querySelector('#gizmoSeg button[data-gz="translate"]').classList.add("on");
+document.getElementById("gizmoLocal").addEventListener("change", (e) => { if (window.LexxSim3D) window.LexxSim3D.setGizmoSpace(e.target.checked ? "local" : "world"); });
+
+/* ---------------- アーム手先コントローラ ----------------
+ * 左ペイン: TCP の X/Y/Z/W/P/R（アーム基準・FANUC 表記）と J1〜J6 のスライダ。
+ * どちらを動かしてももう一方を追従させる。TCP 入力は IK、スライダは直接関節角 */
+const tcpIds = ["tcpX", "tcpY", "tcpZ", "tcpW", "tcpP", "tcpR"];
+let armCtrlBusy = false;
+
+function setArmQ(q) {
+  state.robot.arm.q = q.map((v, i) => clamp(v, ARM.limits[i][0], ARM.limits[i][1]));
+  recompute(); armCtrlRefresh();
+}
+
+/* 現在のアーム状態をコントローラの表示に反映する */
+function armCtrlRefresh(force) { // force: 入力中の欄も上書きする（TCP 入力の確定後など）
+  if (armCtrlBusy) return;
+  armCtrlBusy = true;
+  try {
+    const q = state.robot.arm.q;
+    const info = CRX.tcpInfo(q, state.toolLen);
+    const vals = [info.x, info.y, info.z, info.w, info.p, info.r];
+    tcpIds.forEach((id, i) => {
+      const el = document.getElementById(id);
+      if (!force && document.activeElement === el) return; // 入力中は上書きしない
+      el.value = (i < 3 ? Math.round(vals[i]) : Math.round(vals[i] * 10) / 10);
+    });
+    q.forEach((v, i) => {
+      const sl = document.getElementById(`jSl${i}`), lb = document.getElementById(`jVal${i}`);
+      if (sl && document.activeElement !== sl) sl.value = (v * 180 / Math.PI).toFixed(1);
+      if (lb) lb.textContent = (v * 180 / Math.PI).toFixed(1) + "°";
+    });
+    const tl = document.getElementById("toolLen");
+    if (document.activeElement !== tl) tl.value = state.toolLen;
+    const floorH = info.z + ARM.L.base + ARM_MOUNT_Z;
+    let txt = `床からの高さ <b>${(floorH / 1000).toFixed(3)} m</b> ／ J1 軸からの水平距離 <b>${(info.horizontal / 1000).toFixed(3)} m</b>`;
+    if (ikStatus && !ikStatus.ok) txt += `<br><span class="ikng">⚠ 目標に届きません（最も近い姿勢を表示。位置誤差 ${ikStatus.posErr.toFixed(0)} mm）</span>`;
+    document.getElementById("tcpInfo").innerHTML = txt;
+  } finally { armCtrlBusy = false; }
+}
+
+/* TCP 入力欄の値から IK を解いて適用 */
+function applyTcpInputs() {
+  if (playing) return;
+  const v = tcpIds.map(id => parseFloat(document.getElementById(id).value));
+  if (v.some(x => !isFinite(x))) return;
+  const target = CRX.targetFromXYZWPR(v[0], v[1], v[2], v[3], v[4], v[5]);
+  const res = CRX.ik(target, state.robot.arm.q, state.toolLen, { iters: 200 });
+  ikStatus = res;
+  pushUndo();
+  state.robot.arm.q = res.q;
+  recompute(); armCtrlRefresh(true);
+}
+tcpIds.forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener("change", applyTcpInputs);
+  el.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); applyTcpInputs(); el.blur(); } });
+});
+
+{ // J1〜J6 スライダ
+  const grid = document.getElementById("jointSliders");
+  ARM.limitsDeg.forEach(([lo, hi], i) => {
+    const lb = document.createElement("span"); lb.textContent = `J${i + 1}`;
+    const sl = document.createElement("input"); sl.type = "range"; sl.id = `jSl${i}`; sl.min = lo; sl.max = hi; sl.step = 0.5; sl.value = 0;
+    sl.title = `J${i + 1}: ${lo}° 〜 ${hi}°`;
+    const val = document.createElement("span"); val.className = "val"; val.id = `jVal${i}`;
+    bindUndoOnEdit(sl);
+    sl.addEventListener("input", () => {
+      if (playing) return;
+      const q = state.robot.arm.q.slice();
+      q[i] = deg2rad(parseFloat(sl.value));
+      ikStatus = null;
+      setArmQ(q);
+    });
+    grid.append(lb, sl, val);
+  });
+}
+document.getElementById("btnArmHome").addEventListener("click", () => { if (playing) return; pushUndo(); ikStatus = null; setArmQ([0, 0, 0, 0, 0, 0]); });
+document.getElementById("btnArmReady").addEventListener("click", () => { if (playing) return; pushUndo(); ikStatus = null; setArmQ(ARM_READY_Q.slice()); });
+{
+  const tl = document.getElementById("toolLen");
+  bindUndoOnEdit(tl);
+  tl.addEventListener("change", () => {
+    state.toolLen = Math.max(0, parseFloat(tl.value) || 0);
+    renderPoseLists(); recompute(); armCtrlRefresh();
+  });
+}
+
 /* ---------------- 起動 ---------------- */
 renderSimParams();
 renderPoseLists();
 renderProgram();
 resizeCanvas();
 recompute();
+armCtrlRefresh();
 requestAnimationFrame(loop);
 
 /* テスト用フック（自動検証で使用） */
-window.__sim = { state, SIM_PARAMS, setBodyVmax, renderSimParams, dubinsShortest, dubinsSample, trapDur, trapPos, compileProgram, stateAtTime, recompute, renderPoseLists, renderProgram, mod2pi, angDiff, setBgImage, pushUndo, doUndo, doRedo, undoStack, redoStack };
+window.__sim = { state, SIM_PARAMS, ARM, setBodyVmax, renderSimParams, dubinsShortest, dubinsSample, trapDur, trapPos, compileProgram, stateAtTime, recompute, renderPoseLists, renderProgram, mod2pi, angDiff, setBgImage, pushUndo, doUndo, doRedo, undoStack, redoStack, setViewMode, setArmQ, armCtrlRefresh, jogTcp, migrateArm, get viewMode() { return viewMode; } };
 </script>
 </body>
 </html>

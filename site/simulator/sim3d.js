@@ -1,0 +1,456 @@
+/* =====================================================================
+ * LexxMoMa 動作シミュレーター — 3D ビュー（Three.js）
+ *  - 単位は本体と同じ mm、ワールドは z 上（床 = z=0）
+ *  - 本体（lexxmoma-2d.html の古典スクリプト）からは window.LexxSim3D 経由で使う。
+ *    本体 → 3D: setRobot / syncScene / setGizmoMode などで状態を流し込む
+ *    3D → 本体: ギズモ操作時に callbacks.onTcpTarget(T_base_link) を呼ぶ（IK は本体側）
+ *  - アームの形状は FANUC 公式の衝突判定用 STL（meshes/crx20ia_l, Apache-2.0）
+ * ===================================================================== */
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { TransformControls } from "three/addons/controls/TransformControls.js";
+import { STLLoader } from "three/addons/loaders/STLLoader.js";
+
+const CRX = window.CRX;
+const M = CRX.MODEL;
+
+const COLORS = {
+  floor: 0xf4f6f8, grid: 0xdfe5ea, gridMajor: 0xc3ccd4,
+  body: 0xf6f8f9, bodyEdge: 0x6d7a84, drive: 0x3a4145, bumper: 0x3da9fc,
+  link: 0xf2f4f5, ring: 0x43b02a, flange: 0x7f8c8d,
+  ghost: 0x2471a3, pathFwd: 0x2471a3, pathRev: 0xe67e22,
+  envelope: 0x43b02a,
+};
+
+class Sim3D {
+  constructor() {
+    this.ready = false;
+    this.callbacks = {};
+    this.meshes = {};
+    this.bgKey = ""; this.ghostKey = ""; this.pathKey = "";
+    this.follow = true;
+    this.lastBody = null;
+    this.gizmoMode = null;
+    this.dragging = false;
+    this.toolLen = 0;
+  }
+
+  /* ---------------- 初期化 ---------------- */
+  init(container, callbacks) {
+    if (this.ready) return;
+    this.callbacks = callbacks || {};
+    this.container = container;
+    const w = Math.max(200, container.clientWidth), h = Math.max(200, container.clientHeight);
+
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    this.renderer.setSize(w, h);
+    this.renderer.setClearColor(0xffffff, 1);
+    container.appendChild(this.renderer.domElement);
+    this.renderer.domElement.style.display = "block";
+    this.renderer.domElement.tabIndex = 0;
+
+    this.scene = new THREE.Scene();
+    this.camera = new THREE.PerspectiveCamera(45, w / h, 10, 200000);
+    this.camera.up.set(0, 0, 1);
+    this.camera.position.set(4500, -4500, 3200);
+
+    this.orbit = new OrbitControls(this.camera, this.renderer.domElement);
+    this.orbit.target.set(0, 0, 600);
+    this.orbit.enableDamping = true; this.orbit.dampingFactor = 0.12;
+    this.orbit.screenSpacePanning = false;
+    this.orbit.maxPolarAngle = Math.PI / 2 - 0.02; // 床の下には回り込まない
+    this.orbit.minDistance = 300; this.orbit.maxDistance = 60000;
+    this.orbit.addEventListener("start", () => { this.userOrbiting = true; });
+    this.orbit.addEventListener("end", () => { this.userOrbiting = false; });
+
+    // 光源
+    this.scene.add(new THREE.HemisphereLight(0xffffff, 0x8a949c, 0.9));
+    const sun = new THREE.DirectionalLight(0xffffff, 1.1);
+    sun.position.set(3000, -2000, 6000);
+    this.scene.add(sun);
+    const fill = new THREE.DirectionalLight(0xffffff, 0.35);
+    fill.position.set(-4000, 3000, 2500);
+    this.scene.add(fill);
+
+    // 床・グリッド（1 m、10 m ごとに濃く）
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(200000, 200000), new THREE.MeshBasicMaterial({ color: COLORS.floor }));
+    floor.position.z = -2;
+    this.scene.add(floor);
+    const grid = new THREE.GridHelper(60000, 60, COLORS.gridMajor, COLORS.grid);
+    grid.rotation.x = Math.PI / 2;
+    grid.position.z = -1;
+    this.scene.add(grid);
+    // 原点マーク
+    const axes = new THREE.AxesHelper(400);
+    axes.position.z = 1;
+    this.scene.add(axes);
+
+    // 背景（図形・文字・画像）・ゴースト・パスのグループ
+    this.bgGroup = new THREE.Group(); this.scene.add(this.bgGroup);
+    this.ghostGroup = new THREE.Group(); this.scene.add(this.ghostGroup);
+    this.pathGroup = new THREE.Group(); this.scene.add(this.pathGroup);
+
+    // ロボット
+    this.buildBody();
+    this.buildArm();
+
+    // TCP 目標（ギズモで動かす対象）: ワールド座標に置き、base_link 基準へ変換して本体に渡す
+    this.tcpTarget = new THREE.Group();
+    this.tcpTarget.add(new THREE.AxesHelper(160));
+    this.scene.add(this.tcpTarget);
+    this.gizmo = new TransformControls(this.camera, this.renderer.domElement);
+    this.gizmo.setSize(0.9);
+    this.gizmo.attach(this.tcpTarget);
+    this.gizmo.addEventListener("dragging-changed", (e) => {
+      this.dragging = e.value;
+      this.orbit.enabled = !e.value;
+      if (!e.value && this.callbacks.onTcpDragEnd) this.callbacks.onTcpDragEnd();
+      if (e.value && this.callbacks.onTcpDragStart) this.callbacks.onTcpDragStart();
+    });
+    this.gizmo.addEventListener("objectChange", () => {
+      if (!this.callbacks.onTcpTarget) return;
+      // ワールド → base_link（アーム取付面）基準
+      this.armRoot.updateMatrixWorld(true);
+      const inv = new THREE.Matrix4().copy(this.armRoot.matrixWorld).invert();
+      const T = new THREE.Matrix4().multiplyMatrices(inv, this.tcpTarget.matrixWorld);
+      const e = T.elements; // 列優先
+      const rowMajor = [e[0], e[4], e[8], e[12], e[1], e[5], e[9], e[13], e[2], e[6], e[10], e[14], 0, 0, 0, 1];
+      this.callbacks.onTcpTarget(rowMajor);
+    });
+    this.gizmoHelper = this.gizmo.getHelper ? this.gizmo.getHelper() : this.gizmo;
+    this.scene.add(this.gizmoHelper);
+    this.setGizmoMode(null);
+
+    // 可動範囲（J2 中心・半径 1418 mm の球）
+    this.envelope = new THREE.Mesh(
+      new THREE.SphereGeometry(M.reach, 48, 32),
+      new THREE.MeshBasicMaterial({ color: COLORS.envelope, transparent: true, opacity: 0.08, depthWrite: false, side: THREE.DoubleSide }),
+    );
+    const envEdges = new THREE.LineSegments(
+      new THREE.WireframeGeometry(new THREE.SphereGeometry(M.reach, 24, 12)),
+      new THREE.LineBasicMaterial({ color: COLORS.envelope, transparent: true, opacity: 0.18 }),
+    );
+    this.envelope.add(envEdges);
+    this.envelope.position.set(0, 0, M.L.base);
+    this.envelope.visible = false;
+    this.armRoot.add(this.envelope);
+
+    this.loadMeshes();
+    this.ready = true;
+  }
+
+  /* 車体: 750×600 の箱、左右ドライブユニット、前端の青いバンパー、アーム取付面 */
+  buildBody() {
+    const { bodyLen, bodyWid, mountZ } = this.dims || { bodyLen: 750, bodyWid: 600, mountZ: 750 };
+    this.bodyGroup = new THREE.Group();
+    this.scene.add(this.bodyGroup);
+    const H = mountZ;
+    const box = new THREE.Mesh(new THREE.BoxGeometry(bodyLen, bodyWid, H), new THREE.MeshStandardMaterial({ color: COLORS.body, roughness: 0.85 }));
+    box.position.z = H / 2;
+    this.bodyGroup.add(box);
+    const edges = new THREE.LineSegments(new THREE.EdgesGeometry(box.geometry), new THREE.LineBasicMaterial({ color: COLORS.bodyEdge }));
+    edges.position.z = H / 2;
+    this.bodyGroup.add(edges);
+    // ドライブユニット（左右の濃いグレー）
+    const dm = new THREE.MeshStandardMaterial({ color: COLORS.drive, roughness: 0.7 });
+    for (const s of [-1, 1]) {
+      const d = new THREE.Mesh(new THREE.BoxGeometry(bodyLen * 0.46, bodyWid * 0.13, 120), dm);
+      d.position.set(0, s * (bodyWid / 2 - bodyWid * 0.05 - bodyWid * 0.065), 60);
+      this.bodyGroup.add(d);
+    }
+    // 前端バンパーライン（前方向の目印）
+    const bumper = new THREE.Mesh(new THREE.BoxGeometry(30, bodyWid * 0.7, 40), new THREE.MeshBasicMaterial({ color: COLORS.bumper }));
+    bumper.position.set(bodyLen / 2 - 10, 0, H - 30);
+    this.bodyGroup.add(bumper);
+    // アーム取付面（base_link 原点）
+    this.armRoot = new THREE.Group();
+    this.armRoot.position.set(0, 0, mountZ);
+    this.bodyGroup.add(this.armRoot);
+  }
+
+  /* アーム: 関節ごとの Group の入れ子。各 Group の回転軸は公式 xacro の axis。 */
+  buildArm() {
+    this.joints = [];
+    let parent = this.armRoot;
+    for (let i = 0; i < 6; i++) {
+      const j = M.joints[i];
+      const g = new THREE.Group();
+      g.position.set(j.origin[0], j.origin[1], j.origin[2]);
+      g.userData.axis = new THREE.Vector3(j.axis[0], j.axis[1], j.axis[2]);
+      parent.add(g);
+      this.joints.push(g);
+      parent = g;
+    }
+    // フランジ（J6 から +x 160）→ FANUC フランジ（z がツール方向）
+    this.flange = new THREE.Group();
+    this.flange.position.set(M.flange[0], M.flange[1], M.flange[2]);
+    this.joints[5].add(this.flange);
+    this.fanucFlange = new THREE.Group();
+    const R = M.fanucFlangeRot;
+    this.fanucFlange.setRotationFromMatrix(new THREE.Matrix4().set(R[0], R[1], R[2], 0, R[3], R[4], R[5], 0, R[6], R[7], R[8], 0, 0, 0, 0, 1));
+    this.flange.add(this.fanucFlange);
+    // ツール（長さはあとから変える）: フランジ面の円盤＋ツール方向の棒＋先端
+    this.toolGroup = new THREE.Group();
+    this.fanucFlange.add(this.toolGroup);
+    const disk = new THREE.Mesh(new THREE.CylinderGeometry(55, 55, 10, 32), new THREE.MeshStandardMaterial({ color: COLORS.flange }));
+    disk.rotation.x = Math.PI / 2; disk.position.z = 5;
+    this.toolGroup.add(disk);
+    this.toolBar = new THREE.Mesh(new THREE.CylinderGeometry(14, 14, 1, 16), new THREE.MeshStandardMaterial({ color: 0x5d6d7e }));
+    this.toolBar.rotation.x = Math.PI / 2;
+    this.toolGroup.add(this.toolBar);
+    this.tcpMarker = new THREE.Mesh(new THREE.SphereGeometry(22, 16, 12), new THREE.MeshBasicMaterial({ color: 0xd6336c }));
+    this.toolGroup.add(this.tcpMarker);
+    this.tcpAxes = new THREE.AxesHelper(120);
+    this.toolGroup.add(this.tcpAxes);
+    this.setToolLen(0);
+  }
+
+  setToolLen(len) {
+    this.toolLen = len || 0;
+    const L = Math.max(1, this.toolLen);
+    this.toolBar.scale.set(1, L, 1);
+    this.toolBar.position.z = L / 2 + 10;
+    this.toolBar.visible = this.toolLen > 1;
+    this.tcpMarker.position.z = this.toolLen;
+    this.tcpAxes.position.z = this.toolLen;
+  }
+
+  loadMeshes() {
+    const loader = new STLLoader();
+    const names = ["base", "j1", "j2", "j3", "j4", "j5", "j6"];
+    const parents = [this.armRoot, ...this.joints];
+    const ringLinks = new Set(["j1", "j3", "j5"]); // 緑のアクセント（実機の緑リング位置に近いリンク）
+    names.forEach((nm, i) => {
+      loader.load(`meshes/crx20ia_l/${nm}.stl`, (geo) => {
+        geo.computeVertexNormals();
+        const mat = new THREE.MeshStandardMaterial({
+          color: ringLinks.has(nm) ? 0xdfeeda : COLORS.link, roughness: 0.6, metalness: 0.05, flatShading: true,
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        const o = M.meshOffsets[nm];
+        mesh.position.set(o[0], o[1], o[2]);
+        parents[i].add(mesh);
+        // 輪郭線（低ポリの面が読みやすいように）
+        const ed = new THREE.LineSegments(new THREE.EdgesGeometry(geo, 25), new THREE.LineBasicMaterial({ color: 0x8a969e, transparent: true, opacity: 0.6 }));
+        ed.position.copy(mesh.position);
+        parents[i].add(ed);
+        this.meshes[nm] = mesh;
+      }, undefined, () => {
+        // 読めない時は関節位置を結ぶ簡易形状で代用
+        if (nm === "base") return;
+        const idx = i - 1;
+        const next = M.joints[idx + 1] ? M.joints[idx + 1].origin : M.flange;
+        const len = Math.hypot(next[0], next[1], next[2]);
+        if (len < 1) return;
+        const cyl = new THREE.Mesh(new THREE.CylinderGeometry(55, 55, len, 16), new THREE.MeshStandardMaterial({ color: COLORS.link }));
+        const dir = new THREE.Vector3(next[0], next[1], next[2]).normalize();
+        cyl.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+        cyl.position.copy(dir.clone().multiplyScalar(len / 2));
+        parents[i].add(cyl);
+      });
+    });
+  }
+
+  /* ---------------- 状態の反映 ---------------- */
+  /* body: {x,y,th} [mm, rad]、q: 6 関節 [rad] */
+  setRobot(body, q, toolLen) {
+    if (!this.ready) return;
+    if (toolLen !== undefined && toolLen !== this.toolLen) this.setToolLen(toolLen);
+    // カメラ追従: 車体が動いた分だけカメラと注視点を平行移動
+    if (this.follow && this.lastBody && !this.userOrbiting) {
+      const dx = body.x - this.lastBody.x, dy = body.y - this.lastBody.y;
+      if (dx || dy) { this.camera.position.x += dx; this.camera.position.y += dy; this.orbit.target.x += dx; this.orbit.target.y += dy; }
+    }
+    this.lastBody = { x: body.x, y: body.y };
+    this.bodyGroup.position.set(body.x, body.y, 0);
+    this.bodyGroup.rotation.set(0, 0, body.th);
+    for (let i = 0; i < 6; i++) this.joints[i].setRotationFromAxisAngle(this.joints[i].userData.axis, q[i] || 0);
+    // ギズモの目標を現在の TCP に合わせる（ドラッグ中は動かさない）
+    if (!this.dragging) {
+      this.scene.updateMatrixWorld(true);
+      const T = new THREE.Matrix4().copy(this.toolGroup.matrixWorld).multiply(new THREE.Matrix4().makeTranslation(0, 0, this.toolLen));
+      T.decompose(this.tcpTarget.position, this.tcpTarget.quaternion, this.tcpTarget.scale);
+      this.tcpTarget.scale.set(1, 1, 1);
+    }
+  }
+
+  /* 車体寸法・取付高さ（本体側の設定値） */
+  setDims(d) {
+    this.dims = d;
+    if (!this.ready) return;
+    // 作り直し（寸法変更は稀なので簡単に）
+    const q = this.joints.map(g => 0);
+    this.scene.remove(this.bodyGroup);
+    this.buildBody(); this.buildArm(); this.loadMeshes();
+    this.armRoot.add(this.envelope);
+  }
+
+  /* 背景（四角・直線・文字・画像）、登録済み車体位置（ゴースト）、予定パスを同期。
+   * 変化の検出はキー文字列の比較で行う（本体側のあちこちから呼ばれるため）。 */
+  syncScene({ bgRects, bgLines, bgTexts, bgImage, bodyPoses, paths, dims }) {
+    if (!this.ready) return;
+    const bgKey = JSON.stringify([bgRects, bgLines, bgTexts, bgImage && [bgImage.pxPerM, bgImage.x, bgImage.y, bgImage.opacity, bgImage.src.length]]);
+    if (bgKey !== this.bgKey) { this.bgKey = bgKey; this.rebuildBackground(bgRects, bgLines, bgTexts, bgImage); }
+    const gKey = JSON.stringify(bodyPoses.map(p => [p.x, p.y, p.th, p.name]));
+    if (gKey !== this.ghostKey) { this.ghostKey = gKey; this.rebuildGhosts(bodyPoses, dims); }
+    const pKey = JSON.stringify(paths);
+    if (pKey !== this.pathKey) { this.pathKey = pKey; this.rebuildPaths(paths); }
+  }
+
+  clearGroup(g) {
+    while (g.children.length) {
+      const c = g.children.pop();
+      c.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); } });
+    }
+  }
+
+  rebuildBackground(rects, lines, texts, img) {
+    this.clearGroup(this.bgGroup);
+    // 四角: 床に薄い塗り＋枠
+    for (const R of rects) {
+      const w = Math.abs(R.x2 - R.x1), h = Math.abs(R.y2 - R.y1);
+      if (w < 1 || h < 1) continue;
+      const cx = (R.x1 + R.x2) / 2, cy = (R.y1 + R.y2) / 2;
+      const col = new THREE.Color(R.color);
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.12, depthWrite: false }));
+      m.position.set(cx, cy, 2);
+      this.bgGroup.add(m);
+      const ed = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry), new THREE.LineBasicMaterial({ color: col }));
+      ed.position.copy(m.position);
+      this.bgGroup.add(ed);
+    }
+    // 直線
+    for (const L of lines) {
+      const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(L.x1, L.y1, 3), new THREE.Vector3(L.x2, L.y2, 3)]);
+      this.bgGroup.add(new THREE.Line(g, new THREE.LineBasicMaterial({ color: new THREE.Color(L.color) })));
+    }
+    // 文字: Canvas に描いて床に貼る
+    for (const T of texts) {
+      const chars = Array.from(T.text || "");
+      if (!chars.length) continue;
+      const fontPx = 64;
+      const cv = document.createElement("canvas");
+      const g2 = cv.getContext("2d");
+      g2.font = `${fontPx}px sans-serif`;
+      let wPx, hPx;
+      if (T.vertical) { wPx = fontPx * 1.1; hPx = fontPx * chars.length; }
+      else { wPx = g2.measureText(T.text).width + 8; hPx = fontPx * 1.2; }
+      cv.width = Math.ceil(wPx); cv.height = Math.ceil(hPx);
+      g2.font = `${fontPx}px sans-serif`; g2.fillStyle = T.color; g2.textAlign = "center"; g2.textBaseline = "middle";
+      if (T.vertical) chars.forEach((ch, i) => g2.fillText(ch, cv.width / 2, fontPx * (i + 0.5)));
+      else g2.fillText(T.text, cv.width / 2, cv.height / 2);
+      const tex = new THREE.CanvasTexture(cv);
+      tex.anisotropy = 4;
+      const scale = T.size / fontPx; // 文字高さ [mm] / フォント px
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(cv.width * scale, cv.height * scale),
+        new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }));
+      m.position.set(T.x, T.y, 4);
+      this.bgGroup.add(m);
+    }
+    // 背景画像: 床に貼る
+    if (img && img.src) {
+      const tex = new THREE.TextureLoader().load(img.src, (t) => {
+        const wMm = t.image.naturalWidth * 1000 / img.pxPerM, hMm = t.image.naturalHeight * 1000 / img.pxPerM;
+        const m = new THREE.Mesh(new THREE.PlaneGeometry(wMm, hMm), new THREE.MeshBasicMaterial({ map: t, transparent: true, opacity: img.opacity, depthWrite: false }));
+        m.position.set(img.x, img.y, 1);
+        this.bgGroup.add(m);
+      });
+      tex.colorSpace = THREE.SRGBColorSpace;
+    }
+  }
+
+  rebuildGhosts(poses, dims) {
+    this.clearGroup(this.ghostGroup);
+    const { bodyLen, bodyWid, mountZ } = dims;
+    const mat = new THREE.LineBasicMaterial({ color: COLORS.ghost, transparent: true, opacity: 0.55 });
+    const boxGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(bodyLen, bodyWid, mountZ));
+    for (const p of poses) {
+      const g = new THREE.Group();
+      g.position.set(p.x, p.y, 0); g.rotation.z = p.th;
+      const e = new THREE.LineSegments(boxGeo, mat); e.position.z = mountZ / 2; g.add(e);
+      // 前方向の矢印（床面）
+      const tri = new THREE.Shape();
+      tri.moveTo(bodyLen * 0.42, 0); tri.lineTo(bodyLen * 0.10, -bodyWid * 0.28); tri.lineTo(bodyLen * 0.10, bodyWid * 0.28); tri.closePath();
+      const tm = new THREE.Mesh(new THREE.ShapeGeometry(tri), new THREE.MeshBasicMaterial({ color: COLORS.ghost, transparent: true, opacity: 0.3, depthWrite: false }));
+      tm.position.z = 5; g.add(tm);
+      // 名前ラベル（ビルボード）
+      g.add(this.makeLabel(p.name, bodyLen / 2 + 60, 0, mountZ + 120));
+      this.ghostGroup.add(g);
+    }
+  }
+
+  makeLabel(text, x, y, z) {
+    const cv = document.createElement("canvas");
+    const g2 = cv.getContext("2d");
+    g2.font = "bold 40px sans-serif";
+    cv.width = Math.ceil(g2.measureText(text).width + 24); cv.height = 56;
+    g2.font = "bold 40px sans-serif"; g2.fillStyle = "rgba(36,113,163,0.9)"; g2.textBaseline = "middle";
+    g2.fillText(text, 12, 28);
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthTest: false }));
+    sp.scale.set(cv.width * 4, cv.height * 4, 1);
+    sp.position.set(x, y, z);
+    return sp;
+  }
+
+  /* paths: [{ pts: [[x,y],...], reverse: bool }] */
+  rebuildPaths(paths) {
+    this.clearGroup(this.pathGroup);
+    for (const P of paths || []) {
+      if (!P.pts || P.pts.length < 2) continue;
+      const g = new THREE.BufferGeometry().setFromPoints(P.pts.map(p => new THREE.Vector3(p[0], p[1], 6)));
+      const line = new THREE.Line(g, new THREE.LineDashedMaterial({ color: P.reverse ? COLORS.pathRev : COLORS.pathFwd, dashSize: 90, gapSize: 70, transparent: true, opacity: 0.8 }));
+      line.computeLineDistances();
+      this.pathGroup.add(line);
+    }
+  }
+
+  /* ---------------- 操作 ---------------- */
+  setGizmoMode(mode) { // 'translate' | 'rotate' | null
+    this.gizmoMode = mode;
+    if (!this.gizmo) return;
+    if (mode) { this.gizmo.setMode(mode); this.gizmo.enabled = true; this.gizmoHelper.visible = true; }
+    else { this.gizmo.enabled = false; this.gizmoHelper.visible = false; }
+    this.tcpTarget.visible = !!mode;
+  }
+  setGizmoSpace(space) { if (this.gizmo) this.gizmo.setSpace(space); } // 'world' | 'local'
+  setEnvelope(on) { if (this.envelope) this.envelope.visible = !!on; }
+  setFollow(on) { this.follow = !!on; }
+
+  /* 視点プリセット。注視点は車体（取付面の少し上） */
+  setView(preset) {
+    if (!this.ready) return;
+    const b = this.bodyGroup.position;
+    const c = new THREE.Vector3(b.x, b.y, 700);
+    const th = this.bodyGroup.rotation.z;
+    const d = 4200;
+    const rot = (x, y) => [x * Math.cos(th) - y * Math.sin(th), x * Math.sin(th) + y * Math.cos(th)];
+    let p;
+    if (preset === "front") { const [x, y] = rot(d, 0); p = new THREE.Vector3(c.x + x, c.y + y, 1200); }
+    else if (preset === "side") { const [x, y] = rot(0, -d); p = new THREE.Vector3(c.x + x, c.y + y, 1200); }
+    else if (preset === "top") { p = new THREE.Vector3(c.x, c.y - 1, d * 1.3); }
+    else { const [x, y] = rot(d * 0.7, -d * 0.7); p = new THREE.Vector3(c.x + x, c.y + y, 3000); } // iso
+    this.camera.position.copy(p);
+    this.orbit.target.copy(c);
+    this.orbit.update();
+  }
+
+  resize() {
+    if (!this.ready) return;
+    const w = Math.max(200, this.container.clientWidth), h = Math.max(200, this.container.clientHeight);
+    this.renderer.setSize(w, h);
+    this.camera.aspect = w / h;
+    this.camera.updateProjectionMatrix();
+  }
+
+  render() {
+    if (!this.ready) return;
+    this.orbit.update();
+    this.renderer.render(this.scene, this.camera);
+  }
+
+  get canvas() { return this.renderer ? this.renderer.domElement : null; }
+}
+
+window.LexxSim3D = new Sim3D();
+window.dispatchEvent(new Event("lexxsim3d-ready"));
