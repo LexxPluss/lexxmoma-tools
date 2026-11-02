@@ -1,0 +1,85 @@
+path,title,visits
+/hub,LexxMoMa Tools,65
+/tool/sketch,工程シミュレーター(2D),46
+/tool/roi,LexxMoMa 自走マニピュレータ 回収シミュレーター,35
+tool/sketch/sim/calc,1日分を計算,17
+/tool/tour,LexxMoMa 見学ツアー,17
+tool/sim2d/open,LexxMoMa 動作シミュレーター(2D),16
+tool/sketch/sim/play,動かす,15
+tool/sketch/open,工程スケッチ,11
+tool/tour/open,LexxMoMa 見学ツアー(会社紹介・紹介動画・実機映像),10
+tool/sketch/poly/nogo,立入禁止,7
+keep/shown,<em>(no title)</em>,7
+lib/open/lexxmoma-demo,LexxMoMa 実機デモ動画(11分),7
+lib/stamp/lexxmoma-demo,LexxMoMa 実機デモ動画(11分),6
+lib/open/company-intro,LexxPluss 会社紹介資料,6
+hub/tour/thScreen,見学ツアーへ,6
+tool/sketch/add/worker,作業者,5
+tool/sketch/add/process,加工,5
+keep/dismiss,<em>(no title)</em>,5
+/tool/sier,ロボットSIerデータベース,5
+tool/sketch/flow,つなぐ,4
+tool/sketch/add/part,部品置き場,4
+tool/sketch/add/join,溶接・接着・組立,4
+member/factory-map/open,工場マップを開いた,4
+/tool/factory-map,工場マップ | LexxPluss 社内,4
+hub/robot/pet,LexxMoMaをなでた,4
+/tool/members,社内ツール | LexxPluss 社内,4
+tool/sier/open,ロボットSIerデータベース,4
+hub/phase/know,知る・興味を持つ,4
+lib/open/lexxmoma-intro,LexxMoMa 紹介動画,3
+tool/sketch/poly/walk,通路(歩く所),3
+tool/sketch/report,検討シート,3
+tool/sketch/add/in,搬入口,3
+tool/roi/open,費用対効果（ROI）計算ツール,3
+member/factory-map/factory,アマダ 富士宮事業所,3
+tool/sketch/add/container,TPポリ箱,2
+tool/sketch/help,使い方,2
+tool/sketch/save,保存,2
+lib/stamp/lexxmoma-intro,LexxMoMa 紹介動画,2
+tool/sketch/add/out,搬出口,2
+tool/sketch/add/buffer,仮置き・棚,2
+tool/sketch/tpl/blank,白紙,2
+tool/sketch/add/robot,LexxMoMa,2
+hub/phase/design,工程を設計する,2
+hub/phase/deploy,導入を進める,2
+lib/open/company-video,LexxPluss 会社紹介動画,2
+member/factory-map/news,ポリプラスチックス富士工場 (静岡県富士市) ポリプラスチックス富士工場,2
+hub/phase/assess,効果を試算する,2
+pass/close,<em>(no title)</em>,2
+pass/open,<em>(no title)</em>,2
+tool/sketch/share,共有URL,1
+tool/roi/xlsx,Excelダウンロード,1
+/tool/eoat-db,エンドエフェクタ事例データベース | LexxPluss 社内,1
+tool/sier/company/map,シードシステムズ,1
+tool/sier/filter/ai,AI制御,1
+tool/sier/filter/process,組立,1
+tool/sier/filter/maker,FANUC,1
+tool/sier/filter/industry,自動車系,1
+tool/sier/dig/title/1,見習い発掘者,1
+lib/board/filter/all,<em>(no title)</em>,1
+tool/roi/print,印刷,1
+pass/milestone/day7,<em>(no title)</em>,1
+tool/sketch/bg,下絵,1
+tool/sier/link/website,スターテクノ,1
+tool/sier/company/list,スターテクノ,1
+member/videos/open,共有動画を開いた,1
+/tool/videos,共有動画 | LexxPluss 社内,1
+hub/worry/layout,現場に置けるか?(レイアウト),1
+hub/worry/partner,誰に頼めばいい?(SIer),1
+hub/worry/what,そもそもLexxMoMaって何?,1
+hub/worry/grip,このワークは掴めるのか?,1
+tool/sketch/add/cart,台車,1
+keep/standalone,<em>(no title)</em>,1
+tool/sketch/tpl/line,直線ライン,1
+hub/worry/cycle,うちの工程で何秒かかる?,1
+lib/cert,修了証を表示,1
+lib/complete,見学ツアー修了,1
+hub/tour/navTour,見学ツアーへ,1
+lib/stamp/company-intro,LexxPluss 会社紹介資料,1
+tool/roi/mode/detail,精緻モードに切替,1
+tool/sketch/tpl/join,合流セル(溶接・組立),1
+tool/sketch/tpl/cell2,2台持ちセル(並行作業),1
+hub/phase/operate,運用・拡大する,1
+member/people-db/open,顧客人事DBを開いた,1
+/tool/people-db,顧客人事データベース | LexxPluss 社内,1
