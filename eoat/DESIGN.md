@@ -212,3 +212,6 @@ URL で分からない「再生ボタンを描き込んだ画像」「文字だ�
 - 検索エンジン: noindex を外し、description・OGP を足した(「誰でも見られる」の判断)。
 - 削除・訂正の依頼は、フッターで会社の問い合わせ窓口に案内する(7 営業日以内)。
 - CI(pages.yml): 混入チェックを「公開側の画像はパック(.bin)と詳細用の .webp だけ」に変えた(元のサイズの画像など別の形式が混ざったら止める)。
+- 計測を戻した(2026-11-02、ユーザーの判断): 他の公開ツールと同じ assets/track.js(GoatCounter)と同じ粒度。ページ表示は tool/eoatdb、操作は tool/eoatdb/<操作>
+  (search・tab/・facet/・trend/・chip/off・sort/・more・case/open・case/similar・source/open・source/image・source/video・sier/open・share・share/case)。
+  検索は該当件数だけを、入力が止まって 1.5 秒・前回と違うときだけ送る(robot-sier-map と同じ。入力した検索語は送らない)。
