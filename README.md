@@ -17,6 +17,7 @@ site/                      ← published root (https://<org>.github.io/<repo>/)
 ├ simulator/               ← Motion Simulator (2D)
 ├ process-sketch/          ← Process Sketch (beta)
 ├ lexxmoma-roi/            ← ROI Calculator
+├ quote/                   ← LexxMoMa 3D 見積 (prices in catalog.js; request form → Google Apps Script, see quote/SETUP.md)
 ├ robot-sier-map/          ← Robot SIer Database
 ├ members/                 ← 社内ツールの入口(index.html)。共通パスワードはここだけで入れ、全ツールで使う(members-auth.js。未入力のツールは入口へ移動)
 ├ members/factory-map/     ← Factory Map (internal, encrypted data)

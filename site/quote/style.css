@@ -1,0 +1,215 @@
+/* LexxMoMa 3D 見積依頼 — ROI 計算ツールと同じ骨組み(共通ヘッダー・左に入力パネル・右に 3D と結果)と配色 */
+:root{
+  --primary:#0068B7; --primary-light:#E6F0F9; --accent:#3EB370; --accent-light:#E8F6EE;
+  --text:#1F2933; --muted:#5F6B7A; --border:#D9DEE3; --bg:#FFFFFF; --bg-soft:#F5F7FA; --warn:#D93025; --caution:#B07A00;
+  --stage-1:#E9F0F7; --stage-2:#F8FAFC; --on-primary:#FFFFFF;
+  --shadow:0 12px 40px rgba(16,32,48,.18);
+  --radius:8px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --primary:#5AA8E6; --primary-light:#18324A; --accent:#5FCB8A; --accent-light:#173527;
+    --text:#E7EDF2; --muted:#A3B1BD; --border:#2B3741; --bg:#0F1519; --bg-soft:#171F26; --warn:#F07A6E; --caution:#E8B64A;
+    --stage-1:#0C141C; --stage-2:#18232E; --on-primary:#0F1519;
+    --shadow:0 12px 40px rgba(0,0,0,.5); color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --primary:#5AA8E6; --primary-light:#18324A; --accent:#5FCB8A; --accent-light:#173527;
+  --text:#E7EDF2; --muted:#A3B1BD; --border:#2B3741; --bg:#0F1519; --bg-soft:#171F26; --warn:#F07A6E; --caution:#E8B64A;
+  --stage-1:#0C141C; --stage-2:#18232E; --on-primary:#0F1519;
+  --shadow:0 12px 40px rgba(0,0,0,.5); color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic UI",Meiryo,sans-serif;font-size:14px;line-height:1.55}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+h1,h2,h3{margin:0;font-weight:700;text-wrap:balance}
+[hidden]{display:none!important}
+.muted{color:var(--muted)}
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+
+/* ヘッダー(共通の .lx-hdr に右側のボタンだけ足す) */
+.lx-hdr{padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px))}
+.spacer{flex:1}
+
+/* ボタン */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);border-radius:6px;padding:9px 18px;font-weight:600;text-decoration:none;line-height:1.2}
+.btn:hover{border-color:var(--primary);color:var(--primary)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:var(--on-primary)}
+.btn.primary:hover{filter:brightness(1.08);color:var(--on-primary)}
+.btn.ghost{background:transparent}
+.btn.sm{padding:5px 12px;font-size:12px;white-space:nowrap}
+.btn:disabled{opacity:.45;cursor:default;filter:none}
+
+/* レイアウト: 左に 3 ステップ、右に 3D とお見積り内容 */
+.grid{display:grid;grid-template-columns:minmax(360px,460px) minmax(0,1fr);grid-template-areas:"flow view" "flow sum";grid-template-rows:auto 1fr;gap:18px;align-items:start;padding-block:18px 8px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px))}
+.panel{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;min-width:0}
+.panel h2{font-size:15px;color:var(--primary);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.flow{grid-area:flow;position:sticky;top:12px;max-height:calc(100vh - 96px);overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:14px;padding-bottom:0}
+
+/* ステップ表示(本体 → オプション → 依頼を送る) */
+.stepper{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:0;counter-reset:s}
+.stepper li{position:relative}
+.stepper li+li::before{content:"";position:absolute;top:15px;left:-50%;width:100%;height:2px;background:var(--border);z-index:0}
+.stepper li.past+li::before,.stepper li.past+li.on::before{background:var(--primary)}
+.stepper button{position:relative;z-index:1;width:100%;display:flex;flex-direction:column;align-items:center;gap:4px;border:0;background:none;padding:0;color:var(--muted);font-size:12px;font-weight:600}
+.stepper button:disabled{cursor:default}
+.stepper b{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;border:2px solid var(--border);background:var(--bg);font-size:14px;font-variant-numeric:tabular-nums}
+.stepper li.on button{color:var(--primary)}
+.stepper li.on b{border-color:var(--primary);background:var(--primary);color:var(--on-primary)}
+.stepper li.past b{border-color:var(--primary);color:var(--primary)}
+
+.step{display:flex;flex-direction:column;gap:12px}
+.lead{margin:0;color:var(--muted);font-size:13px}
+
+/* ステップ 1: 本体 */
+.body-card{border:1px solid var(--primary);border-radius:var(--radius);background:var(--primary-light);padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.body-head{display:flex;align-items:center;gap:8px}
+.body-name{font-weight:700}
+.body-price{display:flex;align-items:baseline;gap:6px}
+.body-price b{font-size:32px;font-weight:800;color:var(--primary);font-variant-numeric:tabular-nums;letter-spacing:.01em;line-height:1.15}
+.body-price span{color:var(--muted);font-size:13px}
+.body-note{margin:0;font-size:12px;color:var(--muted)}
+.incl{margin:4px 0 0;padding:0;list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:12px}
+.incl li{display:flex;gap:6px}
+.incl li::before{content:"";flex:none;width:10px;height:6px;margin-top:6px;border-left:2px solid var(--accent);border-bottom:2px solid var(--accent);transform:rotate(-45deg)}
+.row{display:flex;align-items:center;gap:10px}
+.row-label{font-size:13px;font-weight:600}
+.qty-row{justify-content:space-between;padding:4px 2px}
+.tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.04em;color:var(--primary);background:var(--bg);border:1px solid var(--primary);border-radius:4px;padding:0 6px;white-space:nowrap;line-height:1.6}
+.tag.soft{color:var(--muted);border-color:var(--border)}
+
+/* 数量 */
+.qty{display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:6px;overflow:hidden;background:var(--bg)}
+.qty button{border:0;background:var(--bg-soft);width:32px;height:30px;font-size:16px}
+.qty button:disabled{opacity:.35;cursor:default}
+.qty output{min-width:30px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+.qty .unit{font-size:11px;color:var(--muted);padding-right:6px}
+
+/* ステップ 2: オプション */
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);transition:border-color .15s,background .15s}
+.opt.on{border-color:var(--primary);background:var(--primary-light)}
+.opt-toggle{width:100%;display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:start;border:0;background:none;text-align:left;padding:11px 12px}
+.box{display:grid;place-items:center;width:20px;height:20px;margin-top:1px;border:2px solid var(--border);border-radius:5px;background:var(--bg);color:transparent}
+.opt.on .box{border-color:var(--primary);background:var(--primary);color:var(--on-primary)}
+.box svg{width:14px;height:14px}
+.opt-main{display:flex;flex-direction:column;gap:2px;min-width:0}
+.opt-name{font-weight:700}
+.opt-desc{font-size:12px;color:var(--muted)}
+.opt-side{display:flex;flex-direction:column;align-items:flex-end;gap:4px;text-align:right}
+.opt-price{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;font-size:13px}
+.opt-price .muted{font-weight:500;font-size:11px}
+.opt-price small{display:block;font-weight:500;font-size:11px;color:var(--muted)}
+.opt-more{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:0 12px 11px 44px}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.seg button{border:0;background:var(--bg);padding:5px 10px;font-size:12px}
+.seg button+button{border-left:1px solid var(--border)}
+.seg button[aria-checked="true"]{background:var(--primary);color:var(--on-primary);font-weight:700}
+.hearing{border:1px dashed var(--border);border-radius:var(--radius);padding:10px 12px;background:var(--bg-soft);font-size:12px}
+.hearing p{margin:4px 0 6px;color:var(--muted)}
+.hearing ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px}
+.hearing li{display:flex;align-items:center;gap:8px}
+
+/* ステップ 3: 依頼を送る */
+.test-note{font-size:12px;color:var(--caution);border:1px dashed var(--caution);border-radius:6px;padding:6px 10px}
+.fields{display:flex;flex-direction:column;gap:10px}
+.field{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600}
+.field i,legend i{font-style:normal;font-size:10px;font-weight:700;color:var(--warn);margin-left:4px}
+.field input,.field textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg);font-weight:400;font-size:14px}
+.field input:focus,.field textarea:focus{outline:2px solid var(--primary);outline-offset:0;border-color:var(--primary)}
+.channel,.partners{border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px 12px;margin:0;display:flex;flex-direction:column;gap:8px}
+.channel legend,.partners legend{font-size:13px;font-weight:600;padding:0 4px}
+.partners .field{display:grid;grid-template-columns:48px minmax(0,1fr);align-items:center;gap:8px}
+.hint{margin:0;font-size:12px;color:var(--muted)}
+.chips{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.chip{position:relative;display:flex}
+.chip input{position:absolute;opacity:0;pointer-events:none}
+.chip span{flex:1;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;cursor:pointer;background:var(--bg)}
+.chip input:checked+span{border-color:var(--primary);background:var(--primary-light);color:var(--primary);font-weight:700}
+.chip input:focus-visible+span{outline:2px solid var(--primary);outline-offset:1px}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.privacy{margin:0;font-size:11px;color:var(--muted)}
+.err{margin:0;color:var(--warn);font-size:13px;font-weight:600}
+.err:empty{display:none}
+
+/* 送信後 */
+.done{align-items:center;text-align:center;padding:18px 0 6px}
+.done h2{border:0;padding:0;margin:0;font-size:18px;color:var(--text)}
+.done p{margin:0;color:var(--muted)}
+.done-mark{display:grid;place-items:center;width:56px;height:56px;border-radius:50%;background:var(--accent);color:var(--on-primary)}
+.done-mark svg{width:30px;height:30px}
+.done-id b{color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:.04em}
+
+.flow-nav{position:sticky;bottom:0;margin-top:auto;display:flex;justify-content:space-between;gap:8px;padding-block:12px 16px;border-top:1px solid var(--border);background:var(--bg)}
+.flow-nav .primary{flex:1}
+
+/* 右: 3D */
+.view{grid-area:view;display:flex;flex-direction:column;gap:12px}
+.scene-bar{display:flex;align-items:center;gap:8px}
+.scene-hint{font-size:12px;color:var(--muted);margin-right:auto}
+.garage{position:relative;height:clamp(280px,44vh,460px);border-radius:var(--radius);overflow:hidden;background:radial-gradient(120% 90% at 50% 30%,var(--stage-2),var(--stage-1))}
+.garage canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+.garage canvas:active{cursor:grabbing}
+.garage-fallback{position:absolute;inset:auto 16px 45% 16px;text-align:center;color:var(--muted)}
+.floats{position:absolute;inset:0;pointer-events:none}
+.float{position:absolute;transform:translate(-50%,-50%);font-weight:800;font-size:20px;color:var(--accent);text-shadow:0 1px 0 var(--bg),0 0 10px var(--bg);white-space:nowrap;animation:floatUp 1.4s ease-out forwards}
+.float.minus{color:var(--muted);font-size:15px}
+@keyframes floatUp{0%{opacity:0;transform:translate(-50%,-30%) scale(.7)}15%{opacity:1;transform:translate(-50%,-60%) scale(1.1)}100%{opacity:0;transform:translate(-50%,-240%) scale(1)}}
+
+/* 右: お見積り内容 */
+.summary{grid-area:sum}
+.summary h2{margin-bottom:6px}
+.sum{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+.sum td,.sum th{padding:6px 4px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+.sum .r{text-align:right;white-space:nowrap}
+.sum tr.grp th{padding-top:10px;font-size:11px;letter-spacing:.06em;color:var(--primary);border-bottom:1px solid var(--primary)}
+.sum td.later{font-size:12px;color:var(--muted)}
+.sum td.later span{display:block;font-size:11px;font-weight:700;color:var(--text)}
+.sum tfoot th{font-size:13px;border-bottom:0;padding-top:10px}
+.sum tfoot td{border-bottom:0;padding-top:8px}
+.sum tfoot b{font-size:22px;font-weight:800;color:var(--primary)}
+.sum-note{margin:4px 0 0;font-size:11px;color:var(--muted)}
+
+/* 価格の考え方 */
+.policy{width:min(620px,calc(100vw - 32px));max-height:calc(100vh - 32px);border:0;border-radius:12px;padding:0;background:var(--bg);color:var(--text);box-shadow:var(--shadow)}
+.policy::backdrop{background:rgba(10,20,30,.6)}
+.policy-body{display:flex;flex-direction:column;gap:12px;padding:24px 26px 20px}
+.eyebrow{margin:0;font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--primary)}
+.policy h2{font-size:20px}
+.policy-lead,.policy-how{margin:0;font-size:13px;color:var(--muted)}
+.policy-list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;counter-reset:p}
+.policy-list li{counter-increment:p;display:grid;grid-template-columns:28px 1fr;gap:2px 10px;padding:12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-soft)}
+.policy-list li::before{content:counter(p);grid-row:span 2;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--primary);color:var(--on-primary);font-weight:700;font-size:13px}
+.policy-list b{font-size:14px}
+.policy-list span{font-size:13px;color:var(--muted)}
+.policy-list em{font-style:normal;font-weight:800;color:var(--primary);font-variant-numeric:tabular-nums}
+.policy-ft{display:flex;justify-content:flex-end;gap:8px;padding-top:4px}
+
+/* フッター・通知 */
+.foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 16px;padding-block:10px 18px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px));font-size:11px;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,8px);opacity:0;background:var(--text);color:var(--bg);font-size:12px;font-weight:600;border-radius:999px;padding:8px 16px;transition:opacity .25s,transform .25s;pointer-events:none;max-width:calc(100% - 32px)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media (max-width:900px){
+  .grid{grid-template-columns:minmax(0,1fr);grid-template-areas:"view" "flow" "sum";grid-template-rows:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .flow{position:static;max-height:none;overflow:visible}
+  .garage{height:clamp(220px,34vh,320px)}
+  .lx-hdr,.foot{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .flow-nav{position:sticky;bottom:0;background:var(--bg);margin:0 -18px -16px;padding:12px 18px calc(12px + env(safe-area-inset-bottom,0px))}
+}
+@media (max-width:520px){
+  .lx-wordmark{display:none}
+  .lx-hdr{gap:10px}
+  .scene-bar{display:none}
+  .incl,.chips{grid-template-columns:1fr}
+  .opt-toggle{grid-template-columns:22px minmax(0,1fr)}
+  .opt-side{grid-column:2;flex-direction:row;align-items:center;justify-content:space-between;text-align:left}
+  .opt-more{padding-left:12px}
+  .policy-body{padding:20px 18px 16px}
+  .policy-ft{flex-direction:column-reverse}
+  .scene-hint{display:none}
+}
+@media (prefers-reduced-motion: reduce){.float{animation:none;opacity:0}.opt{transition:none}}
