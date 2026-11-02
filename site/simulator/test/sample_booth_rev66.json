@@ -1,7 +1,7 @@
 {
   "version": 3,
   "rev": "rev.66",
-  "savedAt": "2026-11-02T06:35:37.294Z",
+  "savedAt": "2026-11-02T06:39:50.575Z",
   "armModel": "FANUC CRX-20iA/L",
   "toolLen": 150,
   "bodyPoses": [
@@ -240,11 +240,7 @@
           "type": "other",
           "name": "加工機の動作",
           "wait": 3
-        }
-      ]
-    },
-    {
-      "blocks": [
+        },
         {
           "type": "body",
           "pose": "P4",
