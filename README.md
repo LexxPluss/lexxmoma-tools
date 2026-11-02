@@ -51,7 +51,13 @@ do not copy in packages (zip) from elsewhere.
 - **ROI Calculator** and **Process Sketch** are built: edit `src/`, then run `python3 build.py` in
   `site/lexxmoma-roi/` or `site/process-sketch/` and commit both `src/` and `dist/`.
   CI fails if `dist/` does not match `src/`.
-- Tests: `node site/lexxmoma-roi/test/calc.test.js`, `node site/process-sketch/test/continuity.test.cjs`.
+- Tests: `node site/lexxmoma-roi/test/calc.test.js`, `node site/process-sketch/test/continuity.test.cjs`,
+  `node --test site/simulator/test/kinematics.test.cjs`.
+- **Motion Simulator** is a single page (`simulator/lexxmoma-2d.html`) plus two scripts: `crx-kinematics.js`
+  (FANUC CRX-20iA/L forward/inverse kinematics, no dependencies, shared with the Node test) and `sim3d.js`
+  (3D view, ES module). Three.js is vendored under `simulator/vendor/` (MIT, pinned version in
+  `vendor/README.md`) so the tool works offline; the arm shape uses FANUC's official collision meshes
+  (`simulator/meshes/`, Apache-2.0). Bump `rev.N` in the header on every change. See `simulator/README.md`.
 - **Factory Map** data (`members/factory-map/data.enc.*`) is encrypted by the tools team's internal build;
   only replace those two files, never commit plaintext data.
 - Keep each file's line endings (several tool files use CRLF).
