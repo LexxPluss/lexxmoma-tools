@@ -1,8 +1,9 @@
 # エンドエフェクタ事例データベース(eoat/) — 運用手順
 
-社内限定・試験運用。「掴みたいモノ」「やりたいこと」を入れると、世界の SIer・メーカー・ユーザーが公開している
+社外公開ツール(2026-11 に社内限定から移行。法務確認済み・ユーザーの判断)。「掴みたいモノ」「やりたいこと」を入れると、世界の SIer・メーカー・ユーザーが公開している
 エンドエフェクタ(ハンド)の実例が画像付きで出て、「このワークはこう掴むのが一般的」が 1 分で分かるツール。
-閲覧 UI は `site/members/eoat-db/`(社内ツールの入口から。データも画像も暗号化)。
+閲覧 UI は `site/eoat-db/`(LexxMoMa Tools の公開ページ。パスワード・暗号化なし、利用の計測なし)。
+旧 URL `site/members/eoat-db/` は新しい URL へ転送するだけのページ(共有されたリンクの #条件 を引き継ぐ)。
 
 ## 守るべき流儀(このリポジトリの他のツールから)
 1. 目的から作る: 利用者の問い(このワークはどう掴む? 誰がどこでやった?)に最短で答える機能だけ足す
@@ -12,8 +13,8 @@
 5. 品質ループ: 指標を数値で定義 → 悪い順に原因を分析 → 直す → 回ごとの数値を表に残す(people/ と同じ)
 6. 抜けは「なぜ漏れたか」(名簿・語彙・判定・巡回)から直し、同じ原因の他の事例も一緒に拾う(sier #20・#41 と同じ)
 7. 足す → 複雑さを評価 → 簡素化 を DESIGN.md に記録(process-sketch と同じ)
-8. 社内限定: 原本・平文・ログ・元画像はコミットしない(.gitignore + pages.yml の混入チェック)
-9. クロールは robots.txt を守り、1 ドメイン 2 秒以上、UA に社名と連絡先。計測では入力内容を送らず件数だけ
+8. 公開するのは組み立てたデータと縮小版の画像だけ: 原本・作業データ・ログ・元画像はコミットしない(.gitignore + pages.yml の混入チェック)
+9. クロールは robots.txt を守り、1 ドメイン 2 秒以上、UA に社名と連絡先。公開版は利用の計測をしない(入力した検索語も外に送らない)
 10. 平易な日本語。「人の置き換え」「削減人数」は使わない
 
 ```
@@ -24,7 +25,7 @@ eoat/
   manual/    suppressions.json(削除依頼) image_policy.json(ドメインごとの画像方針) reviews.json(レビュー)
   tests/     test_pipeline.py queries.yaml eval_queries.py / .cjs playwright_eval.js
   raw/ data/ logs/   取得原本(HTML・元画像)・平文・実行ログ(.gitignore。コミットしない)
-site/members/eoat-db/  index.html app.js search.js style.css test/ui.test.cjs
+site/eoat-db/  index.html app.js search.js style.css test/ui.test.cjs(+ build.py が作る data.json・data.js・data.detail.json・img/)
                        data.enc.json / data.enc.js(事例)  img/thumb/p-NNNN.bin(一覧用パック) img/detail/<id>.bin(詳細用)
 ```
 
@@ -38,7 +39,6 @@ pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu &
 
 | 環境変数 | 用途 |
 |---|---|
-| `EOAT_PW`(または `FACTORY_PW` / `PEOPLE_PW`) | 暗号化の共通パスワード(社内ツールの入口と同じ)。工場マップ・顧客人事DB と同じ方式(PBKDF2-SHA256 310,000 回 → AES-256-GCM) |
 | `EOAT_CONTACT` | クローラの User-Agent に入れる連絡先(既定は https://lexxpluss.com/) |
 
 ## 手順(ローカル)
@@ -64,20 +64,20 @@ python fulltext_review.py --focus  # 品質ループ: 掴み方・作業・ワ�
 python case_photo_review.py sheets # 品質ループ: 事例ごとに題名・本文の冒頭・写真 3 枚を 8 件ずつのシートに → 見直し(case_photo_review_instructions.md)→ case_photo_review.py merge(photo_grasp.py merge・grasp_estimate.py の前)
 python images.py --rerender        # 縮小版の大きさを変えたとき: 採用済みの画像を元画像から作り直す(画像 id は変えない)→ data/packs.json を消して build.py
 python sier_discover.py            # (任意)SIer DB 1,500 社の公式サイトから事例ページを発見して候補に足す → その後 crawl.py から
-python recover.py --password …     # 別の環境で再開するとき: 公開側の暗号化データから 出典 URL・取得元・レビュー結果 を data/ に戻す → crawl.py から(原本・画像は取り直し)
-python build.py --password …       # 重複除去 → 検証 → data/cases.json(平文)→ 暗号化データと画像パック(site/members/eoat-db/)→ 監査
+python recover.py                  # 別の環境で再開するとき: 公開側のデータ(site/eoat-db/data.json)から 出典 URL・取得元・レビュー結果 を data/ に戻す → crawl.py から(原本・画像は取り直し。社内版の古い暗号化データからなら --password …)
+python build.py [--repack]         # 重複除去 → 検証 → data/cases.json → 公開データと画像(site/eoat-db/)→ 監査
 python -m unittest discover -s ../tests            # 受入テスト
 python ../tests/eval_queries.py                    # 検索の評価(precision@12 など)
-node --test ../../site/members/eoat-db/test/ui.test.cjs
+node --test ../../site/eoat-db/test/ui.test.cjs
 python3 ../../scripts/serve.py 8750 &  EOAT_PW=… node ../tests/playwright_eval.js   # ブラウザでの速さ・崩れの確認
 ```
 
 - 各ステップは冪等。`--force` で分類だけやり直せる(画像は `images.py --force`)。
-- 画像パックは追記型: 既存のパックは書き換えず、新しい画像は新しいパックへ。パスワードを変えたときだけ全部作り直す(`data/packs.json` の key_check)。
-  `data/packs.json` が無い環境では公開側のパックを削除して作り直す(履歴が膨らむので、できれば同じ環境で続ける)。
+- 画像パック(一覧用サムネイルの WebP を連結したもの)は追記型: 既存のパックは書き換えず、新しい画像は新しいパックへ。並びを変えたら `--repack`(`data/packs_public.json` の version が上がり、app.js は新しい名前の Cache Storage を使う)。
+  詳細用の画像は 1 枚ずつ `img/detail/<id>.webp`。`data/packs_public.json` が無い環境では作り直す(履歴が膨らむので、できれば同じ環境で続ける)。
 - `build.py --plain-only` は平文だけ作る(確認用)。
 
-閲覧: `python3 scripts/serve.py 8750` → http://localhost:8750/members/eoat-db/ (共通パスワードは社内ツールの入口で入れる)。
+閲覧: `python3 scripts/serve.py 8750` → http://localhost:8750/eoat-db/
 
 ## 画像の権利方針(4-3)
 
@@ -85,7 +85,7 @@ python3 ../../scripts/serve.py 8750 &  EOAT_PW=… node ../tests/playwright_eval
 - 収集の作法: robots.txt で禁止されたページ・画像は取得しない。`<meta name="robots">` の noindex / noimageindex / noai、X-Robots-Tag も尊重する(extract.py・images.py)。
   1 ドメイン 1 リクエスト / 2 秒以上。User-Agent に社名と連絡先。ログイン・有料の壁は越えない。
 - 適法に公開されている画像だけ。転載物と思われる画像は使わず原典を探す。
-- 軽微な利用: 格納するのは縮小版だけ(一覧 320px / 詳細 800px、WebP 品質 72、EXIF・位置情報は削除。ループ 13 でユーザーの判断により 240 / 400 から上げた。大きくしたぶん「軽微」の説明は弱くなるので、社外公開の前の法務確認では解像度も確認する)。元のサイズの画像は `raw/images/` にだけ置き(gitignore)、
+- 軽微な利用: 格納するのは縮小版だけ(一覧 320px / 詳細 800px、WebP 品質 72、EXIF・位置情報は削除。ループ 13 でユーザーの判断により 240 / 400 から上げた。2026-11 の社外公開でもこの解像度のまま(法務確認済み・ユーザーの判断))。元のサイズの画像は `raw/images/` にだけ置き(gitignore)、
   利用者には「元の画像を見る」で出典元へ送る。
 - 所在の提示: すべての画像に元ページ URL・元画像 URL・クレジット(サイト名)・取得日を付け、UI では画像の隣に常に表示する。
 - 改変しない: トリミング・注釈の焼き込み・色の変更はしない(縮小だけ)。ハンドの位置は `hand_bbox` として別に持ち、UI 上で枠を重ねる。
@@ -93,14 +93,14 @@ python3 ../../scripts/serve.py 8750 &  EOAT_PW=… node ../tests/playwright_eval
   その事例は画像を置かず、掴み方のピクトグラムと出典リンクだけにする(2,000 件に数えない。全体の 5% 以下)。
 - 人物: 顔が主役の画像は避ける(顔検出で面積 4% 超を除外。見逃したものはレビューで差し替え)。
 - 本文は長く写さない。`summary_ja` は分類から組み立てた自分の言葉(原文は `title_orig` の題名だけ)。
-- 海外サイトの画像も同じルール。**社外公開の前に法務の確認を挟む**(47 条の 5 の「軽微」の範囲、海外画像の扱い)。
+- 海外サイトの画像も同じルール。社外公開(2026-11)の前に法務の確認を済ませた(ユーザーの確認)。収集の範囲・解像度・表示の仕方を変えるときは改めて法務に確認する。
 
 ### 削除・訂正依頼(7 営業日以内)
 1. 依頼を受けたら `python delete_case.py --case <id> --reason "依頼日・経路"`(画像なら `--image <画像id>`、サイトごとなら `--domain example.com`)。
    `manual/suppressions.json` に登録され、次のビルドから除かれる(log に氏名は残さない)。
-2. `python build.py --password …` で暗号化データを更新してコミット。
+2. `python build.py` で公開データを更新してコミット(main に入ると GitHub Pages に反映)。
 3. 訂正は、出典を確かめて `taxonomy/` か `manual/reviews.json` を直して再ビルド。原本(raw/)は残す。
-4. 窓口: 社内ツールの担当者(本 README の更新者)。社外からの依頼は会社の問い合わせ窓口経由。
+4. 窓口: 会社の問い合わせ窓口(公開ページのフッターに案内)。受けた依頼は本 README の更新者が処理する。
 
 ## データの規律
 - 1 件 = あるワークを、あるハンドで、あるロボットで扱った実例。スキーマは指示書 3-2(classify.py の出力)。
@@ -263,19 +263,19 @@ Fast 3G は 448 KB のデータで 5.7 秒に悪化 → UI が使わない値を
 ## 収集の進捗(セッションをまたいで続きから再開するためのメモ。最終更新 2026-11-02 ループ 16)
 
 ### いまの状態
-- 作業ブランチ `eoat/loop10-2000`(main の 403 件から。PR は未作成)。**公開データは `pilot-test` で暗号化している**(このセッションは共通パスワードを持たない)。
-  main にマージする前に `python crawler/rekey.py`(README の手順)で社内ツールの共通パスワードに暗号化し直すこと。app.js の画像キャッシュ名は main と同じ eoat-img-v2
+- 作業ブランチ `eoat/loop10-2000`(main の 403 件から。PR は未作成)。2026-11-02 に社外公開版へ移行: 公開先は `site/eoat-db/`(平文・パスワードなし)。
+  暗号化・共通パスワードはもう使わない(rekey.py は削除)。main に入れると GitHub Pages でそのまま公開される
 - 公開データ: 1,920 件(ループ 12 で 2,207 件。ループ 14・15 の品質ループで事例でないもの・重複・写真の無くなったものを落とした)
 - 候補 10,155 ページ。取得・抽出・分類・画像・レビューまで全部済み(未処理なし)。画像が使えなかった事例 1,400 件(CLIP < 0.6 が大半)
 - 取得元ごとの採用率は `python crawler/funnel.py` → `data/funnel.md`(候補 → 取得 → 抽出 → 分類 → 画像あり → レビュー → 公開)
-- `data/`・`raw/` はこの環境にだけある(gitignore)。別の環境で再開するときは `recover.py --password pilot-test`(マージ後は共通パスワード)で公開データから出典 URL・取得元・レビュー結果を戻し、`discover.py` → `crawl.py` から回す
+- `data/`・`raw/` はこの環境にだけある(gitignore)。別の環境で再開するときは `recover.py` で公開データから出典 URL・取得元・レビュー結果を戻し、`discover.py` → `crawl.py` から回す
 - LLM レビュー済みの id は `data/llm_out/*.json`(`recovered_published.json` = 公開データから戻した分、`batch_w<波>_NNN.json` = ループ 10 の波、`manual_l10.json` = 手で除外)。
   **レビュー中に `llm_prep.py` を再実行すると batch ファイルが消える**ので、配る前に `data/llm_batches_w<波>/` に写す
 - 取れないドメインは `data/crawl_blocked.txt`(ループ 10 で作り直し、18 ドメイン)。この環境から取れないもの: http:// だけのサイト(プロキシが 503)、ABB、Cloudflare 等の 403 サイト
 - 別プロセス(discover・crawl・調査エージェント)が同じドメインに行っても 2 秒あくよう、`common.polite_wait` は `logs/.ratelimit/<host>` をファイルロックで共有する
 
 ### 次のセッションでやること(順番)
-1. **マージの前に `python crawler/rekey.py` で共通パスワードに暗号化し直す**(いまは pilot-test)
+1. main へのマージ(= 社外公開)の前に、公開ページ(site/eoat-db/)の文言・出典表示・フッターの窓口を担当者が確認する
 2. 掴み方「記載なし」972 件(49%): 写真から判定できるものは判定した(ループ 11)。残りは写真にハンドが写っていない。新しい事例を足したら `photo_grasp.py sheets` → 判定 → `merge` → `closeup` → 判定 → `merge` を回す
 3. 配分の未達: 日本 21%(目標 30%)・協働 37%(45%)・産業用 37%(40%)・移動 63 件(100)。日本の SIer・ロボットメーカー日本の事例一覧と、移動マニピュレータの検索を優先する。区分の抜け(robot_class 74%)は型式辞書(robot_models.yaml)に欧州・北米の型式を足す
 4. Fast 3G 6.6 秒: 一覧用データ 831 KB。一覧用から summary_ja・title_orig を外す(検索は詳細用を読んだ後に広げる)か、事例の並びの上位だけ先に送る

@@ -186,7 +186,7 @@ class TestImagesAndBuild(unittest.TestCase):
         self.assertNotIn("fieldSources", c)
         self.assertNotIn("credit", c["images"][0])
         self.assertEqual(c["images"][0]["thumb"]["pack"], "p-0001.bin")
-        self.assertEqual(light["detail"], "data.detail.enc.json")
+        self.assertEqual(light["detail"], "data.detail.json")
         self.assertEqual(build.merge_detail(light, detail), data)
 
     def test_validate_requires_fields(self):

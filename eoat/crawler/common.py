@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """エンドエフェクタ事例データベース(eoat/) 共通処理。
 
-- パス定義(eoat/ 配下と公開先 site/members/eoat-db/)
+- パス定義(eoat/ 配下と公開先 site/eoat-db/)
 - HTTP 取得: robots.txt を尊重し、1ドメインあたり 2 秒以上あける。User-Agent に社名と連絡先を入れる。
   取得した原本は raw/ に残し(gitignore)、同じ URL は再取得しない(冪等)
 - JSON の読み書き、安定 ID、実行ログ(logs/YYYY-MM-DD.json)
@@ -29,7 +29,7 @@ LOGS = EOAT / "logs"                            # 実行ログ(.gitignore)
 TAXONOMY = EOAT / "taxonomy"
 TESTS = EOAT / "tests"
 FIXTURES = TESTS / "fixtures"
-SITE_OUT = REPO / "site" / "members" / "eoat-db"   # 公開 UI と暗号化データ
+SITE_OUT = REPO / "site" / "eoat-db"   # 公開 UI とデータ(2026-11 に社外公開へ移行。それまでは site/members/eoat-db に暗号化して置いていた)
 SIER_DATA = REPO / "site" / "robot-sier-map" / "data" / "siers.js"
 
 CONTACT = os.environ.get("EOAT_CONTACT", "https://lexxpluss.com/")   # 連絡先は環境変数で渡す(公開リポジトリに個人のアドレスを書かない)

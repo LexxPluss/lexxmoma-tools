@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>エンドエフェクタ事例データベース | LexxMoMa Tools</title>
+<meta name="description" content="掴みたいモノ・やりたいことを入れると、世界のロボット SIer・メーカーが公開している導入事例を画像付きで探せます。ワークごとに、どの掴み方(グリッパ・吸着・磁石など)が使われているかの傾向が分かります。">
+<meta name="theme-color" content="#0068B7">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="LexxMoMa Tools">
+<meta property="og:title" content="エンドエフェクタ事例データベース">
+<meta property="og:description" content="世界のロボット導入事例から、ワークの掴み方の傾向を 1 分で。">
+<link rel="icon" type="image/png" href="../assets/favicon.png">
+<script src="../assets/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<!-- Noto Sans JP は最初の画面(画像パック)が出てから app.js が読む: CSS 340 KB + 字形 42 本 ≈ 1.4 MB が遅い回線で画像と帯域を取り合う -->
+<link rel="stylesheet" href="style.css?v=2">
+</head>
+<body>
+
+<!-- 読み込み中の画面(データが読めないときのお知らせもここに出す) -->
+<div class="gate" id="gate">
+  <button type="button" class="lx-theme-btn" data-lx-theme-toggle aria-label="ライト / ダーク切替"></button>
+  <div class="gate-card">
+    <a class="gate-home" href="../index.html" title="LexxMoMa Tools のトップへ"><img class="lx-logo" src="../assets/lexxpluss-logo.png" alt="LexxPluss"></a>
+    <h1>エンドエフェクタ事例データベース</h1>
+    <p id="gateMsg" role="status">読み込んでいます…</p>
+    <a class="gate-back" href="../index.html">LexxMoMa Tools に戻る</a>
+  </div>
+</div>
+
+<div class="app" id="app" hidden>
+  <div class="banner" role="note">各社が公開している導入事例をまとめたものです。画像は出典ページの縮小版で、詳しくは各事例の「出典ページを開く」から元のページをご覧ください。</div>
+  <header class="hdr">
+    <div class="hdr-title">
+      <a href="../index.html" title="LexxMoMa Tools のトップへ"><img class="lx-logo" src="../assets/lexxpluss-logo.png" alt="LexxPluss"></a>
+      <h1>エンドエフェクタ事例データベース</h1>
+      <span class="count" id="hdrCount"></span>
+    </div>
+    <span class="hdr-btns">
+      <button class="icon-btn" id="shareBtn" type="button" title="この条件のリンクをコピー">🔗</button>
+      <button type="button" class="lx-theme-btn" data-lx-theme-toggle aria-label="ライト / ダーク切替"></button>
+    </span>
+  </header>
+
+  <!-- 問い: 何を・どうしたい -->
+  <section class="ask" aria-label="掴みたいものとやりたいこと">
+    <div class="ask-inner">
+      <form class="askbar" id="askForm">
+        <label class="sr" for="q">掴みたいものとやりたいこと</label>
+        <input type="search" id="q" placeholder="例: 油の付いた鉄の丸棒を旋盤に入れたい ／ 10kg の段ボールをデパレ ／ TPポリ箱を棚から取る" autocomplete="off" enterkeyhint="search">
+        <button type="submit" class="go">探す</button>
+      </form>
+      <div class="parsed" id="parsed" aria-live="polite"></div>
+      <div class="askrow">
+        <div class="tabs" id="rcTabs" role="tablist" aria-label="ロボットの区分">
+          <button role="tab" data-rc="" class="on">すべて <b id="nAll"></b></button>
+          <button role="tab" data-rc="産業用">産業用ロボット <b id="nInd"></b></button>
+          <button role="tab" data-rc="協働">協働ロボット <b id="nCob"></b></button>
+        </div>
+        <label class="chk sw"><input type="checkbox" id="mob"> 移動マニピュレータ(AMR+アーム)のみ <b id="nMob"></b></label>
+        <select id="sort" aria-label="並び替え">
+          <option value="rel">関連度順</option>
+          <option value="near20">可搬 20 kg に近い順</option>
+          <option value="new">新しい順</option>
+        </select>
+        <button type="button" class="filter-btn" id="filterBtn" aria-expanded="false" aria-controls="facets">絞り込み <b id="nFilters"></b></button>
+      </div>
+    </div>
+  </section>
+
+  <div class="body">
+    <!-- 絞り込み(スマホでは下からのシート) -->
+    <aside class="facets" id="facets" aria-label="絞り込み">
+      <div class="facets-head"><strong>絞り込み</strong><button type="button" class="link" id="clearAll">すべて外す</button><button type="button" class="icon-btn facets-close" id="facetsClose" aria-label="閉じる">×</button></div>
+      <div id="facetList"></div>
+    </aside>
+
+    <main class="main" id="main">
+      <!-- 掴み方の傾向(核となる機能) -->
+      <section class="trend" id="trend" aria-label="掴み方の傾向">
+        <div class="trend-head"><h2>この条件での掴み方</h2><span class="muted" id="trendNote"></span></div>
+        <div class="trend-bars" id="trendBars"></div>
+      </section>
+      <div class="res" id="res"></div>
+      <div class="grid" id="grid"></div>
+      <div class="more" id="more"><button type="button" id="moreBtn">さらに表示</button></div>
+    </main>
+  </div>
+
+  <!-- 詳細(右からのパネル) -->
+  <div class="drawer-bg" id="drawerBg" hidden></div>
+  <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dTitle" hidden>
+    <div class="drawer-head">
+      <button type="button" class="icon-btn" id="dPrev" title="前の事例">‹</button>
+      <button type="button" class="icon-btn" id="dNext" title="次の事例">›</button>
+      <span class="sp"></span>
+      <button type="button" class="icon-btn" id="dShare" title="この事例のリンクをコピー">🔗</button>
+      <button type="button" class="icon-btn" id="dClose" aria-label="閉じる">×</button>
+    </div>
+    <div class="drawer-body" id="drawerBody"></div>
+  </aside>
+
+  <footer class="foot">出典の画像は著作権法 47 条の 5(所在検索サービス)の範囲で縮小して保存し、元ページへの所在を併記しています。元の画像を利用する場合は出典元の条件に従ってください。掲載内容の削除・訂正のご依頼は <a href="https://lexxpluss.com/" target="_blank" rel="noopener">株式会社LexxPluss</a> のお問い合わせ窓口までご連絡ください(7 営業日以内に反映します)。各事例の内容・画像の権利は出典元に帰属します。</footer>
+</div>
+
+<script src="data.js"></script>
+<script src="search.js?v=3"></script>
+<script src="app.js?v=6"></script>
+</body>
+</html>

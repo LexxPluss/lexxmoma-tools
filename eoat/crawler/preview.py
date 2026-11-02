@@ -1,16 +1,14 @@
 # -*- coding: utf-8 -*-
 """レビュー用のプレビュー一式を 1 つのフォルダに出す(9 章: Artifact などで非公開 URL にする)。
 
-- 公開側の UI(index.html / app.js / search.js / style.css)と暗号化データ・画像パック・共通の theme.js・ロゴだけをコピーする
-- 平文の画像・データは含めない。入口(members-auth.js)は含めないので、ページ内のパスワード欄で開く形になる
-- --limit N で代表 N 件に絞る(画像パックは必要な分だけ作り直す。パスワードは --password)
-使い方: python preview.py --out <フォルダ> --password … [--limit 300]
+- 公開側の UI(index.html / app.js / search.js / style.css)とデータ・画像パック・共通の theme.js・ロゴだけをコピーする(2026-11 の社外公開からパスワードなし)
+- 詳細用の画像(800px)は入れない(ファイル数が多すぎるため。app.js はサムネイルで代わりに出す)
+- --limit N で代表 N 件に絞る(画像パックは必要な分だけ作り直す)
+使い方: python preview.py --out <フォルダ> [--limit 300]
 """
 import argparse
 import base64
 import json
-import os
-import re
 import shutil
 from pathlib import Path
 
@@ -21,7 +19,6 @@ import build
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True)
-    ap.add_argument("--password", required=True)
     ap.add_argument("--limit", type=int, default=0)
     a = ap.parse_args()
     out = Path(a.out)
@@ -32,29 +29,26 @@ def main():
     (out / "assets").mkdir(parents=True)
     plain = jload(DATA / "cases.json")
     cases = plain["cases"][: a.limit] if a.limit else plain["cases"]
-    salt = os.urandom(16)
-    key = build.derive_key(a.password, salt)
-    pidx = {"packs": [], "images": {}, "detail": {}}
-    for c in cases:   # パックの位置を作り直すので、前回の値を消す
+    pidx = {"version": 1, "packs": [], "images": {}, "detail": {}}
+    for c in cases:   # パックの位置を作り直すので、前回の値を消す。詳細画像は入れない(サムネイルで代わりに出す)
         for im in c["images"]:
             im["thumb"] = {k: v for k, v in im["thumb"].items() if k in ("w", "h", "bytes")}
             im["detail"] = {k: v for k, v in im["detail"].items() if k in ("w", "h", "bytes")}
-    build.pack_images(cases, key, pidx, out)
-    data = dict(plain, cases=cases, count=len(cases), packs=[p["name"] for p in pidx["packs"]], preview=True)
+            pidx["detail"][im["id"]] = {}
+    build.pack_images(cases, pidx, out)
+    data = dict(plain, cases=cases, count=len(cases), packs=[p["name"] for p in pidx["packs"]], pack_version=1, preview=True)
     light, detail = build.split_public(data)
-    build.encrypt_json(light, key, salt, out / "data.enc.json")
-    build.encrypt_json(detail, key, salt, out / "data.detail.enc.json", js=False)
+    (out / "data.js").write_text("window.EOAT_DATA=" + json.dumps(light, ensure_ascii=False, separators=(",", ":")) + ";\n", encoding="utf-8")
+    (out / "data.detail.json").write_text(json.dumps(detail, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     for f in ("app.js", "search.js", "style.css"):
         shutil.copy(SITE_OUT / f, out / f)
     for f in ("theme.js", "lexxpluss-logo.png", "favicon.png"):
         shutil.copy(REPO / "site" / "assets" / f, out / "assets" / f)
     html = (SITE_OUT / "index.html").read_text(encoding="utf-8")
-    html = html.replace("../../assets/", "assets/").replace('<script src="../members-auth.js"></script>\n', "")
-    html = re.sub(r'<script src="\.\./\.\./assets/track\.js"[^>]*></script>\n?', "", html)
-    html = html.replace('href="../index.html"', 'href="#"').replace('href="../../index.html"', 'href="#"')
-    html = html.replace("<title>エンドエフェクタ事例データベース | LexxPluss 社内</title>", "<title>エンドエフェクタ事例DB プレビュー</title>")
+    html = html.replace("../assets/", "assets/").replace('href="../index.html"', 'href="#"')
+    html = html.replace("<title>エンドエフェクタ事例データベース | LexxMoMa Tools</title>", "<title>事例DB 全件プレビュー</title>")
     (out / "index.html").write_text(html, encoding="utf-8")
-    # バイナリを置けない場所(Artifact など)向けに、パックと詳細画像を base64 のテキストにも出す(app.js は preview:true のとき .txt を読む)
+    # バイナリを置けない場所(Artifact など)向けに、パックを base64 のテキストにも出す(app.js は preview:true のとき .txt を読む)
     for f in list(out.glob("img/**/*.bin")):
         f.with_name(f.name + ".txt").write_text(base64.b64encode(f.read_bytes()).decode("ascii"), encoding="ascii")
         f.unlink()

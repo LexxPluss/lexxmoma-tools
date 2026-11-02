@@ -53,7 +53,7 @@ def run(plain, check_links=False):
     rg = Counter(c.get("region") or "その他" for c in cases)
     cat = Counter(k for c in cases for k in c["workpiece"]["categories"][:1])
     pr = Counter(k for c in cases for k in c["end_effector"]["principles"][:1])
-    img_bytes = sum(f.stat().st_size for f in (SITE_OUT / "img").glob("**/*.bin")) if (SITE_OUT / "img").exists() else 0
+    img_bytes = sum(f.stat().st_size for f in (SITE_OUT / "img").glob("**/*") if f.is_file()) if (SITE_OUT / "img").exists() else 0
     bad = sum(1 for c in cases if not c["workpiece"]["categories"] or not c["end_effector"]["principles"] or (not c.get("images") and c.get("image_policy") != "link_only"))
     m = {
         "date": today(), "total": n, "link_only": link_only, "link_only_rate": rate(link_only, n),
