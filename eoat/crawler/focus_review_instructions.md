@@ -17,7 +17,7 @@
 ## 掴み方(principles)の誤りの型
 1. **工具と把持の取り違え**: 作業ツール(sanding・dispensing・camera・screwdriver・welding)は、その工具を**ロボットの手先に付けている**ときだけ。
    ロボットがワークを持って、床に固定した研磨機・ベルトサンダ・バリ取り機・カメラ・塗布機に当てる/見せる場合は、ワークを持つハンドの方式を書く
-   (方式が本文に無ければ `["hand_unspecified"]`)。作業は tasks の finishing / inspection で表す
+   (方式が本文に無ければ `["hand_unspecified"]`、「グリッパ」とだけあれば `["mech_text"]`)。作業は tasks の finishing / inspection で表す
 2. **溶接**: welding はロボットが溶接トーチを持つときだけ。溶接セルへの部品の供給・取り出し・治具への投入をするロボットは把持の方式を書く
 3. **複合の片方の取りこぼし**: 1 つのハンドで吸着と把持を併用 → `hybrid` に加えて主な方式(例 `["hybrid", "multi_pad", "parallel2"]`)。
    磁石とグリッパの併用 → 両方(`parallel2` と `electromagnet` など)。ツールチェンジャで持ち替える → `tool_changer` とグリッパ/パッドの方式の両方。
@@ -26,7 +26,9 @@
    多指・アダプティブ(Robotiq 2F/3F は adaptive)= adaptive。パッド 1 個 = single_pad、2 個以上 = multi_pad、フォーム・面で吸う = area。
    製品名から決まるもの: Schunk PGN/PGL・Zimmer GEP・OnRobot RG2/RG6・2FG7 = parallel2、OnRobot VGC10/VG10・Piab piCOBOT = multi_pad(パッド数による)、
    Schmalz FXP/FMP = area、Magswitch = electropermanent、Soft Robotics mGrip = soft_finger、Robotiq Hand-E = parallel2
-5. 本文に方式が無く、今の値が写真の判定・推定で、上の 1・2 に当たらなければ principles は省く
+5. 本文に「グリッパ」「爪」「チャック」「pinza」などとだけあって指の形が書いていなければ `mech_text`(機械式(指の形の記載なし))、
+   「吸着」「suction」とだけあってパッドの形が書いていなければ `vacuum_text`。`hand_unspecified` は方式がまったく書いていないときだけ
+6. 本文に方式が無く、今の値が写真の判定・推定で、上の 1・2 に当たらなければ principles は省く
 
 ## 作業(tasks)
 - 実際にしている作業だけ。本文の「用途の例」の列挙、会社の他の事業は入れない

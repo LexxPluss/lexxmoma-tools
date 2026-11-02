@@ -26,6 +26,10 @@ groups:
       - key: hook
         label: フック・吊り
         terms: [フック, 吊り, 吊り具, hook, hooks, hanging, hanger, lifting hook]
+      - key: mech_text
+        label: 機械式(指の形の記載なし)
+        # 本文に「グリッパ」「爪で掴む」とだけあって指の形が書いていないとき(ループ 16 の精査。記載なしにすると推定で吸着が付くことがあった)
+        terms: []
       - key: mech_photo
         label: 機械式(指の形は写真で不明)
         photo_only: true    # 写真から判定したときだけ使う(photo_grasp.py)。本文の語・LLM レビューでは付けない
@@ -53,6 +57,9 @@ groups:
       - key: magnet_vacuum
         label: "吸着(その他: 静電・ゲッコー)"
         terms: [静電吸着, ゲッコー, electroadhesion, electro-adhesion, electrostatic gripper, gecko gripper, gecko adhesive, Grabit]
+      - key: vacuum_text
+        label: 吸着(パッドの形の記載なし)
+        terms: []
       - key: vacuum_photo
         label: 吸着(パッドの形は写真で不明)
         photo_only: true
