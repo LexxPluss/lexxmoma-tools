@@ -38,8 +38,8 @@ def main():
     build.pack_images(cases, pidx, out)
     data = dict(plain, cases=cases, count=len(cases), packs=[p["name"] for p in pidx["packs"]], pack_version=1, preview=True)
     light, detail = build.split_public(data)
-    (out / "data.js").write_text("window.EOAT_DATA=" + json.dumps(light, ensure_ascii=False, separators=(",", ":")) + ";\n", encoding="utf-8")
-    (out / "data.detail.json").write_text(json.dumps(detail, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    (out / "data.js").write_text("window.EOAT_DATA=" + json.dumps(light, ensure_ascii=False, separators=(",", ":")).replace("\ufffd", "") + ";\n", encoding="utf-8")
+    (out / "data.detail.json").write_text(json.dumps(detail, ensure_ascii=False, separators=(",", ":")).replace("\ufffd", ""), encoding="utf-8")
     for f in ("app.js", "search.js", "style.css"):
         shutil.copy(SITE_OUT / f, out / f)
     for f in ("theme.js", "lexxpluss-logo.png", "favicon.png"):
