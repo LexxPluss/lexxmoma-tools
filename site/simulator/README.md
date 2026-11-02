@@ -70,4 +70,4 @@
   `applyLoadedData()` に渡す。カードにはレイアウトの簡易プレビューとサイクルタイム（本体の計算で算出）が出る
 - `?sample=<id>`（`&play=1` で再生まで）を URL に付けると起動時にそのサンプルを開く。共有リンクやツアーから使う
 - サンプルを足すときは JSON を `samples/` に置き、`index.json` に 1 件追加する。形式は「設定保存」と同じ
-- `test/make_samples.cjs` が入門用の 2 本（最小のピック＆プレース、同時動作なしの比較）、`test/make_sample_booth.cjs` が展示会デモを再生成する
+- `test/make_sample_booth.cjs` が展示会デモ（`samples/booth-demo.json`）を再生成する
