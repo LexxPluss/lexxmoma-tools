@@ -113,8 +113,13 @@
     const st = S.state;
     const keep = { bodyPoses: st.bodyPoses, armPoses: st.armPoses, initial: st.initial, program: st.program, robot: st.robot };
     try {
-      st.bodyPoses = data.bodyPoses || []; st.armPoses = data.armPoses || []; st.initial = data.initial || { bodyPose: null, armPose: null };
-      st.program = (data.program || []).map(s => ({ blocks: s.blocks || [] })); st.robot = data.robot || st.robot;
+      // 旧形式（q1, reach）のアーム姿勢は、本体に変換関数があれば 6 軸に直してから計算する
+      const mig = (a) => (S.migrateArm ? S.migrateArm(a) : a);
+      st.bodyPoses = data.bodyPoses || [];
+      st.armPoses = (data.armPoses || []).map(p => Object.assign({ name: p.name }, mig(p)));
+      st.initial = data.initial || { bodyPose: null, armPose: null };
+      st.program = (data.program || []).map(s => ({ blocks: s.blocks || [] }));
+      st.robot = data.robot ? { body: data.robot.body || st.robot.body, arm: mig(data.robot.arm || st.robot.arm) } : st.robot;
       return S.compileProgram().total;
     } catch (e) { return null; }
     finally { Object.assign(st, keep); }
