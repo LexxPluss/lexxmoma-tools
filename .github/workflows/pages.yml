@@ -42,7 +42,9 @@ jobs:
         run: |
           (cd site/lexxmoma-roi && python3 build.py)
           (cd site/process-sketch && python3 build.py)
+          (cd site/simulator && python3 build.py)
           git diff --exit-code -- site/lexxmoma-roi/dist site/process-sketch/dist \
+            site/simulator/vendor/three.bundle.js site/simulator/meshes/crx20ia_l.js site/simulator/samples/embedded.js \
             || { echo "dist/ is out of date: run python3 build.py and commit the result"; exit 1; }
 
       - name: Run tool tests

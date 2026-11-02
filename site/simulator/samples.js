@@ -92,6 +92,8 @@
 
   async function loadIndex() {
     if (samples) return samples;
+    // samples/embedded.js（build.py が作る）があればそれを使う。HTML をダブルクリックで開いたときは fetch が使えないため
+    if (window.LEXX_SAMPLES) { samples = (window.LEXX_SAMPLES.index.samples || []).map(s => Object.assign({}, s)); return samples; }
     const r = await fetch(INDEX_URL, { cache: "no-cache" });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const idx = await r.json();
@@ -101,6 +103,8 @@
 
   async function fetchSample(s) {
     if (s._data) return s._data;
+    const emb = window.LEXX_SAMPLES && window.LEXX_SAMPLES.files[s.file];
+    if (emb) { s._data = JSON.parse(JSON.stringify(emb)); return s._data; }
     const r = await fetch("samples/" + s.file, { cache: "no-cache" });
     if (!r.ok) throw new Error(`${s.file}: HTTP ${r.status}`);
     s._data = await r.json();

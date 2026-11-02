@@ -9,4 +9,5 @@
 | `addons/controls/TransformControls.js` | https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/controls/TransformControls.js | 同上 | 同上 |
 | `addons/loaders/STLLoader.js` | https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/STLLoader.js | 同上 | 同上 |
 
-`lexxmoma-2d.html` の importmap で `three` → `./vendor/three.module.min.js`、`three/addons/` → `./vendor/addons/` に対応づけている。
+ページはこれらを直接は読まない。`../build.py` が、ES モジュールのこれらを普通のスクリプト 1 本 `three.bundle.js`（`window.THREE` にまとめる）に変換し、
+`lexxmoma-2d.html` はそれを読む（HTML をダブルクリック＝`file://` で開いても動くように）。版を上げたら `python3 build.py` を実行する。

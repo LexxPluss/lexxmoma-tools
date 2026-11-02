@@ -11,7 +11,7 @@
 |---|---|
 | `lexxmoma-2d.html` | 本体（UI、2D 描画、シーケンスの時間計算、再生、保存・読込、録画）。古典スクリプト |
 | `crx-kinematics.js` | FANUC CRX-20iA/L の運動学。順運動学・逆運動学（減衰最小二乗）・WPR 変換・旧形式の変換。依存なし。ブラウザでは `window.CRX`、Node ではモジュール |
-| `sim3d.js` | 3D ビュー（Three.js、ES モジュール）。`window.LexxSim3D` を本体に提供。手先ギズモ（TransformControls）、視点操作（OrbitControls）、公式メッシュの読込 |
+| `sim3d.js` | 3D ビュー（Three.js。普通のスクリプトで、`window.THREE` を使う）。`window.LexxSim3D` を本体に提供。手先ギズモ（TransformControls）、視点操作（OrbitControls）、公式メッシュの読込 |
 | `vendor/` | Three.js と使用アドオン（同梱。`vendor/README.md` に版と取得元） |
 | `meshes/crx20ia_l/` | FANUC 公式 ROS 2 記述（fanuc_description）の衝突判定用 STL（Apache-2.0）。見た目は簡略だが関節ごとに分かれていて正確に動く |
 | `test/kinematics.test.cjs` | 運動学のテスト（`node --test`）。CI でも走る |
@@ -92,7 +92,10 @@
 ## 開発
 
 - ローカル確認: `python3 scripts/serve.py` で `site/` を配信し `http://localhost:8000/simulator/lexxmoma-2d.html`
-  を開く（ES モジュールを使うため `file://` では 3D が動かない）
+  を開く。`lexxmoma-2d.html` をダブルクリック（`file://`）で開いても、3D とサンプルを含めて動く
+- `python3 site/simulator/build.py`: ダブルクリックで動かすための生成物を作る。STL・サンプル・vendor を変えたら実行して生成物もコミットする
+  （CI で作り直した結果と比べる）。生成物は `vendor/three.bundle.js`（Three.js とアドオンを普通のスクリプト 1 本に）、
+  `meshes/crx20ia_l.js`（STL を base64 で埋め込み）、`samples/embedded.js`（サンプルの一覧と中身）。file:// では ES モジュールと fetch が止められるため
 - テスト: `node --test site/simulator/test/kinematics.test.cjs`
 - 変更のたびにヘッダーの `rev.N` を上げる。保存 JSON にも rev が記録される
 - 行末は CRLF（`lexxmoma-2d.html`）

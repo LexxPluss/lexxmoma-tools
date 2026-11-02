@@ -4,12 +4,13 @@
  *  - 本体（lexxmoma-2d.html の古典スクリプト）からは window.LexxSim3D 経由で使う。
  *    本体 → 3D: setRobot / syncScene / setGizmoMode などで状態を流し込む
  *    3D → 本体: ギズモ操作時に callbacks.onTcpTarget(T_base_link) を呼ぶ（IK は本体側）
- *  - アームの形状は FANUC 公式の衝突判定用 STL（meshes/crx20ia_l, Apache-2.0）
+ *  - アームの形状は FANUC 公式の衝突判定用 STL（meshes/crx20ia_l, Apache-2.0）。meshes/crx20ia_l.js に埋め込んだものを使う
+ *  - HTML をダブルクリック（file://）で開いても動くよう、ES モジュールは使わない普通のスクリプト。
+ *    Three.js は vendor/three.bundle.js（build.py が vendor/ のモジュールから作る）の window.THREE
  * ===================================================================== */
-import * as THREE from "three";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { TransformControls } from "three/addons/controls/TransformControls.js";
-import { STLLoader } from "three/addons/loaders/STLLoader.js";
+(() => {
+const THREE = window.THREE;
+const { OrbitControls, TransformControls, STLLoader } = THREE;
 
 const CRX = window.CRX;
 const M = CRX.MODEL;
@@ -319,8 +320,18 @@ class Sim3D {
     const names = ["base", "j1", "j2", "j3", "j4", "j5", "j6"];
     const parents = [this.armRoot, ...this.joints];
     const ringLinks = new Set(["j1", "j3", "j5"]); // 緑のアクセント（実機の緑リング位置に近いリンク）
+    // 埋め込んだ STL（window.CRX_MESHES、base64）があればそれを使う。無ければファイルを読む（サーバー経由のときだけ動く）
+    const loadStl = (nm, onLoad, onError) => {
+      const b64 = window.CRX_MESHES && window.CRX_MESHES[nm];
+      if (!b64) { loader.load(`meshes/crx20ia_l/${nm}.stl`, onLoad, undefined, onError); return; }
+      try {
+        const bin = atob(b64), buf = new Uint8Array(bin.length);
+        for (let k = 0; k < bin.length; k++) buf[k] = bin.charCodeAt(k);
+        onLoad(loader.parse(buf.buffer));
+      } catch (e) { onError(e); }
+    };
     names.forEach((nm, i) => {
-      loader.load(`meshes/crx20ia_l/${nm}.stl`, (geo) => {
+      loadStl(nm, (geo) => {
         geo.computeVertexNormals();
         const mat = new THREE.MeshStandardMaterial({
           color: ringLinks.has(nm) ? 0xdfeeda : COLORS.link, roughness: 0.6, metalness: 0.05, flatShading: true,
@@ -340,7 +351,7 @@ class Sim3D {
         ed.position.copy(mesh.position);
         parents[i].add(ed);
         this.meshes[nm] = mesh;
-      }, undefined, () => {
+      }, () => {
         // 読めない時は関節位置を結ぶ簡易形状で代用
         if (nm === "base") return;
         const idx = i - 1;
@@ -632,3 +643,4 @@ class Sim3D {
 
 window.LexxSim3D = new Sim3D();
 window.dispatchEvent(new Event("lexxsim3d-ready"));
+})();

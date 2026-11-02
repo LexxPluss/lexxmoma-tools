@@ -404,11 +404,11 @@
 </style>
 <!-- CRX-20iA/L 運動学（依存なし・古典スクリプト。本体と Node のテストで共用） -->
 <script src="crx-kinematics.js"></script>
-<!-- Three.js は同梱（vendor/）。オフラインでも動く -->
-<script type="importmap">
-{ "imports": { "three": "./vendor/three.module.min.js", "three/addons/": "./vendor/addons/" } }
-</script>
-<script type="module" src="sim3d.js"></script>
+<!-- Three.js（vendor/ の ES モジュールを build.py で普通のスクリプト 1 本にまとめたもの）・アームの形（埋め込み）・3D ビュー。
+     HTML をダブルクリック（file://）で開いても動くよう、ES モジュールや fetch は使わない -->
+<script src="vendor/three.bundle.js"></script>
+<script src="meshes/crx20ia_l.js"></script>
+<script src="sim3d.js"></script>
 </head>
 <body>
 
@@ -3634,7 +3634,7 @@ function ensure3D() {
 
 function setViewMode(m) {
   if (m === "3d" && !ensure3D()) {
-    alert("3D 表示をまだ読み込めていません。ローカルサーバー（scripts/serve.py）経由で開いているか、ES モジュール対応のブラウザか確認してください。");
+    alert("3D 表示を読み込めませんでした。HTML と同じフォルダに vendor/three.bundle.js・meshes/crx20ia_l.js・sim3d.js があるか確認してください。");
     return;
   }
   viewMode = m;
@@ -4062,6 +4062,7 @@ window.addEventListener("keydown", (e) => { if (e.key === "Escape" && !infoDlg.h
 window.__sim = { state, pointsFromSave, findPoint, blockMoves, bodyLocations, SIM_PARAMS, ARM, setBodyVmax, renderSimParams, dubinsShortest, dubinsSample, trapDur, trapPos, compileProgram, stateAtTime, recompute, renderPoseLists, renderProgram, mod2pi, angDiff, pushUndo, doUndo, doRedo, undoStack, redoStack, setViewMode, setArmQ, armCtrlRefresh, jogTcp, migrateArm, selectObject, renderObjectList, objectsFromSave, get viewMode() { return viewMode; }, get selectedId() { return selectedId; }, applyLoadedData, fitViewToContent, stopPlayback, get playing() { return playing; } };
 </script>
 <!-- サンプルの読込（samples/index.json の一覧を出して、選んだ JSON を applyLoadedData に渡す） -->
+<script src="samples/embedded.js"></script><!-- サンプルの一覧と中身（build.py が埋め込む。file:// では fetch できないため） -->
 <script src="samples.js"></script>
 <script src="../assets/track.js" data-tool="sim2d"></script>
 </body>
