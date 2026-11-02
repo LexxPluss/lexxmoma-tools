@@ -1,7 +1,8 @@
 /* エンドエフェクタ事例データベース(社外公開版。2026-11 に社内版から移行)
  * データ: 一覧用 data.js(window.EOAT_DATA。無ければ data.json)、詳細用 data.detail.json は最初の画面が出てから読む。
  * 画像: 一覧用は WebP を連結したパック(img/thumb/p-NNNN.bin)を Cache Storage に置き、切り出して Blob URL に。詳細用は 1 枚ずつの WebP(img/detail/<id>.webp)。
- * 検索ロジックは search.js(DOM 非依存)。利用の計測はしない(入力した検索語も外に送らない)。 */
+ * 検索ロジックは search.js(DOM 非依存)。計測は他の公開ツールと同じ assets/track.js(GoatCounter): ページ表示は tool/eoatdb、操作は tool/eoatdb/<操作>。
+ * 入力した検索語は送らない(検索は該当件数だけ。入力が止まって 1.5 秒・前回と違うときだけ。robot-sier-map と同じ)。 */
 (function () {
   'use strict';
   var $ = function (s, r) { return (r || document).querySelector(s); };
@@ -9,7 +10,8 @@
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var b64 = function (s) { var b = atob(s), u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; };
   var S = window.EoatSearch;
-  function track() { /* 社外公開版は計測しない */ }
+  function track(ev, t) { try { if (window.lxTrack) window.lxTrack('tool/eoatdb/' + ev, t || ''); } catch (e) { /* 計測不可 */ } }
+  var qTimer = null, qTracked = '';
   var T0 = performance.now();
   window.__eoat = { marks: {} };
   function mark(k) { window.__eoat.marks[k] = Math.round(performance.now() - T0); }
@@ -116,7 +118,6 @@
     run(true);
     // 詳細用のデータ(出典の証拠文・画像のクレジット・適用可能性)は最初の 24 枚が出てから読む(ループ 10: 一覧用だけなら Fast 3G の復号が早い)
     (function waitGrid(n) { if (window.__eoat.marks.firstGrid != null || n > 50) loadDetail(); else setTimeout(function () { waitGrid(n + 1); }, 100); })(0);
-    track('open', 'エンドエフェクタ事例DBを開いた');
     if (F.c && BYID[F.c]) openCase(F.c, true);
   }
 
@@ -294,7 +295,8 @@
     if (relaxed === 'words') parts.push('<span class="relaxed">語での一致が無いので、条件だけで表示しています</span>');
     if (relaxed === 'filters') parts.push('<span class="relaxed">条件に合う事例が無いので、近い順に全件を表示しています</span>');
     $('#res').innerHTML = parts.join(' ');
-    if (F.q) track('search', String(LIST.length));
+    clearTimeout(qTimer);
+    if (F.q) qTimer = setTimeout(function () { if (F.q && F.q !== qTracked) { qTracked = F.q; track('search', '該当 ' + LIST.length + '件'); } }, 1500);
   }
 
   // ---------------------------------------------------------------- 一覧
