@@ -417,7 +417,8 @@
 
     var keep = load("lx_keep");
     var nudge = force || (!P.done && !standalone && !keep.never && (visit.n || 0) >= MIN_DAYS && Date.now() >= (keep.until || 0));
-    if (nudge) setTimeout(function () { if (!panel) open("nudge"); }, force ? 300 : DELAY_MS);
+    // トップで新しいツールのお知らせを出した訪問では、パスの自動表示は次の訪問に回す(ポップアップを重ねない)
+    if (nudge) setTimeout(function () { if (!panel && (force || !window.__lxNewsOpen)) open("nudge"); }, force ? 300 : DELAY_MS);
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ui); else ui();
