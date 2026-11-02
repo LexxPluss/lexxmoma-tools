@@ -6,6 +6,8 @@
 - 語彙に無いキーは無視する(語彙の変更は taxonomy/ で行う)
 使い方: python llm_merge.py
 """
+import re
+
 from common import DATA, TAXONOMY, RunLog, jdump, jload, yload
 
 CLASSES = {"産業用", "協働"}
@@ -34,8 +36,14 @@ def robot_matcher():
     return match
 
 
+GENERIC_TEXT = {"mech_text", "vacuum_text", "hand_unspecified"}
+VAC_WORDS = r"vacuum|suction|saug|ventosa|吸着|吸盤|真空|吸盘|진공|흡착"
+GRIP_WORDS = r"gripper|greifer|pinza|pince|garra|グリッパ|爪|チャック|夹爪|그리퍼|jaw"
+
+
 def main():
     rmatch = robot_matcher()
+    G = {it["key"]: g["key"] for g in yload(TAXONOMY / "principles.yaml")["groups"] for it in g["items"]}
     cats = {it["key"] for g in yload(TAXONOMY / "categories.yaml")["groups"] for it in g["items"]}
     prs = {it["key"] for g in yload(TAXONOMY / "principles.yaml")["groups"] for it in g["items"] if not (it.get("photo_only") or it.get("estimate_only"))}
     mats = {m["key"] for m in yload(TAXONOMY / "materials.yaml")["materials"]}
@@ -71,7 +79,17 @@ def main():
 
             if setlist(r["workpiece"], "categories", rv.get("categories"), cats):
                 r["fieldSources"]["workpiece.categories"] = src("workpiece.categories")
-            if setlist(r["end_effector"], "principles", rv.get("principles"), prs):
+            pv = rv.get("principles") or []
+            cur_fs = r["fieldSources"].get("end_effector.principles") or {}
+            cur_g = {G.get(k) for k in r["end_effector"]["principles"]}
+            if pv and set(pv) <= GENERIC_TEXT and cur_fs.get("method") == "photo" and {G.get(k) for k in pv} <= cur_g:
+                # 本文は「グリッパ」「吸着」とだけ。写真で分かった指・パッドの形(同じ大分類)の方が詳しいので残す(ループ 16)
+                pv = None
+            elif pv == ["hand_unspecified"] and re.search(VAC_WORDS, ev, re.I):
+                pv = ["vacuum_text"]   # 根拠に「吸着」「vacuum gripper」とある記載なしは吸着(パッドの形の記載なし)に(ループ 16 の精査で混在した)
+            elif pv == ["hand_unspecified"] and re.search(GRIP_WORDS, ev, re.I):
+                pv = ["mech_text"]   # 根拠に「グリッパ」とある記載なしは機械式(指の形の記載なし)に
+            if setlist(r["end_effector"], "principles", pv, prs):
                 r["fieldSources"]["end_effector.principles"] = src("end_effector.principles")
                 r["end_effector"]["subtype"] = None
                 # 写真からの判定・推定で付けた印は、本文の値で置き換えたら外す(ループ 13: 「記載なし」に写真判定の印が残っていた)
