@@ -142,8 +142,15 @@ section{padding:22px 0}
 .lx-news .later{margin-left:auto;background:none;border:0;color:var(--muted);font:inherit;font-size:12px;cursor:pointer;padding:4px}
 .lx-news .later:hover{color:var(--text);text-decoration:underline}
 @media (max-width:560px){
+  /* スマホは写真を外して小さく(画面を覆いすぎない) */
   .lx-news{left:8px;right:8px;width:auto;max-width:none;bottom:calc(8px + env(safe-area-inset-bottom,0px))}
-  .lx-news .shot{aspect-ratio:16/7}
+  .lx-news .shot{display:none}
+  .lx-news .bd{padding:12px 44px 12px 14px}
+  .lx-news h3{font-size:15px;margin:4px 0 2px}
+  .lx-news p{font-size:12px;margin:0 0 10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .lx-news .btn{padding:7px 12px}
+  .lx-news .x{background:var(--panel-2);color:var(--muted);border:1px solid var(--line)}
+  .lx-news .x:hover{background:var(--line);color:var(--text)}
 }
 @media (prefers-reduced-motion:reduce){.lx-news{transition:none}.card.hl{animation:none;outline:3px solid #e8590c}}
 
@@ -361,9 +368,9 @@ const WORRIES = [
 ];
 
 // ===== 新しいツールのお知らせ(ここに 1 件足すと、トップで 1 回だけポップアップ + until まで NEW の印) =====
-// id: お知らせごとに変える(見た・閉じたの記録のキー) / tool: TOOLS の id / until: NEW の印を出す最終日(この日を過ぎるとポップアップも出さない)
+// id: お知らせごとに変える(見た・閉じたの記録のキー) / tool: TOOLS の id / until: NEW の印を出す最終日(公開から 20 日ほど。この日を過ぎるとポップアップも出さない)
 const NEWS = [
-  {id:"eoatdb-2026-11", tool:"eoatdb", until:"2026-12-02", kicker:"新しいツール",
+  {id:"eoatdb-2026-11", tool:"eoatdb", until:"2026-11-22", kicker:"新しいツール",
    title:"エンドエフェクタ事例データベースを公開しました",
    desc:"掴みたいモノを入れると、世界のロボット導入事例 1,920 件から、どの掴み方が使われているかの傾向が画像付きで分かります。",
    img:"assets/news/eoatdb.webp"},
