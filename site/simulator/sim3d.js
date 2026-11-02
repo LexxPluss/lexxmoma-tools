@@ -328,18 +328,28 @@ class Sim3D {
 
   rebuildBackground(rects, lines, texts, img) {
     this.clearGroup(this.bgGroup);
-    // 四角: 床に薄い塗り＋枠
+    // 四角: 高さ h [mm] があれば箱（設備・机など）、無ければ床に薄い塗り＋枠（区画）
     for (const R of rects) {
-      const w = Math.abs(R.x2 - R.x1), h = Math.abs(R.y2 - R.y1);
-      if (w < 1 || h < 1) continue;
+      const w = Math.abs(R.x2 - R.x1), d = Math.abs(R.y2 - R.y1), hz = Math.max(0, R.h || 0);
+      if (w < 1 || d < 1) continue;
       const cx = (R.x1 + R.x2) / 2, cy = (R.y1 + R.y2) / 2;
       const col = new THREE.Color(R.color);
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.12, depthWrite: false }));
-      m.position.set(cx, cy, 2);
-      this.bgGroup.add(m);
-      const ed = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry), new THREE.LineBasicMaterial({ color: col }));
-      ed.position.copy(m.position);
-      this.bgGroup.add(ed);
+      if (hz > 0) {
+        const geo = new THREE.BoxGeometry(w, d, hz);
+        const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: col, transparent: true, opacity: 0.45, roughness: 0.9, depthWrite: false }));
+        m.position.set(cx, cy, hz / 2);
+        this.bgGroup.add(m);
+        const ed = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: col }));
+        ed.position.copy(m.position);
+        this.bgGroup.add(ed);
+      } else {
+        const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.12, depthWrite: false }));
+        m.position.set(cx, cy, 2);
+        this.bgGroup.add(m);
+        const ed = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry), new THREE.LineBasicMaterial({ color: col }));
+        ed.position.copy(m.position);
+        this.bgGroup.add(ed);
+      }
     }
     // 直線
     for (const L of lines) {

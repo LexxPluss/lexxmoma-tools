@@ -35,6 +35,8 @@
 ## 保存ファイルの互換
 
 - `version: 2`（rev.63〜）: `armPoses[].q` と `robot.arm.q` は 6 関節角 [rad]、`toolLen` [mm] を追加。
+  rev.65〜: `bgRects[].h`（四角の高さ [mm]、既定 500。0 または無しは床の区画で、3D では箱にならない）。
+  `test/sample_booth_rev61.json` は旧形式の実例（展示会のレイアウト）で、読込の確認に使う。
 - `version: 1`（〜rev.62）: `{q1, reach}` 形式。読込時に `CRX.fromLegacy()` で「ツール下向き・水平リーチ一致・
   高さ = J1 原点」の 6 軸姿勢に変換する（元の 2D では高さの情報が無いため）。
 
