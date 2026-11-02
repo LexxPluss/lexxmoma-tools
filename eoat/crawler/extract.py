@@ -100,6 +100,21 @@ def extract_images(main, soup, base):
         out.append({"url": u, "alt": alt, "caption": cap, "w": w, "h": h, "in_main": True, "og": False, "order": order})
         seen.add(u)
         order += 1
+    # 本文の写真を <img> でなく CSS の background-image や拡大表示のリンク(<a href="….jpg">)で載せるサイト(ループ 10: MESH・Olympus・HD現代ロボティクス)。
+    # 中身の確認(大きさ・CLIP・顔)は <img> と同じなので、候補に足すだけ
+    for el in main.find_all(style=re.compile(r"background(-image)?\s*:[^;]*url\(", re.I)):
+        m = re.search(r"url\(\s*['\"]?([^'\")]+)", el.get("style") or "", re.I)
+        u = urllib.parse.urljoin(base, m.group(1).strip()) if m else ""
+        if u.startswith("http") and u not in seen and not u.lower().endswith((".svg", ".gif")) and not BAD_IMG.search(u):
+            out.append({"url": u, "alt": "", "caption": "", "w": None, "h": None, "in_main": True, "og": False, "order": order, "css_bg": True})
+            seen.add(u)
+            order += 1
+    for a in main.find_all("a", href=re.compile(r"\.(jpe?g|png|webp)(\?|$)", re.I)):
+        u = urllib.parse.urljoin(base, a["href"].strip())
+        if u not in seen and not BAD_IMG.search(u):
+            out.append({"url": u, "alt": clean_text(a.get("title") or ""), "caption": "", "w": None, "h": None, "in_main": True, "og": False, "order": order, "link": True})
+            seen.add(u)
+            order += 1
     return out
 
 
@@ -180,6 +195,11 @@ def extract_one(pid, meta, html, sources):
     text = "\n".join(paras)
     if len(text) < 200:
         text = clean_text(main.get_text("\n", strip=True))
+    elif len(text) < 600:
+        # 本文を <p> でなく <div> に直接書くサイト(ループ 10: jk.de の Referenzen は見出しだけ 247 字しか取れていなかった)
+        full = clean_text(main.get_text("\n", strip=True))
+        if len(full) > 3 * len(text):
+            text = full
     text = text[:30000]
     images = extract_images(main, soup, base)
     if ld.get("image") and not any(i["url"] == ld["image"] for i in images):

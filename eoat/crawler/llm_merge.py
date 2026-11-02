@@ -6,14 +6,46 @@
 - 語彙に無いキーは無視する(語彙の変更は taxonomy/ で行う)
 使い方: python llm_merge.py
 """
+import re
+
 from common import DATA, TAXONOMY, RunLog, jdump, jload, yload
 
 CLASSES = {"産業用", "協働"}
 
 
+def robot_matcher():
+    """robot_models.yaml の型式(長い pattern を先に)。レビューが書いたメーカー・型式の文字列から、正式な型式・区分・可搬を引く(ループ 14)。"""
+    import re
+    models = []
+    for mk in yload(TAXONOMY / "robot_models.yaml")["makers"]:
+        for m in mk.get("models", []):
+            models.append({"maker": mk["name"], "model": m["model"], "re": re.compile(m["pattern"], re.I),
+                           "class": m.get("class") or mk.get("class"), "payload": m.get("payload"), "mobile": m.get("mobile", False), "n": len(m["pattern"])})
+    models.sort(key=lambda m: -m["n"])
+    makers = [(mk["name"], [a.lower() for a in mk.get("aliases", [mk["name"]])], mk.get("class")) for mk in yload(TAXONOMY / "robot_models.yaml")["makers"]]
+
+    def match(maker, model):
+        s = f"{maker or ''} {model or ''}".strip()
+        for m in models:
+            if model and m["re"].search(s):
+                return m
+        for name, aliases, cls in makers:
+            if maker and (maker.lower() in aliases or any(a in maker.lower() for a in aliases)):
+                return {"maker": name, "model": None, "class": cls, "payload": None, "mobile": False}
+        return None
+    return match
+
+
+GENERIC_TEXT = {"mech_text", "vacuum_text", "hand_unspecified"}
+VAC_WORDS = r"vacuum|suction|saug|ventosa|吸着|吸盤|真空|吸盘|진공|흡착"
+GRIP_WORDS = r"gripper|greifer|pinza|pince|garra|グリッパ|爪|チャック|夹爪|그리퍼|jaw"
+
+
 def main():
+    rmatch = robot_matcher()
+    G = {it["key"]: g["key"] for g in yload(TAXONOMY / "principles.yaml")["groups"] for it in g["items"]}
     cats = {it["key"] for g in yload(TAXONOMY / "categories.yaml")["groups"] for it in g["items"]}
-    prs = {it["key"] for g in yload(TAXONOMY / "principles.yaml")["groups"] for it in g["items"]}
+    prs = {it["key"] for g in yload(TAXONOMY / "principles.yaml")["groups"] for it in g["items"] if not (it.get("photo_only") or it.get("estimate_only"))}
     mats = {m["key"] for m in yload(TAXONOMY / "materials.yaml")["materials"]}
     tasks = {t["key"] for t in yload(TAXONOMY / "tasks.yaml")["tasks"]}
     log = RunLog("llm_merge")
@@ -47,13 +79,46 @@ def main():
 
             if setlist(r["workpiece"], "categories", rv.get("categories"), cats):
                 r["fieldSources"]["workpiece.categories"] = src("workpiece.categories")
-            if setlist(r["end_effector"], "principles", rv.get("principles"), prs):
+            pv = rv.get("principles") or []
+            cur_fs = r["fieldSources"].get("end_effector.principles") or {}
+            cur_g = {G.get(k) for k in r["end_effector"]["principles"]}
+            if pv and set(pv) <= GENERIC_TEXT and cur_fs.get("method") == "photo" and {G.get(k) for k in pv} <= cur_g:
+                # 本文は「グリッパ」「吸着」とだけ。写真で分かった指・パッドの形(同じ大分類)の方が詳しいので残す(ループ 16)
+                pv = None
+            elif pv == ["hand_unspecified"] and re.search(VAC_WORDS, ev, re.I):
+                pv = ["vacuum_text"]   # 根拠に「吸着」「vacuum gripper」とある記載なしは吸着(パッドの形の記載なし)に(ループ 16 の精査で混在した)
+            elif pv == ["hand_unspecified"] and re.search(GRIP_WORDS, ev, re.I):
+                pv = ["mech_text"]   # 根拠に「グリッパ」とある記載なしは機械式(指の形の記載なし)に
+            if setlist(r["end_effector"], "principles", pv, prs):
                 r["fieldSources"]["end_effector.principles"] = src("end_effector.principles")
                 r["end_effector"]["subtype"] = None
+                # 写真からの判定・推定で付けた印は、本文の値で置き換えたら外す(ループ 13: 「記載なし」に写真判定の印が残っていた)
+                r["end_effector"].pop("by_photo", None)
+                r["end_effector"].pop("estimated", None)
             if setlist(r, "tasks", rv.get("tasks"), tasks):
                 r["fieldSources"]["tasks"] = src("tasks")
             if setlist(r["workpiece"], "materials", rv.get("materials"), mats):
                 r["fieldSources"]["workpiece.materials"] = src("workpiece.materials")
+            elif rv.get("materials") == [] and r["workpiece"]["materials"]:
+                # レビューが「本文に材料の記載が無い」と判断したら規則の値(本文の別の語から拾ったもの)を消す(ループ 10)
+                r["workpiece"]["materials"] = []
+                r["fieldSources"].pop("workpiece.materials", None)
+                changed = True
+            if rv.get("robot_maker") or rv.get("robot_model"):
+                # ロボット本体のメーカー・型式(全文の見直しで本文から。ハンドのメーカーではない)
+                mm = rmatch(rv.get("robot_maker"), rv.get("robot_model"))
+                rb = r["robot"]
+                new = {"maker": (mm or {}).get("maker") or str(rv.get("robot_maker") or "")[:40] or rb.get("maker"),
+                       "model": str(rv.get("robot_model") or "")[:40] or (mm or {}).get("model") or rb.get("model")}   # 型式の表記は本文のもの(辞書は KR series のような系列名になることがある)
+                if mm and mm.get("class") and not rv.get("robot_class"):
+                    new["class"] = mm["class"]
+                if mm and mm.get("payload"):
+                    new["payload_kg"] = mm["payload"]
+                for k, v in new.items():
+                    if v and v != rb.get(k):
+                        rb[k] = v
+                        r["fieldSources"][f"robot.{k}"] = src(f"robot.{k}")
+                        changed = True
             rc = rv.get("robot_class")
             if rc in CLASSES and rc != r["robot"].get("class"):
                 r["robot"]["class"] = rc

@@ -18,10 +18,13 @@ CANDIDATES = DATA / "candidates.json"
 
 
 def links_of(html, base_url):
-    if re.match(r"\s*<\?xml", html or "") and "<urlset" in html[:2000]:
+    if "<urlset" in (html or "")[:2000]:   # <?xml 宣言の無い sitemap もある(ループ 10: asa-automation.com)
         # sitemap.xml(index_urls に書ける。Photoneo・myrobotsolution のように一覧ページが JS 描画でも sitemap は素の XML)
         return [(m.group(1).strip(), "") for m in re.finditer(r"<loc>\s*([^<\s]+)\s*</loc>", html)]
     s = BeautifulSoup(html, "lxml")
+    b = s.find("base", href=True)   # <base href> があれば相対リンクはそこを基準に(ループ 10)
+    if b:
+        base_url = urllib.parse.urljoin(base_url, b["href"].strip())
     out = []
     for a in s.find_all("a", href=True):
         h = urllib.parse.urljoin(base_url, a["href"].strip()).split("#")[0]
