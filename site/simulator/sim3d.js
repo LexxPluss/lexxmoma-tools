@@ -140,28 +140,49 @@ class Sim3D {
     this.ready = true;
   }
 
-  /* 車体: 750×600 の箱、左右ドライブユニット、前端の青いバンパー、アーム取付面 */
+  /* 車体: 750×600 の箱（床から少し浮かせる）、差動二輪の駆動輪（φ180・車体中央の左右）、
+   * 前端の青いバンパー、アーム取付面。車輪は回転させない（位置のイメージ用） */
   buildBody() {
     const { bodyLen, bodyWid, mountZ } = this.dims || { bodyLen: 750, bodyWid: 600, mountZ: 750 };
     this.bodyGroup = new THREE.Group();
     this.scene.add(this.bodyGroup);
-    const H = mountZ;
+    const WHEEL_D = 180, WHEEL_W = 50;      // 駆動輪 直径・幅 [mm]
+    const CLEAR = 60;                        // 車体下面の床からの高さ（車輪が 60 mm 見える）
+    const H = mountZ - CLEAR;
     const box = new THREE.Mesh(new THREE.BoxGeometry(bodyLen, bodyWid, H), new THREE.MeshStandardMaterial({ color: COLORS.body, roughness: 0.85 }));
-    box.position.z = H / 2;
+    box.position.z = CLEAR + H / 2;
     this.bodyGroup.add(box);
     const edges = new THREE.LineSegments(new THREE.EdgesGeometry(box.geometry), new THREE.LineBasicMaterial({ color: COLORS.bodyEdge }));
-    edges.position.z = H / 2;
+    edges.position.z = CLEAR + H / 2;
     this.bodyGroup.add(edges);
-    // ドライブユニット（左右の濃いグレー）
-    const dm = new THREE.MeshStandardMaterial({ color: COLORS.drive, roughness: 0.7 });
+    // 駆動輪: 車体中央（x=0）の左右、側面から少し内側。軸は y 方向
+    const tire = new THREE.MeshStandardMaterial({ color: 0x2b3135, roughness: 0.9 });
+    const hub = new THREE.MeshStandardMaterial({ color: 0x8e9ba5, roughness: 0.4, metalness: 0.3 });
+    const tireGeo = new THREE.CylinderGeometry(WHEEL_D / 2, WHEEL_D / 2, WHEEL_W, 32);
+    const hubGeo = new THREE.CylinderGeometry(WHEEL_D * 0.22, WHEEL_D * 0.22, WHEEL_W + 4, 20);
     for (const s of [-1, 1]) {
-      const d = new THREE.Mesh(new THREE.BoxGeometry(bodyLen * 0.46, bodyWid * 0.13, 120), dm);
-      d.position.set(0, s * (bodyWid / 2 - bodyWid * 0.05 - bodyWid * 0.065), 60);
-      this.bodyGroup.add(d);
+      const y = s * (bodyWid / 2 - WHEEL_W / 2 - 10);
+      const t = new THREE.Mesh(tireGeo, tire);          // CylinderGeometry の軸は y → そのまま左右方向
+      t.position.set(0, y, WHEEL_D / 2);
+      this.bodyGroup.add(t);
+      const h = new THREE.Mesh(hubGeo, hub);
+      h.position.copy(t.position);
+      this.bodyGroup.add(h);
+      // 車輪の外形線（側面から輪郭が分かるように）
+      const ring = new THREE.LineSegments(new THREE.EdgesGeometry(tireGeo, 30), new THREE.LineBasicMaterial({ color: 0x6d7a84 }));
+      ring.position.copy(t.position);
+      this.bodyGroup.add(ring);
     }
+    // 駆動輪の車軸線（床面に薄く。左右の車輪を結ぶ）
+    const axle = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, -bodyWid / 2 - 60, 2), new THREE.Vector3(0, bodyWid / 2 + 60, 2)]),
+      new THREE.LineDashedMaterial({ color: 0x6d7a84, dashSize: 30, gapSize: 20, transparent: true, opacity: 0.6 }),
+    );
+    axle.computeLineDistances();
+    this.bodyGroup.add(axle);
     // 前端バンパーライン（前方向の目印）
     const bumper = new THREE.Mesh(new THREE.BoxGeometry(30, bodyWid * 0.7, 40), new THREE.MeshBasicMaterial({ color: COLORS.bumper }));
-    bumper.position.set(bodyLen / 2 - 10, 0, H - 30);
+    bumper.position.set(bodyLen / 2 - 10, 0, mountZ - 30);
     this.bodyGroup.add(bumper);
     // アーム取付面（base_link 原点）
     this.armRoot = new THREE.Group();
