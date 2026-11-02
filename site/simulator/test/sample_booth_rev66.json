@@ -1,7 +1,7 @@
 {
   "version": 3,
   "rev": "rev.66",
-  "savedAt": "2026-11-02T06:09:22.406Z",
+  "savedAt": "2026-11-02T06:35:37.294Z",
   "armModel": "FANUC CRX-20iA/L",
   "toolLen": 150,
   "bodyPoses": [
@@ -121,39 +121,6 @@
       ]
     },
     {
-      "name": "T_F",
-      "q": [
-        0.25267,
-        0.06917,
-        -0.10456,
-        0,
-        -1.39707,
-        -0.25268
-      ]
-    },
-    {
-      "name": "T_B",
-      "q": [
-        -2.88892,
-        0.06917,
-        -0.10456,
-        0,
-        -1.39707,
-        -0.25268
-      ]
-    },
-    {
-      "name": "T_R",
-      "q": [
-        -1.31812,
-        0.06917,
-        -0.10456,
-        0,
-        -1.39707,
-        -0.25268
-      ]
-    },
-    {
       "name": "Home",
       "q": [
         0.33985,
@@ -188,14 +155,6 @@
           "mode": "auto",
           "reverse": false
         },
-        {
-          "type": "arm",
-          "pose": "T_F"
-        }
-      ]
-    },
-    {
-      "blocks": [
         {
           "type": "arm",
           "pose": "F_1"
@@ -246,14 +205,6 @@
         },
         {
           "type": "arm",
-          "pose": "T_B"
-        }
-      ]
-    },
-    {
-      "blocks": [
-        {
-          "type": "arm",
           "pose": "B_1"
         }
       ]
@@ -289,10 +240,6 @@
           "type": "other",
           "name": "加工機の動作",
           "wait": 3
-        },
-        {
-          "type": "arm",
-          "pose": "T_B"
         }
       ]
     },
@@ -304,14 +251,6 @@
           "mode": "auto",
           "reverse": false
         },
-        {
-          "type": "arm",
-          "pose": "T_R"
-        }
-      ]
-    },
-    {
-      "blocks": [
         {
           "type": "arm",
           "pose": "R_1"
@@ -359,18 +298,6 @@
           "pose": "P5",
           "mode": "auto",
           "reverse": false
-        },
-        {
-          "type": "arm",
-          "pose": "T_R"
-        }
-      ]
-    },
-    {
-      "blocks": [
-        {
-          "type": "arm",
-          "pose": "R_1"
         }
       ]
     },
