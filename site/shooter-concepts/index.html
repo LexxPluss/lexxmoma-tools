@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>シューター本案（縦型省スペース）</title>
+<title>シューター本案（縦型・高さ活用）</title>
 <meta name="description" content="TP規格コンテナを使うラインサイドのシューター（部品供給棚）の本案。同じ箱数を従来の約7割の床面積で持つ縦型省スペース型を3Dで確認する。">
 <script>
 /* =====================================================================
@@ -14,12 +14,29 @@
    ===================================================================== */
 const CONFIG = {
   moma: {
-    baseW: 700, baseL: 1000, baseH: 400,   // 走行台車（仮）
+    // LexxMoMa R1（詳細仕様・説明資料より。図から読んだ値は「図から」と書く）
+    baseL: 700, baseW: 650,                // 車体サイズ D700（前後）×W650（左右）×H750（詳細仕様・アームを除く）
+    chassisH: 200,                         // 走行台車の枠の上面（図から）
+    bodyH: 750,                            // 車体の高さ＝アームの取付面（詳細仕様）
+    armX: 0,                               // アームの取付位置：車体の中心
+    reachH: [250, 2400],                   // 高さ方向のリーチ 0.25〜2.4m以上（詳細仕様）
+    storage: { L: 250, W: 600, H: 450 },   // 収納エリア 前後250×左右600×高さ450（資料）
+    arm: 'FANUC CRX-20iA/L',               // 搭載アーム（資料）
+    armReach: 1418,                        // 最大到達（資料）。水平方向 ±1.4m以上（詳細仕様）
+    j2H: 245,                              // 取付面からJ2（肩）まで（図から）
+    upper: 710, fore: 540, wrist: 168,     // J2→J3、J3→J5、J5→先端（図から。合計は最大到達1418）
+    j5Moment: 64,                          // 手首J5の許容負荷モーメント Nm（CRX-20iA/L カタログ）
+    keepOut: 50,                           // 機体まわりの進入禁止域（説明資料：アームのどの部分も入ってはならない）
+    linkR: [62, 50, 50],                   // 干渉の計算に使う太さ（半径）：上腕・前腕・手首（図から・仮）。ハンドの胴と爪の板は箱で計算
+    deckStand: 30,                         // 天面の箱置き台の高さ（ハンドが進入禁止域に入らず、肩の上腕が箱に当たらない高さ・仮）
+    syncPull: { low: 300, high: 200, ret: 250 },   // シンクロ動作：箱の出し入れの前後の移動（約550mm）のうち腕が受け持つ量（低い段・高い段・返却段）。残りを台車の前進・後退で動く（仮）
+    deckBack: 40,                          // 天面の箱置きを車体の後ろへずらす量（棚に向いたとき、天面の箱を掴む手首が進入禁止域に入らない・仮）
+    deckGap: 130,                          // アームの軸から天面の箱の端まで（上腕の付け根に当たらない距離・仮）
+    payloadKg: 20,                         // 定格可搬（資料）。停止中に20kgを扱えるのは到達約1100mmまで、最大到達では約11kg
+    gripLen: 150,                          // グリッパの長さ（仮）
+    maxBoxes: 2,                           // 天面の前側に積む箱数（仮）。2段に積んだ箱は肩より高いので、そのときアームは棚の正面（-z）に向けない
     aisleTurn: 1500,                       // 旋回に必要な通路幅（仮）
-    armReach: 1300, payloadKg: 10,         // アーム（仮）
-    toolLen: 150,                          // 手首から手先まで（仮）
-    maxBoxes: 4,                           // 1回の巡回で積める箱数（仮）
-    clearance: 150,                        // 棚の通路側の面と台車のすき間（仮）
+    clearance: 150,                        // 棚の通路側の面と機体のすき間（仮）
   },
   shooter: { pickHmin: 700, pickHmax: 1500 },   // 取り出し段：置き面の下限・箱の上端の上限（仮）
   box: { gap: 10 },                              // 奥行き方向の箱どうしの隙間
@@ -38,27 +55,29 @@ const CONFIG = {
   },
   plan: {
     mainType: 'TP-341.5B',
-    nBox: 36,                     // 置きたい箱の総数（同じコンテナ量）
-    cols: 4, deep: 2,             // 4列、取り出し段は奥に2箱
-    levels: ['reserve', 'reserve', 'pick', 'pick', 'pick', 'return'],   // 下から順
-    mix: { '1-2': 'TP-391.5B', '2-3': 'TP-331.5B' },                    // 「列-段」ごとの箱（段は下から0始まり）
+    cols: 4, deep: 2,             // 4列、奥に2箱。空箱返却は人の作業域のすぐ上の段
+    mix: { '1-2': 'TP-391.5B', '2-3': 'TP-331.5B' },   // 「列-段」ごとの箱（段は下から0始まり）
     pipeD: 28,                    // Φ28パイプ（イレクター相当・掲載値）
     structBelow: 54,              // 置き面から下の構造：ローラーレール26（仮）＋受けパイプ28
     sideClear: 10,                // 箱とガイドの片側の隙間（仮）
     stopOff: 15, rearClear: 40,   // 前端ストッパーの厚さ、通路側の入れ口の余裕（仮）
-    slopePct: 4,                  // ローラーの自走勾配（仮）
-    floorMin: 120,                // 最下段の置き面（仮）
+    slopePct: 4,                  // ローラーの勾配（仮）
+    floorMin: 120,                // 最下段の置き面の下限（仮）
+    momaCenterMin: 270,           // MoMaが扱う箱の中心の最低。詳細仕様のリーチは0.25mだが、列の正面から横にずれた停止で爪を下から掛けに行くとき上腕が進入禁止域に入らない高さ（干渉の計算）
+    momaLat: 190,                 // 停止位置から間口の中心までの横ずれの最大（2列ごとに止まる・仮）
+    rackMaxH: 2500,               // 棚の高さの上限（建屋・照明・見通し・仮）
     panel: 5,                     // ライン側の閉じ板の厚さ
+    exitStopH: 20,                // 予備在庫・返却の出口ストッパーの高さ（仮）
+    hookLift: 25,                 // 取り出すときにフックで持ち上げる高さ（ストッパー＋5mm）
     gap: {                        // 段の上の空き [ライン側, 通路側]（仮）
       pick: [100, 60],            // ライン側：手を入れて部品を取る / 通路側：箱を入れる
-      return: [60, 60],
-      reserve: [20, 60],
+      return: [40, 40], returnf: [40, 40],   // ライン側：人が空箱を滑り込ませる（仮） / 通路側：フックで持ち上げて取り出す
+      reserve: [15, 40],          // ライン側は閉じ板で転がるだけ。通路側はフックで出口ストッパーの上へ持ち上げる分
     },
     secPerBox: 60,                // 1箱の補充時間（走行込み・仮）
-    // 比較：同じ規則で作った A 従来型・B 帯の中だけで縮める
     compare: [
-      { key: 'A', title: 'A 従来型：傾斜ローラー 4列×3段×奥3箱', cols: 4, deep: 3, levels: ['pick', 'pick', 'pick', 'return'] },
-      { key: 'B', title: 'B 帯の中だけで奥行きを縮める：6列×3段×奥2箱', cols: 6, deep: 2, levels: ['pick', 'pick', 'pick', 'return'] },
+      { title: 'A 従来型：傾斜ローラー 4列×3段×奥3箱＋最上段に返却', cols: 4, deep: 3, retMode: 'top', low: 0, high: 0 },
+      { title: '参考：空箱返却を1列にあてる案（5列）', cols: 5, deep: 2, retMode: 'column' },
     ],
   },
   colors: {
@@ -68,6 +87,8 @@ const CONFIG = {
     tp: { 'TP-341.5B': '#2F6FB3', 'TP-331.5B': '#3C9A5F', 'TP-391.5B': '#E58F26' },
   },
 };
+// アームの届く範囲（CAD の reach.py で計算した結果）。rows: [箱の中心の高さ, 停止距離の最小, 最大]（棚の面から肩まで mm）
+const REACH = {"lo": 270, "hi": 2200, "rows": [[250, 850, 1075], [275, 775, 1100], [300, 775, 1100], [325, 800, 1100], [350, 800, 1100], [375, 800, 1100], [400, 800, 1100], [425, 800, 1100], [450, 825, 1100], [475, 825, 1100], [500, 825, 1100], [525, 825, 1100], [550, 800, 1100], [575, 800, 1100], [600, 800, 1100], [625, 800, 1100], [650, 800, 1100], [675, 800, 1100], [700, 775, 1100], [725, 775, 1100], [750, 775, 1100], [775, 775, 1100], [800, 775, 1100], [825, 775, 1100], [850, 750, 1100], [875, 700, 1100], [900, 700, 1100], [925, 675, 1100], [950, 650, 1100], [975, 625, 1100], [1000, 600, 1100], [1025, 575, 1100], [1050, 550, 1100], [1075, 525, 1100], [1100, 500, 1100], [1125, 500, 1100], [1150, 500, 1100], [1175, 500, 1100], [1200, 500, 1100], [1225, 500, 1100], [1250, 500, 1100], [1275, 500, 1100], [1300, 500, 1100], [1325, 500, 1100], [1350, 500, 1100], [1375, 500, 1100], [1400, 500, 1100], [1425, 500, 1100], [1450, 500, 1100], [1475, 500, 1100], [1500, 500, 1100], [1525, 500, 1100], [1550, 500, 1100], [1575, 500, 1100], [1600, 500, 1100], [1625, 500, 1100], [1650, 500, 1100], [1675, 500, 1100], [1700, 500, 1100], [1725, 500, 1100], [1750, 500, 1100], [1775, 500, 1100], [1800, 500, 1100], [1825, 500, 1100], [1850, 500, 1100], [1875, 500, 1100], [1900, 500, 1100], [1925, 500, 1075], [1950, 500, 1050], [1975, 500, 1025], [2000, 500, 975], [2025, 500, 950], [2050, 500, 900], [2075, 500, 875], [2100, 500, 825], [2125, 500, 750], [2150, 500, 700], [2175, 500, 625], [2200, 500, 500]], "side": [[250, 525, 800], [275, 450, 850], [300, 450, 900], [325, 450, 900], [350, 450, 900], [375, 450, 900], [400, 450, 900], [425, 450, 900], [450, 450, 900], [475, 450, 900], [500, 450, 900], [525, 450, 900], [550, 450, 900], [575, 450, 900], [600, 450, 900], [625, 450, 900], [650, 450, 900], [675, 450, 900], [700, 450, 900], [725, 450, 900], [750, 450, 900], [775, 450, 900], [800, 450, 900], [825, 450, 900], [850, 425, 900], [875, 250, 900], [900, 250, 900], [925, 225, 900], [950, 225, 900], [975, 200, 900], [1000, 175, 900], [1025, 150, 900], [1050, 125, 900], [1075, 50, 900], [1100, 0, 900], [1125, 0, 900], [1150, 0, 900], [1175, 0, 900], [1200, 0, 900], [1225, 0, 900], [1250, 0, 900], [1275, 0, 900], [1300, 0, 900], [1325, 0, 900], [1350, 0, 900], [1375, 0, 900], [1400, 0, 900], [1425, 0, 900], [1450, 0, 900], [1475, 0, 900], [1500, 0, 900], [1525, 0, 900], [1550, 0, 900], [1575, 0, 900], [1600, 0, 900], [1625, 0, 900], [1650, 0, 900], [1675, 0, 900], [1700, 0, 900], [1725, 0, 900], [1750, 0, 900], [1775, 0, 900], [1800, 0, 900], [1825, 0, 875], [1850, 0, 850], [1875, 0, 825], [1900, 0, 800], [1925, 0, 750], [1950, 0, 725], [1975, 0, 700], [2000, 0, 650], [2025, 0, 625], [2050, 0, 575], [2075, 0, 525], [2100, 0, 475], [2125, 0, 425], [2150, 0, 350], [2175, 0, 250], [2200, 0, 75]], "kg": 9.0, "Fmin": 500, "Fmax": 1100, "lift": 25.0};
 </script>
 <style>
 :root{--blue:#0068B7;--green:#3EB370;--green-d:#23864f;--ink:#1d2a33;--sub:#5b6b78;--line:#e1e7ec;--panel:#f7f9fb;--retro:#5AA0DC}
@@ -158,8 +179,8 @@ table.cmp th.plan{white-space:nowrap;background:#fafcfe}
 <body>
 <header>
   <div class="hd-top">
-    <h1>LexxMoMa対応シューター 本案：縦型省スペース型</h1>
-    <span class="sub">TP規格コンテナで、同じ箱数を従来の約7割の床に。寸法はCAD（cad/shooter-space）と同じ規則で計算。数値は仮値を含む（ファイル冒頭の CONFIG で変更）</span>
+    <h1>LexxMoMa対応シューター 本案：縦型・高さ活用型</h1>
+    <span class="sub">MoMaの届く高さまで予備在庫を積み、床1m²あたりの箱数を最大に。寸法はCAD（cad/shooter-space）と同じ規則で計算。LexxMoMa R1 は実機の寸法・外観。棚まわりの数値は仮値を含む（ファイル冒頭の CONFIG で変更）</span>
   </div>
   <nav class="tabs" id="tabs" role="tablist"></nav>
 </header>
@@ -185,6 +206,7 @@ table.cmp th.plan{white-space:nowrap;background:#fafcfe}
       <div><i style="background:#CDD5DB"></i>空箱</div>
     </div>
     <div id="caption"><span class="n"></span><span class="t"></span></div>
+    <div id="clr" style="position:absolute;left:10px;bottom:62px;font-size:12px;background:rgba(255,255,255,.92);border:1px solid #d5dee5;border-radius:6px;padding:3px 8px;color:#1f6b42"></div>
   </section>
   <aside id="panel"></aside>
   <section id="compare" hidden></section>
@@ -344,6 +366,7 @@ function makeBox(dim, o = {}) {
   const mats = c => { const side = mat(c), top = mat(shade(c, 0.18));
     return [side, side, top, side, texMat([o.emptyText || code], { bg: c, fg: '#fff', bars: true, font: fs }), texMat([o.emptyText || code], { bg: c, fg: '#fff', font: fs + 4 })]; };
   const m = mesh(geo, mats(color)); g.add(m);
+  for (const sz of [-1, 1]) plane(g, Math.min(0.11, dim.x * 0.4), 0.026, mat('#1d2a33'), 0, dim.y / 2 - 0.04, sz * (dim.z / 2 + 0.0015), sz > 0 ? 0 : Math.PI);   // 短辺の取っ手穴
   const ed = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: shade(color, -0.35) })); g.add(ed);
   g.userData = { dim, code, kind: 'box',
     setEmpty() { o.emptyText = '空箱'; m.material = mats(COL.empty); ed.material.color.set(shade(COL.empty, -0.35)); g.userData.empty = true; } };
@@ -422,85 +445,142 @@ function pickBand(root, x0, x1, z) {
   for (const y of [y0, y1]) root.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([V3(x0, y, z - 0.05), V3(x1, y, z - 0.05)]), new THREE.LineBasicMaterial({ color: COL.green })));
   dimLine(root, V3(x0 - 0.12, y0, z - 0.05), V3(x0 - 0.12, y1, z - 0.05), `人の取り出し域<br>${C.shooter.pickHmin}〜${C.shooter.pickHmax}mm（仮）`);
 }
-function stopMark(root, x, zC) {
-  const L = M(C.moma.baseL), W = M(C.moma.baseW);
+function stopMark(root, x, zC, face = false) {   // face：棚に向いて止まる（車体の前後が棚の奥行きの向き）
+  const L = M(face ? C.moma.baseW : C.moma.baseL), W = M(face ? C.moma.baseL : C.moma.baseW);
   rectLine(root, x - L / 2 - 0.03, x + L / 2 + 0.03, zC - W / 2 - 0.03, zC + W / 2 + 0.03, COL.blue, true);
   for (const sx of [-1, 1]) addBox(root, 0.1, 0.004, 0.1, COL.retro, x + sx * (L / 2 + 0.08), 0.003, zC - W / 2 - 0.08);
 }
 
-/* ===================== LexxMoMa（台車＋6軸アームの簡易形状） ===================== */
+/* ===================== LexxMoMa R1（説明資料の外観を再現。寸法は資料と図から） ===================== */
+function roundedBox(w, h, d, r, material) {
+  const s = new THREE.Shape(), x = w / 2, z = d / 2;
+  s.moveTo(-x + r, -z); s.lineTo(x - r, -z); s.quadraticCurveTo(x, -z, x, -z + r); s.lineTo(x, z - r); s.quadraticCurveTo(x, z, x - r, z);
+  s.lineTo(-x + r, z); s.quadraticCurveTo(-x, z, -x, z - r); s.lineTo(-x, -z + r); s.quadraticCurveTo(-x, -z, -x + r, -z);
+  const g = new THREE.ExtrudeGeometry(s, { depth: h, bevelEnabled: false, curveSegments: 6 });
+  g.rotateX(-Math.PI / 2);   // 押し出し方向を上（+y）へ
+  return mesh(g, material);
+}
 function makeMoMa(o) {
-  const P = C.moma, L = M(P.baseL), W = M(P.baseW), H = M(P.baseH), tl = M(P.toolLen), bx = o.box;
-  const L1 = M(P.armReach) / 2, L2 = M(P.armReach) / 2;
+  const P = C.moma, L = M(P.baseL), W = M(P.baseW), Hc = M(P.chassisH), Hb = M(P.bodyH), bx = o.box;
+  const L1 = M(P.upper), L2 = M(P.fore), tl = M(P.wrist + P.gripLen);
   const g = new THREE.Group();
-  const blue = mat(COL.blue), blueL = mat(shade(COL.blue, 0.3)), dark = mat('#25323c'), white = mat('#f4f6f8'), joint = mat('#a9bccb'), tool = mat('#56636e');
-  addBox(g, L, H - 0.1, W, blue, 0, 0.1 + (H - 0.1) / 2, 0);
-  addBox(g, L + 0.01, 0.025, W + 0.01, blueL, 0, H - 0.012, 0);
-  addBox(g, L - 0.04, 0.08, W - 0.04, dark, 0, 0.07, 0);
-  const wheels = [];
-  for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const w = mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.05, 16), dark); w.rotation.x = Math.PI / 2; w.position.set(sx * (L / 2 - 0.16), 0.07, sz * (W / 2 - 0.06)); g.add(w); wheels.push(w); }
-  addBox(g, 0.09, 0.06, 0.09, dark, L / 2 - 0.07, H + 0.03, W / 2 - 0.07);
-  const stM = new THREE.MeshStandardMaterial({ color: '#8fdcff', emissive: '#2fa8ff', emissiveIntensity: 0.8 });
-  for (const sz of [-1, 1]) addBox(g, L * 0.7, 0.022, 0.01, stM, 0, H - 0.055, sz * (W / 2 + 0.006));
-  const npm = texMat(['LexxMoMa'], { bg: COL.blue, fg: '#fff', font: 40, w: 256, h: 64 });
-  plane(g, 0.44, 0.11, npm, -0.12, 0.24, W / 2 + 0.002); plane(g, 0.44, 0.11, npm, 0.12, 0.24, -W / 2 - 0.002, Math.PI);
-  // 台車上の箱置き棚（後ろ半分）
-  const perTier = Math.max(1, Math.floor((W - 0.04) / (bx.z + 0.03))), tiers = Math.ceil(P.maxBoxes / perTier), tp = bx.y + 0.09;
-  const rx0 = -L / 4, rackW = Math.min(L / 2 - 0.04, Math.max(bx.x + 0.04, 0.3));
-  for (const sx of [-1, 1]) for (const sz of [-1, 1]) addBox(g, 0.025, tiers * tp + 0.02, 0.025, mat(COL.frame), rx0 + sx * rackW / 2, H + (tiers * tp + 0.02) / 2, sz * (W / 2 - 0.03));
-  for (let t = 1; t < tiers; t++) addBox(g, rackW, 0.014, W - 0.04, mat(COL.frame), rx0, H + t * tp, 0);
-  const slots = [];
-  for (let t = 0; t < tiers; t++) for (let j = 0; j < perTier; j++) if (slots.length < P.maxBoxes) slots.push(V3(rx0, H + t * tp + 0.008 + bx.y / 2, (j - (perTier - 1) / 2) * (bx.z + 0.03)));
-  slots.sort((a, b) => b.y - a.y || b.z - a.z);
-  // アーム
-  const root = new THREE.Group(); root.position.set(L / 4, H, -W / 2 + 0.2); g.add(root);
-  addBox(root, 0.2, 0.03, 0.2, joint, 0, 0.015, 0);
-  const yaw = new THREE.Group(); root.add(yaw);
-  const tur = mesh(new THREE.CylinderGeometry(0.075, 0.085, 0.16, 20), white); tur.position.y = 0.1; yaw.add(tur);
-  const sh = new THREE.Group(); sh.position.y = 0.2; yaw.add(sh);
-  const jc = r => { const c = mesh(new THREE.CylinderGeometry(r, r, 0.13, 20), joint); c.rotation.x = Math.PI / 2; return c; };
-  sh.add(jc(0.07)); addBox(sh, L1, 0.085, 0.085, white, L1 / 2, 0, 0);
-  const el = new THREE.Group(); el.position.x = L1; sh.add(el); el.add(jc(0.06)); addBox(el, L2, 0.07, 0.07, white, L2 / 2, 0, 0);
-  const wpg = new THREE.Group(); wpg.position.x = L2; el.add(wpg); wpg.add(jc(0.05));
-  const wy = new THREE.Group(); wpg.add(wy);
-  const wj = mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.08, 16), joint); wy.add(wj);
-  const tg = new THREE.Group(); wy.add(tg);
-  addBox(tg, tl - 0.04, 0.07, 0.08, tool, 0.02 + (tl - 0.04) / 2, 0, 0);
-  addBox(tg, 0.05, 0.035, 0.05, '#111', tl * 0.45, 0.06, 0);
-  const cam = new THREE.Object3D(); cam.position.set(tl * 0.45 + 0.03, 0.06, 0); tg.add(cam);
-  const fl = Math.min(0.12, bx.z * 0.4), fingers = [];
-  if (o.tool !== 'pusher') {
-    addBox(tg, 0.025, 0.05, bx.x + 0.08, tool, tl - 0.0125, 0, 0);
-    for (const s of [-1, 1]) fingers.push(addBox(tg, fl, 0.05, 0.012, COL.blue, tl + fl / 2, 0, s * (bx.x / 2 + 0.035)));
+  const frame = mat('#a7adb3', { metalness: 0.35, roughness: 0.45 }), frameD = mat('#6e757c', { metalness: 0.3 }), cab = mat('#a3a8c2', { roughness: 0.55 });
+  const door = mat('#c9ccd6'), dark = mat('#23292f'), white = mat('#eceeef', { roughness: 0.4 }), green = mat('#2fb24c', { roughness: 0.4 }), orange = mat('#d9822b', { metalness: 0.3, roughness: 0.4 });
+  const clear = new THREE.MeshStandardMaterial({ color: '#dfe7ee', transparent: true, opacity: 0.55, roughness: 0.15 });
+  // 走行台車：枠・キャスター・駆動輪・前後のブラケット
+  addBox(g, L, 0.05, W, frame, 0, Hc - 0.025, 0);
+  addBox(g, L - 0.06, 0.09, W - 0.12, frameD, 0, Hc - 0.095, 0);
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+    const cw = mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.045, 18), clear); cw.rotation.x = Math.PI / 2; cw.position.set(sx * (L / 2 - 0.08), 0.05, sz * (W / 2 - 0.05)); g.add(cw);
+    addBox(g, 0.05, 0.06, 0.05, frameD, sx * (L / 2 - 0.08), 0.11, sz * (W / 2 - 0.05));
   }
-  if (o.tool === 'pusher' || o.tool === 'both') addBox(tg, 0.012, bx.y * 0.8, bx.x * 0.8, mat(COL.retro), tl - 0.03, 0, 0);
+  const wheels = [];
+  for (const sz of [-1, 1]) {
+    const dw = mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.05, 24), orange); dw.rotation.x = Math.PI / 2; dw.position.set(0, 0.085, sz * (W / 2 - 0.03)); g.add(dw); wheels.push(dw);
+    const hub = mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.055, 16), dark); hub.rotation.x = Math.PI / 2; hub.position.copy(dw.position); g.add(hub);
+  }
+  for (const sx of [-1, 1]) { addBox(g, 0.012, 0.11, 0.24, frame, sx * (L / 2 + 0.006), Hc - 0.07, 0); addBox(g, 0.006, 0.03, 0.12, dark, sx * (L / 2 + 0.013), Hc - 0.07, 0); }
+  // キャビネット（角を丸めた箱）＋天板
+  const cw = L - 0.04, cd = W - 0.04, ch = Hb - Hc - 0.012;
+  const body = roundedBox(cw, ch, cd, 0.035, cab); body.position.y = Hc; g.add(body);
+  const lid = roundedBox(cw + 0.008, 0.012, cd + 0.008, 0.038, mat('#b4b8cf')); lid.position.y = Hb - 0.012; g.add(lid);
+  // 前面（+x）の制御盤の扉：表示灯6つ（右端は緑）と取っ手
+  addBox(g, 0.006, ch * 0.78, cd * 0.82, door, cw / 2 + 0.003, Hc + ch * 0.45, 0);
+  for (let i = 0; i < 6; i++) { const lp = mesh(new THREE.CylinderGeometry(0.009, 0.009, 0.01, 12), i === 5 ? green : dark); lp.rotation.z = Math.PI / 2; lp.position.set(cw / 2 + 0.008, Hc + ch * 0.74, -0.09 + i * 0.035); g.add(lp); }
+  addBox(g, 0.012, 0.11, 0.03, dark, cw / 2 + 0.009, Hc + ch * 0.45, cd * 0.33);
+  // 側面（+z・通路側）の収納口：前後250×高さ450
+  const sL = M(P.storage.L), sH = M(P.storage.H);
+  addBox(g, sL, sH, 0.006, mat('#3b4048'), -cw / 2 + 0.06 + sL / 2, Hc + 0.04 + sH / 2, cd / 2 + 0.002);
+  addBox(g, sL - 0.03, sH - 0.03, 0.004, mat('#5d6470'), -cw / 2 + 0.06 + sL / 2, Hc + 0.04 + sH / 2, cd / 2 + 0.004);
+  const npm = texMat(['LexxMoMa'], { bg: '#a3a8c2', fg: '#ffffff', font: 40, w: 256, h: 64 });
+  plane(g, 0.3, 0.075, npm, 0.15, Hb - 0.08, cd / 2 + 0.002); plane(g, 0.3, 0.075, npm, -0.1, Hb - 0.08, -cd / 2 - 0.002, Math.PI);
+  const stM = new THREE.MeshStandardMaterial({ color: '#8fdcff', emissive: '#2fa8ff', emissiveIntensity: 0.8 });
+  for (const sz of [-1, 1]) addBox(g, L * 0.6, 0.014, 0.006, stM, 0, Hc + 0.02, sz * (cd / 2 + 0.004));
+  // 箱は天面の前側に載せる（仕様書の図）。TP箱は段積みできるので上へ重ねる（段数は仮）
+  // 天面の箱置き：アームの横（車体の右、+z）に、箱の長い向きを車体の前後（x）にそろえて置く。
+  // 棚に向き直ったとき（90°旋回）箱の長い向きが棚の奥行きの向きになり、端面の取っ手穴に手先（棚の方向）で爪を掛けられる
+  const ax = M(P.armX) - M(P.deckBack), deckZ = M(P.deckGap) + bx.x / 2, slots = [];   // ax：箱置きの前後の中心（アームの軸から少し後ろ）
+  const ds = M(P.deckStand), dw = bx.x;
+  addBox(g, bx.z + 0.03, 0.012, dw, mat('#5d6470'), ax, Hb + ds - 0.006, deckZ);
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) addBox(g, 0.02, ds - 0.012, 0.02, mat('#5d6470'), ax + sx * (bx.z / 2), Hb + (ds - 0.012) / 2, deckZ + sz * (dw / 2 - 0.01));
+  for (let t = P.maxBoxes - 1; t >= 0; t--) slots.push(V3(ax, Hb + ds + bx.y / 2 + 0.001 + t * (bx.y - 0.008), deckZ));
+  // 進入禁止域（車体まわり）を金色の枠で表示
+  { const k = M(P.keepOut), kb = new THREE.Box3(V3(-L / 2 - k, 0, -W / 2 - k), V3(L / 2 + k, Hb + k, W / 2 + k)); const kh = new THREE.Box3Helper(kb, 0xc9a227); kh.material.transparent = true; kh.material.opacity = 0.8; g.add(kh); DIMS.push(kh); }
+  // アーム（FANUC CRX-20iA/L 風：白い丸みのあるリンク、緑の帯、黒い付け根）。取付は天面の中央
+  const root = new THREE.Group(); root.position.set(M(P.armX), Hb, 0); g.add(root);
+  const cyl = (r, h, m, axis) => { const c = mesh(new THREE.CylinderGeometry(r, r, h, 28), m); if (axis === 'z') c.rotation.x = Math.PI / 2; if (axis === 'x') c.rotation.z = Math.PI / 2; return c; };
+  const base = cyl(0.1, 0.06, dark); base.position.y = 0.03; root.add(base);
+  const yaw = new THREE.Group(); root.add(yaw);
+  const j1 = cyl(0.085, 0.13, white); j1.position.y = 0.125; yaw.add(j1);
+  const r1 = cyl(0.087, 0.025, green); r1.position.y = 0.085; yaw.add(r1);
+  const sh = new THREE.Group(); sh.position.y = M(P.j2H); yaw.add(sh);
+  const j2 = cyl(0.085, 0.17, white, 'z'); j2.position.z = 0.03; sh.add(j2);
+  const j2r = cyl(0.087, 0.022, green, 'z'); j2r.position.z = 0.115; sh.add(j2r);
+  const up = cyl(0.062, L1, white, 'x'); up.position.set(L1 / 2, 0, 0.1); sh.add(up);
+  const upr = cyl(0.064, 0.03, green, 'x'); upr.position.set(L1 * 0.78, 0, 0.1); sh.add(upr);
+  const el = new THREE.Group(); el.position.x = L1; sh.add(el);
+  const j3 = cyl(0.072, 0.2, white, 'z'); j3.position.z = 0.06; el.add(j3);
+  const fo = cyl(0.05, L2, white, 'x'); fo.position.set(L2 / 2, 0, -0.01); el.add(fo);
+  const fr = cyl(0.052, 0.028, green, 'x'); fr.position.set(0.12, 0, -0.01); el.add(fr);
+  const wpg = new THREE.Group(); wpg.position.x = L2; el.add(wpg);
+  const j5 = cyl(0.055, 0.13, white, 'z'); wpg.add(j5);
+  const wy = new THREE.Group(); wpg.add(wy);
+  const tg = new THREE.Group(); wy.add(tg);
+  const j6 = cyl(0.048, M(P.wrist) - 0.03, white, 'x'); j6.position.x = (M(P.wrist) - 0.03) / 2; tg.add(j6);
+  const j6r = cyl(0.05, 0.022, green, 'x'); j6r.position.x = M(P.wrist) - 0.06; tg.add(j6r);
+  const fl = cyl(0.042, 0.03, dark, 'x'); fl.position.x = M(P.wrist) - 0.015; tg.add(fl);
+  addBox(tg, M(P.gripLen) - 0.04, 0.07, 0.08, mat('#56636e'), M(P.wrist) + (M(P.gripLen) - 0.04) / 2, 0, 0);
+  addBox(tg, 0.05, 0.035, 0.05, '#111', M(P.wrist) + 0.04, 0.06, 0);
+  const cam = new THREE.Object3D(); cam.position.set(M(P.wrist) + 0.07, 0.06, 0); tg.add(cam);
+  // フック式ハンド：端面に当てる板と、取っ手穴（箱の上端から40mm下）に掛ける爪2本
+  // 爪の板は取っ手穴（箱の上端から40mm下）のまわりだけ：穴の35mm下〜25mm上。手首の軸は箱の中心の高さ
+  const fingers = [], hookY = bx.y / 2 - 0.04, plateW = bx.x * 0.62;
+  addBox(tg, 0.012, 0.06, plateW, mat('#56636e'), tl - 0.006, hookY - 0.005, 0);
+  for (const s of [-1, 1]) fingers.push(addBox(tg, 0.03, 0.016, 0.035, COL.blue, tl + 0.012, hookY, s * 0.03));
   const tcp = new THREE.Object3D(); tcp.position.x = tl; tg.add(tcp);
-  const ring = dashedRing(root, L1 + L2, COL.blue); ring.position.y = 0.2;
-  let lastX = 0;
+  const ring = dashedRing(root, M(P.armReach), COL.blue); ring.position.y = M(P.j2H);
+  let lastP = V3(), lastH = 0;
   const m = {
     g, slots, tcp, cam, tool: tg, elbow: el, status: stM, L1, L2,
-    shoulderW() { root.updateWorldMatrix(true, false); return root.localToWorld(V3(0, 0.2, 0)); },
+    shoulderW() { root.updateWorldMatrix(true, false); return root.localToWorld(V3(0, M(P.j2H), 0)); },
     ik(w) {
-      const s = this.shoulderW(), dx = w.x - s.x, dz = w.z - s.z; let dy = w.y - s.y, r = Math.hypot(dx, dz), d = Math.hypot(r, dy), ok = true;
+      root.updateWorldMatrix(true, false); const wl = root.worldToLocal(w.clone()), hd = g.rotation.y;   // 車体の向きに対する角度で解く
+      const dx = wl.x, dz = wl.z; let dy = wl.y - M(P.j2H), r = Math.hypot(dx, dz), d = Math.hypot(r, dy), ok = true;
       const max = L1 + L2 - 1e-4; if (d > max) { ok = false; r *= max / d; dy *= max / d; d = max; }
       const psi = Math.atan2(-dz, dx), a2 = Math.acos(clamp((d * d - L1 * L1 - L2 * L2) / (2 * L1 * L2), -1, 1));
       const a1 = Math.atan2(dy, r) + Math.atan2(L2 * Math.sin(a2), L1 + L2 * Math.cos(a2));
-      yaw.rotation.y = psi; sh.rotation.z = a1; el.rotation.z = -a2; wpg.rotation.z = -(a1 - a2); wy.rotation.y = Math.PI / 2 - psi;
+      yaw.rotation.y = psi; sh.rotation.z = a1; el.rotation.z = -a2; wpg.rotation.z = -(a1 - a2); wy.rotation.y = Math.PI / 2 - psi - hd;   // 手先は車体の向きによらず -z（棚）
       return ok;
     },
-    homeW() { return this.shoulderW().add(V3(0.02, 0.45, 0.1)); },
+    homeW() { root.updateWorldMatrix(true, false); return root.localToWorld(V3(0, M(P.j2H) + 0.35, -0.15)); },
+    homeAt(p, h = g.rotation.y) { const r = V3(M(P.armX), Hb + M(P.j2H) + 0.35, -0.15); return V3(p.x + r.x * Math.cos(h) + r.z * Math.sin(h), r.y, p.z - r.x * Math.sin(h) + r.z * Math.cos(h)); },   // 台車が p にいるときの走行姿勢の手首   // 走行姿勢：天面の箱と反対の横（-z）向き。上腕の付け根が箱から離れる向き
+    joints() {   // 干渉の計算に使う点（ワールド座標）。上腕は肩の横に 0.1m ずれている（形のとおり）
+      g.updateWorldMatrix(true, true);
+      return { u0: sh.localToWorld(V3(0, 0, 0.1)), u1: sh.localToWorld(V3(L1, 0, 0.1)), el: el.getWorldPosition(V3()), w: wpg.getWorldPosition(V3()),
+        fl: tg.localToWorld(V3(M(P.wrist), 0, 0)), tcp: tcp.getWorldPosition(V3()) };
+    },
+    plateBox() { const t = tcp.getWorldPosition(V3()); return { x0: t.x - plateW / 2, x1: t.x + plateW / 2, y0: t.y + hookY - 0.035, y1: t.y + hookY + 0.025, z0: t.z - 0.001, z1: t.z + 0.012 }; },
+    gripBox() { const t = tcp.getWorldPosition(V3()), f = tg.localToWorld(V3(M(P.wrist), 0, 0)); return { x0: t.x - 0.04, x1: t.x + 0.04, y0: t.y - 0.035, y1: t.y + 0.035, z0: Math.min(t.z, f.z), z1: Math.max(t.z, f.z) }; },
+    ignore: new Set(),
+    bodyBox(k = 0) { const p = g.position, q = Math.abs(Math.sin(g.rotation.y)) > 0.5, hx = (q ? W : L) / 2, hz = (q ? L : W) / 2; return { x0: p.x - hx - k, x1: p.x + hx + k, y0: -1, y1: Hb + k, z0: p.z - hz - k, z1: p.z + hz + k }; },   // 0°・90°のときのワールドの箱（表示・確認用）
+    bodyLocal(k = 0) { return { x0: -L / 2 - k, x1: L / 2 + k, y0: -1, y1: Hb + k, z0: -W / 2 - k, z1: W / 2 + k }; },   // 車体の座標での箱（干渉の計算）
+    toLocal(p) { g.updateWorldMatrix(true, false); return g.worldToLocal(p.clone()); },
+    heading: 0,
+    deckBoxes() { return g.children.filter(o => o.userData && (o.userData.kind === 'box') && o !== this.held && !this.ignore.has(o)); },
+    held: null,
     wristFor(c, bz = bx.z) { return c.clone().add(V3(0, 0, tl + bz / 2)); },   // 手先は常に -z（棚の方向）を向く
-    setFingers(open) { fingers.forEach((f, i) => f.position.z = (i ? 1 : -1) * (bx.x / 2 + 0.008 + 0.027 * open)); },
-    spin() { const dx = g.position.x - lastX; lastX = g.position.x; wheels.forEach(w => w.rotation.y -= dx / 0.07); },
+    setFingers(open) { fingers.forEach(f => f.position.y = hookY - 0.02 * open); },   // 爪を上げて取っ手穴に掛ける
+    spin() { const p = g.position, h = g.rotation.y, f = (p.x - lastP.x) * Math.cos(h) - (p.z - lastP.z) * Math.sin(h), dh = h - lastH;   // 前進分と旋回分で左右の車輪を回す
+      lastP = p.clone(); lastH = h; wheels.forEach((w, i) => { const side = i === 0 ? -1 : 1; w.rotation.y -= (f - side * dh * (W / 2 - 0.03)) / 0.085; }); },
     setStatus(c) { stM.color.set(c); stM.emissive.set(c); },
-    fill(objs) { objs.forEach((b, i) => { g.add(b); b.position.copy(slots[i]); }); },
+    fill(objs) { objs.forEach((b, i) => { g.add(b); b.position.copy(slots[i]); b.rotation.set(0, Math.PI / 2, 0); }); },
     camW() { return cam.getWorldPosition(V3()); },
   };
   m.curWrist = m.homeW(); m.ik(m.curWrist); m.setFingers(1);
   return m;
 }
 function momaZ(zB) { return zB + M(C.moma.clearance) + M(C.moma.baseW) / 2; }
-const ARM_X = () => M(C.moma.baseL) / 4;   // 台車中心からアーム根元までの前後距離
+const ARM_X = () => M(C.moma.armX);   // 車体中心からアームの取付位置まで（後ろが負）
 
 /* ===================== 作業者（簡易人形） ===================== */
 function makeWorker(o = {}) {
@@ -530,10 +610,33 @@ function warn(t) { if (!WARN.has(t)) { WARN.add(t); renderWarns(); } }
 const A = {
   call(fn, label, dur = 0.9, who) { return { label, dur, who, start: fn }; },
   wait(label, dur = 1, who) { return { label, dur, who }; },
-  drive(m, toX, dur, label) { let fx; return { label, dur, start() { fx = m.g.position.x; }, update(k) { m.g.position.x = lerp(fx, toX, k); m.curWrist = m.homeW(); m.ik(m.curWrist); m.spin(); } }; },
-  arm(m, toFn, dur, label) { let from; return { label, dur, start() { from = m.curWrist.clone(); }, update(k) { const w = from.clone().lerp(toFn(), k); m.curWrist = w; if (!m.ik(w)) warn(`アームのリーチ不足：「${label}」（CONFIG の値で届かない位置があります）`); } }; },
-  grip(m, box, label = 'グリッパで箱を把持') { return { label, dur: 0.4, update(k) { m.setFingers(1 - k); }, end() { m.tcp.attach(box); } }; },
-  release(m, box, onRel, label = '箱を離す') { return { label, dur: 0.4, start() { onRel(box); }, update(k) { m.setFingers(k); } }; },
+  drive(m, toX, dur, label) { let fx; return { label, dur, start() { fx = m.g.position.x; }, update(k) { m.g.position.x = lerp(fx, toX, k); m.curWrist = m.homeW(); m.ik(m.curWrist); m.spin(); collide(m, label); } }; },
+  arm(m, toFn, dur, label) { let from, to; return { label, dur, start() { from = m.curWrist.clone(); to = toFn(); }, update(k) { const w = from.clone().lerp(to, k); m.curWrist = w; if (!m.ik(w)) warn(`アームのリーチ不足：「${label}」（CONFIG の値で届かない位置があります）`); collide(m, label); } }; },
+  // 肩のまわりを回って運ぶ：手首を肩から rMin 以上離し、棚の側（-z）を回る（箱が肩の上を通らない）。高さは直線で変える
+  // back：手だけのとき、車体の後ろ（+z）側を回る（天面に2段の箱があり、棚の方へ向けられないとき）。zMin：手首のzの下限（持った箱・手先を棚の面より手前に保つ）
+  arc(m, toFn, dur, label, o = {}) { let s, f, t, a0, a1, r0, r1; const rMin = o.rMin ?? 0.6;
+    const ang = v => { let a = Math.atan2(v.z, v.x); if (o.back) { if (a < -Math.PI / 2) a += 2 * Math.PI; } else if (a > Math.PI / 2) a -= 2 * Math.PI; return a; };
+    return { label, dur, start() { s = m.shoulderW(); f = m.curWrist.clone().sub(s); t = toFn().sub(s); a0 = ang(f); a1 = ang(t); r0 = Math.hypot(f.x, f.z); r1 = Math.hypot(t.x, t.z); },
+      update(k) { const a = lerp(a0, a1, k), r = lerp(r0, r1, k) + Math.max(0, rMin - Math.min(r0, r1)) * Math.sin(Math.PI * k);
+        const w = s.clone().add(V3(r * Math.cos(a), lerp(f.y, t.y, k), r * Math.sin(a))); if (o.zMin) w.z = Math.max(w.z, o.zMin()); m.curWrist = w;
+        if (!m.ik(w)) warn(`アームのリーチ不足：「${label}」`); collide(m, label); } }; },
+  // 手と足のシンクロ動作：台車（前進・後退・旋回）とアームを同時に動かす。手首は車体に対する位置を、台車と同じ進み方で目標へ変える。
+  // 台車と手首がどちらも直線なら、手首（持った箱）は世界でも直線を動く（棚から箱をまっすぐ引き出せる）
+  sync(m, baseFn, wristFn, dur, label, o = {}) { let p0, p1, h0, h1, r0, r1;
+    const toRel = (w, p, h) => { const d = w.clone().sub(p); return V3(d.x * Math.cos(h) - d.z * Math.sin(h), d.y, d.x * Math.sin(h) + d.z * Math.cos(h)); };
+    const fromRel = (r, p, h) => V3(p.x + r.x * Math.cos(h) + r.z * Math.sin(h), p.y + r.y, p.z - r.x * Math.sin(h) + r.z * Math.cos(h));
+    return { label, dur, start() { p0 = m.g.position.clone(); h0 = m.g.rotation.y; const b = baseFn(); p1 = V3(b.x, 0, b.z); h1 = o.heading ?? h0;
+        r0 = toRel(m.curWrist, p0, h0); r1 = toRel(wristFn(p1), p1, h1); },
+      update(k) { const p = p0.clone().lerp(p1, k), h = lerp(h0, h1, k); m.g.position.copy(p); m.g.rotation.y = h; m.g.updateMatrixWorld(true);
+        const kr = clamp((k - (o.armFrom || 0)) / ((o.armTo ?? 1) - (o.armFrom || 0)), 0, 1);
+        const w = fromRel(r0.clone().lerp(r1, kr), p, h); m.curWrist = w; if (!m.ik(w)) warn(`アームのリーチ不足：「${label}」`); m.spin(); o.onUpd && o.onUpd(k); collide(m, label); } }; },
+  // その場で旋回（2輪駆動：左右の車輪を逆に回す）。アームは走行姿勢のまま
+  turn(m, toH, dur, label) { let fh; return { label, dur, start() { fh = m.g.rotation.y; }, update(k) { m.g.rotation.y = lerp(fh, toH, k); m.g.updateMatrixWorld(true); m.curWrist = m.homeW(); m.ik(m.curWrist); m.spin(); collide(m, label); } }; },
+  // 前進・後退（アームの姿勢は車体に対してそのまま）。2輪駆動なので、車体の向きに沿ってだけ動かす。箱の引き出し・押し込みに使う
+  base(m, toFn, dur, label, onUpd) { let from, off; return { label, dur, start() { from = m.g.position.clone(); off = m.curWrist.clone().sub(from); },
+    update(k) { const t = toFn(); m.g.position.set(lerp(from.x, t.x, k), 0, lerp(from.z, t.z, k)); m.curWrist = m.g.position.clone().add(off); m.ik(m.curWrist); m.spin(); onUpd && onUpd(k); collide(m, label); } }; },
+  grip(m, box, label = 'フックを取っ手穴に掛ける') { return { label, dur: 0.4, update(k) { m.setFingers(1 - k); }, end() { m.tcp.attach(box); m.held = box; } }; },
+  release(m, box, onRel, label = '箱を離す') { return { label, dur: 0.4, start() { m.held = null; onRel(box); }, update(k) { m.setFingers(k); } }; },
   advance(lane, dur, label, who) {
     let from; return { label, dur, who, start() { from = lane.q.map(b => b.userData.s); },
       update(k) { lane.q.forEach((b, i) => { const s = lerp(from[i], lane.sAt(i), k); b.userData.s = s; b.position.copy(lane.posS(s)); b.rotation.set(lane.rx, 0, 0); }); }, end() { lane.onChange && lane.onChange(); } };
@@ -547,9 +650,125 @@ const A = {
   },
 };
 const label_ = (...a) => label(...a);
+/* ===================== 干渉の確認（アーム・ハンド・持った箱 ↔ 車体＋進入禁止域・天面の箱・床・棚） ===================== */
+// 棚は「間口の空間（slot）」の中にだけ、ハンドと持った箱が入ってよい。アームのリンクは棚に入ってはいけない。
+let VERIFY = null;
+const COLL = { ctx: null, step: -1, si: -1, stepMin: Infinity, total: Infinity, hits: [] };
+const aabbC = (c, d) => ({ x0: c.x - d.x / 2, x1: c.x + d.x / 2, y0: c.y - d.y / 2, y1: c.y + d.y / 2, z0: c.z - d.z / 2, z1: c.z + d.z / 2 });
+const aabbOf = o => { const cs = cornersOf(o), b = { x0: 1e9, x1: -1e9, y0: 1e9, y1: -1e9, z0: 1e9, z1: -1e9 };   // 向きも含めたワールドの外形
+  for (const p of cs) { b.x0 = Math.min(b.x0, p.x); b.x1 = Math.max(b.x1, p.x); b.y0 = Math.min(b.y0, p.y); b.y1 = Math.max(b.y1, p.y); b.z0 = Math.min(b.z0, p.z); b.z1 = Math.max(b.z1, p.z); } return b; };
+const aabbPts = cs => { const b = { x0: 1e9, x1: -1e9, y0: 1e9, y1: -1e9, z0: 1e9, z1: -1e9 }; for (const p of cs) { b.x0 = Math.min(b.x0, p.x); b.x1 = Math.max(b.x1, p.x); b.y0 = Math.min(b.y0, p.y); b.y1 = Math.max(b.y1, p.y); b.z0 = Math.min(b.z0, p.z); b.z1 = Math.max(b.z1, p.z); } return b; };
+const grow = (b, k) => ({ x0: b.x0 - k, x1: b.x1 + k, y0: b.y0 - k, y1: b.y1 + k, z0: b.z0 - k, z1: b.z1 + k });
+function ptBox(p, b) { const dx = Math.max(b.x0 - p.x, 0, p.x - b.x1), dy = Math.max(b.y0 - p.y, 0, p.y - b.y1), dz = Math.max(b.z0 - p.z, 0, p.z - b.z1); return Math.hypot(dx, dy, dz); }
+function segBox(a, c, b, n = 18) { let d = 1e9; for (let i = 0; i <= n; i++) { const t = i / n; d = Math.min(d, ptBox({ x: a.x + (c.x - a.x) * t, y: a.y + (c.y - a.y) * t, z: a.z + (c.z - a.z) * t }, b)); } return d; }
+function boxBox(a, b) {   // 2つの箱のすき間（重なれば負）
+  const gx = Math.max(a.x0 - b.x1, b.x0 - a.x1), gy = Math.max(a.y0 - b.y1, b.y0 - a.y1), gz = Math.max(a.z0 - b.z1, b.z0 - a.z1);
+  if (gx < 0 && gy < 0 && gz < 0) return Math.max(gx, gy, gz);
+  return Math.hypot(Math.max(gx, 0), Math.max(gy, 0), Math.max(gz, 0));
+}
+// 間口の空間：前後方向に傾いた下面（置き面）と上面（上の段の下側）。z＝ライン側0 → 通路側D
+function slotY(sl, z) { const t = clamp((z - sl.zA) / (sl.zB - sl.zA), 0, 1); return [lerp(sl.loA, sl.loB, t), lerp(sl.hiA, sl.hiB, t)]; }
+function ptInSlot(p, sl, t) { if (p.x < sl.x0 - t || p.x > sl.x1 + t || p.z < sl.z0 - t || p.z > sl.z1 + t) return false; const [lo, hi] = slotY(sl, p.z); return p.y >= lo - t && p.y <= hi + t; }
+const inRack = (p, r) => p.x > r.x0 && p.x < r.x1 && p.y > r.y0 && p.y < r.y1 && p.z > r.z0 && p.z < r.z1;
+function cornersOf(h) {   // 持った箱の8つの角（向きも含めて）
+  const out = [];
+  if (h.bb) { const b = h.bb; for (const x of [b.x0, b.x1]) for (const y of [b.y0, b.y1]) for (const z of [b.z0, b.z1]) out.push(V3(x, y, z)); return out; }
+  const d = h.userData.dim; h.updateWorldMatrix(true, false);
+  for (const x of [-1, 1]) for (const y of [-1, 1]) for (const z of [-1, 1]) out.push(V3(x * d.x / 2, y * d.y / 2, z * d.z / 2).applyMatrix4(h.matrixWorld));
+  return out;
+}
+function checkMoMa(m, held) {   // held: 持っている箱（Object3D）か { bb } か null
+  const ctx = COLL.ctx; if (!ctx) return { min: Infinity, hit: null };
+  const K = M(C.moma.keepOut), R = C.moma.linkR.map(M), body = m.bodyLocal(K), L_ = p => m.toLocal(p), inBody = b => aabbPts(cornersOf({ bb: b }).map(L_)), floor = { x0: -1e3, x1: 1e3, y0: -1e3, y1: 0.05, z0: -1e3, z1: 1e3 };
+  const deckObjs = m.deckBoxes().filter(b => b !== held), deckRaw = deckObjs.map(aabbOf), rackK = grow(ctx.rack, 0.03);
+  const deckL = deckObjs.map(b => aabbPts(cornersOf(b).map(p => m.toLocal(p)))), decks = deckL.map(b => grow(b, 0.005));   // 天面の箱は車体の座標で計算（旋回中も正しく）
+  const J = m.joints(); let min = Infinity, hit = null;
+  let minWhat = '';
+  const test = (d, what) => { if (d < min) { min = d; minWhat = what; } if (d < -0.0005 && !hit) hit = what; };
+  { const bl = m.bodyLocal(0), cs = []; for (const x of [bl.x0, bl.x1]) for (const z of [bl.z0, bl.z1]) cs.push(m.g.localToWorld(V3(x, bl.y1, z)));   // 車体（と天面の箱）が棚に当たらない（旋回中も）
+    test(boxBox(aabbPts(cs.concat(cs.map(p => p.clone().setY(0)))), ctx.rack) - 0.03, '車体が棚'); deckRaw.forEach(d => test(boxBox(d, ctx.rack) - 0.03, '天面の箱が棚')); }
+  for (const [a, c, r, n] of [[J.u0, J.u1, R[0], '上腕'], [J.el, J.w, R[1], '前腕'], [J.w, J.fl, R[2], '手首']]) {
+    test(segBox(L_(a), L_(c), body) - r, `${n}が車体の進入禁止域`); test(segBox(a, c, floor) - r, `${n}が床`); test(segBox(a, c, rackK) - r, `${n}が棚`);
+    decks.forEach(d => test(segBox(L_(a), L_(c), d) - r, `${n}が天面の箱`));
+  }
+  for (const [hb, n] of [[m.gripBox(), 'ハンドの胴'], [m.plateBox(), '爪の板']]) {   // ハンド：棚に入るのは間口の空間の中だけ
+    const hl = inBody(hb); test(boxBox(hl, body), `${n}が車体の進入禁止域`); decks.forEach(d => test(boxBox(hl, d), `${n}が天面の箱`)); test(hb.y0 - 0.05, `${n}が床`);
+    const inside = cornersOf({ bb: hb }).filter(p => inRack(p, ctx.rack));
+    if (inside.length && !ctx.slots.some(sl => inside.every(p => ptInSlot(p, sl, 0.003)))) test(-0.001, `${n}が棚`);
+  }
+  if (held) {
+    const bb = held.bb || aabbOf(held);
+    // 持った箱は天面の箱置きに置くので、進入禁止域ではなく車体そのものと10mm以上離す。積んだTP箱は8mm入り込む
+    test(segBox(J.u0, J.u1, bb) - R[0], '上腕が持った箱'); test(segBox(J.el, J.w, bb) - R[1], '前腕が持った箱');
+    test(boxBox(held.bb ? inBody(bb) : aabbPts(cornersOf(held).map(L_)), m.bodyLocal(0.01)), '箱が車体'); { const hl = held.bb ? inBody(bb) : aabbPts(cornersOf(held).map(L_)); deckL.forEach(d => test(boxBox(hl, d) + 0.009, '箱が天面の箱')); } test(bb.y0 - 0.0, '箱が床');
+    const inside = cornersOf(held).filter(p => inRack(p, ctx.rack));   // 棚の中にある角は、どれか1つの間口の空間に収まること
+    if (inside.length && !ctx.slots.some(sl => inside.every(p => ptInSlot(p, sl, 0.003)))) test(-0.001, '箱が棚');
+  }
+  return { min, hit, minWhat };
+}
+function collide(m, label) {
+  const r = checkMoMa(m, m.held);
+  if (COLL.step !== COLL.si) { COLL.step = COLL.si; COLL.stepMin = Infinity; }
+  if (r.min < COLL.stepMin) COLL.stepWhat = r.minWhat; if (r.min < COLL.total) COLL.totalWhat = r.minWhat + '（' + label + '）';
+  COLL.stepMin = Math.min(COLL.stepMin, r.min); COLL.total = Math.min(COLL.total, r.min);
+  if (r.hit && !COLL.hits.some(h => h.si === COLL.si)) { COLL.hits.push({ si: COLL.si, label, hit: r.hit, min: r.min, at: COLL.dbg ? COLL.dbg(m) : null }); warn(`干渉：「${label}」で${r.hit}`); }
+  const el = document.getElementById('clr');
+  if (el) { el.textContent = `アーム・ハンド・箱と、車体（進入禁止域${C.moma.keepOut}mm）・棚・床の最小すき間：この手順 ${Math.round(COLL.stepMin * 1000)}mm`; el.style.color = COLL.stepMin < 0 ? '#b02a2a' : '#1f6b42'; }
+}
+
+/* ===================== 箱を扱う動き（フック式ハンド・箱は常に水平・手先は棚の方向） ===================== */
+const endFace = (c, dim) => c.clone().add(V3(0, 0, dim.z / 2));
+function pathTo(m, toFn, label, ys, dur = 1.2) {   // 上がる → 横へ → 下がる（ys：移動するときの手首の高さ）
+  return [
+    A.arm(m, () => { const c = m.curWrist; return V3(c.x, Math.max(c.y, ys), c.z); }, dur * 0.5, label),
+    A.arm(m, () => { const t = toFn(); return V3(t.x, Math.max(t.y, ys), t.z); }, dur, label),
+    A.arm(m, toFn, dur * 0.6, label),
+  ];
+}
+function hookOn(m, box, cFn, label) {   // 端面の取っ手穴に爪を掛ける：手前下から近づき、当てて、爪を上げる
+  const d = box.userData.dim;
+  return [
+    A.arm(m, () => m.wristFor(cFn().add(V3(0, -0.01, 0.06)), d.z), 0.7, label),
+    A.arm(m, () => m.wristFor(cFn().add(V3(0, -0.01, 0)), d.z), 0.5, label),
+    A.arm(m, () => m.wristFor(cFn(), d.z), 0.35, label),
+    A.grip(m, box),
+  ];
+}
+function hookOff(m, label, dz = 0.07) {   // 爪を下げて抜き、手前へ戻す
+  return [A.arm(m, () => m.curWrist.clone().add(V3(0, -0.01, 0)), 0.3, label), A.arm(m, () => m.curWrist.clone().add(V3(0, 0, dz)), 0.5, label)];
+}
+// 棚の間口の、箱を置く位置（箱の中心）と、引き出し・押し込みに必要な台車の前後の移動量
+function laneSpot(lane, s) { return lane.wpos(s); }
+function preInsertDelta(c, dim, D) { return (D + 0.02 + dim.z / 2) - c.z; }   // 箱の奥の端が棚の面から 20mm 出る位置まで
+// 停止位置の探索：その間口で箱を持った姿勢（置いた位置・持ち上げた位置・引き出した位置）が、どれも当たらない停止位置
+// 停止位置の探索：MoMaは2輪駆動で横に動けないので、棚に向き直って（90°旋回）止まり、前進・後退で出し入れする。
+// cs：同じ停止位置（左右の位置と棚からの距離が同じ）で扱う間口の箱の中心。どの間口でも、箱を置いた・持ち上げた・引き出した姿勢と爪を掛けに行く姿勢が当たらないこと
+const FACE = Math.PI / 2;   // 棚に向いた車体の向き（車体の前＝棚）
+function findStance(m, cs, dim, D, liftY, absent = []) {   // absent：そのときには天面にない箱
+  const save = { p: m.g.position.clone(), h: m.g.rotation.y, w: m.curWrist.clone() }; absent.forEach(b => m.ignore.add(b)); m.g.rotation.y = FACE;
+  const near = M(C.moma.clearance + C.moma.baseL / 2), dels = cs.map(c => preInsertDelta(c, dim, D));
+  let best = null;
+  for (const dx of [0, 0.15, 0.3, 0.4, 0.45, 0.5, 0.55, 0.6, 0.625, 0.65, 0.675, 0.7, 0.75, 0.8, 0.9])
+    for (const sg of [1, -1]) for (const F of [near, near + 0.05, near + 0.1]) {
+      if (dx === 0 && sg < 0) continue;
+      let worst = Infinity, ok = true;
+      cs.forEach((c, ci) => { if (!ok) return; const del = dels[ci];
+        // 箱を持った姿勢（置いた・持ち上げた・引き出した）と、持たずに爪を掛けに行く姿勢（当てる前・当てた・台車が下がった）
+        for (const [dz, dy, hold, hz] of [[0, 0.012, 1, 0], [0, liftY, 1, 0], [del, liftY, 1, 0], [0, -0.01, 0, 0.06], [0, -0.01, 0, 0], [del, -0.01, 0, 0.06]]) {
+          m.g.position.set(cs[0].x + sg * dx, 0, D + F + dz);
+          const cc = c.clone().add(V3(0, dy, dz)), w = m.wristFor(cc.clone().add(V3(0, 0, hz)), dim.z);
+          if (!m.ik(w)) { ok = false; break; }
+          const r = checkMoMa(m, hold ? { bb: aabbC(cc, dim) } : null); if (r.hit) { ok = false; break; } worst = Math.min(worst, r.min);
+        } });
+      if (ok && worst >= 0.005 && (!best || (dx < best.adx - 1e-9) || (Math.abs(dx - best.adx) < 1e-9 && worst > best.min + 0.005))) best = { dx: sg * dx, adx: dx, F, min: worst, dels };
+      if (best && dx > best.adx) break;
+    }
+  m.g.position.copy(save.p); m.g.rotation.y = save.h; m.curWrist = save.w; m.ik(save.w); m.ignore.clear();
+  return best;
+}
 // 置き先：レーン／台車／任意の位置
 const toLane = (lane, sFn) => box => { lane.parent.attach(box); const s = sFn ? sFn() : lane.entryS; box.userData.s = s; box.position.copy(lane.posS(s)); box.rotation.set(lane.rx, 0, 0); lane.q.push(box); };
-const toDeck = (m, i) => box => { m.g.attach(box); box.position.copy(m.slots[i]); box.rotation.set(0, 0, 0); };
+const toDeck = (m, i) => box => { m.g.attach(box); box.position.copy(m.slots[i]); box.rotation.set(0, Math.PI / 2, 0); };
 const toSpot = (parent, p) => box => { parent.attach(box); box.position.copy(p); box.rotation.set(0, 0, 0); };
 // アームで箱を A→B へ移す一連の動き
 function transfer(m, box, fromFn, toFn, onRel, o = {}) {
@@ -569,7 +788,7 @@ function transfer(m, box, fromFn, toFn, onRel, o = {}) {
   ];
 }
 function scan(m, targetFn, label, flash = '読取OK') {
-  return [A.arm(m, () => targetFn().add(V3(0, -0.06, 0.42)), 1.0, label),
+  return [A.arm(m, () => targetFn().add(V3(-0.1, 0.2, 0.45)), 1.0, label),
     A.beam(() => m.camW(), targetFn, 1.1, label, flash, () => targetFn().add(V3(0, 0.09, 0)))];
 }
 function verify(m, boxFn, label, flash) { return [A.beam(() => m.camW(), () => wp(boxFn(), V3(0, -0.03, boxFn().userData.dim.z / 2)), 1.3, label, flash, () => wp(boxFn(), V3(0, 0.2, 0)))]; }
@@ -599,7 +818,7 @@ class Timeline {
   update(dt) {
     while (this.i < this.steps.length) {
       const s = this.steps[this.i];
-      if (!s._st) { s._st = true; s.start && s.start(); setCaption(this.i + 1, this.steps.length, s.label, s.who); }
+      if (!s._st) { s._st = true; COLL.si = this.i; s.start && s.start(); setCaption(this.i + 1, this.steps.length, s.label, s.who); }
       this.t += dt; dt = 0;
       const k = Math.min(1, this.t / (s.dur || 1e-4));
       s.update && s.update(ease(k), k);
@@ -614,216 +833,543 @@ const $ = s => document.querySelector(s);
 const stage = $('#stage'), panel = $('#panel'), compare = $('#compare');
 function setCaption(n, N, t, who) { $('#caption .n').textContent = n ? `手順 ${n}/${N}` : ''; $('#caption .t').textContent = t; $('#caption').classList.toggle('human', who === 'human'); }
 function renderWarns() { const el = $('#warns'); if (el) el.innerHTML = [...WARN].map(w => `<div>⚠ ${w}</div>`).join(''); }
-const sec = (t, items, cls = '') => `<h3 class="${cls}">${t}</h3><ul>${items.map(x => `<li>${x}</li>`).join('')}</ul>`;
+const sec = (t, items, cls = '') => `<h3 class="${cls}">${t}</h3><ul>${items.map(x => `<li>${typeof x === 'function' ? x() : x}</li>`).join('')}</ul>`;
 
-/* ===================== 本案：縦型省スペース型（CADと同じ規則で段を積む） ===================== */
+/* ===================== 本案：縦型・高さ活用型（CAD cad/shooter-space と同じ規則で段を積む） ===================== */
 const tpDim = t => { const d = C.tp.types[t]; return { x: M(d.W), y: M(d.H), z: M(d.L) }; };
-const mainSpec = () => ({ cols: C.plan.cols, deep: C.plan.deep, levels: C.plan.levels, mix: C.plan.mix });
-function layout(spec) {
-  const P = C.plan, t = C.tp.types[P.mainType], H = t.H, s = P.slopePct / 100;
-  const pitch = t.W + 2 * P.sideClear + P.pipeD;
-  const D = P.stopOff + spec.deep * t.L + (spec.deep - 1) * C.box.gap + P.rearClear;   // レールの長さ
-  const slope = { pick: s, return: -s, reserve: 0 }, lv = [];
-  for (const k of spec.levels) {
-    const sl = slope[k]; let zf;
-    if (!lv.length) zf = k === 'pick' ? C.shooter.pickHmin : P.floorMin;
+const S_OF = () => { const s = C.plan.slopePct / 100; return { pick: s, return: -s, returnf: 0, reserve: -s }; };
+const isRet = k => k.startsWith('return');
+const momaCenterMax = () => REACH.hi;                                   // reach.py の計算結果
+const momaCenterMin = () => Math.max(C.plan.momaCenterMin, REACH.lo);
+function standoffFor(zc) {   // 箱の中心の高さ zc で出し入れできる、棚の面から肩までの距離の最小（mm）
+  let best = null;
+  for (const [z, f0] of REACH.rows) if (Math.abs(z - zc) <= 12.5) best = best == null ? f0 : Math.max(best, f0);
+  if (best == null) { const r = REACH.rows.reduce((a, b) => Math.abs(b[0] - zc) < Math.abs(a[0] - zc) ? b : a); best = r[1]; }
+  return best;
+}
+function stackLv(rows, D, z0) {
+  const P = C.plan, H = C.tp.types[P.mainType].H, S = S_OF(), out = [];
+  for (const kinds of rows) {
+    let zf;
+    if (!out.length) zf = z0 != null ? z0 : P.floorMin;
     else {
-      const lo = lv[lv.length - 1], [gf, gb] = P.gap[lo.kind];
-      zf = Math.max(lo.zf + H + gf + P.structBelow, lo.zf + lo.s * D + H + gb + P.structBelow - sl * D);
-      if (k === 'pick') zf = Math.max(zf, C.shooter.pickHmin);
+      const lo = out[out.length - 1]; zf = -1e9;
+      kinds.forEach((ku, i) => { const kl = lo.kinds[i], [gf, gb] = P.gap[kl];
+        zf = Math.max(zf, lo.zf + H + gf + P.structBelow, lo.zf + S[kl] * D + H + gb + P.structBelow - S[ku] * D); });
     }
-    lv.push({ kind: k, s: sl, zf: Math.round(zf), zb: Math.round(zf + sl * D) });
+    if (kinds.some(k => k === 'pick' || isRet(k))) zf = Math.max(zf, C.shooter.pickHmin);
+    out.push({ kinds: [...kinds], zf });
   }
-  const height = Math.max(...lv.map(l => (l.s <= 0 ? l.zf : l.zb))) + H + 60;
-  const hasRes = spec.levels.includes('reserve');
-  const width = spec.cols * pitch + P.pipeD, depth = D + (hasRes ? P.panel : 0);
-  const typeAt = (c, li) => (spec.mix || {})[`${c}-${li}`] || P.mainType;
+  return out;
+}
+const lvZ = (l, k, y) => l.zf + S_OF()[k] * y;
+function design(spec) {
+  const P = C.plan, t = C.tp.types[P.mainType], H = t.H, S = S_OF(), cols = spec.cols;
+  const D = P.stopOff + spec.deep * t.L + (spec.deep - 1) * C.box.gap + P.rearClear, cmax = momaCenterMax();
+  const band = []; for (let z = C.shooter.pickHmin; z + H <= C.shooter.pickHmax; z += H + P.gap.pick[0] + P.structBelow) band.push(z);
+  const rowsBand = band.map((_, i) => spec.retMode === 'column' ? [...Array(cols - 1).fill('pick'), i === 0 ? 'pick' : 'returnf'] : Array(cols).fill('pick'));
+  if (spec.retMode === 'top') rowsBand.push(Array(cols).fill('return'));
+  const zb0 = Math.max(P.floorMin, momaCenterMin() - H / 2), zf0 = zb0 - S.reserve * D, R = () => Array(cols).fill('reserve');
+  let nLow = 0;
+  if (spec.low == null) { for (let n = 1; n < 8; n++) { const lv = stackLv([...Array(n)].map(R).concat(rowsBand), D, zf0); if (lv[n].zf > C.shooter.pickHmin + 0.01) break; nLow = n; } }
+  else nLow = spec.low;
+  let rows = [...Array(nLow)].map(R).concat(rowsBand), nHigh = 0;
+  const z0 = nLow ? zf0 : null;
+  while (spec.high == null || nHigh < spec.high) {
+    const tr = stackLv(rows.concat([...Array(nHigh + 1)].map(R)), D, z0), top = tr[tr.length - 1];
+    const topBox = Math.max(...tr.flatMap(l => l.kinds.map(k => Math.max(lvZ(l, k, 0), lvZ(l, k, D))))) + H;
+    if (top.zf + S.reserve * D + H / 2 + P.hookLift > cmax || topBox + 60 > P.rackMaxH) break;   // 持ち上げた分も届くこと
+    nHigh++;
+  }
+  rows = rows.concat([...Array(nHigh)].map(R));
+  const lv = stackLv(rows, D, z0);
+  const pitch = t.W + 2 * P.sideClear + P.pipeD, width = cols * pitch + P.pipeD;
+  const closed = lv.some(l => l.kinds.includes('reserve')), depth = D + (closed ? P.panel : 0);
+  const height = Math.max(...lv.flatMap(l => l.kinds.map(k => Math.max(lvZ(l, k, 0), lvZ(l, k, D))))) + H + 60;
   const cap = tn => Math.floor((D - P.stopOff - 20 + C.box.gap) / (C.tp.types[tn].L + C.box.gap));
   const lanes = []; let sku = 0;
-  lv.forEach((l, li) => { for (let c = 0; c < spec.cols; c++) {
-    const tn = l.kind === 'return' ? P.mainType : typeAt(c, li), cp = cap(tn);
-    lanes.push({ li, c, kind: l.kind, type: tn, cap: cp, n: l.kind === 'pick' ? cp : 0, sku: l.kind === 'pick' ? sku++ : null });
-  } });
-  let rest = Math.max(0, P.nBox - lanes.reduce((a, x) => a + x.n, 0));
-  for (const x of lanes) if (x.kind === 'reserve' && rest > 0) { x.n = Math.min(x.cap, rest); rest -= x.n; }
-  const picks = lv.filter(l => l.kind === 'pick'), ret = lv.find(l => l.kind === 'return'), res = lv.filter(l => l.kind === 'reserve');
-  return { spec, lv, pitch, D, width, depth, height, lanes, sku, H, picks, ret, res,
-    boxes: lanes.reduce((a, x) => a + x.n, 0), capacity: lanes.filter(x => x.kind !== 'return').reduce((a, x) => a + x.cap, 0),
-    area: width * depth / 1e6, areaAisle: width * (depth + C.moma.aisleTurn) / 1e6,
-    openTop: Math.round(picks[picks.length - 1].zf + H) };
+  lv.forEach((l, li) => l.kinds.forEach((k, c) => { const tn = k === 'pick' ? ((spec.mix || {})[`${c}-${li}`] || P.mainType) : P.mainType;
+    lanes.push({ li, c, kind: k, type: tn, cap: cap(tn), sku: k === 'pick' ? sku++ : null }); }));
+  const pick = lanes.filter(x => x.kind === 'pick'), res = lanes.filter(x => x.kind === 'reserve'), ret = lanes.filter(x => isRet(x.kind));
+  const capacity = [...pick, ...res].reduce((a, x) => a + x.cap, 0), area = width * depth / 1e6, boxVol = t.L * t.W * t.H / 1e9;
+  const centers = lanes.filter(x => !isRet(x.kind)).map(x => lvZ(lv[x.li], x.kind, D) + H / 2);
+  return { spec, D, lv, lanes, pitch, width, depth, height, sku, capacity, area, H, nLow, nHigh, nBand: band.length,
+    areaAisle: width * (depth + C.moma.aisleTurn) / 1e6, perM2: capacity / area, volEff: capacity * boxVol / (width * depth * height / 1e9),
+    retLine: Math.max(0, ...ret.map(x => lv[x.li].zf)), pickTop: Math.max(...pick.map(x => lv[x.li].zf)) + H,
+    momaRange: [Math.min(...centers), Math.max(...centers)], cmax, retLanes: ret.length };
+}
+const mainSpec = () => ({ cols: C.plan.cols, deep: C.plan.deep, retMode: 'top', mix: C.plan.mix });
+// 予備在庫段をどの品番に割り当てるか：同じ列の中で、下の予備は下の取り出し段から順に、上の予備は上の取り出し段から順に
+function reserveMap(Lo) {
+  const map = {}, levels = Lo.lv.map((l, li) => ({ li, k: l.kinds[0] }));
+  const picks = levels.filter(x => x.k === 'pick').map(x => x.li), lows = levels.filter(x => x.k === 'reserve' && x.li < picks[0]).map(x => x.li);
+  const highs = levels.filter(x => x.k === 'reserve' && x.li > picks[picks.length - 1]).map(x => x.li);
+  lows.forEach((li, i) => map[li] = picks[Math.min(i, picks.length - 1)]);
+  highs.forEach((li, j) => map[li] = picks[Math.max(0, picks.length - 1 - j)]);
+  return map;   // 予備段の段番号 → 取り出し段の段番号（列は同じ）
 }
 function momaLabels(m, toolText) {
-  label(m.g, `LexxMoMa 台車 ${C.moma.baseW}×${C.moma.baseL}mm（仮）`, 'moma', V3(0.25, 0.42, M(C.moma.baseW) / 2));
+  label(m.g, `LexxMoMa R1：W${C.moma.baseW}×D${C.moma.baseL}×H${C.moma.bodyH}mm（アームを除く）`, 'moma', V3(0.1, M(C.moma.bodyH) - 0.2, M(C.moma.baseW) / 2));
   label(m.tool, toolText, 'moma', V3(0.08, 0.1, 0));
-  label(m.elbow, `アーム：リーチ${C.moma.armReach}mm・可搬${C.moma.payloadKg}kg（仮）`, 'moma', V3(0, 0.07, 0));
+  label(m.elbow, `${C.moma.arm}（車体の中心）・可搬${C.moma.payloadKg}kg`, 'moma', V3(0, 0.07, 0));
+  label(m.g, `天面の箱置き（${C.moma.maxBoxes}段積み・仮）`, 'moma', V3(m.slots[0].x, m.slots[0].y + 0.15, 0.2));
 }
 const stopLabel = (root, x, z) => label(V3(x, 0.01, z + M(C.moma.baseW) / 2 + 0.12), 'MoMa停止位置（床の目印）', 'moma');
 const skuCode = (c, li) => `${'ABCDEFGH'[c]}-${li + 1}0${c + 1}`;
+const SKU_COLORS = ['#2F6FB3', '#C2577F', '#E8A33D', '#8C6BB1', '#3C9A9B', '#A67C52', '#5A7FBF', '#D9644A', '#6E8F3A', '#B5479A', '#4D8BC9', '#C98A2B'];
 function buildMain(root) {
-  const P = C.plan, Lo = layout(mainSpec()), base = layout(P.compare[0]);
+  const P = C.plan, Lo = design(mainSpec()), base = design(P.compare[0]), rmap = reserveMap(Lo);
   const D = M(Lo.D), pitch = M(Lo.pitch), laneW = M(Lo.pitch - P.pipeD), H = M(Lo.height), main = tpDim(P.mainType);
   env(root, { zB: D });
   const x0 = -M(Lo.width - P.pipeD) / 2, xs = [...Array(P.cols + 1)].map((_, i) => x0 + i * pitch), xc = c => x0 + pitch * (c + 0.5);
-  const lanes = {}, resv = {};
-  const key = (li, c) => `${li}-${c}`;
+  const lanes = {}, key = (li, c) => `${li}-${c}`;
+  const skuOfLane = (li, c) => { const pl = Lo.lv[li].kinds[c] === 'pick' ? li : rmap[li]; return Lo.lanes.find(x => x.li === pl && x.c === c); };
+  const colorOf = (li, c) => { const s = skuOfLane(li, c); return s.type !== P.mainType ? COL.tp[s.type] : SKU_COLORS[s.sku % SKU_COLORS.length]; };
+  const tc = 0, liP = Lo.lv.findIndex(l => l.kinds[0] === 'pick');
+  const demoRes = +Object.keys(rmap).find(li => rmap[li] === liP);   // 例に使う予備段（最下段の取り出し段の予備）
   for (const x of Lo.lanes) {
-    const l = Lo.lv[x.li], bx = tpDim(x.type), col = COL.tp[x.type] || COL.blue, zf = M(l.zf), zb = M(l.zb);
-    if (x.kind === 'return') {
-      const lane = makeLane(root, { x: xc(x.c), w: laneW, zF: D, yF: zb, zB: 0, yB: zf, type: 'roller', box: bx, stopOff: 0.03 });
-      addBox(root, laneW, 0.045, 0.014, '#6f7c86', xc(x.c), zb + 0.02, D - 0.008);
-      lanes[key(x.li, x.c)] = lane; continue;
+    const l = Lo.lv[x.li], k = x.kind, bx = tpDim(x.type), zf = M(l.zf), zb = M(lvZ(l, k, Lo.D));
+    let lane;
+    if (k === 'reserve' || k === 'return') {   // 通路側（低い方）が出口
+      lane = makeLane(root, { x: xc(x.c), w: laneW, zF: D, yF: zb, zB: 0, yB: zf, type: 'roller', box: bx, stopOff: 0.03, railColor: k === 'reserve' ? shade(COL.retro, 0.2) : COL.frame });
+      addBox(root, laneW, M(P.exitStopH), 0.014, '#6f7c86', xc(x.c), zb + M(P.exitStopH) / 2, D - 0.008);
+      if (k === 'reserve') {
+        addBox(root, laneW, 0.04, 0.014, '#6f7c86', xc(x.c), zf + 0.02, 0.008);
+        const s = skuOfLane(x.li, x.c), n = (x.li === demoRes && x.c === tc) ? 1 : x.cap;
+        for (let i = 0; i < n; i++) putOnLane(lane, makeBox(bx, { color: colorOf(x.li, x.c), code: skuCode(x.c, s.li) }), i);
+        plane(root, 0.16, 0.05, texMat([`予備 ${skuCode(x.c, s.li)}`], { bg: colorOf(x.li, x.c), fg: '#fff', w: 192, h: 60, font: 26 }), xc(x.c), zb - 0.03, D + 0.02);
+      }
+    } else if (k === 'returnf') {
+      lane = makeLane(root, { x: xc(x.c), w: laneW, zF: 0, yF: zf, zB: D, yB: zb + 1e-6, type: 'flat', box: bx, plateColor: '#e3eaef' });
+    } else {
+      lane = makeLane(root, { x: xc(x.c), w: laneW, zF: 0, yF: zf, zB: D, yB: zb, type: 'roller', box: bx, stopOff: M(P.stopOff) });
+      addBox(root, laneW, 0.04, 0.014, '#6f7c86', xc(x.c), zf + 0.02, 0.008);
+      for (let i = 0; i < x.cap; i++) putOnLane(lane, makeBox(bx, { color: colorOf(x.li, x.c), code: skuCode(x.c, x.li) }), i);
     }
-    const lane = makeLane(root, { x: xc(x.c), w: laneW, zF: 0, yF: zf, zB: D, yB: zb, type: x.kind === 'reserve' ? 'flat' : 'roller', box: bx,
-      stopOff: M(P.stopOff), plateColor: '#dde6ee', railColor: x.kind === 'reserve' ? shade(COL.retro, 0.2) : COL.frame });
-    addBox(root, laneW, 0.04, 0.014, '#6f7c86', xc(x.c), zf + 0.02, 0.008);
     lanes[key(x.li, x.c)] = lane;
-    const sk = { color: col === COL.blue ? COL.sku[(x.c + x.li) % COL.sku.length] : col };
-    if (x.kind === 'pick') for (let i = 0; i < x.n; i++) putOnLane(lane, makeBox(bx, { ...sk, code: skuCode(x.c, x.li) }), i);
-    else {
-      const pos = i => lane.posS(lane.L - 0.02 - bx.z / 2 - i * (bx.z + M(C.box.gap)));
-      const bs = [...Array(x.n)].map((_, i) => { const b = makeBox(bx, { color: COL.sku[(x.c + x.li) % COL.sku.length], code: skuCode(x.c, 2 + (x.li % 3)) }); root.add(b); b.position.copy(pos(i)); return b; });
-      resv[key(x.li, x.c)] = { lane, boxes: bs, pos };
-    }
   }
   posts(root, xs, [0, D], H);
-  const pk1 = Lo.picks[0], panTop = M(pk1.zf - P.structBelow - 10);
-  const pan = new THREE.MeshStandardMaterial({ color: '#dfe7ee', transparent: true, opacity: 0.55, roughness: 0.3 });
-  addBox(root, M(Lo.width), panTop - 0.06, M(P.panel), pan, 0, 0.06 + (panTop - 0.06) / 2, -M(P.panel) / 2);
-  const r2 = Lo.res[Lo.res.length - 1], mkZ = M((r2.zf + Lo.H + pk1.zf - P.structBelow) / 2), mk = [];
-  for (const x of [xs[0], xs[xs.length - 1]]) { addBox(root, 0.11, 0.11, 0.01, mat(COL.retro), x, mkZ, D + 0.03); mk.push(makeMarker(root, x, mkZ, D + 0.036, 0.085, mk.length + 71)); }
+  const pan = new THREE.MeshStandardMaterial({ color: '#dfe7ee', transparent: true, opacity: 0.5, roughness: 0.3 });
+  const pk1 = Lo.lv[liP], liR = Lo.lv.findIndex(l => isRet(l.kinds[0]));
+  const lowTop = M(pk1.zf - P.structBelow - 10), highBot = M(Lo.lv[liR].zf + Lo.H + 30);
+  if (Lo.nLow) addBox(root, M(Lo.width), lowTop - 0.06, M(P.panel), pan, 0, 0.06 + (lowTop - 0.06) / 2, -M(P.panel) / 2);
+  if (Lo.nHigh) addBox(root, M(Lo.width), H - highBot, M(P.panel), pan, 0, highBot + (H - highBot) / 2, -M(P.panel) / 2);
+  const mkZ = lowTop - 0.04, mk = [];
+  for (const x of [xs[0], xs[xs.length - 1]]) { addBox(root, 0.1, 0.1, 0.01, mat(COL.retro), x, mkZ, D + 0.03); mk.push(makeMarker(root, x, mkZ, D + 0.036, 0.08, mk.length + 71)); }
   pickBand(root, M(-Lo.width / 2), M(Lo.width / 2), 0);
-  // 床面積：本案（実線）と A 従来型（破線）
-  const bw = M(base.width), bd = M(base.depth), dep = M(Lo.depth);
+  const bw = M(base.width), bd = M(base.depth);
   rectLine(root, -M(Lo.width) / 2, M(Lo.width) / 2, -M(P.panel), D, COL.blue, false);
   rectLine(root, -bw / 2, bw / 2, 0, bd, '#8a99a5', true);
-  const gp = new THREE.Mesh(new THREE.PlaneGeometry(bw, bd), new THREE.MeshBasicMaterial({ color: '#8a99a5', transparent: true, opacity: 0.08, depthWrite: false }));
-  gp.rotation.x = -Math.PI / 2; gp.position.set(0, 0.002, bd / 2); root.add(gp);
-  label(V3(bw / 2 - 0.1, 0.01, bd - 0.05), `A 従来型（同じ${base.boxes}箱）の床 ${Math.round(base.width)}×${Math.round(base.depth)}mm＝${base.area.toFixed(2)}m²`, '');
-  label(V3(-M(Lo.width) / 2 + 0.15, 0.01, D * 0.5), `本案の床 ${Math.round(Lo.width)}×${Math.round(Lo.depth)}mm＝${Lo.area.toFixed(2)}m²（${Math.round(Lo.area / base.area * 100)}%）`, 'moma');
-  // ラベル
-  const L = (li, c) => lanes[key(li, c)], liRet = Lo.lv.indexOf(Lo.ret), liP = Lo.lv.indexOf(pk1);
-  label(L(0, 3).posS(0.3).add(V3(0, 0.12, 0)), `足元の予備在庫段（${Lo.res.map(l => l.zf).join('・')}mm）`, 'moma');
-  label(L(liRet, 3).posS(0.55).add(V3(0, 0.12, 0)), `空箱返却段（逆傾斜・ライン側 ${Lo.ret.zf}mm）`);
-  label(L(liP + 2, 3).posS(0.35).add(V3(0, 0.13, 0)), `取り出し段：傾斜ローラー ${P.slopePct}%・奥2箱`);
-  const lng = Object.keys(P.mix).find(k => P.mix[k] === 'TP-391.5B');
-  if (lng) { const [c, li] = lng.split('-').map(Number); if (L(li, c).q[0]) label(L(li, c).q[0], 'TP-391.5B（長さ1005）は1箱', '', V3(0, 0.08, 0.35)); }
-  const sml = Object.keys(P.mix).find(k => P.mix[k] === 'TP-331.5B');
-  if (sml) { const [c, li] = sml.split('-').map(Number); if (L(li, c).q[0]) label(L(li, c).q[0], 'TP-331.5B（335角）は3箱', '', V3(0, 0.08, 0)); }
-  label(V3(M(Lo.width) / 2 - 0.2, panTop / 2, -0.02), 'ライン側は閉じ板', 'human');
+  label(V3(bw / 2 - 0.1, 0.01, bd - 0.05), `A 従来型（${base.capacity}箱）の床 ${base.area.toFixed(2)}m²`, '');
+  label(V3(-M(Lo.width) / 2 + 0.2, 0.01, D * 0.5), `本案の床 ${Lo.area.toFixed(2)}m²・${Lo.capacity}箱（${f1(Lo.perM2)}箱/m²）`, 'moma');
+  const L = (li, c) => lanes[key(li, c)], last = P.cols - 1;
+  label(L(0, last).posS(0.4).add(V3(0, 0.12, 0)), `足元の予備在庫（MoMa専用・押し込み式・${Lo.nLow}段）`, 'moma');
+  label(L(Lo.lv.length - 1, last).posS(0.4).add(V3(0, 0.12, 0)), `頭上の予備在庫（MoMa専用・${Lo.nHigh}段）`, 'moma');
+  label(L(liR, last).posS(0.5).add(V3(0, 0.12, 0)), `空箱返却段（人の作業域のすぐ上・ライン側 ${Math.round(Lo.lv[liR].zf)}mm）`, 'human');
+  label(L(liP + 1, last).posS(0.35).add(V3(0, 0.12, 0)), `取り出し段：傾斜ローラー${P.slopePct}%・奥${P.deep}箱`);
+  label(V3(M(Lo.width) / 2 - 0.2, lowTop / 2, -0.02), 'ライン側は閉じ板', 'human');
   label(mk[1], '棚マーカー（左右2枚）', 'retro', V3(0, 0.07, 0));
-  dimLine(root, V3(-M(Lo.width) / 2 - 0.3, 0.01, 0), V3(-M(Lo.width) / 2 - 0.3, 0.01, D), `奥行き ${Math.round(Lo.D)}mm（＋閉じ板${P.panel}）`, V3(1, 0, 0));
-  dimLine(root, V3(-M(Lo.width) / 2, H + 0.08, 0), V3(M(Lo.width) / 2, H + 0.08, 0), `棚幅 ${Math.round(Lo.width)}mm（${P.cols}列×${Lo.picks.length}段＝${Lo.sku}品番）`);
-  dimLine(root, V3(xs[0], H + 0.2, 0), V3(xs[1], H + 0.2, 0), `間口ピッチ ${Lo.pitch}mm＝335＋隙間＋Φ28`);
-  dimLine(root, V3(M(Lo.width) / 2 + 0.16, 0, 0), V3(M(Lo.width) / 2 + 0.16, M(pk1.zf), 0), `取り出し段の最下 ${pk1.zf}mm`);
-  dimLine(root, V3(M(Lo.width) / 2 + 0.34, 0, 0), V3(M(Lo.width) / 2 + 0.34, M(Lo.openTop), 0), `取り出し段の箱の上端 ${Lo.openTop}mm`);
+  label(V3(xc(1), M(lvZ(Lo.lv[0], 'reserve', Lo.D)) - 0.06, D + 0.04), '色＝品番。予備在庫は同じ列の取り出し段と同じ色', 'retro');
+  dimLine(root, V3(-M(Lo.width) / 2 - 0.3, 0.01, 0), V3(-M(Lo.width) / 2 - 0.3, 0.01, D), `奥行き ${Math.round(Lo.D)}mm`, V3(1, 0, 0));
+  dimLine(root, V3(-M(Lo.width) / 2, H + 0.08, 0), V3(M(Lo.width) / 2, H + 0.08, 0), `棚幅 ${Math.round(Lo.width)}mm（${P.cols}列・${Lo.sku}品番）`);
+  dimLine(root, V3(M(Lo.width) / 2 + 0.16, 0, 0), V3(M(Lo.width) / 2 + 0.16, M(C.shooter.pickHmax), 0), `人の作業域 〜${C.shooter.pickHmax}mm`);
   dimLine(root, V3(M(Lo.width) / 2 + 0.16, 0, D), V3(M(Lo.width) / 2 + 0.16, H, D), `高さ ${Math.round(Lo.height)}mm`);
-  if (Lo.ret.zf > C.shooter.pickHmax) warn(`空箱返却段のライン側の置き面 ${Lo.ret.zf}mm が、人の取り出し域の上限 ${C.shooter.pickHmax}mm を超えています（CADでも同じ。下げる配置を検討中）`);
+  dimLine(root, V3(M(Lo.width) / 2 + 0.36, M(Lo.momaRange[0]), D), V3(M(Lo.width) / 2 + 0.36, M(Lo.momaRange[1]), D), `MoMaが扱う箱の中心 ${Math.round(Lo.momaRange[0])}〜${Math.round(Lo.momaRange[1])}mm`);
   if (C.tp.fullKg > C.moma.payloadKg) warn(`部品入りTP箱 ${C.tp.fullKg}kg がアームの可搬 ${C.moma.payloadKg}kg を超えています`);
   // 人・MoMa
-  const tc = 1, T = L(liP + 1, tc), R = L(liRet, tc), RV = resv[key(Lo.res.length - 1, tc)] || resv[key(0, tc)];
   const W0 = makeWorker(); W0.g.position.set(xc(tc), 0, -0.42); root.add(W0.g);
-  label(W0.g, '作業者（取り出し段から部品を取る）', 'human', V3(0, 1.85, 0));
-  const m = makeMoMa({ box: main, tool: 'gripper' }), zM = momaZ(D), stopX = 0 - ARM_X();
-  m.g.position.set(stopX, 0, zM); root.add(m.g); stopMark(root, stopX, zM); stopLabel(root, stopX, zM);
-  const deck = [makeBox(main, { color: COL.sku[(tc + 1) % 6], code: skuCode(tc, 3) }), makeBox(main, { color: COL.sku[2], code: skuCode(0, 2) }), makeBox(main, { color: COL.sku[3], code: skuCode(3, 4) }), makeBox(main, { color: COL.sku[4], code: skuCode(2, 2) })];
-  m.fill(deck); m.ik(m.homeW()); momaLabels(m, 'グリッパ（TP幅335用）＋手先カメラ');
-  const empty = T.q[0], rb = RV.boxes[0], rpos = RV.pos(0);
-  const steps = [
-    A.call(() => { m.g.position.x = -4.3; }, '消費連動：空箱の信号を受けてMoMaが出発', 0.6),
-    A.drive(m, stopX, 3.0, 'MoMaが棚の中央に停止（1か所で全12品番と予備段に届く）'),
-    A.call(() => empty.userData.setEmpty(), 'ライン側：先頭の箱の部品を使い切る（時間は省略）', 0.9, 'human'),
-    ...workerPick(W0, T, '作業者が空箱を取り出す'),
-    ...workerPlace(W0, R, `空箱を返却段（ライン側 ${Lo.ret.zf}mm）へ置く`, 1.6),
-    A.advance(R, 1.6, '空箱は逆傾斜で通路側の出口へ流れる'),
-    A.advance(T, 1.2, '次の箱が傾斜ローラーで手前へ寄る', 'human'),
-    ...scan(m, () => wp(mk[0]), '手先カメラで棚の左右マーカーを読み、全間口と予備段の位置を計算'),
-    ...transfer(m, rb, () => rpos.clone(), () => T.wpos(T.entryS), toLane(T), { fromOut: V3(0, 0.03, 0.3), l0: `足元の予備在庫段（${Lo.res[Lo.res.length - 1].zf}mm）から同じ品番の箱を取る`, l2: '取り出し段の通路側の入口へ運ぶ', l3: '入口に置く' }),
-    A.advance(T, 1.4, '箱は重力で列の最後尾へ（人の手元はすぐ2箱に戻る）'),
-    ...verify(m, () => deck[0], '台車の箱のバーコードを照合', `照合OK：${deck[0].userData.code}`),
-    ...transfer(m, deck[0], () => wp(m.g, m.slots[0]), () => rpos.clone(), toSpot(root, rpos.clone()), { l2: '予備在庫段の手前へ運ぶ', l3: '台車の箱で予備在庫段を補充' }),
-    ...transfer(m, empty, () => R.wpos(R.sAt(0)), () => wp(m.g, m.slots[0]), toDeck(m, 0), { fromLane: R, fromOut: V3(0, 0.03, 0.25), toApp: V3(0, 0.12, 0.14), l0: `返却段の通路側の出口（${Lo.ret.zb}mm）で空箱をつかむ`, l2: '空箱を台車へ運ぶ', l3: '台車に空箱を積む（かんばん回収）' }),
-    A.arm(m, () => m.homeW(), 0.9, '手先を走行姿勢に戻す'),
-    A.drive(m, 4.3, 2.8, 'MoMaは次の棚へ'),
+  label(W0.g, '作業者（取り出しは1500mm以下、空箱はすぐ上の返却段へ）', 'human', V3(0, 1.85, 0));
+  const m = makeMoMa({ box: main }), zNear = D + M(C.moma.clearance + C.moma.baseL / 2);
+  const sP1 = skuOfLane(liP, tc), deck = [0, 1].slice(0, C.moma.maxBoxes).map(() => makeBox(main, { color: colorOf(liP, tc), code: skuCode(tc, sP1.li) }));
+  m.g.position.set(xc(tc), 0, zNear); root.add(m.g);
+  m.fill(deck); m.ik(m.homeW()); momaLabels(m, 'フック式ハンド（取っ手穴に爪を掛けて端面で持つ・仮）＋手先カメラ');
+  window.__momaTarget = () => m.tcp.getWorldPosition(V3()).add(V3(0, -0.1, 0.1));
+  // 干渉の確認に使う棚の形：外形と、各間口の空間（箱とハンドが入ってよい範囲。置き面と上の段の下側は傾いている）
+  COLL.ctx = { rack: { x0: -M(Lo.width) / 2, x1: M(Lo.width) / 2, y0: 0, y1: H, z0: -M(P.panel), z1: D }, slots: Lo.lanes.map(x => {
+    const l = Lo.lv[x.li], up = Lo.lv[x.li + 1], k = x.kind, ku = up && up.kinds[x.c];
+    return { x0: xc(x.c) - laneW / 2, x1: xc(x.c) + laneW / 2, z0: -0.01, z1: D + 0.05, zA: 0, zB: D,
+      loA: M(lvZ(l, k, 0)) - 0.002, loB: M(lvZ(l, k, Lo.D)) - 0.002, hiA: up ? M(lvZ(up, ku, 0) - P.structBelow) : H, hiB: up ? M(lvZ(up, ku, Lo.D) - P.structBelow) : H };
+  }) };
+  COLL.hits = []; COLL.total = Infinity; COLL.step = '';
+  // 使う間口：足元の予備→取り出し段1、頭上の予備→取り出し段2、返却段の出口
+  const T = L(liP, tc), T2 = L(liP + 1, tc), R = L(liR, tc), RV = L(demoRes, tc);
+  const liHV = +Object.keys(rmap).find(li => +li > liR && rmap[li] === liP + 1), HV = L(liHV, tc);
+  const lift = M(P.hookLift), bz = main.z, Wr = c => m.wristFor(c, bz);
+  const PULL = { low: M(C.moma.syncPull.low), high: M(C.moma.syncPull.high), ret: M(C.moma.syncPull.ret) };
+  // 停止位置：棚に向いて止まり、同じ停止位置で扱う間口をまとめる（左右の位置と棚からの距離が同じ。間口ごとに前後の移動量だけ違う）
+  const group = (items, absent = [], pull = 0) => {   // pull：出し入れの前後の移動のうち、腕が受け持つ量（シンクロ動作）
+    const cs = items.map(([lane, s]) => lane.wpos(s)), st = findStance(m, cs, main, D, lift, absent);
+    if (!st) warn(`停止位置が見つからない：${items.map(i => i[2]).join('・')}`);
+    const g0 = st || { dx: 0, F: M(C.moma.clearance + C.moma.baseL / 2), dels: cs.map(() => 0.6) };
+    return items.map(([, , name], i) => ({ x: cs[0].x + g0.dx, zN: D + g0.F, zR: D + g0.F + g0.dels[i], zT: D + g0.F + Math.max(...g0.dels), del: g0.dels[i], pull: Math.min(pull, g0.dels[i]), dx: g0.dx, F: g0.F, name, zc: cs[i].y * 1000 }));
+  };
+  const [stLR, stP1] = group([[RV, RV.sAt(0), '足元の予備'], [T, T.entryS, '取り出し段1']], [], PULL.low);
+  const [stHV, stP2] = group([[HV, HV.sAt(0), '頭上の予備'], [T2, T2.entryS, '取り出し段2']], deck, PULL.high);   // 高い段のときは天面は空
+  const [stRet] = group([[R, R.sAt(0), '返却段の出口']], [deck[0]], PULL.ret);   // 空箱の2箱目のときは天面に1箱
+  window.__stances = [stLR, stP1, stHV, stP2, stRet]; window.__dbg = { m, RV, T, T2, HV, R, D, main, lift, deck };
+  stopMark(root, stLR.x, stLR.zN, true); stopLabel(root, stLR.x, stLR.zN); stopMark(root, stHV.x, stHV.zN, true);
+  label(V3(stLR.x, 0.01, stLR.zN - M(C.moma.baseL) / 2 - 0.05), `低い段：列の正面から${Math.round(Math.abs(stLR.dx) * 1000)}mm横で、棚に向いて停止`, 'moma');
+  const stTxt = st => `${Math.abs(st.dx) > 0.01 ? `列の正面から${Math.round(Math.abs(st.dx) * 1000)}mm横` : '列の正面'}・棚から${Math.round((st.F - M(C.moma.baseL) / 2) * 1000)}mm`;
+  // 前進・後退（棚に向いているので、2輪駆動のまま棚の奥行きの向きに動ける）
+  const goBase = (st, near, label, onUpd) => A.base(m, () => V3(st.x, 0, near ? st.zN : st.zR), 1.2, label, onUpd);
+  const baseTo = (st, label) => A.base(m, () => V3(st.x, 0, st.zR), 0.8, label);   // 同じ停止位置の中で、前後の位置だけ合わせる
+  // 別の停止位置へ：走行姿勢 → 下がる → 90°旋回して通路の向きへ → 通路に沿って走る → 90°旋回して棚に向き直る
+  const travel = (from, to, label) => [
+    A.sync(m, () => V3(from.x, 0, Math.max(from.zT, to.zT)), p => riseAt(p, yTr), 1.3, '後退しながら、手先を肩より上へ上げる（シンクロ）'),
+    A.arc(m, () => m.homeW(), 1.0, '手先を走行姿勢に戻す', { back: true, zMin: zOut }),
+    A.turn(m, 0, 1.4, 'その場で90°旋回して通路の向きへ（2輪駆動は横に動けない）'),
+    A.drive(m, to.x, 1.6, label),
+    A.turn(m, FACE, 1.4, 'その場で90°旋回して棚に向き直る'),
   ];
-  return { steps, center: V3(0, 0.95, D / 2 + 0.3), span: Math.max(0.85, M(Lo.width) / 2.2) };
+  // 持ち上げながら箱を水平に戻す（レーンの傾きのまま掴むため）
+  const liftLevel = (toFn, label) => { const a = A.arm(m, toFn, 0.5, label), s0 = a.start, u0 = a.update; let q0, q1;
+    a.start = () => { s0(); const b = m.held; q0 = b.quaternion.clone(); q1 = m.tcp.getWorldQuaternion(new THREE.Quaternion()).invert(); };
+    a.update = k => { m.held.quaternion.copy(q0).slerp(q1, k); u0(k); }; return a; };
+  let c0 = V3();   // 掴んだときの箱の中心（持ち上げる量の基準）
+  const gripFrom = (box, lane) => Object.assign(A.grip(m, box), { end() { c0 = wp(box); m.tcp.attach(box); m.held = box; const i = lane ? lane.q.indexOf(box) : -1; if (i >= 0) lane.q.splice(i, 1); } });
+  const unhook = () => [A.arm(m, () => m.curWrist.clone().add(V3(0, -0.01, 0)), 0.3, '爪を下げて取っ手穴から抜く'), A.arm(m, () => m.curWrist.clone().add(V3(0, 0, 0.06)), 0.4, '手先を少し戻す')];
+  // 間口から取り出す（シンクロ）：台車の前後の位置合わせと同時に手先を間口の正面へ → 前進しながら腕を伸ばして手先を間口へ
+  // → 爪を掛けて持ち上げる → 後退しながら腕を引き寄せ、箱をまっすぐ引き出す。前後の移動量 del を台車（del−pull）と腕（pull）で分ける
+  const zA = st => st.zN + st.del - st.pull;   // 箱が棚の外に出たときの台車の位置
+  const takeFrom = (box, lane, st, what, via = []) => {
+    const c = () => wp(box);
+    return [
+      ...via,
+      A.sync(m, () => V3(st.x, 0, zA(st)), () => Wr(c().add(V3(0, -0.01, st.del + 0.06))), 1.2, `${what}へ：台車の前後の位置合わせと同時に、手先を間口の正面へ`),
+      A.sync(m, () => V3(st.x, 0, st.zN), () => Wr(c().add(V3(0, -0.01, 0.06))), 0.9, st.pull ? `前進しながら腕を伸ばし、手先を間口に入れる（${stTxt(st)}）` : `前進：手先を間口に入れる（${stTxt(st)}）`),
+      A.arm(m, () => Wr(c().add(V3(0, -0.01, 0))), 0.5, '端面に当てる'),
+      A.arm(m, () => Wr(c()), 0.35, '爪を上げて取っ手穴に掛ける'),
+      gripFrom(box, lane),
+      liftLevel(() => Wr(c0.clone().add(V3(0, lift, 0))), `出口ストッパーを越える高さへ持ち上げる（${P.hookLift}mm）`),
+      A.sync(m, () => V3(st.x, 0, zA(st)), () => Wr(c0.clone().add(V3(0, lift, st.del))), 0.9, st.pull ? `後退しながら腕を引き寄せ、箱をまっすぐ引き出す（台車${Math.round((st.del - st.pull) * 1000)}mm＋腕${Math.round(st.pull * 1000)}mm）` : '後退して箱を引き出す（アームは止めたまま）'),
+    ];
+  };
+  // 間口へ入れる（シンクロ）：台車の位置合わせと同時に箱を間口の正面へ → 前進しながら腕を伸ばして入れる（押し込み式は前の箱を奥へ押す）
+  // → 下ろす → 爪を抜く → 後退しながら腕を引く
+  const putTo = (box, lane, st, sFn, what, onRel, via = [], push = false) => {
+    const c = () => lane.wpos(sFn()); let q0;
+    const pushUpd = push ? () => {   // 持った箱のレーン上の位置から、先に入れた箱を奥へ押す
+      const hz = wp(box).z, hs = (hz - lane.o.zF) / ((lane.o.zB - lane.o.zF) / lane.L);
+      lane.q.forEach((b, i) => { b.userData.s = Math.max(q0[i], hs + (i + 1) * lane.pitch); b.position.copy(lane.posS(b.userData.s)); }); } : null;
+    const how = st.pull ? '前進しながら腕を伸ばし、' : '前進：';
+    const fwd = A.sync(m, () => V3(st.x, 0, st.zN), () => Wr(c().add(V3(0, lift, 0))), 0.9, push ? `${how}箱を入れながら、先に入れた箱を奥へ押し込む（${stTxt(st)}）` : `${how}箱を間口に入れる（${stTxt(st)}）`, { onUpd: pushUpd });
+    if (push) onStart(fwd, () => { q0 = lane.q.map(b => b.userData.s); });
+    return [
+      ...via,
+      A.sync(m, () => V3(st.x, 0, zA(st)), () => Wr(c().add(V3(0, lift, st.del))), 1.3, `${what}の正面へ運ぶ（台車の前後の位置合わせと同時）`),
+      fwd,
+      A.arm(m, () => Wr(c().add(V3(0, 0.012, 0))), 0.5, '置き面へ下ろす'),
+      A.release(m, box, onRel, '箱を離す'),
+      ...unhook(),
+      A.sync(m, () => V3(st.x, 0, zA(st)), () => m.curWrist.clone().add(V3(0, 0, st.del)), 0.8, st.pull ? '後退しながら腕を引く' : '後退する'),
+    ];
+  };
+  const toLaneFront = lane => box => { lane.parent.attach(box); box.userData.s = lane.sAt(0); box.position.copy(lane.posS(box.userData.s)); box.rotation.set(lane.rx, 0, 0); lane.q.unshift(box); };
+  // 天面の箱：手前（+z）の端面に爪を掛け、真上へ持ち上げる（下の箱・車体の進入禁止域に当たらない高さ）
+  // 天面の上を通るときの高さ：いま天面にある箱の上端から、手だけなら爪の板の下端・胴の下端が、箱を持つなら箱の底が15mm上
+  const stackTop = () => Math.max(M(C.moma.bodyH + C.moma.keepOut), ...m.deckBoxes().map(b => aabbOf(b).y1));
+  const ysOver = () => stackTop() + (m.held ? 0.03 + main.y / 2 : 0.05);
+  const up = (y, label, dur = 0.7) => A.arm(m, () => { const w = m.curWrist.clone(); w.y = Math.max(w.y, typeof y === 'function' ? y() : y); return w; }, dur, label);
+  // 天面と棚のあいだで箱を運ぶときの中継点：天面の箱の位置の真横で、肩より棚側（上腕・前腕が箱の上を通らない）
+  const yTr = M(C.moma.bodyH + C.moma.j2H) + 0.4;   // 箱を持って肩の前を回るときの高さ
+  const zOut = () => D + 0.03 + M(C.moma.wrist + C.moma.gripLen) + (m.held ? bz : 0);   // 手首のzの下限：持った箱・手先が棚の面より30mm手前
+  // 台車が p まで動いたとき、手首は車体に対して同じ位置のまま高さだけ y に（setY：y に合わせる／既定は y より低ければ上げる）
+  const riseAt = (p, y, setY = false) => { const w = m.curWrist.clone().add(p.clone().sub(m.g.position)); w.y = setY ? y : Math.max(w.y, y); return w; };
+  const onStart = (st, fn) => { const s0 = st.start; st.start = () => { fn(); s0 && s0(); }; return st; };
+  const deckTake = (i, what, st) => { const box = deck[i], c = () => wp(box);
+    return [
+      A.sync(m, () => V3(st.x, 0, st.zT), p => riseAt(p, ysOver()), 1.0, '後退しながら、手先を天面の高さより上へ（シンクロ）'),
+      A.arc(m, () => Wr(c().add(V3(0, -0.01, 0.06))).setY(Math.max(ysOver(), c().y)), 1.5, `${what}の上へ（天面に2段あるときは車体の後ろ側を回す）`, { back: m.deckBoxes().length > 1, zMin: zOut }),
+      A.arm(m, () => Wr(c().add(V3(0, -0.01, 0.06))), 0.6, '端面の手前へ下ろす'),
+      onStart(A.arm(m, () => Wr(c().add(V3(0, -0.01, 0))), 0.4, '端面に当てる'), () => m.ignore.add(box)),   // 掴む箱そのものは障害物から外す
+      A.arm(m, () => Wr(c()), 0.35, '爪を上げて取っ手穴に掛ける'),
+      onStart(gripFrom(box, null), () => m.ignore.delete(box)),
+      A.arm(m, () => Wr(c0).setY(ysOver()), 0.7, '真上へ持ち上げる（下の箱と車体に当たらない高さ）'),
+    ]; };
+  const deckPut = (i, box, what, st) => { const c = () => wp(m.g, m.slots[i]);
+    return [
+      A.sync(m, () => V3(st.x, 0, st.zT), p => riseAt(p, yTr, true), 1.2, '後退しながら、箱を肩より少し上の高さにそろえる（シンクロ・ひじが箱の上に来ないように）'),
+      A.arc(m, () => Wr(c()).setY(yTr), 1.8, `肩のまわりを棚の側から回して${what}の上へ（箱は肩の上を通らない）`, { zMin: zOut }),
+      A.arm(m, () => Wr(c().add(V3(0, 0.004, 0))), 0.8, '天面に下ろす'),
+      A.release(m, box, b => { toDeck(m, i)(b); m.ignore.add(b); }, '箱を離す'),   // 離した箱は、爪を抜くまで障害物から外す
+      ...unhook(),
+      onStart(up(ysOver, '手先を上へ逃がす', 0.5), () => m.ignore.delete(box)),
+    ]; };
+  const down = (yFn, label) => A.arm(m, () => { const w = m.curWrist.clone(); w.y = yFn(); return w; }, 0.9, label);
+  const empty1 = T.q[0], empty2 = T2.q[0], rb = RV.q[0], hb = HV.q[0];
+  m.g.rotation.y = 0; m.g.position.set(stLR.x - 4.3, 0, stLR.zT); m.curWrist = m.homeW(); m.ik(m.curWrist);
+  const steps = [
+    A.call(() => { m.g.rotation.y = 0; m.g.position.set(stLR.x - 4.3, 0, stLR.zT); }, '消費連動：空箱の信号を受けてMoMaが出発', 0.6),
+    A.drive(m, stLR.x, 3.0, `MoMaが通路を走り、担当列の${Math.round(Math.abs(stLR.dx) * 1000)}mm横で止まる`),
+    A.turn(m, FACE, 1.4, 'その場で90°旋回して棚に向き直る（2輪駆動なので、棚へは前進・後退で近づく）'),
+    A.call(() => empty1.userData.setEmpty(), 'ライン側：取り出し段1と2の先頭の箱を使い切る（時間は省略）', 0.9, 'human'),
+    A.call(() => empty2.userData.setEmpty(), '', 0.01, 'human'),
+    ...workerPick(W0, T, '作業者が空箱を取り出す'),
+    ...workerPlace(W0, R, `空箱を、人の作業域のすぐ上の返却段（${Math.round(Lo.lv[liR].zf)}mm）へ`, 1.6),
+    A.par('空箱は通路側の出口へ転がる／次の箱が手前へ寄る', 1.3, [A.advance(R, 1.3, ''), A.advance(T, 1.3, '')], 'human'),
+    ...workerPick(W0, T2, '2段目の空箱も取り出す'),
+    ...workerPlace(W0, R, '返却段へ置く', 1.6),
+    A.par('空箱は出口側へ転がる', 1.3, [A.advance(R, 1.3, ''), A.advance(T2, 1.3, '')], 'human'),
+    ...scan(m, () => wp(mk[0]), '手先カメラで棚の左右マーカーを読み、全間口と予備段の位置を計算'),
+    // 低い段：足元の予備 → 取り出し段1（列の正面から横にずれた位置で、棚に向いて停止）
+    ...takeFrom(rb, RV, stLR, `足元の予備（${skuCode(tc, sP1.li)}）の先頭の箱`),
+    A.advance(RV, 0.6, '予備はこれで空になった'),
+    ...putTo(rb, T, stP1, () => T.entryS, `取り出し段1（${skuCode(tc, sP1.li)}）の入口`, toLane(T)),
+    A.advance(T, 1.2, '箱は重力で最後尾へ（人の手元は2箱に戻る）'),
+    // 天面の2箱で足元の予備を補充（空のときだけ、2箱まとめて押し込む）
+    up(ysOver, '手先を天面より上へ'),
+    ...verify(m, () => deck[0], '天面の箱（同じ品番を2箱）のバーコードを照合', `照合OK：${deck[0].userData.code}`),
+    ...deckTake(0, '天面の上の箱', stLR),
+    ...putTo(deck[0], RV, stLR, () => RV.sAt(0), '空になった足元の予備の出口', toLaneFront(RV), [up(yTr, '肩より上へ持ち上げる（肩の前を通るとき、ひじが箱の上に来ないように）', 0.8), A.arc(m, () => Wr(RV.wpos(RV.sAt(0)).add(V3(0, 0, stLR.del))).setY(yTr), 1.8, '肩のまわりを棚の側へ回して車体の外へ（箱は肩の上を通らない）', { zMin: zOut })]),
+    ...deckTake(1, '天面の下の箱', stLR),
+    ...putTo(deck[1], RV, stLR, () => RV.sAt(0), '足元の予備の出口', toLaneFront(RV), [up(yTr, '肩より上へ持ち上げる', 0.8), A.arc(m, () => Wr(RV.wpos(RV.sAt(0)).add(V3(0, 0, stLR.del))).setY(yTr), 1.8, '肩のまわりを棚の側へ回して車体の外へ', { zMin: zOut })], true),
+    // 高い段：頭上の予備 → 取り出し段2（正面の停止位置）
+    ...travel(stLR, stHV, `通路に沿って、頭上の予備の停止位置（${stTxt(stHV)}）へ`),
+    ...takeFrom(hb, HV, stHV, `頭上の予備（${skuCode(tc, liP + 1)}）の先頭の箱`),
+    A.advance(HV, 1.0, '奥の箱が予備の先頭へ転がる'),
+    ...putTo(hb, T2, stP2, () => T2.entryS, `取り出し段2（${skuCode(tc, liP + 1)}）の入口`, toLane(T2)),
+    A.advance(T2, 1.2, '箱は重力で最後尾へ'),
+    // 空箱の回収：返却段の出口 → 天面
+    ...travel(stP2, stRet, `通路に沿って、返却段の出口の停止位置（${stTxt(stRet)}）へ`),
+    ...takeFrom(empty1, R, stRet, '返却段の出口の空箱'),
+    ...deckPut(1, empty1, '天面', stRet),
+    A.advance(R, 1.0, '次の空箱が出口へ転がる'),
+    ...takeFrom(empty2, R, stRet, '返却段の出口の空箱'),
+    ...deckPut(0, empty2, '天面（上に積む）', stRet),
+    A.sync(m, () => V3(stRet.x, 0, stRet.zT), p => riseAt(p, m.curWrist.y + 0.1), 1.2, '後退しながら、手先を上へ（シンクロ）'),
+    A.arc(m, () => m.homeW(), 1.0, '手先を走行姿勢に戻す', { back: true, zMin: zOut }),
+    A.turn(m, 0, 1.4, 'その場で90°旋回して通路の向きへ'),
+    A.drive(m, stLR.x + 4.3, 2.4, 'MoMaは部品置き場へ（空箱を下ろし、次の品番の箱を2箱積む）'),
+  ];
+  return { steps, center: V3(0, 1.1, D / 2 + 0.3), span: Math.max(0.95, M(Lo.width) / 2.0) };
 }
 
 /* ===================== 数値・右パネル ===================== */
 const f1 = v => (Math.round(v * 10) / 10).toFixed(1);
 function kpis() {
-  const Lo = layout(mainSpec()), A0 = layout(C.plan.compare[0]), E = C.estimate;
-  const mo = E.utilization * 3600 / (E.boxesPerLanePerHour * C.plan.secPerBox);
+  const Lo = design(mainSpec()), A0 = design(C.plan.compare[0]);
   return [
-    [`${Lo.area.toFixed(2)} m²`, `棚の床面積（A 従来型 ${A0.area.toFixed(2)} m² の ${Math.round(Lo.area / A0.area * 100)}%）`],
-    [`${Lo.areaAisle.toFixed(2)} m²`, `通路${C.moma.aisleTurn}mm込み（A の ${Math.round(Lo.areaAisle / A0.areaAisle * 100)}%）`],
+    [`${Lo.capacity} 箱`, `収納（A 従来型は ${A0.capacity} 箱）・${Lo.sku} 品番`],
+    [`${Lo.area.toFixed(2)} m²`, `棚の床面積（A は ${A0.area.toFixed(2)} m²）`],
+    [`${f1(Lo.perM2)} 箱/m²`, `床1m²あたり（A の ${f1(Lo.perM2 / A0.perM2)} 倍）`],
+    [`${Math.round(Lo.volEff * 100)} %`, `体積効率＝箱の体積÷棚の外形の体積（A は ${Math.round(A0.volEff * 100)}%）`],
     [`${Math.round(Lo.width)}×${Math.round(Lo.depth)}×${Math.round(Lo.height)}`, '外形 幅×奥行き×高さ（mm）'],
-    [`${Lo.boxes} 箱`, `収納（最大 ${Lo.capacity} 箱）・${Lo.sku} 品番`],
-    [`${Lo.picks[0].zf}〜${Lo.openTop} mm`, '取り出し段（置き面の下限〜箱の上端）'],
-    [`${Math.floor(mo)} 間口/台`, `MoMa 1台の担当間口数の目安（${C.plan.secPerBox}秒/箱・仮）`],
+    [`${Math.round(momaCenterMin())}〜${Math.round(momaCenterMax())} mm`, 'MoMaが箱を水平に出し入れできる箱の中心の高さ（計算）'],
   ];
 }
 function planText() {
-  const P = C.plan, Lo = layout(mainSpec()), A0 = layout(P.compare[0]), lv = Lo.lv;
-  const pkz = Lo.picks.map(l => l.zf).join('・'), rz = Lo.res.map(l => l.zf).join('・');
+  const P = C.plan, Lo = design(mainSpec()), A0 = design(P.compare[0]), lv = Lo.lv;
+  const resLv = lv.filter(l => l.kinds[0] === 'reserve'), ret = lv.find(l => isRet(l.kinds[0]));
+  const picks = lv.filter(l => l.kinds[0] === 'pick').map(l => Math.round(l.zf)).join('・');
+  const lows = resLv.filter(l => l.zf < 700).map(l => Math.round(lvZ(l, 'reserve', Lo.D))).join('・'), highs = resLv.filter(l => l.zf > 1500).map(l => Math.round(lvZ(l, 'reserve', Lo.D))).join('・');
   return {
-    id: 'main', tab: '本案：縦型省スペース型', build: buildMain,
-    sub: `TP規格コンテナ・Φ28パイプ・ローラーレールで組む棚。CAD（cad/shooter-space）と同じ規則で寸法を決めている`,
-    lead: `同じ${P.nBox}箱を、従来の傾斜ローラーシューターの${Math.round(Lo.area / A0.area * 100)}%の床で持つ。人の取り出し段は手を入れる空きを取ると3段が上限なので、奥行きを箱2個分に縮め、足りない在庫を人が使わない足元へ置く。`,
+    id: 'main', tab: '本案：3D', build: buildMain,
+    sub: '人の作業域は1500mm以下、そのすぐ上に空箱返却段。その上下の、人が使えない高さをMoMa専用の予備在庫にする',
+    lead: `床1m²あたり ${f1(Lo.perM2)} 箱（従来型の ${f1(Lo.perM2 / A0.perM2)} 倍）、体積効率 ${Math.round(Lo.volEff * 100)}%。品番${Lo.sku}種・${Lo.capacity}箱を ${Lo.area.toFixed(2)}m² の床で持つ。予備在庫の回し方は「予備在庫の回し方」タブ、高さの根拠は「高さの使い方」タブ。`,
     sections: [
-      ['構造', [
-        `${P.mainType}（503×335×149）を長手を奥にして置く。<b>${P.cols}列×${Lo.picks.length}段×奥${P.deep}箱</b>の取り出し段と、足元の<b>予備在庫段${Lo.res.length}段</b>、最上段の<b>空箱返却段</b>。`,
-        `段の置き面：予備在庫 ${rz}mm／取り出し ${pkz}mm（ライン側）／空箱返却 ライン側 ${Lo.ret.zf}・通路側 ${Lo.ret.zb}mm。`,
-        `奥行き ${Math.round(Lo.D)}mm（ストッパー${P.stopOff}＋箱2個＋入れ口${P.rearClear}）。同じ奥行きに TP-391.5B（長さ1005）は1箱、TP-331.5B は3箱入る。`,
-        `間口ピッチ ${Lo.pitch}mm（箱幅335＋隙間${P.sideClear}×2＋Φ28ガイド）。取り出し段は勾配${P.slopePct}%の傾斜ローラーで、次の箱が自然に手前へ来る。`,
-        'ライン側は取り出し段より下を閉じ板でふさぐ。予備在庫は通路側からだけ出し入れする。']],
-      ['寸法の決め方（CADと共通）', [
-        `段の上の空きを段の種類で決め、下の段から最小の高さで積む。取り出し段の上はライン側${P.gap.pick[0]}mm（手を入れて部品を取る）・通路側${P.gap.pick[1]}mm、予備在庫段は${P.gap.reserve[0]}・${P.gap.reserve[1]}mm（仮）。`,
-        `取り出し段は置き面${C.shooter.pickHmin}mm以上・箱の上端${C.shooter.pickHmax}mm以下。この条件で入るのは${Lo.picks.length}段（空きを60mmに詰めても4段目は入らない）。`,
-        '人の取り出し域の中だけで奥行きを縮めても列が増えるだけで床は減らない（比較タブのB）。床が減るのは取り出し域の外（足元）を在庫に使ったとき。']],
-      ['MoMaの投入動作', [
-        '棚の中央に1回停止し、左右のマーカーで全間口と予備段の位置を計算する。',
-        '空いた取り出し段へ、足元の予備在庫段から同じ品番を移す（台車の往復なしで手元が2箱に戻る）。台車の箱で予備在庫段を補充する。',
-        '空箱は返却段の通路側の出口から取って台車に積む。'], ''],
-      ['人の取り出し側', [
-        `取り出しは ${Lo.picks[0].zf}〜${Lo.openTop}mm の3段だけ。足元の予備段には触れない（閉じ板）。`,
-        `空箱は最上段の返却段（ライン側 ${Lo.ret.zf}mm）へ置く。軽いが置く高さとしては高い（課題）。`], 'h'],
+      ['構造（下から）', [
+        `<b>足元の予備在庫 ${Lo.nLow}段</b>（通路側の置き面 ${lows}mm）：MoMa専用・押し込み式。`,
+        `<b>人の取り出し ${Lo.nBand}段</b>（ライン側 ${picks}mm）：傾斜ローラー${P.slopePct}%・奥${P.deep}箱。箱の上端は最高 ${Math.round(Lo.pickTop)}mm。`,
+        `<b>空箱返却 1段</b>（ライン側 ${Math.round(ret.zf)}mm → 通路側 ${Math.round(lvZ(ret, 'return', Lo.D))}mm）：人の作業域のすぐ上。人が置くと通路側の出口へ転がる。`,
+        `<b>頭上の予備在庫 ${Lo.nHigh}段</b>（通路側 ${highs}mm）：MoMa専用・押し込み式。ライン側は閉じ板。`,
+        `${P.cols}列×奥行き ${Math.round(Lo.D)}mm、間口ピッチ ${Lo.pitch}mm。TP-391.5B（長さ1005）は1箱、TP-331.5Bは3箱が同じ奥行きに入る。`]],
+      ['予備在庫の回し方（要点）', [
+        '予備在庫段は1段を1品番に割り当てる（色＝品番）。同じ列の取り出し段の予備で、足元の予備は下の取り出し段から、頭上の予備は上の取り出し段から順に割り当てる。',
+        '取り出し段の箱が1つ減ったら、MoMaが同じ品番の予備の先頭の箱を取り出し段へ移す。押し込み式なので、奥の箱が転がって先頭に出る。',
+        '予備が空になったら、MoMaが部品置き場から同じ品番を2箱運び、まとめて押し込む。空になってから補充するので、古い箱が奥に残り続けることはない。',
+        `1品番あたりの在庫：取り出し段 ${P.deep}箱＋予備 2〜4箱。MoMaは予備がある間に来ればよく、人の手元が切れない。`]],
+      ['MoMaの動き（フック式ハンド・当たらない動き）', [
+        `TP箱の短辺の取っ手穴に爪を下から掛け、端面で持って水平に出し入れする。予備・返却の出口ストッパー（${P.exitStopH}mm）を越えるため、取り出すときは${P.hookLift}mm持ち上げる。`,
+        () => { const st = (VERIFY && VERIFY.stances) || [], f = n => st.find(x => x.name === n), mm = v => Math.round(Math.abs(v) * 1000);
+          const lo = f('足元の予備'), p1 = f('取り出し段1'); return `<b>低い段は列の正面から横にずれた位置で止まる</b>：足元の予備と取り出し段1は、列の正面から ${lo ? mm(lo.dx) : '—'}mm 横で棚に向いて止まり、腕を車体の横から伸ばす（同じ停止位置で両方を扱う）。正面に止まると手首が車体の真上に来て、車体まわり${C.moma.keepOut}mmの進入禁止域に入るため。`; },
+        () => { const st = (VERIFY && VERIFY.stances) || [], hv = st.find(x => x.name === '頭上の予備'); return `<b>高い段は列の正面</b>で棚に向いて止まる（頭上の予備：すき間${hv ? Math.round(hv.F * 1000 - C.moma.baseL / 2) : '—'}mm）。上限は腕を伸ばし切らない範囲で決まる。`; },
+        () => { const st = (VERIFY && VERIFY.stances) || []; const f = n => st.find(x => x.name === n), mm = v => Math.round(v * 1000), sp = x => x ? `台車${mm(x.del - x.pull)}＋腕${mm(x.pull)}mm` : '—';
+          return `<b>手と足のシンクロ動作</b>：2輪駆動なので横には動かず、通路を走って停止位置の横まで来たら、その場で90°旋回して棚に向き直る。棚への出し入れ（約${st.length ? mm(st[0].del) : 550}mm）は、<b>前進・後退しながら腕も伸ばす・引き寄せる</b>ことで分担する（高い段 ${sp(f('頭上の予備'))}、低い段 ${sp(f('足元の予備'))}、返却段 ${sp(f('返却段の出口'))}）。台車と手首を同じ進み方で動かすので、箱は棚の中をまっすぐ動き、ハンドと箱だけが間口の中に入る。次の間口へ運ぶあいだも、台車の前後の位置合わせと腕の動きを同時に行う。別の停止位置へは、後退しながら手先を上げる → 90°旋回 → 通路に沿って走る → 90°旋回。`; },
+        `天面の箱は2段まで。2段あるうちはアームを棚の正面に向けない（肩の付け根が上の箱に当たる）。箱を持って肩の前を回るときは肩より高く持ち上げる。`,
+        () => VERIFY ? `動作の全${VERIFY.frames}コマ（1/60秒刻み）で、アーム・ハンド・持った箱が車体（進入禁止域）・天面の箱・棚・床に当たらないことを確認：${VERIFY.hits.length ? `<b style="color:#b02a2a">${VERIFY.hits.length}か所で干渉</b>` : '<b style="color:#1f6b42">干渉なし</b>'}（詳細は「高さの使い方」タブ）。` : ''], ''],
+      ['人の作業', [
+        `取り出しは ${picks}mm の3段（箱の上端 ${Math.round(Lo.pickTop)}mm 以下）。空箱はすぐ上の返却段（${Math.round(ret.zf)}mm）へ置くだけ。`,
+        '足元と頭上の予備在庫には触れない（閉じ板）。'], 'h'],
       ['課題・リスク', [
-        `空箱返却段のライン側の置き面が ${Lo.ret.zf}mm と高い。取り出し段の1段を返却に回す・別の返却口を設けるなどの配置を比べる。`,
-        `足元の予備在庫段（${rz}mm）は人が出し入れするには低い。MoMaが扱う前提。止まったときの代わりの手順が要る。`,
-        `高さ ${Math.round(Lo.height)}mm に対し奥行き ${Math.round(Lo.depth)}mm。床への固定か、隣の棚との連結が要るかを確認する。`,
-        'ローラーレールの寸法・自走勾配・手を入れる空きは仮値。とくに手の空きは段数を決める値。'], 'r'],
+        `高さ ${Math.round(Lo.height)}mm・奥行き ${Math.round(Lo.depth)}mm。上の段に部品入りの箱が載る。床への固定・隣との連結と転倒の計算が要る。`,
+        `空箱返却段の置き面が ${Math.round(ret.zf)}mm と肩より上になる。空箱は軽いが、作業者の身長によっては届きにくい。`,
+        '停止位置を変えるたびに「後退・90°旋回・走行・90°旋回」が入り、出し入れのたびに前進・後退するので、1箱あたりの時間が延びる。低い段は列の正面から横にずれて止まる分、隣の列の前の通路も使う。旋回には、棚の面から約1.6mの通路が要る（その場旋回の円＋後退量）。',
+        'MoMaが止まると予備在庫を人が扱いにくい。取り出し段の2箱でもつ時間を確認する。'], 'r'],
       ['実機で確かめる点', [
-        '取り出し段の上の空き100mm（仮）で部品を取れるか。作業者と実際の部品で試す',
-        `部品入りTP箱が勾配${P.slopePct}%のローラーで止まらず流れ、前端で暴れないか`,
-        `足元の予備段（${rz}mm）でMoMaが箱をつかめるか（リーチ・姿勢・アームと床の干渉）と、1箱あたりの動作時間`], 'check'],
+        'フック式ハンドで部品入りTP箱（約9kg・仮）を端面で持ち、出口ストッパーを越えて持ち上げられるか（手首の負荷・取っ手穴の強さ）',
+        `最上段（箱の中心 ${Math.round(Lo.momaRange[1])}mm）と最下段（${Math.round(Lo.momaRange[0])}mm）で、計算どおりの停止位置（横ずらし・前後移動）で出し入れできるか。停止位置の誤差に対する余裕（最下段は進入禁止域まで数mm〜十数mm）`,
+        '押し込み式の予備段で、2箱目で1箱目を押し込む力と、奥の箱が確実に先頭へ転がり出るか'], 'check'],
     ],
   };
 }
 const PLANS = [planText()];
 function renderPanel(P) {
-  panel.innerHTML = `<h2>${P.tab}<small>${P.sub}</small></h2><p class="lead">${P.lead}</p>
+  panel.innerHTML = `<h2>${P.tab.replace('：3D', '：縦型・高さ活用型')}<small>${P.sub}</small></h2><p class="lead">${P.lead}</p>
     <div class="kpis">${kpis().map(([v, l]) => `<div class="kpi"><b>${v}</b><span>${l}</span></div>`).join('')}</div>
     <div class="warns" id="warns"></div>
     ${P.sections.map(([t, items, cls]) => cls === 'check' ? `<div class="check">${sec(t, items)}</div>` : sec(t, items, cls || '')).join('')}
-    <p class="note">CAD一式（STEP・寸法図・部材表）はリポジトリの cad/shooter-space にあります。数値は仮値を含みます。ファイル冒頭の CONFIG を変えると、3D・寸法・この欄・比較タブが変わります。</p>`;
+    <p class="note">寸法・段の構成・届く範囲は CAD（cad/shooter-space の shooter.py・optimize.py・reach.py）と同じ規則で計算しています。数値は仮値を含みます。</p>`;
   renderWarns(); panel.scrollTop = 0;
 }
 function renderCompare() {
-  const P = C.plan, rows = [...P.compare.map(s => [s.title, layout(s)]), [`本案 縦型省スペース：${P.cols}列×${P.levels.filter(k => k === 'pick').length}段×奥${P.deep}箱＋足元の予備段`, layout(mainSpec())]];
-  const A0 = rows[0][1];
+  const P = C.plan, rows = [...P.compare.map(s => [s.title, design(s)]), ['本案 縦型・高さ活用型（返却は人の作業域のすぐ上）', design(mainSpec())]], A0 = rows[0][1];
   const tr = ([t, L], i) => `<tr${i === rows.length - 1 ? ' style="font-weight:700"' : ''}><th class="plan">${t}</th><td class="num">${Math.round(L.width).toLocaleString()}×${Math.round(L.depth).toLocaleString()}×${Math.round(L.height).toLocaleString()}</td>
-    <td class="num">${L.area.toFixed(2)}</td><td class="num">${Math.round(L.area / A0.area * 100)}%</td><td class="num">${L.areaAisle.toFixed(2)}</td><td class="num">${L.boxes}（最大${L.capacity}）</td><td class="num">${L.sku}</td><td class="num">${f1(L.boxes / L.area)}</td>
-    <td class="num">${L.picks[0].zf}〜${L.openTop}</td><td class="num">${L.ret.zf}</td></tr>`;
-  compare.innerHTML = `<h2>床面積の比較（同じ${P.nBox}箱・${P.mainType}）</h2>
-    <p class="note">3案とも同じ規則（段の上の空き・勾配・隙間）で段を積んで計算しています。CAD（cad/shooter-space）の結果と同じ値になります。数値は仮値を含みます。</p>
-    <div style="overflow-x:auto"><table class="cmp" style="min-width:1050px"><thead><tr><th>案</th><th class="num">外形 幅×奥行き×高さ（mm）</th><th class="num">棚の床面積（m²）</th><th class="num">Aに対する比（%）</th><th class="num">通路${C.moma.aisleTurn}mm込み（m²）</th><th class="num">収納（箱）</th><th class="num">間口数（間口）</th><th class="num">床1m²あたり（箱/m²）</th><th class="num">取り出し段の範囲（mm）</th><th class="num">空箱返却のライン側の置き面（mm）</th></tr></thead>
+    <td class="num">${L.area.toFixed(2)}</td><td class="num">${L.capacity}</td><td class="num">${L.sku}</td><td class="num">${f1(L.perM2)}</td><td class="num">${f1(L.perM2 / A0.perM2)}</td><td class="num">${Math.round(L.volEff * 100)}</td>
+    <td class="num">${Math.round(L.pickTop)}</td><td class="num">${Math.round(L.retLine)}</td><td class="num">${Math.round(L.momaRange[0])}〜${Math.round(L.momaRange[1])}</td></tr>`;
+  compare.innerHTML = `<h2>床面積・体積あたりの収納の比較（${P.mainType}）</h2>
+    <p class="note">どの案も同じ規則（段の上の空き・勾配・隙間・人とMoMaの届く範囲）で段を積んで計算しています。CAD（cad/shooter-space）の結果と同じ値になります。</p>
+    <div style="overflow-x:auto"><table class="cmp" style="min-width:1150px"><thead><tr><th>案</th><th class="num">外形 幅×奥行き×高さ（mm）</th><th class="num">棚の床面積（m²）</th><th class="num">収納（箱）</th><th class="num">品番（種）</th><th class="num">床1m²あたり（箱/m²）</th><th class="num">Aに対する倍率（倍）</th><th class="num">体積効率（%）</th><th class="num">取り出し段の箱の上端（mm）</th><th class="num">空箱を置く高さ（mm）</th><th class="num">MoMaが扱う箱の中心（mm）</th></tr></thead>
     <tbody>${rows.map(tr).join('')}</tbody></table></div>
     <h3 style="font-size:14px;margin:18px 0 4px">分かったこと</h3>
     <ul class="note" style="font-size:13px;line-height:1.8">
-      <li>人の取り出し域の中だけで奥行きを縮めても、列が増えて床面積はほぼ変わらない（B）。取り出し域の高さが決まっているため、床面積は「箱の総量 ÷ 取り出し域の高さ」でほぼ決まる。</li>
-      <li>床を減らせるのは、取り出し域の外（足元）を在庫に使ったときだけ（本案）。</li>
-      <li>手を入れる空き（${P.gap.pick[0]}mm・仮）を取ると、取り出し段は3段が上限。以前の画面の「49%」は、この空きを見込まず4段としていた誤りで、正しくは上の表の値。</li>
-      <li>空箱返却段はどの案でも取り出し段の上に来て、ライン側の置き面が高い。次の検討課題。</li></ul>`;
+      <li>人が使える高さ（700〜1500mm）の外、足元と頭上をMoMa専用の予備在庫にすると、床あたりの箱数は従来の2倍を超える。</li>
+      <li>MoMaが箱を水平に出し入れできる高さは、腕の長さだけでなく、手首が車体の上に来ない停止距離で決まる（「高さの使い方」タブ）。</li>
+      <li>空箱返却を1列にあてると品番も箱数も増えるが、人の作業域のすぐ上に返却段を置く本案のほうが床は小さい。</li></ul>`;
+}
+
+/* ===================== タブ：予備在庫の回し方（1品番の動きを番号つきの箱で追う） ===================== */
+let cycleTimer = null, cycleStep = 0;
+const CYC_SLOTS = (() => {      // 側面の模式図の上の置き場所（x＝箱の中心, y＝箱の底, 角度）。レーンの線の上に載せる
+  const on = (x0, y0, x1, y1, x) => [x, y0 + (y1 - y0) * (x - x0) / (x1 - x0), Math.atan2(y1 - y0, x1 - x0) * 180 / Math.PI];
+  const pick = x => on(96, 349, 494, 321, x), ret = x => on(96, 196, 494, 224, x), res = x => on(96, 456, 494, 484, x);
+  const s = {};
+  s.P0 = pick(196); s.P1 = pick(394);
+  s.RETin = ret(196); s.RET0 = ret(394);
+  s.R1 = res(196); s.R0 = res(394);
+  s.HAND = [592, 482, 0];
+  s.D0 = [600, 300, 0]; s.D1 = [600, 256, 0];
+  s.Y0 = [990, 176, 0]; s.Y1 = [990, 132, 0]; s.YE = [990, 482, 0]; s.YE2 = [990, 438, 0]; s.OUT = [1200, 300, 0];
+  return s;
+})();
+const CYC = [
+  { t: '通常：人は取り出し段の先頭①から部品を取る。予備には同じ品番の③④', b: { 1: ['P0', 'use'], 2: ['P1'], 3: ['R0'], 4: ['R1'], 5: ['Y0'], 6: ['Y1'] }, m: 'shelf' },
+  { t: '①を使い切る → 作業者が空箱①を、すぐ上の返却段へ置く。返却段は通路側へ下るので①は出口へ転がる。②が手前へ寄る', b: { 1: ['RET0', 'empty'], 2: ['P0', 'use'], 3: ['R0'], 4: ['R1'], 5: ['Y0'], 6: ['Y1'] }, m: 'shelf', who: 'h' },
+  { t: '「1箱減った」の信号でMoMaが来る。予備の先頭③の取っ手穴にフックを掛け、出口ストッパーを越えて取り出す', b: { 1: ['RET0', 'empty'], 2: ['P0', 'use'], 3: ['HAND'], 4: ['R1'], 5: ['Y0'], 6: ['Y1'] }, m: 'shelf' },
+  { t: '奥の④が転がって予備の先頭へ。③を取り出し段の通路側の入口に置くと、重力で最後尾へ（人の手元は2箱に戻る）', b: { 1: ['RET0', 'empty'], 2: ['P0', 'use'], 3: ['P1'], 4: ['R0'], 5: ['Y0'], 6: ['Y1'] }, m: 'shelf' },
+  { t: '返却段の出口から空箱①を回収し、天面に積む', b: { 1: ['D0', 'empty'], 2: ['P0', 'use'], 3: ['P1'], 4: ['R0'], 5: ['Y0'], 6: ['Y1'] }, m: 'shelf' },
+  { t: '（時間がたつ）②を使い切る → 返却段へ。③が手前へ。MoMaは他の棚を回っている', b: { 1: ['YE', 'empty'], 2: ['RET0', 'empty'], 3: ['P0', 'use'], 4: ['R0'], 5: ['Y0'], 6: ['Y1'] }, m: 'away', who: 'h' },
+  { t: 'MoMaが来て、予備の④を取り出し段へ移す。これで予備は空になる → 「この品番を補充」の依頼', b: { 1: ['YE', 'empty'], 2: ['RET0', 'empty'], 3: ['P0', 'use'], 4: ['P1'], 5: ['Y0'], 6: ['Y1'] }, m: 'shelf' },
+  { t: '空箱②を回収して部品置き場へ。空箱を下ろし、同じ品番の⑤⑥を2箱積む', b: { 1: ['OUT', 'empty'], 2: ['YE2', 'empty'], 3: ['P0', 'use'], 4: ['P1'], 5: ['D0'], 6: ['D1'] }, m: 'yard' },
+  { t: '棚へ戻り、⑤を予備の出口に当てて奥へ押し込む', b: { 1: ['OUT', 'empty'], 2: ['YE2', 'empty'], 3: ['P0', 'use'], 4: ['P1'], 5: ['R0'], 6: ['D0'] }, m: 'shelf' },
+  { t: '⑥で⑤をさらに奥へ押し込む。予備は2箱に戻る。予備が空のときだけ2箱まとめて入れるので、古い箱が奥に残り続けない', b: { 1: ['OUT', 'empty'], 2: ['OUT', 'empty'], 3: ['P0', 'use'], 4: ['P1'], 5: ['R1'], 6: ['R0'] }, m: 'shelf' },
+];
+function renderCycle() {
+  const Lo = design(mainSpec()), P = C.plan, rmap = reserveMap(Lo), col = SKU_COLORS[0];
+  const lvName = li => { const k = Lo.lv[li].kinds[0]; return k === 'pick' ? '取り出し' : isRet(k) ? '空箱返却' : '予備'; };
+  const grid = Lo.lv.map((l, li) => ({ li, l })).reverse().map(({ li, l }) => `<tr><th class="plan">${lvName(li)}（${Math.round(l.kinds[0] === 'pick' ? l.zf : lvZ(l, l.kinds[0], Lo.D))}mm）</th>${l.kinds.map((k, c) => {
+      if (isRet(k)) return '<td style="background:#eef1f4;color:#5b6b78">空箱</td>';
+      const pl = k === 'pick' ? li : rmap[li], s = Lo.lanes.find(x => x.li === pl && x.c === c), bg = s.type !== P.mainType ? COL.tp[s.type] : SKU_COLORS[s.sku % SKU_COLORS.length];
+      return `<td style="background:${bg};color:#fff;font-weight:${k === 'pick' ? 700 : 400}">${k === 'pick' ? '' : '予備 '}${skuCode(c, pl)}</td>`; }).join('')}</tr>`).join('');
+  compare.innerHTML = `<h2>予備在庫の回し方（1品番の動き）</h2>
+    <p class="note">取り出し段（人）・空箱返却段・予備在庫段（MoMa専用・押し込み式）を、1つの列の側面で模式的に描いています。箱の番号で、どの箱がどこへ行くかを追えます。</p>
+    <div class="ctrl" style="position:static;margin:8px 0"><button class="play" id="cyPlay">■ 停止</button><button id="cyPrev">◀ 前へ</button><button id="cyNext">次へ ▶</button><span id="cyN" style="font-size:13px;color:#5b6b78"></span></div>
+    <div id="cyCap" style="font-size:14px;line-height:1.6;min-height:46px;border-left:4px solid #0068B7;background:#f7f9fb;padding:6px 10px;border-radius:6px;max-width:980px"></div>
+    <div style="overflow-x:auto"><svg id="cySvg" viewBox="0 0 1100 530" style="width:100%;max-width:1100px;min-width:760px;background:#fff">
+      <defs><pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="#5AA0DC" stroke-width="2" opacity=".5"/></pattern></defs>
+      <rect x="20" y="20" width="70" height="480" fill="#3EB370" opacity=".08"/><text x="55" y="40" font-size="13" text-anchor="middle" fill="#23864f">ライン側</text>
+      <rect x="500" y="20" width="200" height="480" fill="#0068B7" opacity=".06"/><text x="600" y="40" font-size="13" text-anchor="middle" fill="#0068B7">通路</text>
+      <rect x="890" y="60" width="200" height="440" fill="#f2f4f6" stroke="#cfd8df"/><text x="990" y="82" font-size="13" text-anchor="middle" fill="#5b6b78">部品置き場</text>
+      <text x="990" y="198" font-size="11" text-anchor="middle" fill="#5b6b78">部品入りの箱</text><text x="990" y="500" font-size="11" text-anchor="middle" fill="#5b6b78">空箱</text>
+      <line x1="96" y1="40" x2="96" y2="500" stroke="#c8c2ad" stroke-width="6"/><line x1="494" y1="40" x2="494" y2="500" stroke="#c8c2ad" stroke-width="6"/>
+      <rect x="20" y="380" width="74" height="110" fill="url(#hatch)"/><text x="57" y="470" font-size="11" text-anchor="middle" fill="#195d96">閉じ板</text>
+      <line x1="96" y1="196" x2="494" y2="224" stroke="#8a99a5" stroke-width="4"/><text x="300" y="240" font-size="12" text-anchor="middle" fill="#5b6b78">空箱返却段（人の作業域のすぐ上・通路側へ下る）</text>
+      <line x1="96" y1="349" x2="494" y2="321" stroke="#7f8c8d" stroke-width="4"/><text x="300" y="365" font-size="12" text-anchor="middle" fill="#23864f">取り出し段（ライン側へ下る・奥2箱）</text>
+      <line x1="96" y1="456" x2="494" y2="484" stroke="#5AA0DC" stroke-width="4"/><text x="300" y="503" font-size="12" text-anchor="middle" fill="#195d96">予備在庫段（通路側へ下る押し込み式・MoMa専用）</text>
+      <rect x="489" y="208" width="6" height="14" fill="#6f7c86"/><rect x="489" y="466" width="6" height="16" fill="#6f7c86"/>
+      <g id="cyWorker" transform="translate(28,222)"><circle cx="25" cy="0" r="14" fill="#efd9c6"/><rect x="10" y="16" width="30" height="70" rx="6" fill="#3EB370"/><rect x="12" y="86" width="11" height="70" fill="#44525c"/><rect x="27" y="86" width="11" height="70" fill="#44525c"/></g>
+      <g id="cyMoma" style="transition:transform .9s ease"><rect x="540" y="300" width="120" height="150" rx="10" fill="#a3a8c2"/><rect x="536" y="450" width="128" height="22" fill="#a7adb3"/><circle cx="600" cy="478" r="12" fill="#d9822b"/>
+        <rect x="650" y="200" width="14" height="100" fill="#eceeef"/><rect x="600" y="196" width="64" height="12" fill="#eceeef"/><text x="600" y="400" font-size="13" fill="#fff" text-anchor="middle">LexxMoMa</text><text x="600" y="420" font-size="11" fill="#fff" text-anchor="middle">天面に2箱</text></g>
+      <g id="cyBoxes"></g>
+      <text id="cyCnt" x="20" y="14" font-size="13" fill="#1d2a33"></text>
+    </svg></div>
+    <h3 style="font-size:14px;margin:18px 0 4px">ルール</h3>
+    <ul class="note" style="font-size:13px;line-height:1.8">
+      <li>予備在庫段は<b>1段＝1品番</b>。同じ列の取り出し段の予備にする（下の表。色＝品番）。押し込み式は後から入れた箱が先頭に来るので、品番を混ぜない。</li>
+      <li>取り出し段が1箱減ったら、MoMaが予備の先頭の箱を取り出し段へ移す（予備 → 取り出し）。人の手元は常に2箱に戻る。</li>
+      <li>予備が<b>空になったら</b>、MoMaが部品置き場から同じ品番を<b>2箱</b>運び、まとめて押し込む。空になってからまとめて入れるので、古い箱が奥に残り続けない。</li>
+      <li>空箱は、人がすぐ上の返却段に置くと通路側の出口へ転がる。MoMaは寄ったついでに回収し、部品置き場へ戻す。</li>
+      <li>MoMaは「予備がある間」に来ればよい。1品番あたり取り出し${P.deep}箱＋予備2箱（よく使う品番は予備が2段で4箱）が、MoMaの巡回の遅れを吸収する。</li></ul>
+    <h3 style="font-size:14px;margin:18px 0 4px">予備在庫段の割り当て（ライン側から見た並び）</h3>
+    <div style="overflow-x:auto"><table class="cmp" style="min-width:600px;text-align:center"><thead><tr><th>段（置き面）</th>${[...Array(P.cols)].map((_, c) => `<th>列${c + 1}</th>`).join('')}</tr></thead><tbody>${grid}</tbody></table></div>`;
+  const g = document.getElementById('cyBoxes'), boxes = {};
+  for (let n = 1; n <= 6; n++) {
+    const e = document.createElementNS('http://www.w3.org/2000/svg', 'g'); e.style.transition = 'transform .9s ease, opacity .5s';
+    e.innerHTML = `<rect x="-90" y="-40" width="180" height="40" rx="5" stroke="#1d3c5a" stroke-width="1"/><rect x="-28" y="-33" width="56" height="7" rx="3" fill="#1d2a33" opacity=".7"/><text x="0" y="-8" font-size="15" font-weight="700" text-anchor="middle" fill="#fff"></text>`;
+    g.appendChild(e); boxes[n] = e;
+  }
+  const show = i => {
+    cycleStep = (i + CYC.length) % CYC.length; const st = CYC[cycleStep];
+    document.getElementById('cyCap').textContent = st.t; document.getElementById('cyCap').style.borderLeftColor = st.who === 'h' ? '#3EB370' : '#0068B7';
+    document.getElementById('cyN').textContent = `手順 ${cycleStep + 1}/${CYC.length}`;
+    let pick = 0, res = 0;
+    for (let n = 1; n <= 6; n++) {
+      const [slot, state] = st.b[n], [x, y, a] = CYC_SLOTS[slot], e = boxes[n];
+      const moved = st.m === 'yard' && (slot === 'D0' || slot === 'D1') ? 190 : 0;
+      e.setAttribute('transform', `translate(${x + moved},${y}) rotate(${a})`); e.style.transform = `translate(${x + moved}px,${y}px) rotate(${a}deg)`;
+      e.style.opacity = slot === 'OUT' ? 0 : 1;
+      const r = e.querySelector('rect'), t = e.querySelector('text');
+      r.setAttribute('fill', state === 'empty' ? '#cdd5db' : col); t.setAttribute('fill', state === 'empty' ? '#5b6b78' : '#fff');
+      t.textContent = `${'①②③④⑤⑥'[n - 1]}${state === 'use' ? ' 使用中' : state === 'empty' ? ' 空箱' : ''}`;
+      if (slot.startsWith('P') && state !== 'empty') pick++; if (slot.startsWith('R') && slot !== 'RET0' && slot !== 'RETin') res++;
+    }
+    const mo = document.getElementById('cyMoma'), dx = st.m === 'yard' ? 190 : st.m === 'away' ? 190 : 0;
+    mo.style.transform = `translateX(${dx}px)`; mo.style.opacity = st.m === 'away' ? 0.15 : 1;
+    document.getElementById('cyCnt').textContent = `この品番の在庫：取り出し段 ${pick}箱 ＋ 予備 ${res}箱`;
+  };
+  const play = on => { clearInterval(cycleTimer); cycleTimer = on ? setInterval(() => show(cycleStep + 1), 3200) : null; document.getElementById('cyPlay').textContent = on ? '■ 停止' : '▶ 再生'; };
+  document.getElementById('cyPrev').onclick = () => { play(false); show(cycleStep - 1); };
+  document.getElementById('cyNext').onclick = () => { play(false); show(cycleStep + 1); };
+  document.getElementById('cyPlay').onclick = () => play(!cycleTimer);
+  show(0); play(true);
+}
+
+/* ===================== タブ：高さの使い方（アームの届く範囲） ===================== */
+function renderReach() {
+  const Lo = design(mainSpec()), P = C.plan, near = C.moma.clearance + C.moma.baseL / 2, V = VERIFY || { hits: [], total: NaN, frames: 0 }, ST = V.stances || window.__stances || [];
+  const lv = Lo.lv.map(l => { const k = l.kinds[0], zc = lvZ(l, k, Lo.D) + Lo.H / 2;
+    const name = k === 'pick' ? '取り出し（入口）' : isRet(k) ? '空箱返却（出口）' : '予備在庫', c = k === 'pick' ? '#3EB370' : isRet(k) ? '#8a99a5' : '#d08a2c';
+    return { zc, name, c, F: standoffFor(zc) }; });
+  // 1つのグラフ：横軸 xr=[最小,最大]・目盛り、縦軸は箱の中心の高さ。bars=[z, a, b]
+  const chart = (title, xr, ticks, xlab, bars, pts, extra = '') => {
+    const W = 520, H = 470, x0 = 58, y0 = 28, w = 330, h = 400, Z1 = 2500, X = f => x0 + (f - xr[0]) / (xr[1] - xr[0]) * w, Y = z => y0 + h - z / Z1 * h;
+    const tx = ticks.map(f => `<line x1="${X(f)}" x2="${X(f)}" y1="${y0}" y2="${y0 + h}" stroke="#e1e7ec"/><text x="${X(f)}" y="${y0 + h + 16}" font-size="10.5" text-anchor="middle" fill="#5b6b78">${f}</text>`).join('');
+    const ty = [0, 500, 1000, 1500, 2000, 2500].map(z => `<line x1="${x0}" x2="${x0 + w}" y1="${Y(z)}" y2="${Y(z)}" stroke="#e1e7ec"/><text x="${x0 - 6}" y="${Y(z) + 4}" font-size="10.5" text-anchor="end" fill="#5b6b78">${z}</text>`).join('');
+    const br = bars.map(([z, a, b]) => `<rect x="${X(a)}" y="${Y(z + 12.5)}" width="${Math.max(2, X(b) - X(a))}" height="${h / Z1 * 25 + 0.5}" fill="#0068B7" opacity=".28"/>`).join('');
+    const ln = lv.map(o => `<line x1="${x0}" x2="${x0 + w}" y1="${Y(o.zc)}" y2="${Y(o.zc)}" stroke="${o.c}" stroke-width="1.3"/><text x="${x0 + w + 6}" y="${Y(o.zc) + 4}" font-size="10.5" fill="#1d2a33">${o.name} ${Math.round(o.zc)}</text>`).join('');
+    const pt = pts.map(o => `<circle cx="${X(o.v)}" cy="${Y(o.z)}" r="5" fill="${o.c || '#c2357a'}" stroke="#fff" stroke-width="1.5"/>`).join('');
+    return `<div style="flex:1 1 460px;min-width:420px"><h3 style="font-size:13.5px;margin:6px 0 2px">${title}</h3><svg viewBox="0 0 ${W} ${H + 24}" style="width:100%;background:#fff">${tx}${ty}${br}
+      <rect x="${x0}" y="${Y(C.shooter.pickHmax)}" width="${w}" height="${Y(C.shooter.pickHmin) - Y(C.shooter.pickHmax)}" fill="#3EB370" opacity=".06"/>${extra(X, Y, x0, y0, w, h)}${ln}${pt}
+      <text x="${x0 + w / 2}" y="${H + 18}" font-size="11.5" text-anchor="middle" fill="#1d2a33">${xlab}</text>
+      <text x="14" y="${y0 + h / 2}" font-size="11.5" fill="#1d2a33" transform="rotate(-90 14 ${y0 + h / 2})" text-anchor="middle">箱の中心の高さ mm</text></svg></div>`;
+  };
+  const sidePts = ST.map(st => ({ v: Math.abs(st.dx) * 1000, z: st.zc, c: st.zc < C.shooter.pickHmin + 400 ? '#c2357a' : '#0b4f8a' }));
+  const g1 = chart('① 棚に最も近く止まったとき（すき間' + C.moma.clearance + 'mm）：左右にずらす量', [0, 900], [0, 150, 300, 450, 600, 750, 900], '箱の中心から、車体の中心までの左右のずれ mm',
+    REACH.side, sidePts, () => '');
+  const g2 = chart('② 列の正面に止まる場合（参考）：棚から離れる距離', [400, 1150], [400, 500, 600, 700, 800, 900, 1000, 1100], '棚の通路側の面から、アームの肩（車体の中心）まで mm',
+    REACH.rows, lv.map(o => ({ v: o.F, z: o.zc, c: o.c })),
+    (X, Y, x0, y0, w, h) => `<line x1="${X(near)}" x2="${X(near)}" y1="${y0}" y2="${y0 + h}" stroke="#555" stroke-dasharray="4 3"/><text x="${X(near) + 4}" y="${y0 + 12}" font-size="10.5" fill="#555">最も近い停止</text>`);
+  const rows = ST.map(st => `<tr><th class="plan">${st.name}</th><td class="num">${Math.round(st.zc)}</td><td class="num">${Math.abs(st.dx) > 0.01 ? `横に ${Math.round(Math.abs(st.dx) * 1000)}` : '正面'}</td><td class="num">${Math.round(st.F * 1000 - C.moma.baseW / 2)}</td><td class="num">${Math.round(st.del * 1000)}</td><td class="num">${Math.round((st.del - (st.pull || 0)) * 1000)}／${Math.round((st.pull || 0) * 1000)}</td></tr>`).join('');
+  const cl = V.total;
+  compare.innerHTML = `<h2>高さの使い方（アームの届く範囲と、当たらない停止位置）</h2>
+    <p class="note">MoMaが ${P.mainType}（部品入り${REACH.kg}kg・仮）をフック式ハンドで水平に持ち、棚の通路側の面に出し入れできる範囲です。青い帯は CAD（reach.py）の計算、点は 3D の動作で使った停止位置（動作の全コマで干渉を確認したもの）。①で点が帯の左にあるのは、3D の確認のほうがハンドの形（胴と爪の板）を細かく見ているため。CAD の帯は安全側の目安。</p>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;max-width:1100px">${g1}${g2}</div>
+    <h3 style="font-size:14px;margin:18px 0 4px">何が高さと停止位置を決めているか</h3>
+    <ul class="note" style="font-size:13px;line-height:1.8">
+      <li><b>MoMaは2輪駆動で横に動けない</b>：通路を走って止まり、その場で90°旋回して棚に向き直る。棚への出し入れは前進・後退だけで行う。</li>
+      <li><b>低い段は、列の正面から横にずれた位置で棚に向いて止まる</b>：箱を水平に端面で持つと、手首は箱の端面から手前に約${C.moma.wrist + C.moma.gripLen}mm。列の正面に止まると手首が車体の真上に来て、車体まわり${C.moma.keepOut}mmの進入禁止域に入る。${ST.length ? Math.round(Math.abs(ST[0].dx) * 1000) : 550}mm ほど横に止まると、手首と腕が車体の横に出るので、棚に近いまま（すき間${C.moma.clearance}mm）低い段を扱える。①の帯の左端より右に止まればよい。</li>
+      <li><b>下限 ${Math.round(momaCenterMin())}mm</b>：詳細仕様のリーチは0.25mだが、爪を取っ手穴の下から掛けに行く（10mm下がる）とき、上腕が車体の進入禁止域に入らない高さ。これより低いと横にずれて止まっても上腕が車体の角に当たる。</li>
+      <li><b>上限 ${Math.round(momaCenterMax())}mm</b>：腕（上腕＋前腕）を伸ばし切らない範囲（98%）で、出口ストッパーを越えるための持ち上げ ${P.hookLift}mm を含む。高い段は列の正面で、棚に近く止まる。</li>
+      <li><b>出し入れは手と足のシンクロ動作で</b>：約${ST.length ? Math.round(ST[0].del * 1000) : 550}mm の出し入れを、前進・後退と腕の伸び縮みで同時に分担する。台車と手首を同じ進み方で動かすので、箱は棚の中をまっすぐ動き、上の段の下側や柱に当たらない。腕が受け持つ量は、腕と持った箱・車体が当たらない範囲で段ごとに決めた（下の表）。旋回は棚から十分下がり、手先を走行姿勢にしてから行う（車体・天面の箱が棚に当たらないことも確認）。</li>
+      <li><b>天面の箱</b>：アームの肩（J2）は天面から${C.moma.j2H}mm。2段に積んだ箱はこれより高いので、2段あるうちはアームを棚の正面に向けない（車体の後ろ側を回して手を伸ばす）。箱を持って肩の前を回るときは肩より高く持ち上げ、ひじが箱の上に来ないようにする。</li>
+      <li><b>手首の負荷</b>：箱の重心が手首から離れるほど負荷が増える（許容 ${C.moma.j5Moment}Nm）。${P.mainType} は部品入り約${Math.floor((C.moma.j5Moment / 9.81 - 2 * 0.24) / ((C.moma.wrist + C.moma.gripLen + 251.5) / 1000))}kgまで。長物 TP-391.5B は約${Math.floor((C.moma.j5Moment / 9.81 - 2 * 0.24) / ((C.moma.wrist + C.moma.gripLen + 502.5) / 1000))}kgまで。</li></ul>
+    <h3 style="font-size:14px;margin:18px 0 4px">3Dの動作で使った停止位置</h3>
+    <table class="cmp" style="min-width:560px"><thead><tr><th>扱う間口</th><th class="num">箱の中心の高さ（mm）</th><th class="num">左右のずらし（mm）</th><th class="num">棚の面と車体のすき間（mm）</th><th class="num">出し入れの前後移動（mm）</th><th class="num">うち台車／腕（mm）</th></tr></thead><tbody>${rows}</tbody></table>
+    <h3 style="font-size:14px;margin:18px 0 4px">干渉の確認（3Dの動作の全コマ）</h3>
+    <ul class="note" style="font-size:13px;line-height:1.8">
+      <li>上腕・前腕・手首（太さ ${C.moma.linkR.join('・')}mm の円柱）、ハンドの胴と爪の板（箱）、持った箱 が、車体＋進入禁止域${C.moma.keepOut}mm・天面の箱・床・棚に当たらないこと。</li>
+      <li>棚の中に入ってよいのは、ハンドと持った箱だけで、その間口の空間（置き面〜上の段の下側。傾きも含む）の中だけ。上腕・前腕は持った箱にも当たらないこと。</li>
+      <li>持った箱は天面の箱置きに置くため、進入禁止域ではなく車体そのものと10mm以上離す。</li>
+      <li>結果（${V.frames}コマ）：${V.hits.length ? `<b style="color:#b02a2a">${V.hits.length}か所で干渉</b>：${V.hits.map(h => `「${h.label}」${h.hit}`).join('、')}` : '<b style="color:#1f6b42">干渉なし</b>'}。最小すき間 ${isFinite(cl) ? Math.round(cl * 1000) : '—'}mm（天面に積んだ2箱の上の箱を持ち上げ始める瞬間。TP箱は積むと8mm入り込む分を除く）。</li></ul>`;
 }
 
 /* ===================== 3D表示と再生 ===================== */
@@ -839,10 +1385,17 @@ Object.assign(sun.shadow.camera, { left: -6, right: 6, top: 6, bottom: -6, near:
 const fillL = new THREE.DirectionalLight('#ffffff', 0.28); fillL.position.set(-4, 3, -4); scene.add(fillL);
 const orbit = new Orbit(cam, renderer.domElement);
 let cur = 0, plan = null, tline = null, playing = true, speed = 1, endWait = 0, cmpMode = false;
+const EXTRA = [['予備在庫の回し方', () => renderCycle()], ['高さの使い方', () => renderReach()], ['収納の比較', () => renderCompare()]];
 function loadPlan(i, fresh) {
   if (ROOT) { scene.remove(ROOT); ROOT.traverse(o => { if (o.geometry) o.geometry.dispose(); }); }
   LABELS.forEach(l => l.el.remove()); LABELS = []; DIMS = [];
   if (fresh) WARN = new Set();
+  if (!VERIFY) {   // 見えない場所で全手順を1/60秒刻みで動かし、干渉を確認しておく（右パネル・「高さの使い方」に表示）
+    const t0 = performance.now(); ROOT = new THREE.Group(); const vp = PLANS[i].build(ROOT), vt = new Timeline(vp.steps); let n = 0;
+    while (!vt.done && n < 200000) { vt.update(1 / 60); n++; }
+    VERIFY = { hits: COLL.hits.slice(), total: COLL.total, frames: n, ms: Math.round(performance.now() - t0), stances: window.__stances };
+    ROOT.traverse(o => { if (o.geometry) o.geometry.dispose(); }); LABELS.forEach(l => l.el.remove()); LABELS = []; DIMS = [];
+  }
   ROOT = new THREE.Group(); scene.add(ROOT);
   plan = PLANS[i].build(ROOT); tline = new Timeline(plan.steps); endWait = 0;
   const p = plan.center; sun.position.set(p.x + 3, 7, p.z + 4); sun.target.position.copy(p); sun.target.updateMatrixWorld();
@@ -861,14 +1414,14 @@ function resize() { const r = stage.getBoundingClientRect(); if (!r.width || !r.
 new ResizeObserver(resize).observe(stage);
 function selectTab(i) {
   document.querySelectorAll('.tab').forEach((t, j) => t.setAttribute('aria-selected', String(j === i)));
-  cmpMode = i === PLANS.length;
+  cmpMode = i >= PLANS.length; clearInterval(cycleTimer); cycleTimer = null;
   stage.hidden = panel.hidden = cmpMode; compare.hidden = !cmpMode;
-  if (cmpMode) { renderCompare(); return; }
+  if (cmpMode) { EXTRA[i - PLANS.length][1](); return; }
   cur = i; resize(); loadPlan(i, true);
   try { history.replaceState(null, '', '#' + PLANS[i].id); } catch (e) { }
 }
 const tabs = $('#tabs');
-[...PLANS.map(P => P.tab), '床面積の比較'].forEach((t, i) => { const b = document.createElement('button'); b.className = 'tab' + (i === PLANS.length ? ' cmp' : ''); b.textContent = t; b.setAttribute('role', 'tab'); b.onclick = () => selectTab(i); tabs.appendChild(b); });
+[...PLANS.map(P => P.tab), ...EXTRA.map(e => e[0])].forEach((t, i) => { const b = document.createElement('button'); b.className = 'tab' + (i >= PLANS.length ? ' cmp' : ''); b.textContent = t; b.setAttribute('role', 'tab'); b.onclick = () => selectTab(i); tabs.appendChild(b); });
 $('#btnPlay').onclick = () => { setPlay(!playing); if (playing && tline.done) loadPlan(cur, false); };
 $('#btnRestart').onclick = () => { loadPlan(cur, false); };
 $('#selSpeed').onchange = e => speed = +e.target.value;
@@ -887,10 +1440,10 @@ function frame() {
   const r = renderer.domElement; updateLabels(cam, r.clientWidth, r.clientHeight);
 }
 const start = Math.max(0, PLANS.findIndex(P => '#' + P.id === location.hash));
-selectTab(location.hash === '#compare' ? PLANS.length : start);
+selectTab(location.hash === '#cycle' ? PLANS.length : location.hash === '#reach' ? PLANS.length + 1 : location.hash === '#compare' ? PLANS.length + 2 : start);
 if (location.hash === '#compare') { cur = 0; }
 frame();
-window.__app = { PLANS, loadPlan, selectTab, get tline() { return tline; }, get warns() { return [...WARN]; }, setPlay, setView };
+window.__orbit = orbit; window.__app = { PLANS, loadPlan, selectTab, get tline() { return tline; }, get warns() { return [...WARN]; }, setPlay, setView };
 </script>
 </body>
 </html>

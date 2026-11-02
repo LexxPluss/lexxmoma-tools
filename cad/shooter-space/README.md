@@ -25,7 +25,7 @@ python3 build.py                    # out/ に STEP・画像・寸法図・部�
 | `variants.py` | 比較する案（A 従来型・E 本案） |
 | `reach.py` | MoMa がフック式ハンドで TP 箱を水平に出し入れできる高さと停止距離を計算する |
 | `optimize.py` | 列数・奥行きの箱数・空箱返却の置き方を総当たりして、条件を満たす中で床面積が最小の案を探す |
-| `params_local.py` | 社内の実機値（任意・git に入れない）。あれば `params.py` の仮値を上書きする |
+| `params_local.py` | 試しに値を変えるとき用（任意・git に入れない）。あれば `params.py` の値を上書きする |
 | `build.py` | 書き出し（STEP・陰影画像・寸法図・部材表・summary.json） |
 | `out/shooter_variants_step.zip` | 比較する案の組立 STEP（FreeCAD で開く） |
 | `out/TP-*.step` | TP コンテナ単体の STEP |
