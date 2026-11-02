@@ -1246,7 +1246,7 @@ function drawArm(body, arm) {
   const [tx, ty] = w2s(body.x + P.tcp[0] * Math.cos(body.th) - P.tcp[1] * Math.sin(body.th),
                        body.y + P.tcp[0] * Math.sin(body.th) + P.tcp[1] * Math.cos(body.th));
   ctx.fillStyle = "rgba(214,51,108,0.9)"; ctx.font = "11px sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
-  ctx.fillText(`h ${((P.tcp[2] + ARM_MOUNT_Z) / 1000).toFixed(2)}m`, tx + 6, ty - 6);
+  ctx.fillText(`手先 h ${((P.tcp[2] + ARM_MOUNT_Z) / 1000).toFixed(2)}m`, tx + 6, ty - 6);
 }
 
 /* ---------------- キーボード操作（ティーチ） ---------------- */
