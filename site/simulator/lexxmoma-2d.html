@@ -152,6 +152,12 @@
   #tlPlayhead { position: absolute; top: 0; width: 11px; z-index: 3; cursor: ew-resize; }
   #tlPlayhead::before { content: ""; position: absolute; left: 4.5px; top: 0; bottom: 0; width: 2px; background: #e0323c; }
   #tlPlayhead::after { content: ""; position: absolute; left: 0; top: 0; border: 5.5px solid transparent; border-top: 8px solid #e0323c; border-bottom: 0; }
+  .tl-stage.drop-into { box-shadow: inset 0 0 0 2px var(--accent); background: #e3effa; }
+  .tl-stage.drop-ng { box-shadow: inset 0 0 0 2px var(--danger); background: #fbe9e9; }
+  .tl-bar { cursor: grab; }
+  .tl-bar.dragging { opacity: .35; }
+  #tlDropTip { position: fixed; z-index: 80; background: var(--accent); color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 10px; pointer-events: none; white-space: nowrap; }
+  #tlDropTip.ng { background: var(--danger); }
   #tlDrop { position: absolute; top: 0; width: 4px; background: var(--accent); border-radius: 2px; z-index: 4; pointer-events: none; }
   #tlFoot { display: flex; align-items: center; padding: 2px 8px 6px 0; }
   #tlFoot .tl-lb { flex: 0 0 52px; height: 18px; line-height: 18px; font-weight: 400; color: #567; }
@@ -508,7 +514,7 @@
   <a class="lx-brand" href="../index.html" title="LexxMoMa Tools のトップへ" aria-label="LexxMoMa Tools のトップへ戻る"><img id="corpLogo" class="lx-logo" src="../assets/lexxpluss-logo.png" alt="LexxPluss"><span class="lx-wordmark">LexxMoMa</span></a>
   <div>
     <h1 class="lx-tool">動作シミュレーター</h1>
-    <div id="revDisp">rev.72</div>
+    <div id="revDisp">rev.73</div>
   </div>
   </div>
   <div class="time-box" id="timeBox"><span class="tb-long">経過時間 / トータル時間：</span><span class="tb-short">経過 / 合計：</span><b id="elapsedDisp">0.00</b> s / <b id="totalDisp">0.00</b> s</div>
@@ -559,7 +565,8 @@
           <tr><td>描くツールの切替</td><td><kbd>V</kbd> 選択 / <kbd>B</kbd> 箱 / <kbd>Z</kbd> 区画 / <kbd>L</kbd> 直線 / <kbd>T</kbd> 文字 / <kbd>I</kbd> 下絵</td></tr>
           <tr><td>0.1m刻みで配置</td><td><kbd>Shift</kbd>＋ドラッグ（描画・移動時）</td></tr>
           <tr><td>シーケンスの段を選ぶ</td><td>下のタイムラインで段をクリック（右に設定が出る）</td></tr>
-          <tr><td>シーケンスの段を並べ替え</td><td>タイムラインで段を左右にドラッグ</td></tr>
+          <tr><td>シーケンスの段を並べ替え</td><td>タイムラインで段の何も無い所を左右にドラッグ</td></tr>
+          <tr><td>ブロックを別の段で同時に動かす／別の段にする</td><td>タイムラインで棒を別の段の上／段と段のあいだへドラッグ</td></tr>
           <tr><td>途中の時刻に飛ぶ</td><td>タイムラインの目盛り（上の数字の帯）か赤い線をドラッグ</td></tr>
         </table>
       </div>
@@ -2796,7 +2803,7 @@ function renderProgram() {
   }
   stEl.appendChild(addEl);
   const note = document.createElement("div"); note.className = "hint"; note.style.marginTop = "6px";
-  note.textContent = "同じ段のブロックは同時に動き始め、段の時間は遅い方で決まります。";
+  note.textContent = "同じ段のブロックは同時に動き始め、段の時間は遅い方で決まります。タイムラインで棒を別の段の上へドラッグすると、その段で同時に動きます（段と段のあいだに落とすと新しい段）。";
   stEl.appendChild(note);
   progEl.appendChild(stEl);
 }
@@ -2960,9 +2967,13 @@ function renderTimeline() {
         els.push(bar("other", bw, "other", b.name || "その他", laneY.other + oi * h, h - 2));
         oi++;
       }
-      if (b.type === "point") for (const e of els) { // マウスを乗せると、このブロックが終わったときの姿勢を影で出す
-        e.addEventListener("mouseenter", () => { hoverBlockGhost = blockEndPose(si, bi); });
-        e.addEventListener("mouseleave", () => { hoverBlockGhost = null; });
+      for (const e of els) {
+        e.dataset.bi = bi;
+        e.addEventListener("mousedown", (ev) => tlBlockMouseDown(ev, si, bi)); // 棒のドラッグはブロックを動かす
+        if (b.type === "point") { // マウスを乗せると、このブロックが終わったときの姿勢を影で出す
+          e.addEventListener("mouseenter", () => { hoverBlockGhost = blockEndPose(si, bi); });
+          e.addEventListener("mouseleave", () => { hoverBlockGhost = null; });
+        }
       }
     });
     if (!prog || !prog.blocks.length) {
@@ -3042,14 +3053,19 @@ function renderBreakdown() {
   }
 }
 
-/* 段のクリック（選ぶ）とドラッグ（並べ替え） */
-let stageDrag = null; // {from, sx, started, dropIdx}
+/* 段のクリック（選ぶ）とドラッグ
+ *  - 段の何も無い所をドラッグ: 段ごと並べ替え（段と段のあいだの青い線の所へ）
+ *  - 棒（ブロック）をドラッグ: そのブロックだけを動かす。別の段の上に落とすと、その段で同時に動く。
+ *    段と段のあいだ（青い線）に落とすと、新しい段になる。元の段が空になったら消す */
+let stageDrag = null; // {kind: "stage"|"block", from, bi, sx, started, drop}
 const dropInd = document.createElement("div"); // 挿入位置を示す縦の線
 dropInd.id = "tlDrop";
+const dropTip = document.createElement("div"); // ドラッグ中の説明（「同時に動かす」など）
+dropTip.id = "tlDropTip";
 function cancelStageDrag() {
   stageDrag = null;
-  document.querySelectorAll(".tl-stage.dragging").forEach(el => el.classList.remove("dragging"));
-  dropInd.remove();
+  document.querySelectorAll(".tl-stage.dragging, .tl-stage.drop-into, .tl-stage.drop-ng, .tl-bar.dragging").forEach(el => el.classList.remove("dragging", "drop-into", "drop-ng"));
+  dropInd.remove(); dropTip.remove();
   document.body.style.userSelect = "";
   document.body.style.cursor = "";
 }
@@ -3059,21 +3075,82 @@ function tlStageMouseDown(e, si) {
   if (e.button !== 0) return;
   e.preventDefault();
   cancelStageDrag();
-  stageDrag = { from: si, sx: e.clientX, started: false, dropIdx: null };
+  stageDrag = { kind: "stage", from: si, sx: e.clientX, started: false, drop: null };
+}
+function tlBlockMouseDown(e, si, bi) {
+  if (e.button !== 0) return;
+  e.preventDefault(); e.stopPropagation();
+  cancelStageDrag();
+  stageDrag = { kind: "block", from: si, bi, sx: e.clientX, started: false, drop: null };
 }
 function tlLocalX(clientX) { return clientX - tlScrollEl.getBoundingClientRect().left + tlScrollEl.scrollLeft; }
+/* ブロックを段 si に入れられるか（同じ段で車体・アームを動かすのは 1 つずつ） */
+function canJoinStage(b, si) {
+  if (b.type !== "point") return true;
+  const u = stageUse(state.program[si]), m = blockMoves(b);
+  return !((u.body && m.body) || (u.arm && m.arm));
+}
 function updateStageDrop(clientX) {
   const r = tlScrollEl.getBoundingClientRect();
   // 端に近づいたら横にスクロール
   if (clientX < r.left + 30) tlScrollEl.scrollLeft -= 12;
   else if (clientX > r.right - 30) tlScrollEl.scrollLeft += 12;
-  const x = tlLocalX(clientX), g = tlGeom;
-  let idx = g.xs.length;
-  for (let i = 0; i < g.xs.length; i++) if (x < g.xs[i] + g.ws[i] / 2) { idx = i; break; }
-  stageDrag.dropIdx = idx;
-  if (!dropInd.parentNode) tlInnerEl.appendChild(dropInd);
-  dropInd.style.left = ((idx < g.xs.length ? g.xs[idx] : g.end) - 2) + "px";
-  dropInd.style.height = (TL_RULER + tlLane * 3) + "px";
+  const x = tlLocalX(clientX), g = tlGeom, d = stageDrag;
+  tlInnerEl.querySelectorAll(".tl-stage.drop-into, .tl-stage.drop-ng").forEach(el => el.classList.remove("drop-into", "drop-ng"));
+  let drop = null;
+  if (d.kind === "block") {
+    // 段の内側（両端を除く）なら「その段に入れる」、両端と段のあいだなら「新しい段」
+    for (let i = 0; i < g.xs.length; i++) {
+      const edge = Math.min(12, g.ws[i] * 0.25);
+      if (x >= g.xs[i] + edge && x < g.xs[i] + g.ws[i] - edge) { drop = { into: i }; break; }
+    }
+  }
+  if (!drop) {
+    let idx = g.xs.length;
+    for (let i = 0; i < g.xs.length; i++) if (x < g.xs[i] + g.ws[i] / 2) { idx = i; break; }
+    drop = { at: idx };
+  }
+  d.drop = drop;
+  let tip = "";
+  if (drop.into !== undefined) {
+    dropInd.remove();
+    const col = tlInnerEl.querySelector(`.tl-stage[data-si="${drop.into}"]`);
+    const b = state.program[d.from].blocks[d.bi];
+    if (drop.into === d.from) tip = "";
+    else if (canJoinStage(b, drop.into)) { if (col) col.classList.add("drop-into"); tip = `段 ${drop.into + 1} で同時に動かす`; }
+    else { if (col) col.classList.add("drop-ng"); tip = `段 ${drop.into + 1} には入れられません（車体・アームを動かすブロックは 1 段に 1 つずつ）`; d.drop = null; }
+  } else {
+    if (!dropInd.parentNode) tlInnerEl.appendChild(dropInd);
+    dropInd.style.left = ((drop.at < g.xs.length ? g.xs[drop.at] : g.end) - 2) + "px";
+    dropInd.style.height = (TL_RULER + tlLane * 3) + "px";
+    tip = d.kind === "block" ? "新しい段にする" : "";
+  }
+  if (tip) {
+    if (!dropTip.parentNode) document.body.appendChild(dropTip);
+    dropTip.textContent = tip;
+    dropTip.classList.toggle("ng", !d.drop);
+    dropTip.style.left = (clientX + 14) + "px";
+    dropTip.style.top = (r.top - 26) + "px";
+  } else dropTip.remove();
+}
+/* ブロックを動かす。drop: {into: 段} か {at: 挿入位置} */
+function moveBlock(from, bi, drop) {
+  const src = state.program[from], b = src && src.blocks[bi];
+  if (!b) return;
+  if (drop.into !== undefined) {
+    if (drop.into === from || !canJoinStage(b, drop.into)) return;
+  } else if (src.blocks.length === 1) { // 1 つだけの段を動かすのは、段の並べ替えと同じ
+    moveStage(from, drop.at);
+    return;
+  }
+  pushUndo();
+  const dst = drop.into !== undefined ? state.program[drop.into] : { blocks: [] };
+  src.blocks.splice(bi, 1);
+  dst.blocks.push(b);
+  if (drop.at !== undefined) state.program.splice(drop.at, 0, dst);
+  if (!src.blocks.length) state.program.splice(state.program.indexOf(src), 1);
+  selStage = state.program.indexOf(dst);
+  renderProgram(); recompute();
 }
 window.addEventListener("mousemove", (e) => {
   if (tlScrub) { tlScrubMove(e); return; }
@@ -3081,8 +3158,8 @@ window.addEventListener("mousemove", (e) => {
   if (!stageDrag.started) {
     if (Math.abs(e.clientX - stageDrag.sx) < 6) return;
     stageDrag.started = true;
-    const col = tlInnerEl.querySelector(`.tl-stage[data-si="${stageDrag.from}"]`);
-    if (col) col.classList.add("dragging");
+    if (stageDrag.kind === "block") tlInnerEl.querySelectorAll(`.tl-stage[data-si="${stageDrag.from}"] .tl-bar[data-bi="${stageDrag.bi}"]`).forEach(el => el.classList.add("dragging"));
+    else { const col = tlInnerEl.querySelector(`.tl-stage[data-si="${stageDrag.from}"]`); if (col) col.classList.add("dragging"); }
     document.body.style.userSelect = "none";
     document.body.style.cursor = "grabbing";
   }
@@ -3094,9 +3171,13 @@ window.addEventListener("mouseup", () => {
   if (!stageDrag) return;
   const d = stageDrag;
   cancelStageDrag(); // 見た目と状態を必ず解除してから処理
-  if (!d.started) { selectStage(d.from === selStage ? null : d.from); return; } // クリック: 選ぶ（もう一度で外す）
-  if (d.dropIdx === null) return;
-  moveStage(d.from, d.dropIdx);
+  if (!d.started) { // クリック: 段を選ぶ（もう一度で外す）。棒のクリックは、その段を選ぶだけ
+    selectStage(d.kind === "block" ? d.from : (d.from === selStage ? null : d.from));
+    return;
+  }
+  if (!d.drop) return;
+  if (d.kind === "block") moveBlock(d.from, d.bi, d.drop);
+  else moveStage(d.from, d.drop.at);
 });
 
 /* 再生位置のドラッグ: その時刻の姿勢に飛ぶ。一時停止の扱いになり、「▶ 再開」で続きから、「⏹ リセット」で再生前の姿勢に戻る */
