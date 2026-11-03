@@ -71,8 +71,6 @@
   #colLeft  { width: 270px; flex-shrink: 0; flex-direction: row; overflow: hidden; }
   /* 左ペインの中身（縦に並ぶ）と、右側に開く位置の編集欄 */
   #leftMain { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; overflow-x: hidden; }
-  #leftEdit { flex: 0 0 290px; display: flex; flex-direction: column; min-height: 0; }
-  #leftEdit[hidden] { display: none; }
   #editPane { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
   #editPane .efoot { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: 6px; }
   #editPane .efoot[hidden] { display: none; }
@@ -269,11 +267,11 @@
   #pointDetail .jgrid input { flex: 1 1 0; min-width: 0; width: 100%; box-sizing: border-box; }
   #pointDetail .ro { color: #456; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   /* 編集欄の表（ラベル｜入力）。レイアウトの設定欄の共通の指定より優先する */
-  #leftEdit #pointDetail .pgrid { grid-template-columns: auto minmax(0, 1fr); gap: 5px 8px; align-items: center; }
-  #leftEdit #pointDetail .pgrid .full { grid-column: 2 / -1; }
-  #leftEdit #pointDetail .pgrid .pair { display: flex; align-items: center; gap: 4px; min-width: 0; }
-  #leftEdit #pointDetail .pgrid .pair input { flex: 1 1 0; min-width: 0; }
-  #leftEdit #pointDetail .jgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px 6px; }
+  #editPane #pointDetail .pgrid { grid-template-columns: auto minmax(0, 1fr); gap: 5px 8px; align-items: center; }
+  #editPane #pointDetail .pgrid .full { grid-column: 2 / -1; }
+  #editPane #pointDetail .pgrid .pair { display: flex; align-items: center; gap: 4px; min-width: 0; }
+  #editPane #pointDetail .pgrid .pair input { flex: 1 1 0; min-width: 0; }
+  #editPane #pointDetail .jgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px 6px; }
   /* ---- 操作方法と前提値（ヘッダーの ⓘ で開く） ---- */
   #infoDlg { position: fixed; inset: 0; z-index: 60; background: rgba(20,30,40,.35); display: flex; align-items: center; justify-content: center; }
   #infoDlg[hidden] { display: none; }
@@ -504,8 +502,11 @@
   .rtab > fieldset { border-top-left-radius: 0; }
   .rtab > fieldset > legend { display: none; }
   /* ---- オブジェクト一覧 ---- */
-  #objList { overflow-y: auto; flex: 1; min-height: 80px; max-height: 40%; margin-top: 6px; border: 1px solid var(--border); border-radius: 6px; background: #fbfcfd; }
-  #tabObj button { white-space: nowrap; }
+  #objList { overflow-y: auto; flex: 1; min-height: 80px; margin-top: 6px; border: 1px solid var(--border); border-radius: 6px; background: #fbfcfd; }
+  #ltabObj button { white-space: nowrap; }
+  #inspSeq[hidden], #inspObj[hidden], #editPane[hidden], #seqActions[hidden] { display: none !important; }
+  #leftTabs .tab { padding-left: 11px; padding-right: 11px; white-space: nowrap; }
+  #inspector > legend { font-size: 13px; }
   .obj-item { display: flex; align-items: center; gap: 6px; padding: 3px 6px; border-bottom: 1px dashed #e2e6ea; cursor: pointer; font-size: 12px; }
   .obj-item:hover { background: var(--accent2); }
   .obj-item.sel { background: #dcebf7; outline: 1px solid var(--accent); }
@@ -545,7 +546,7 @@
   <a class="lx-brand" href="../index.html" title="LexxMoMa Tools のトップへ" aria-label="LexxMoMa Tools のトップへ戻る"><img id="corpLogo" class="lx-logo" src="../assets/lexxpluss-logo.png" alt="LexxPluss"><span class="lx-wordmark">LexxMoMa</span></a>
   <div>
     <h1 class="lx-tool">動作シミュレーター</h1>
-    <div id="revDisp">rev.79</div>
+    <div id="revDisp">rev.80</div>
   </div>
   </div>
   <div class="time-box" id="timeBox"><span class="tb-long">経過時間 / トータル時間：</span><span class="tb-short">経過 / 合計：</span><b id="elapsedDisp">0.00</b> s / <b id="totalDisp">0.00</b> s</div>
@@ -628,7 +629,8 @@
     </fieldset>
     <div id="leftTabs" role="tablist">
       <button class="tab on" role="tab" data-ltab="pts">登録した位置</button>
-      <button class="tab" role="tab" data-ltab="arm">アーム操作</button>
+      <button class="tab" role="tab" data-ltab="arm" title="アーム操作（手先・関節）">アーム</button>
+      <button class="tab" role="tab" data-ltab="obj">レイアウト</button>
     </div>
     <div class="rtab" id="ltabPts">
     <fieldset id="paneRegister">
@@ -672,16 +674,31 @@
           </div>
       </fieldset>
     </div>
-  </div>
-  <!-- 位置の編集（一覧の ✎ で開く。左ペインを右へ広げて出す） -->
-  <div id="leftEdit" hidden>
-    <fieldset id="editPane">
-      <legend>位置の編集</legend>
-      <div class="ehead"><b id="editTitle"></b><button id="btnEditClose" class="small" title="編集欄を閉じる">✕ 閉じる</button></div>
-      <div id="pointDetail"></div>
-      <!-- 編集欄の下端に、今の位置で上書きと削除 -->
-      <div class="efoot" id="editFoot"><button id="btnPtOvw" title="この位置を、今の車体の位置・アームの姿勢で置き換えます（Ctrl+Z で戻せます）">今の位置で上書き</button><button id="btnEditDel" class="danger" title="この位置を削除します（Ctrl+Z で戻せます）">この位置を削除</button></div>
+    <!-- レイアウトの物（設備・区画・直線・文字・下絵）の一覧。選んだ物の設定は右ペインに出る -->
+    <div class="rtab" id="ltabObj" hidden>
+    <fieldset id="layoutPane" style="flex:1; display:flex; flex-direction:column; min-height:0;">
+      <legend>レイアウト</legend>
+      <input type="file" id="fileBgImg" accept="image/png,image/*" style="display:none">
+      <!-- 一覧 -->
+      <div style="display:flex; gap:4px; align-items:center; margin-top:6px; flex-wrap:wrap;">
+        <select id="objFilter" title="種類で絞り込み">
+          <option value="all">すべて</option>
+          <option value="box">設備（箱）</option>
+          <option value="zone">区画</option>
+          <option value="line">直線</option>
+          <option value="text">文字</option>
+          <option value="image">下絵</option>
+        </select>
+        <span style="flex:1"></span>
+        <button id="btnObjDup" class="small">複製</button>
+        <button id="btnObjVis" class="small">表示／非表示</button>
+        <button id="btnObjFocus" class="small" title="2D の表示をこのオブジェクトに合わせる">表示位置へ</button>
+        <button id="btnObjDel" class="small danger">削除</button>
+      </div>
+      <div id="objList"></div>
+      <div class="hint" style="margin-top:6px;">描くのはキャンバス左端のツール。選ぶと右ペインに設定が出ます。</div>
     </fieldset>
+    </div>
   </div>
   </div>
 
@@ -778,20 +795,40 @@
 
   <div class="splitter" id="splitR" title="ドラッグで幅を調整"></div>
 
-  <!-- ============ 右：動作ブロック／オブジェクト ============ -->
+  <!-- ============ 右：選んだ物の設定（段・開始・レイアウトの物・登録した位置） ============ -->
   <div class="col" id="colRight">
-    <div id="rightTabs" role="tablist">
-      <button class="tab on" role="tab" data-tab="seq">シーケンス</button>
-      <button class="tab" role="tab" data-tab="obj">レイアウト</button>
-    </div>
-    <div class="rtab" id="tabSeq">
-    <fieldset style="flex:1; display:flex; flex-direction:column; min-height:0;">
-      <legend>シーケンス</legend>
-      <div id="progScroll" style="overflow-y:auto; flex:1;">
-        <div id="program"></div>
+    <fieldset id="inspector" style="flex:1; display:flex; flex-direction:column; min-height:0;">
+      <legend id="inspTitle">シーケンス</legend>
+      <div id="progScroll" style="overflow-y:auto; flex:1; display:flex; flex-direction:column;">
+        <!-- 段・開始を選んだとき（タイムライン） -->
+        <div id="inspSeq"><div id="program"></div></div>
+        <!-- レイアウトの物を選んだとき（左ペインの一覧・キャンバス） -->
+        <div id="inspObj" hidden>
+          <!-- 縮尺合わせ（下絵を選んで「線を引いて縮尺を合わせる」を押すと出る） -->
+          <div id="calibPanel" style="display:none; margin:6px 0; padding:6px; background:#fdf0f5; border:1px solid #e7a3bd; border-radius:6px;">
+            <div class="hint" style="margin-bottom:4px;">引いた線の実際の長さを入力してください。</div>
+            <div style="display:flex; gap:4px; align-items:center;">
+              <span style="white-space:nowrap;">実寸</span>
+              <input type="number" id="calibLen" step="0.01" min="0.01" placeholder="例: 3.6" style="flex:1; min-width:0; width:auto;">
+              <span>m</span>
+            </div>
+            <div style="display:flex; gap:4px; justify-content:flex-end; margin-top:4px;">
+              <button id="btnCalibApply" class="primary">適用</button>
+              <button id="btnCalibCancel">取消</button>
+            </div>
+          </div>
+          <div id="objProps"><div class="hint">左ペインの「レイアウト」の一覧から選ぶと、ここに設定が出ます。2D・3D 上のクリックでも選べます。</div></div>
+        </div>
+        <!-- 登録した位置の「編集」を押したとき -->
+        <div id="editPane" hidden>
+          <div class="ehead"><b id="editTitle"></b><button id="btnEditClose" class="small" title="編集欄を閉じる">✕ 閉じる</button></div>
+          <div id="pointDetail"></div>
+          <!-- 編集欄の下端に、今の位置で上書きと削除 -->
+          <div class="efoot" id="editFoot"><button id="btnPtOvw" title="この位置を、今の車体の位置・アームの姿勢で置き換えます（Ctrl+Z で戻せます）">今の位置で上書き</button><button id="btnEditDel" class="danger" title="この位置を削除します（Ctrl+Z で戻せます）">この位置を削除</button></div>
+        </div>
       </div>
-      <div class="addrow">
-        <button id="btnClearProg" class="danger">全削除</button>
+      <div class="addrow" id="seqActions">
+        <button id="btnClearProg" class="danger" title="シーケンスの段をすべて消します（Ctrl+Z で戻せます）">シーケンス全削除</button>
         <div style="flex:1"></div>
         <button id="btnExportCsv" title="各工程の内容と所要時間をCSV（Excelで開けます）で出力します">シーケンスをCSV出力</button>
       </div>
@@ -800,44 +837,6 @@
         <table id="statsTable"></table>
       </details>
     </fieldset>
-    </div>
-    <div class="rtab" id="tabObj" hidden>
-    <fieldset style="flex:1; display:flex; flex-direction:column; min-height:0;">
-      <legend>レイアウト</legend>
-      <input type="file" id="fileBgImg" accept="image/png,image/*" style="display:none">
-      <!-- 縮尺合わせ（下絵を選んで「線を引いて縮尺を合わせる」を押すと出る） -->
-      <div id="calibPanel" style="display:none; margin:6px 0; padding:6px; background:#fdf0f5; border:1px solid #e7a3bd; border-radius:6px;">
-        <div class="hint" style="margin-bottom:4px;">引いた線の実際の長さを入力してください。</div>
-        <div style="display:flex; gap:4px; align-items:center;">
-          <span style="white-space:nowrap;">実寸</span>
-          <input type="number" id="calibLen" step="0.01" min="0.01" placeholder="例: 3.6" style="flex:1; min-width:0; width:auto;">
-          <span>m</span>
-        </div>
-        <div style="display:flex; gap:4px; justify-content:flex-end; margin-top:4px;">
-          <button id="btnCalibApply" class="primary">適用</button>
-          <button id="btnCalibCancel">取消</button>
-        </div>
-      </div>
-      <!-- 一覧 -->
-      <div style="display:flex; gap:4px; align-items:center; margin-top:6px; flex-wrap:wrap;">
-        <select id="objFilter" title="種類で絞り込み">
-          <option value="all">すべて</option>
-          <option value="box">設備（箱）</option>
-          <option value="zone">区画</option>
-          <option value="line">直線</option>
-          <option value="text">文字</option>
-          <option value="image">下絵</option>
-        </select>
-        <span style="flex:1"></span>
-        <button id="btnObjDup" class="small">複製</button>
-        <button id="btnObjVis" class="small">表示／非表示</button>
-        <button id="btnObjFocus" class="small" title="2D の表示をこのオブジェクトに合わせる">表示位置へ</button>
-        <button id="btnObjDel" class="small danger">削除</button>
-      </div>
-      <div id="objList"></div>
-      <div id="objProps"><div class="hint">一覧から選ぶと、ここに設定が出ます。2D・3D 上のクリックでも選べます。</div></div>
-    </fieldset>
-    </div>
   </div>
 </main>
 
@@ -2364,7 +2363,7 @@ function pointRow(p, use) {
   acts.appendChild(smallBtn("動かす", p.body && p.arm ? "ロボットをこの位置へ動かす（車体とアーム）" : p.body ? "車体をこの位置へ動かす" : "アームをこの姿勢にする",
     () => moveRobotTo(p.body, p.arm), "txt"));
   if (p.body && p.arm) acts.appendChild(smallBtn("アームだけ", "アームだけこの姿勢にする（車体は今の場所のまま）", () => moveRobotTo(null, p.arm), "txt"));
-  const ed = smallBtn("編集", "名前・位置・関節の数値を、左ペインの右側で直す", () => openPointEdit(p.name), "txt edit");
+  const ed = smallBtn("編集", "名前・位置・関節の数値を、右ペインで直す", () => openPointEdit(p.name), "txt edit");
   if (editOpen && selPointName === p.name) ed.classList.add("on");
   acts.appendChild(ed);
   div.appendChild(acts);
@@ -2381,29 +2380,17 @@ function pointRow(p, use) {
   return div;
 }
 
-/* 位置の編集欄: ✎ で開き、左ペインを右へ広げてその右側に出す。✕ で閉じて元の幅に戻す */
-const EDIT_W = 298; // 編集欄の幅＋すき間 [px]
+/* 位置の編集欄: 一覧の「編集」で右ペインに出す。✕ で閉じるとシーケンスの設定に戻る */
 let editOpen = false;
 function openPointEdit(name) {
   selPointName = name;
-  if (!editOpen) {
-    editOpen = true;
-    document.getElementById("leftEdit").hidden = false;
-    const col = document.getElementById("colLeft");
-    col.style.width = (col.getBoundingClientRect().width + EDIT_W) + "px";
-    resizeCanvas();
-  }
+  showRightTab("pt"); // editOpen = true になる
   renderPoseLists();
   renderPointDetail(true);
 }
 function closePointEdit() {
   if (!editOpen) return;
-  editOpen = false;
-  document.getElementById("leftEdit").hidden = true;
-  const col = document.getElementById("colLeft");
-  col.style.width = Math.max(220, col.getBoundingClientRect().width - EDIT_W) + "px";
-  resizeCanvas();
-  renderPoseLists();
+  showRightTab("seq"); // editOpen = false になり、一覧も作り直す
 }
 document.getElementById("btnEditClose").addEventListener("click", closePointEdit);
 function renderPoseLists() {
@@ -3751,7 +3738,7 @@ function setBgMode(m) {
   bgTemp = null; bgLineStart = null; bgMouse = null; bgDrag = null;
   resetCalib();
   if (bgMode && viewMode === "3d") setViewMode("2d"); // 描く・選ぶのは 2D のキャンバスで
-  if (bgMode) showRightTab("obj");
+  if (bgMode) { showRightTab("obj"); showLeftTab("obj"); }
   // 選んだツールの設定だけキャンバス上部の帯に出す
   const shape = (bgMode === "box" || bgMode === "zone" || bgMode === "line");
   document.getElementById("drawOptShape").style.display = shape ? "inline-flex" : "none";
@@ -3819,7 +3806,7 @@ cv.addEventListener("mousemove", (e) => {
 function selectObject(id, opts) {
   selectedId = id;
   renderObjectList();
-  if (id && !(opts && opts.keepTab)) showRightTab("obj");
+  if (id) { showRightTab("obj"); showLeftTab("obj"); } // 選んだ物は、左の一覧と右の設定に出す
 }
 
 cv.addEventListener("click", (e) => {
@@ -4141,11 +4128,11 @@ document.getElementById("btnExportCsv").addEventListener("click", () => {
 const TOUR_STEPS = [
   { target: null, title: "LexxMoMa 動作シミュレーターへようこそ", text: "このツールでは、モバイルマニピュレータ（走行台車＋アーム）の動作シーケンスを組み立て、サイクルタイムを見積もれます。基本の使い方を順番に案内します。" },
   { target: "#btnFile", title: "まずサンプルを見る", text: "「📁 ファイル」の「サンプルを開く」から、用意してあるレイアウトとシーケンスの例を開けます。どんな動きができるかを見るには、まずこれを再生してみてください。" },
-  { target: "#regBox", title: "① まず位置を登録", text: "車体をキーボードの矢印キーで、アームを左ペインの「アーム操作」タブで動かし、「＋ 今の位置を登録」で名前を付けて登録します。車体の位置とアームの姿勢が 1 件にまとまり、ここが動作の目的地になります（チェックを外せば車体だけ・アームだけも登録できます）。同じ場所で登録した位置は、一覧で場所の見出しの下にまとまります。" },
+  { target: "#regBox", title: "① まず位置を登録", text: "車体をキーボードの矢印キーで、アームを左ペインの「アーム」タブで動かし、「＋ 今の位置を登録」で名前を付けて登録します。車体の位置とアームの姿勢が 1 件にまとまり、ここが動作の目的地になります（チェックを外せば車体だけ・アームだけも登録できます）。同じ場所で登録した位置は、一覧で場所の見出しの下にまとまります。" },
   { target: "#canvasWrap", title: "② 中央ビューの操作", text: "ロボットとレイアウトを表示します。ドラッグで画面移動、マウスホイールまたは左下の＋−で拡大縮小できます。" },
-  { target: "#viewSeg", before: () => showLeftTab("arm"), title: "②' 3D 表示とアームの手先操作", text: "「3D」に切り替えると自由な視点でロボットを見られます（左ドラッグで回転、右ドラッグで移動）。アームは FANUC CRX-20iA/L の 6 軸です。左ペインの「アーム操作」タブで、手先（X/Y/Z/W/P/R を指定。3D では手先に出る矢印をマウスでドラッグ）か関節（J1〜J6）かを選んで動かせます。手先で動かすと逆運動学で関節が決まり、関節で動かすと手先の位置が変わります。届く高さ・距離の確認に使ってください。" },
+  { target: "#viewSeg", before: () => showLeftTab("arm"), title: "②' 3D 表示とアームの手先操作", text: "「3D」に切り替えると自由な視点でロボットを見られます（左ドラッグで回転、右ドラッグで移動）。アームは FANUC CRX-20iA/L の 6 軸です。左ペインの「アーム」タブで、手先（X/Y/Z/W/P/R を指定。3D では手先に出る矢印をマウスでドラッグ）か関節（J1〜J6）かを選んで動かせます。手先で動かすと逆運動学で関節が決まり、関節で動かすと手先の位置が変わります。届く高さ・距離の確認に使ってください。" },
   { target: "#toolbar", title: "③ レイアウトを描く", text: "キャンバス左のツールで「箱」（設備・机。高さを持ち 3D では箱）、「区画」（床の目印）、直線をドラッグして描き、文字はクリックで置きます。Shift を押しながらだと 0.1 m 刻みになります。「下絵」で顧客のレイアウト図（PNG）を床に敷けます。" },
-  { target: "#tabObj", before: () => showRightTab("obj"), title: "③' 一覧と設定", text: "描いた物は右ペインの「レイアウト」タブに並びます。選ぶと名前・位置・寸法・高さを数値で直せ、🔒 でロックすると画面上で誤って選ばれなくなります。下絵は選んで「📏 線を引いて縮尺を合わせる」で実寸に合わせます。" },
+  { target: "#ltabObj", before: () => { showLeftTab("obj"); showRightTab("obj"); }, title: "③' 一覧と設定", text: "描いた物は左ペインの「レイアウト」タブに並びます。選ぶと右ペインで名前・位置・寸法・高さを数値で直せ、🔒 でロックすると画面上で誤って選ばれなくなります。下絵は選んで「📏 線を引いて縮尺を合わせる」で実寸に合わせます。" },
   { target: "#timeline", title: "④ タイムラインで動作を組む", text: "下のタイムラインの「＋ Move」で工程を足します（登録した位置へ。車体＋アーム／車体だけ／アームだけを選べます）。撮像・把持など時間だけかかる動作は「＋ その他」です。縦の線のあいだが 1 段で、段は左から順に動き、同じ段のブロックは同時に動き始めます。斜線はもう一方を待っている時間です。段は左右にドラッグして並べ替えられます。" },
   { target: "#colRight", before: () => showRightTab("seq"), title: "④' 段の設定", text: "タイムラインで段をクリックすると、右にその段の設定（行き先・動かすもの・走行経路・最大速度）が出ます。「この段で同時に」で同時に動くブロックを足せます。タイムラインの左端「開始」をクリックすると、開始位置（時刻 0 の車体の位置・アームの姿勢）を変えられます。" },
   { target: "#tlHead", title: "⑤ 再生して確認", text: "「再生」で動きを確認できます（もう一度押すと一時停止、さらに押すと再開）。タイムラインの上の目盛りか赤い線をドラッグすると、その時刻の姿勢に飛べます。「⏺ 録画」を押すと、再生しながら動きを動画（WebM）として保存できます。" },
@@ -4555,15 +4542,29 @@ document.getElementById("btnArmReady").addEventListener("click", () => { if (pla
 function showLeftTab(t) {
   document.getElementById("ltabPts").hidden = t !== "pts";
   document.getElementById("ltabArm").hidden = t !== "arm";
+  document.getElementById("ltabObj").hidden = t !== "obj";
+  document.getElementById("regBox").hidden = t === "obj"; // レイアウトのタブでは「位置の登録」は使わないので隠す
   document.querySelectorAll("#leftTabs .tab").forEach(b => b.classList.toggle("on", b.dataset.ltab === t));
 }
-document.querySelectorAll("#leftTabs .tab").forEach(b => b.addEventListener("click", () => showLeftTab(b.dataset.ltab)));
+document.querySelectorAll("#leftTabs .tab").forEach(b => b.addEventListener("click", () => {
+  showLeftTab(b.dataset.ltab);
+  if (b.dataset.ltab === "obj") showRightTab("obj"); // レイアウトの一覧を開いたら、右は選んだ物の設定
+}));
+/* 右ペイン（選んだ物の設定）に何を出すか: "seq" 段・開始 ／ "obj" レイアウトの物 ／ "pt" 登録した位置の編集 */
+let inspKind = "seq";
 function showRightTab(t) {
-  document.getElementById("tabSeq").hidden = t !== "seq";
-  document.getElementById("tabObj").hidden = t !== "obj";
-  document.querySelectorAll("#rightTabs .tab").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
+  inspKind = t;
+  document.getElementById("inspSeq").hidden = t !== "seq";
+  document.getElementById("inspObj").hidden = t !== "obj";
+  document.getElementById("editPane").hidden = t !== "pt";
+  // シーケンス全体の操作（全削除・CSV・トータル時間）は、シーケンスを出しているときだけ
+  document.getElementById("seqActions").hidden = t !== "seq";
+  document.getElementById("statsDetails").hidden = t !== "seq";
+  document.getElementById("inspTitle").textContent = t === "obj" ? "レイアウトの設定" : t === "pt" ? "位置の編集" : "シーケンス";
+  const was = editOpen;
+  editOpen = t === "pt";
+  if (was !== editOpen) renderPoseLists(); // 一覧の「編集」ボタンの印を合わせる
 }
-document.querySelectorAll("#rightTabs .tab").forEach(b => b.addEventListener("click", () => showRightTab(b.dataset.tab)));
 
 /* ---------------- オブジェクトの一覧と設定 ----------------
  * 一覧で選ぶ → selectedId。2D/3D のハイライトと設定欄が追従する */
