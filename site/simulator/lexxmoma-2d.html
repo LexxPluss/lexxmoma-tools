@@ -89,7 +89,55 @@
   #speedWarn b { display: block; font-size: 11px; letter-spacing: .04em; }
   .editable-val { cursor: text; border-bottom: 1px dotted #8aa; }
   .editable-val:hover { background: var(--accent2); }
-  #playbar { display: flex; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; }
+  /* ---- タイムライン（中央の下。シーケンスを組む・再生する） ---- */
+  #timeline { flex: 0 0 auto; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; min-width: 0; }
+  #tlHead { display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-bottom: 1px solid var(--border); overflow: hidden; }
+  #tlHead button, #tlHead select { white-space: nowrap; flex: 0 0 auto; }
+  #tlHead select { max-width: none; }
+  #tlInit { font-size: 11px; color: #567; margin-left: 6px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 0 1 auto; }
+  #tlInit:hover { color: var(--accent); text-decoration: underline; }
+  #tlBody { display: flex; min-width: 0; }
+  #tlLabels { flex: 0 0 52px; padding-top: 0; }
+  #tlLabels .tl-ruler-sp { height: 18px; }
+  .tl-lb { height: 26px; line-height: 26px; text-align: right; padding-right: 8px; font-size: 11px; font-weight: 700; color: #345; white-space: nowrap; }
+  #tlScroll { flex: 1; min-width: 0; overflow-x: auto; overflow-y: hidden; }
+  #tlInner { position: relative; }
+  .tl-stage { position: absolute; top: 0; border-left: 1px solid #e1e6ed; cursor: pointer; background: #fff; }
+  .tl-stage.alt { background: #f7f9fb; }
+  .tl-stage:hover { background: #eef5fc; }
+  .tl-stage.active { background: #fff6cf; }
+  .tl-stage.sel { background: #fff1e2; box-shadow: inset 0 0 0 2px #f08a24; z-index: 1; }
+  .tl-stage.dragging { opacity: .45; }
+  .tl-sno { position: absolute; left: 0; right: 0; top: 0; text-align: center; font-size: 10px; color: #8a96a3; font-variant-numeric: tabular-nums; overflow: hidden; }
+  .tl-stage.sel .tl-sno { color: #e07b14; font-weight: 700; }
+  .tl-bar { position: absolute; border-radius: 4px; color: #fff; font-size: 10.5px; padding: 0 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box; }
+  .tl-bar.body { background: #0068b7; }
+  .tl-bar.arm { background: #2e9e5b; }
+  .tl-bar.other { background: #8e99a4; }
+  .tl-bar.zero { padding: 0; opacity: .45; }
+  .tl-bar.err { background: repeating-linear-gradient(45deg, #fbe3e3 0 4px, #fff 4px 8px); border: 1.5px dashed var(--danger); color: var(--danger); font-weight: 700; }
+  .tl-wait { position: absolute; background: repeating-linear-gradient(45deg, #f3b9b9 0 2px, transparent 2px 5px); border: 1px solid #e5a0a0; border-left: 0; border-radius: 0 3px 3px 0; pointer-events: none; }
+  .tl-empty { position: absolute; left: 3px; right: 3px; border: 1.5px dashed #b9c4cf; border-radius: 4px; color: #8a96a3; font-size: 11px; display: flex; align-items: center; justify-content: center; }
+  .tl-add { position: absolute; border: 1.5px dashed #9cbbe0; border-radius: 5px; color: var(--accent); font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; background: #f3f7fc; }
+  .tl-add:hover { background: var(--accent2); border-color: var(--accent); }
+  .tl-hint { position: absolute; font-size: 11.5px; color: #8a96a3; white-space: nowrap; }
+  .tl-tick { position: absolute; transform: translateX(-50%); font-size: 9.5px; color: #8a96a3; line-height: 14px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .tl-rulerhit { position: absolute; top: 0; z-index: 2; cursor: ew-resize; }
+  #tlPlayhead { position: absolute; top: 0; width: 11px; z-index: 3; cursor: ew-resize; }
+  #tlPlayhead::before { content: ""; position: absolute; left: 4.5px; top: 0; bottom: 0; width: 2px; background: #e0323c; }
+  #tlPlayhead::after { content: ""; position: absolute; left: 0; top: 0; border: 5.5px solid transparent; border-top: 8px solid #e0323c; border-bottom: 0; }
+  #tlDrop { position: absolute; top: 0; width: 4px; background: var(--accent); border-radius: 2px; z-index: 4; pointer-events: none; }
+  #tlFoot { display: flex; align-items: center; padding: 2px 8px 6px 0; }
+  #tlFoot .tl-lb { flex: 0 0 52px; height: 18px; line-height: 18px; font-weight: 400; color: #567; }
+  #tlBreak { flex: 1; display: flex; gap: 2px; min-width: 0; height: 18px; }
+  .tl-bk { min-width: 0; border-radius: 3px; color: #fff; font-size: 10.5px; font-weight: 700; line-height: 18px; padding: 0 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tl-bk.armOnly { background: #2e9e5b; } .tl-bk.bodyOnly { background: #0068b7; } .tl-bk.both { background: #2f8f8f; } .tl-bk.other { background: #8e99a4; }
+  .tl-bk.none { color: #8a96a3; font-weight: 400; }
+  /* 右ペイン: 選んだ段の設定 */
+  .stage.sel-stage { display: block; margin-top: 8px; border-color: #f0b77a; background: #fffaf4; }
+  .sel-head { display: flex; align-items: center; gap: 4px; margin-bottom: 6px; }
+  .sel-head b { font-size: 13px; }
+  .sel-head .stage-time { margin-left: 4px; }
   .poselist { max-height: 130px; overflow-y: auto; margin-top: 4px; }
   .poselist .pose-item {
     display: flex; align-items: center; gap: 4px; padding: 2px 4px;
@@ -278,6 +326,15 @@
   :root[data-theme="dark"] .stage { background: #1e2831; }
   :root[data-theme="dark"] .stage.active { background: #3a2e10; border-color: #c9a227; }
   :root[data-theme="dark"] .stage.initial { background: #12314a; border-color: #2b5270; }
+  :root[data-theme="dark"] .stage.sel-stage { background: #2a2116; border-color: #8a5a22; }
+  :root[data-theme="dark"] .tl-stage { background: var(--panel); border-left-color: #2b3741; }
+  :root[data-theme="dark"] .tl-stage.alt { background: #1a232b; }
+  :root[data-theme="dark"] .tl-stage:hover { background: #1f2c38; }
+  :root[data-theme="dark"] .tl-stage.active { background: #3a2e10; }
+  :root[data-theme="dark"] .tl-stage.sel { background: #3a2a18; }
+  :root[data-theme="dark"] .tl-lb, :root[data-theme="dark"] #tlInit { color: #a3b1bd; }
+  :root[data-theme="dark"] .tl-add { background: #1a2632; }
+  :root[data-theme="dark"] #view3dPresets button { background: #fff; color: #223; border-color: #d4dae0; }
   :root[data-theme="dark"] table.keyhelp td { border-color: #2b3741; }
   :root[data-theme="dark"] kbd { background: #1e2831; border-color: #3a4a58; color: var(--text); }
   :root[data-theme="dark"] #simParamsText span[style*="#a15c00"] { color: #f0b840 !important; }
@@ -329,9 +386,12 @@
     background: rgba(255,255,255,.92); box-shadow: 0 1px 3px rgba(0,0,0,.15); }
   #viewSeg button { padding: 5px 16px; font-size: 13px; font-weight: 600; background: transparent; }
   #viewSeg button.on { background: var(--accent); }
-  #ctrl3d { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  /* 3D の視点などは、3D 表示のときだけキャンバスの右下に浮かせる */
+  #ctrl3d { position: absolute; right: 8px; bottom: 8px; z-index: 5; max-width: 55%; display: flex; justify-content: flex-end; }
+  #view3dPresets { background: rgba(255,255,255,.92); border: 1px solid #ccd4da; border-radius: 6px; padding: 4px 8px; color: #223; justify-content: flex-end; }
+  #view3dHint { max-width: 42%; }
   #ctrl3d label { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; white-space: nowrap; }
-  #ctrl3d button, #playbar button { white-space: nowrap; }
+  #ctrl3d button { white-space: nowrap; }
   /* キャンバス左端の縦ツールバー（2D で描く・選ぶ） */
   #toolbar { position: absolute; left: 8px; top: 8px; z-index: 6; display: flex; flex-direction: column; gap: 2px;
              background: rgba(255,255,255,.92); border: 1px solid #ccd4da; border-radius: 8px; padding: 4px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
@@ -417,7 +477,7 @@
   <a class="lx-brand" href="../index.html" title="LexxMoMa Tools のトップへ" aria-label="LexxMoMa Tools のトップへ戻る"><img id="corpLogo" class="lx-logo" src="../assets/lexxpluss-logo.png" alt="LexxPluss"><span class="lx-wordmark">LexxMoMa</span></a>
   <div>
     <h1 class="lx-tool">動作シミュレーター</h1>
-    <div id="revDisp">rev.70</div>
+    <div id="revDisp">rev.71</div>
   </div>
   </div>
   <div class="time-box" id="timeBox">経過時間 / トータル時間：<b id="elapsedDisp">0.00</b> s / <b id="totalDisp">0.00</b> s</div>
@@ -460,7 +520,9 @@
           <tr><td>走行経路ごとに最大並進速度を下げる</td><td>車体を動かす Move ブロックの「最大速度」に入力（空欄なら全体設定値）</td></tr>
           <tr><td>描くツールの切替</td><td><kbd>V</kbd> 選択 / <kbd>B</kbd> 箱 / <kbd>Z</kbd> 区画 / <kbd>L</kbd> 直線 / <kbd>T</kbd> 文字 / <kbd>I</kbd> 下絵</td></tr>
           <tr><td>0.1m刻みで配置</td><td><kbd>Shift</kbd>＋ドラッグ（描画・移動時）</td></tr>
-          <tr><td>シーケンスの段を並べ替え</td><td>段の左端のつまみ（⋮⋮）をドラッグ</td></tr>
+          <tr><td>シーケンスの段を選ぶ</td><td>下のタイムラインで段をクリック（右に設定が出る）</td></tr>
+          <tr><td>シーケンスの段を並べ替え</td><td>タイムラインで段を左右にドラッグ</td></tr>
+          <tr><td>途中の時刻に飛ぶ</td><td>タイムラインの目盛り（上の数字の帯）か赤い線をドラッグ</td></tr>
         </table>
       </div>
       <div>
@@ -588,23 +650,8 @@
         <button data-mode="2d" class="on">2D</button>
         <button data-mode="3d">3D</button>
       </div>
-      <div id="view3dHint" hidden>左ドラッグ: 回転 ／ 右ドラッグ: 移動 ／ ホイール: 拡大縮小 ／ 矢印キー: 車体・アームのティーチ</div>
-    </div>
-    <div id="playbar">
-      <button id="btnPlay" class="primary" title="再生／一時停止（押すたびに切り替わります）">▶ 再生</button>
-      <button id="btnStop">⏹ リセット</button>
-      <button id="btnRec" title="再生開始から終了までを、左右ペイン含む画面全体のWebM動画として保存します">⏺ 録画して再生</button>
-      <label>再生速度
-        <select id="playSpeed">
-          <option value="0.5">×0.5</option>
-          <option value="1" selected>×1</option>
-          <option value="2">×2</option>
-          <option value="4">×4</option>
-        </select>
-      </label>
-      <div style="flex:1"></div>
       <div id="ctrl3d">
-        <span id="view3dPresets" style="display:none; gap:4px; align-items:center;">
+        <span id="view3dPresets" style="display:none; gap:4px; align-items:center; flex-wrap:wrap;">
           <span style="font-size:12px;">視点</span>
           <button class="small" data-view="iso">斜め</button>
           <button class="small" data-view="front">正面</button>
@@ -615,6 +662,36 @@
           <label title="3D に浮いている物（箱の名前、登録した車体位置の枠）を隠します。床面の区画・文字・直線はそのまま"><input type="checkbox" id="chkHideAux"> 浮いた目印を隠す</label>
         </span>
       </div>
+      <div id="view3dHint" hidden>左ドラッグ: 回転 ／ 右ドラッグ: 移動 ／ ホイール: 拡大縮小 ／ 矢印キー: 車体・アームのティーチ</div>
+    </div>
+    <!-- タイムライン: シーケンスを時間の横棒で見せ、ここで段を選ぶ・並べ替える。再生の操作もここ -->
+    <div id="timeline">
+      <div id="tlHead">
+        <button id="btnPlay" class="primary" title="再生／一時停止（押すたびに切り替わります）">▶ 再生</button>
+        <button id="btnStop" title="再生をやめて、再生前の姿勢に戻します">⏹ リセット</button>
+        <button id="btnRec" title="録画して再生: 再生開始から終了までを、左右ペイン含む画面全体のWebM動画として保存します">⏺ 録画</button>
+        <select id="playSpeed" title="再生速度">
+          <option value="0.5">×0.5</option>
+          <option value="1" selected>×1</option>
+          <option value="2">×2</option>
+          <option value="4">×4</option>
+        </select>
+        <span id="tlInit" title="サイクルを始めるときの車体の位置とアームの姿勢。右の「シーケンス」タブで変えられます"></span>
+        <div style="flex:1"></div>
+        <button id="btnAddMove" title="選んでいる段の後ろに、新しい段として Move を足します（何も選んでいなければ最後に）">＋ Move</button>
+        <button id="btnAddOther" title="選んでいる段の後ろに、新しい段として「その他の動作」（撮像・把持など、時間だけかかる動作）を足します">＋ その他</button>
+        <select id="tlScale" title="横幅の決め方&#10;時間比例: 棒の長さが時間に比例&#10;等幅: どの段も同じ幅（名前が読みやすい）">
+          <option value="time" selected>時間比例</option>
+          <option value="even">等幅</option>
+        </select>
+        <button id="btnTlZoomOut" class="small" title="縮小">－</button>
+        <button id="btnTlZoomIn" class="small" title="拡大（横にスクロール）">＋</button>
+      </div>
+      <div id="tlBody">
+        <div id="tlLabels"><div class="tl-ruler-sp"></div><div class="tl-lb">車体</div><div class="tl-lb">アーム</div><div class="tl-lb">その他</div></div>
+        <div id="tlScroll"><div id="tlInner"></div></div>
+      </div>
+      <div id="tlFoot"><span class="tl-lb">内訳</span><div id="tlBreak"></div></div>
     </div>
   </div>
 
@@ -623,22 +700,21 @@
   <!-- ============ 右：動作ブロック／オブジェクト ============ -->
   <div class="col" id="colRight">
     <div id="rightTabs" role="tablist">
-      <button class="tab on" role="tab" data-tab="seq">動作シーケンス</button>
+      <button class="tab on" role="tab" data-tab="seq">シーケンス</button>
       <button class="tab" role="tab" data-tab="obj">レイアウト</button>
     </div>
     <div class="rtab" id="tabSeq">
     <fieldset style="flex:1; display:flex; flex-direction:column; min-height:0;">
-      <legend>動作シーケンス</legend>
-      <div id="progScroll" style="overflow-y:auto; flex:1;" title="縦に並べた段は順次実行、同じ段に並べたブロックは並列実行されます。段の時間＝ブロックの最大値">
+      <legend>シーケンス</legend>
+      <div id="progScroll" style="overflow-y:auto; flex:1;">
         <div id="program"></div>
       </div>
       <div class="addrow">
-        <button id="btnAddStage" class="primary">＋ 段を追加</button>
         <button id="btnClearProg" class="danger">全削除</button>
         <div style="flex:1"></div>
         <button id="btnExportCsv" title="各工程の内容と所要時間をCSV（Excelで開けます）で出力します">シーケンスをCSV出力</button>
       </div>
-      <details id="statsDetails" open>
+      <details id="statsDetails">
         <summary id="totalRow"><span><span class="tgl">▸</span>トータル時間</span><span id="totalDisp2">0.00 s</span></summary>
         <table id="statsTable"></table>
       </details>
@@ -1791,6 +1867,7 @@ function recompute() {
   document.getElementById("totalDisp2").textContent = currentCompiled.total.toFixed(2) + " s";
   renderProgramTimes();
   updateStats();
+  renderTimeline();
 }
 
 /* トータル時間の内訳統計（トグルを開くと表示）
@@ -1811,6 +1888,7 @@ function updateStats() {
       other += st.dur - Math.max(bodyD, armD); // どちらも動いていない時間（その他動作・待ち）
     }
   }
+  breakdown = { armOnly, bodyOnly, both, other }; // タイムラインの内訳の棒で使う
   const total = currentCompiled ? currentCompiled.total : 0;
   const pct = v => total > 0 ? (v / total * 100).toFixed(1) + " %" : "－";
   const rows = [
@@ -1889,15 +1967,19 @@ function refreshRecSnapshot() {
     });
     // スクロール位置はクローンに引き継がれないため、先頭の子に負マージンを与えて擬似的に再現する
     // （自動スクロールで動く右ペインの表示位置を動画にも反映する）
-    const scrollSel = "#leftMain, #colRight, #progScroll, .poselist";
+    const scrollSel = "#leftMain, #colRight, #progScroll, .poselist, #tlScroll";
     const liveScroll = document.querySelectorAll(scrollSel);
     const clScroll = clone.querySelectorAll(scrollSel);
     liveScroll.forEach((el, i) => {
       const c = clScroll[i];
-      if (!c || !el.scrollTop || !c.firstElementChild) return;
-      c.firstElementChild.style.marginTop = -el.scrollTop + "px";
+      if (!c || !(el.scrollTop || el.scrollLeft) || !c.firstElementChild) return;
+      if (el.scrollTop) c.firstElementChild.style.marginTop = -el.scrollTop + "px";
+      if (el.scrollLeft) c.firstElementChild.style.marginLeft = -el.scrollLeft + "px";
       c.style.overflow = "hidden";
     });
+    // 再生位置の赤い線は毎フレーム描くので、スナップショットからは外す
+    const cph = clone.querySelector("#tlPlayhead");
+    if (cph) cph.remove();
     clone.querySelectorAll("script").forEach(s => s.remove());
     const html = new XMLSerializer().serializeToString(clone);
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w * dpr}" height="${h * dpr}" viewBox="0 0 ${w} ${h}">` +
@@ -1921,6 +2003,13 @@ function compositeRecFrame() {
   const srcCv = (viewMode === "3d" && window.LexxSim3D && window.LexxSim3D.canvas) ? window.LexxSim3D.canvas : cv;
   const r = srcCv.getBoundingClientRect();
   g.drawImage(srcCv, r.left, r.top, r.width, r.height);
+  // タイムラインの再生位置（赤い線）。スクロールで見えない所にあるときは描かない
+  const ph = document.getElementById("tlPlayhead");
+  if (ph && ph.style.display !== "none") {
+    const pr = ph.getBoundingClientRect(), sr = tlScrollEl.getBoundingClientRect();
+    const x = pr.left + pr.width / 2;
+    if (x >= sr.left && x <= sr.right) { g.fillStyle = "#e0323c"; g.fillRect(x - 1, pr.top, 2, pr.height); }
+  }
   // ヘッダーの時間表示はスナップショット更新間隔ぶん遅れるため、毎フレーム描き直す（「経過時間 / トータル時間：x.xx s / y.yy s」）
   const tb = document.getElementById("timeBox");
   if (tb) {
@@ -1963,12 +2052,12 @@ function startRecording() {
     a.click();
     URL.revokeObjectURL(a.href);
     recorder = null; recChunks = []; recSnapshot = null;
-    btnRec.textContent = "⏺ 録画して再生";
+    btnRec.textContent = "⏺ 録画";
     btnRec.classList.remove("danger");
   };
   recorder.start();
   compositeRecFrame();
-  btnRec.textContent = "⏹ 録画中（クリックで停止）";
+  btnRec.textContent = "⏹ 録画中（押すと停止）";
   btnRec.classList.add("danger");
 }
 
@@ -1995,37 +2084,18 @@ function stopPlayback(restore) {
   highlightActive(-1);
   updatePlayBtn();
   recompute(); armCtrlRefresh();
+  updatePlayhead();
 }
 
-let lastActiveStageIdx = -1; // 自動スクロールは段が切り替わった瞬間だけ行う
-let autoScrollOff = false;   // 再生中に手動スクロールされたら、その再生の間は自動スクロールを止める
+let lastActiveStageIdx = -1; // 再生中の段（タイムラインで色を変える）
+let autoScrollOff = false;   // 再生中にタイムラインを手で動かしたら、その再生の間は自動で追わない
 function highlightActive(t) {
-  document.querySelectorAll(".stage").forEach(el => el.classList.remove("active"));
-  if (t < 0 || !currentCompiled) { lastActiveStageIdx = -1; return; }
-  currentCompiled.stages.forEach((st, si) => {
-    if (t >= st.t0 && t < st.t0 + st.dur) {
-      const stEl = document.getElementById(`stage-${si}`);
-      if (stEl) {
-        stEl.classList.add("active"); // 実行中の段（秒数表示のある親ブロック）を薄い黄色背景に
-        // 実行中の段が右ペインの縦中央に来るよう自動スクロール（前後の動きが見える）
-        if (si !== lastActiveStageIdx) {
-          lastActiveStageIdx = si;
-          if (!autoScrollOff) stEl.scrollIntoView({ block: "center", behavior: "smooth" });
-        }
-      }
-    }
-  });
-}
-
-// 再生中の手動スクロール検出：ホイール・タッチ・スクロールバー操作で自動スクロールをOFFにする
-{
-  const sc = document.getElementById("progScroll");
-  const manual = () => { if (playing) autoScrollOff = true; };
-  sc.addEventListener("wheel", manual);
-  sc.addEventListener("touchmove", manual);
-  sc.addEventListener("mousedown", (e) => {
-    if (e.offsetX >= sc.clientWidth) manual(); // クライアント領域より外側＝スクロールバー上
-  });
+  let idx = -1;
+  if (t >= 0 && currentCompiled) idx = currentCompiled.stages.findIndex(st => t >= st.t0 && t < st.t0 + st.dur);
+  if (idx === lastActiveStageIdx) return;
+  lastActiveStageIdx = idx;
+  document.querySelectorAll(".tl-stage.active").forEach(el => el.classList.remove("active"));
+  if (idx >= 0) { const el = tlInnerEl.querySelector(`.tl-stage[data-si="${idx}"]`); if (el) el.classList.add("active"); }
 }
 
 /* ---------------- メインループ ---------------- */
@@ -2053,6 +2123,7 @@ function loop(ts) {
     const s = stateAtTime(currentCompiled, playT);
     state.robot.body = s.body; state.robot.arm = s.arm;
     document.getElementById("elapsedDisp").textContent = playT.toFixed(2);
+    updatePlayhead();
     if (!playing) armCtrlRefresh(); // 再生完了
   } else if (teachStep(dt)) {
     recompute(); // 初期姿勢が変わると各ブロック時間も変わる
@@ -2425,38 +2496,75 @@ function makeNameEditable(nmEl, p, list, updateRefs) {
   });
 }
 
-/* ---------------- プログラム（ブロック）UI ---------------- */
+/* ---------------- プログラム（ブロック）UI ----------------
+ * シーケンスは下のタイムライン（renderTimeline）で見せ、段を選ぶ・並べ替える。
+ * 選んだ段の中身（ブロックの設定）は右ペインの「シーケンス」タブ（renderProgram）に出す */
 const progEl = document.getElementById("program");
+let selStage = null; // タイムラインで選んでいる段の番号（なければ null）
 
-document.getElementById("btnAddStage").addEventListener("click", () => {
-  pushUndo();
-  state.program.push({ blocks: [] });
-  renderProgram(); recompute();
-});
 document.getElementById("btnClearProg").addEventListener("click", () => {
   if (state.program.length && !confirm("シーケンスを全削除しますか？")) return;
   pushUndo();
   state.program = [];
+  selStage = null;
   renderProgram(); recompute();
 });
 
+/* 段を選ぶ。右ペインをシーケンスのタブにして、その段の設定を出す */
+function selectStage(si) {
+  selStage = (si === null || si === undefined || si < 0 || si >= state.program.length) ? null : si;
+  if (selStage !== null) showRightTab("seq");
+  renderProgram(); renderTimeline(); renderProgramTimes();
+}
+
+/* 新しいブロック。Move は、段で空いている方（車体／アーム）を動かす */
+function newBlock(stage, type) {
+  if (type !== "point") return { type: "other", name: "動作", wait: 1.0 };
+  const use = stageUse(stage);
+  if (use.body && use.arm) { alert("この段では、もう車体もアームも動かしています。"); return null; }
+  if (!state.points.length) { alert("先に位置を登録してください（左ペインの「＋ 今の位置を登録」）。"); return null; }
+  let p, move;
+  if (use.body) { p = state.points.find(q => q.arm); move = "arm"; }
+  else if (use.arm) { p = state.points.find(q => q.body); move = "body"; }
+  else { p = state.points[0]; move = (p.body && p.arm) ? "both" : p.body ? "body" : "arm"; }
+  if (!p) { alert(use.body ? "アームの姿勢を持つ位置がありません。" : "車体の位置を持つ位置がありません。"); return null; }
+  return { type: "point", point: p.name, move, mode: "auto" }; // 走行経路の初期は最短時間
+}
+/* 選んでいる段に、同時に動くブロックを足す */
 function addBlock(stage, type) {
-  if (type === "point") {
-    const use = stageUse(stage);
-    if (use.body && use.arm) { alert("この段では、もう車体もアームも動かしています。"); return; }
-    if (!state.points.length) { alert("先に位置を登録してください（左ペインの「＋ 今の位置を登録」）。"); return; }
-    // 空いている方を動かすブロックにする
-    let p, move;
-    if (use.body) { p = state.points.find(q => q.arm); move = "arm"; }
-    else if (use.arm) { p = state.points.find(q => q.body); move = "body"; }
-    else { p = state.points[0]; move = (p.body && p.arm) ? "both" : p.body ? "body" : "arm"; }
-    if (!p) { alert(use.body ? "アームの姿勢を持つ位置がありません。" : "車体の位置を持つ位置がありません。"); return; }
-    pushUndo();
-    stage.blocks.push({ type: "point", point: p.name, move, mode: "auto" }); // 走行経路の初期は最短時間
-  } else {
-    pushUndo();
-    stage.blocks.push({ type: "other", name: "動作", wait: 1.0 });
+  const b = newBlock(stage, type);
+  if (!b) return;
+  pushUndo();
+  stage.blocks.push(b);
+  renderProgram(); recompute();
+}
+/* 新しい段を、選んでいる段の後ろ（なければ最後）に足して選ぶ。type を渡すとそのブロックを 1 つ入れる */
+function addStageWith(type) {
+  const stage = { blocks: [] };
+  if (type) {
+    const b = newBlock(stage, type);
+    if (!b) return;
+    stage.blocks.push(b);
   }
+  pushUndo();
+  const at = selStage === null ? state.program.length : selStage + 1;
+  state.program.splice(at, 0, stage);
+  selStage = at;
+  showRightTab("seq");
+  renderProgram(); recompute();
+  scrollTimelineTo(at);
+}
+document.getElementById("btnAddMove").addEventListener("click", () => addStageWith("point"));
+document.getElementById("btnAddOther").addEventListener("click", () => addStageWith("other"));
+
+/* 段を並べ替える（from の段を、to 番目の段の前へ。to = 段の数なら最後へ） */
+function moveStage(from, to) {
+  if (to === from || to === from + 1) return;
+  pushUndo();
+  const [st] = state.program.splice(from, 1);
+  if (to > from) to--;
+  state.program.splice(to, 0, st);
+  selStage = to;
   renderProgram(); recompute();
 }
 
@@ -2489,9 +2597,12 @@ function blockEndPose(si, bi) {
   const r = cb.anim(cb.dur);
   return { body: r.body || s0.body, arm: r.arm || s0.arm };
 }
+
+/* 右ペイン「シーケンス」タブ: 開始位置と、選んだ段の設定 */
 function renderProgram() {
   progEl.innerHTML = "";
   hoverBlockGhost = null; // 作り直すとマウスが離れた知らせが来ないので、ここで消す
+  if (selStage !== null && selStage >= state.program.length) selStage = state.program.length ? state.program.length - 1 : null;
   // 固定の「初期状態」ブロック：サイクル開始時の車体・アーム姿勢を選択
   const init = document.createElement("div");
   init.className = "stage initial";
@@ -2533,177 +2644,400 @@ function renderProgram() {
   init.appendChild(mkInitRow("車体", state.points.filter(p => p.body), "body"));
   init.appendChild(mkInitRow("アーム", state.points.filter(p => p.arm), "arm"));
   progEl.appendChild(init);
-  if (!state.program.length) {
-    const h = document.createElement("div"); h.className = "hint"; h.style.margin = "8px 4px";
-    h.textContent = "「＋ 段を追加」で工程を並べます。縦に並べた段は順番に、同じ段に置いたブロックは同時に動きます。「＋Move」は登録した位置へ車体とアームを動かします（車体だけ・アームだけも選べます）。段の時間はブロックの最大値です。";
+
+  if (selStage === null) {
+    const h = document.createElement("div"); h.className = "hint"; h.style.margin = "10px 4px";
+    h.innerHTML = !state.program.length
+      ? "下のタイムラインの「＋ Move」で工程を足します。Move は登録した位置へ車体とアームを動かします（車体だけ・アームだけも選べます）。撮像・把持など時間だけかかる動作は「＋ その他」です。"
+      : "下のタイムラインで段をクリックすると、ここにその段の設定が出ます。<br><br>タイムラインの縦の線のあいだが 1 段です。段は左から順に動き、同じ段のブロックは同時に動き始めます。段の時間は遅い方で決まり、斜線はもう一方を待っている時間です。";
     progEl.appendChild(h);
+    return;
   }
 
-  state.program.forEach((stage, si) => {
-    {
-      const sl = document.createElement("div");
-      sl.className = "seqline"; sl.textContent = "↓";
-      progEl.appendChild(sl);
-    }
-    const stEl = document.createElement("div");
-    stEl.className = "stage";
-    stEl.id = `stage-${si}`;
-    const grip = document.createElement("div");
-    grip.className = "stage-grip"; grip.title = "ドラッグで並べ替え";
-    grip.innerHTML = `<span class="sno">${si + 1}</span>` + '<svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor"><circle cx="2" cy="2" r="1.3"/><circle cx="6" cy="2" r="1.3"/><circle cx="2" cy="7" r="1.3"/><circle cx="6" cy="7" r="1.3"/><circle cx="2" cy="12" r="1.3"/><circle cx="6" cy="12" r="1.3"/></svg>';
-    stEl.appendChild(grip);
-    attachStageDrag(grip, stEl, si);
-    const blocksEl = document.createElement("div");
-    blocksEl.className = "stage-blocks";
-    stage.blocks.forEach((b, bi) => {
-      blocksEl.appendChild(makeBlockEl(stage, b, si, bi));
-    });
-    // ブロック追加ボタン
-    const addEl = document.createElement("div");
-    addEl.style.cssText = "display:flex; flex-direction:column; gap:2px;";
-    const use = stageUse(stage);
-    for (const [ty, lb] of [["point", "＋Move"], ["other", "＋その他"]]) {
-      // 車体もアームも動かすブロックが既にある段には、移動を足せない
-      if (ty === "point" && use.body && use.arm) continue;
-      const bt = document.createElement("button");
-      bt.className = "small"; bt.textContent = lb;
-      bt.addEventListener("click", () => addBlock(stage, ty));
-      addEl.appendChild(bt);
-    }
-    blocksEl.appendChild(addEl);
-    stEl.appendChild(blocksEl);
-
-    const side = document.createElement("div");
-    side.className = "stage-side";
-    const tEl = document.createElement("div");
-    tEl.className = "stage-time"; tEl.id = `stage-time-${si}`;
-    side.appendChild(tEl);
-    const ctl = document.createElement("div");
-    const up = document.createElement("button"); up.className = "small"; up.textContent = "↑";
-    up.disabled = si === 0;
-    up.addEventListener("click", () => {
-      pushUndo();
-      [state.program[si - 1], state.program[si]] = [state.program[si], state.program[si - 1]];
-      renderProgram(); recompute();
-    });
-    const dn = document.createElement("button"); dn.className = "small"; dn.textContent = "↓";
-    dn.disabled = si === state.program.length - 1;
-    dn.addEventListener("click", () => {
-      pushUndo();
-      [state.program[si + 1], state.program[si]] = [state.program[si], state.program[si + 1]];
-      renderProgram(); recompute();
-    });
-    const del = document.createElement("button"); del.className = "small danger"; del.textContent = "×";
-    del.addEventListener("click", () => {
-      pushUndo();
-      state.program.splice(si, 1);
-      renderProgram(); recompute();
-    });
-    ctl.appendChild(up); ctl.appendChild(dn); ctl.appendChild(del);
-    side.appendChild(ctl);
-    stEl.appendChild(side);
-    progEl.appendChild(stEl);
+  const si = selStage, stage = state.program[si];
+  const stEl = document.createElement("div");
+  stEl.className = "stage sel-stage";
+  stEl.id = `stage-${si}`;
+  // 見出し: 段の番号・時間と、段の操作
+  const head = document.createElement("div");
+  head.className = "sel-head";
+  const ttl = document.createElement("b");
+  ttl.textContent = `段 ${si + 1}`;
+  const tEl = document.createElement("span");
+  tEl.className = "stage-time"; tEl.id = `stage-time-${si}`;
+  head.append(ttl, tEl);
+  const sp = document.createElement("span"); sp.style.flex = "1"; head.appendChild(sp);
+  const mkBtn = (txt, title, fn, cls, dis) => {
+    const bt = document.createElement("button");
+    bt.className = "small" + (cls ? " " + cls : ""); bt.textContent = txt; bt.title = title; bt.disabled = !!dis;
+    bt.addEventListener("click", fn);
+    head.appendChild(bt);
+  };
+  mkBtn("◀", "この段を 1 つ前へ（タイムラインでドラッグしても並べ替えられます）", () => moveStage(si, si - 1), "", si === 0);
+  mkBtn("▶", "この段を 1 つ後ろへ", () => moveStage(si, si + 2), "", si === state.program.length - 1);
+  mkBtn("複製", "この段を複製して、すぐ後ろに入れます", () => {
+    pushUndo();
+    state.program.splice(si + 1, 0, structuredClone(stage));
+    selStage = si + 1;
+    renderProgram(); recompute();
   });
+  mkBtn("削除", "この段を削除します（Ctrl+Z で戻せます）", () => {
+    pushUndo();
+    state.program.splice(si, 1);
+    selStage = state.program.length ? Math.min(si, state.program.length - 1) : null;
+    renderProgram(); recompute();
+  }, "danger");
+  stEl.appendChild(head);
+
+  const blocksEl = document.createElement("div");
+  blocksEl.className = "stage-blocks";
+  stage.blocks.forEach((b, bi) => blocksEl.appendChild(makeBlockEl(stage, b, si, bi)));
+  if (!stage.blocks.length) {
+    const h = document.createElement("div"); h.className = "hint"; h.style.margin = "4px 2px";
+    h.textContent = "空の段です。下のボタンでブロックを足してください。";
+    blocksEl.appendChild(h);
+  }
+  stEl.appendChild(blocksEl);
+  // 同じ段（同時に動く）にブロックを足す
+  const addEl = document.createElement("div");
+  addEl.className = "addrow";
+  const use = stageUse(stage);
+  for (const [ty, lb] of [["point", "＋ Move"], ["other", "＋ その他"]]) {
+    if (ty === "point" && use.body && use.arm) continue; // 車体もアームも動かしている段には、移動を足せない
+    const bt = document.createElement("button");
+    bt.className = "small"; bt.textContent = lb + "（この段で同時に）";
+    bt.addEventListener("click", () => addBlock(stage, ty));
+    addEl.appendChild(bt);
+  }
+  stEl.appendChild(addEl);
+  const note = document.createElement("div"); note.className = "hint"; note.style.marginTop = "6px";
+  note.textContent = "同じ段のブロックは同時に動き始め、段の時間は遅い方で決まります。";
+  stEl.appendChild(note);
+  progEl.appendChild(stEl);
 }
 
-/* ---------------- 段のドラッグ＆ドロップ並べ替え ----------------
- * 段の左端のつまみを押すとつかみ、ドラッグで挿入位置（青いライン）を選んで
- * マウスを離すとその位置に挿入する。ボタン・セレクト等の操作部から始まるドラッグは無効 */
-let stageDrag = null; // {from, el, timer, started, sx, sy, dropIdx}
-const dropInd = document.createElement("div"); // 挿入位置インジケータ（1本の直線）
-dropInd.id = "dropIndicator";
+/* ---------------- タイムライン ----------------
+ * 横が時間。縦の線のあいだが 1 段。レーンは車体・アーム・その他。
+ * 段をクリックで選ぶ、左右にドラッグで並べ替え。上の目盛りか赤い線をドラッグで、その時刻の姿勢に飛ぶ */
+const TL_RULER = 18, TL_LANE = 26, TL_AXIS = 14, TL_MINW = 22, TL_EVENW = 84, TL_ADDW = 34;
+const tlScrollEl = document.getElementById("tlScroll");
+const tlInnerEl = document.getElementById("tlInner");
+let tlZoom = 1;
+let tlScale = "time"; // "time": 時間どおり / "even": 段の幅をそろえる
+try { tlScale = localStorage.getItem("lexxsim.tlScale") === "even" ? "even" : "time"; } catch (e) { /* 保存できない環境では既定 */ }
+document.getElementById("tlScale").value = tlScale;
+let tlGeom = { xs: [], ws: [], end: 4 };
+let breakdown = { armOnly: 0, bodyOnly: 0, both: 0, other: 0 };
 
-/* ドラッグ状態の完全な後片付け。フォーカス喪失等でmouseupが届かなかった場合でも
- * 見た目（半透明・挿入ライン・カーソル）が残らないよう、常にここを通して解除する */
+/* 段ごとの左端 xs と幅 ws [px] */
+function tlLayout() {
+  const st = currentCompiled ? currentCompiled.stages : [];
+  const avail = Math.max(200, tlScrollEl.clientWidth - TL_ADDW - 12);
+  let ws;
+  if (tlScale === "even") {
+    const w = Math.max(TL_EVENW, st.length ? avail / st.length : TL_EVENW) * tlZoom;
+    ws = st.map(() => w);
+  } else {
+    // 時間に比例。短すぎる段は最小幅にし、その分を残りの段で割り直す
+    let small = new Set(), pps = 0;
+    for (let k = 0; k < 4; k++) {
+      const restT = st.reduce((a, s, i) => a + (small.has(i) ? 0 : s.dur), 0);
+      pps = restT > 0 ? Math.max(1, (avail - small.size * TL_MINW) / restT) : 0;
+      const ns = new Set(st.map((s, i) => i).filter(i => st[i].dur * pps < TL_MINW));
+      if (ns.size === small.size) break;
+      small = ns;
+    }
+    ws = st.map(s => Math.max(TL_MINW, s.dur * pps * tlZoom));
+  }
+  const xs = []; let x = 4;
+  for (const w of ws) { xs.push(x); x += w; }
+  return { xs, ws, end: x };
+}
+function tlTimeToX(t) {
+  const c = currentCompiled, g = tlGeom;
+  if (!c || !c.stages.length) return 4;
+  for (let i = 0; i < c.stages.length; i++) {
+    const s = c.stages[i];
+    if (t < s.t0 + s.dur || i === c.stages.length - 1) {
+      const f = s.dur > 0 ? Math.min(1, Math.max(0, (t - s.t0) / s.dur)) : 0;
+      return g.xs[i] + f * g.ws[i];
+    }
+  }
+  return g.end;
+}
+function tlXToTime(x) {
+  const c = currentCompiled, g = tlGeom;
+  if (!c || !c.stages.length) return 0;
+  for (let i = 0; i < c.stages.length; i++) {
+    if (x < g.xs[i] + g.ws[i] || i === c.stages.length - 1) {
+      const f = Math.min(1, Math.max(0, (x - g.xs[i]) / g.ws[i]));
+      return c.stages[i].t0 + f * c.stages[i].dur;
+    }
+  }
+  return c.total;
+}
+function tlDiv(cls, css, text) {
+  const d = document.createElement("div");
+  d.className = cls;
+  if (css) d.style.cssText = css;
+  if (text !== undefined) d.textContent = text;
+  return d;
+}
+function renderTimeline() {
+  const c = currentCompiled;
+  tlInnerEl.innerHTML = "";
+  hoverBlockGhost = null;
+  tlGeom = tlLayout();
+  const H = TL_RULER + TL_LANE * 3 + TL_AXIS;
+  tlInnerEl.style.width = (tlGeom.end + TL_ADDW + 8) + "px";
+  tlInnerEl.style.height = H + "px";
+  // 開始位置の表示（見出しの行）
+  const ib = findPoint(state.initial.body), ia = findPoint(state.initial.arm);
+  document.getElementById("tlInit").textContent = `開始位置 車体 ${ib ? ib.name : "（現在位置）"} ／ アーム ${ia ? ia.name : "（現在位置）"}`;
+  const laneY = { body: TL_RULER + 3, arm: TL_RULER + TL_LANE + 3, other: TL_RULER + TL_LANE * 2 + 3 };
+  const barH = TL_LANE - 6;
+  const stages = c ? c.stages : [];
+  stages.forEach((st, si) => {
+    const x = tlGeom.xs[si], w = tlGeom.ws[si];
+    const col = tlDiv("tl-stage" + (si % 2 ? " alt" : "") + (si === selStage ? " sel" : "") + (si === lastActiveStageIdx ? " active" : ""),
+      `left:${x}px; width:${w}px; height:${TL_RULER + TL_LANE * 3}px;`);
+    col.dataset.si = si;
+    col.appendChild(tlDiv("tl-sno", `height:${TL_RULER}px; line-height:${TL_RULER}px;`, String(si + 1)));
+    const prog = state.program[si];
+    const tip = [`段 ${si + 1}（${st.dur.toFixed(2)} s）`];
+    const bar = (lane, ww, cls, label, top, h) => {
+      const d = tlDiv("tl-bar " + cls, `left:2px; top:${top !== undefined ? top : laneY[lane]}px; width:${Math.max(3, ww - 4)}px; height:${h || barH}px; line-height:${h || barH}px;`, ww >= 34 ? label : ""); // 細い棒は名前を出さない（段の上にマウスを乗せると出る）
+      col.appendChild(d);
+      return d;
+    };
+    const wait = (lane, from) => { // もう一方を待っている時間（斜線）
+      if (w - from < 3) return;
+      col.appendChild(tlDiv("tl-wait", `left:${from}px; top:${laneY[lane] + 3}px; width:${w - from - 2}px; height:${barH - 6}px;`));
+    };
+    const others = st.blocks.filter(cb => cb.block.type !== "point").length;
+    let oi = 0;
+    st.blocks.forEach((cb, bi) => {
+      const b = cb.block;
+      let els = [];
+      if (b.type === "point") {
+        const mv = blockMoves(b);
+        tip.push(`Move → ${b.point || "?"}` + (cb.err ? "（位置が未登録）" : `　車体 ${mv.body ? cb.bodyDur.toFixed(2) + " s" : "－"} ／ アーム ${mv.arm ? cb.armDur.toFixed(2) + " s" : "－"}`));
+        if (cb.err) { els.push(bar("body", w, "err", "未登録", laneY.body, TL_LANE * 2 - 6)); }
+        else {
+          for (const lane of ["body", "arm"]) {
+            if (!mv[lane]) continue;
+            const d = lane === "body" ? cb.bodyDur : cb.armDur;
+            const bw = st.dur > 0 ? w * d / st.dur : 0;
+            if (d <= 1e-6) { els.push(bar(lane, 8, lane + " zero", "")); els[els.length - 1].title = (lane === "body" ? "車体" : "アーム") + "は既にその位置（0 s）"; continue; }
+            els.push(bar(lane, bw, lane, b.point || "?"));
+            if (d < st.dur - 1e-3) wait(lane, bw);
+          }
+        }
+      } else {
+        tip.push(`${b.name || "その他"}　${cb.dur.toFixed(2)} s`);
+        const h = (barH + 2) / others;
+        const bw = st.dur > 0 ? w * cb.dur / st.dur : 0;
+        els.push(bar("other", bw, "other", b.name || "その他", laneY.other + oi * h, h - 2));
+        oi++;
+      }
+      if (b.type === "point") for (const e of els) { // マウスを乗せると、このブロックが終わったときの姿勢を影で出す
+        e.addEventListener("mouseenter", () => { hoverBlockGhost = blockEndPose(si, bi); });
+        e.addEventListener("mouseleave", () => { hoverBlockGhost = null; });
+      }
+    });
+    if (!prog || !prog.blocks.length) {
+      col.appendChild(tlDiv("tl-empty", `top:${laneY.body}px; height:${TL_LANE * 3 - 6}px;`, "空"));
+      tip.push("空の段");
+    }
+    col.title = tip.join("\n");
+    col.addEventListener("mousedown", (e) => tlStageMouseDown(e, si));
+    tlInnerEl.appendChild(col);
+  });
+  if (!stages.length) tlInnerEl.appendChild(tlDiv("tl-hint", `left:${TL_ADDW + 16}px; top:${laneY.arm}px; line-height:${barH}px;`,
+    "まだ工程がありません。上の「＋ Move」で、登録した位置へ動く工程を足します"));
+  // 末尾の「＋」: 空の段を足して選ぶ
+  const add = tlDiv("tl-add", `left:${tlGeom.end + 6}px; top:${TL_RULER + 3}px; width:${TL_ADDW - 10}px; height:${TL_LANE * 3 - 6}px;`, "＋");
+  add.title = "段を最後に足します";
+  add.addEventListener("click", () => { selStage = state.program.length - 1; addStageWith(null); });
+  tlInnerEl.appendChild(add);
+  // 目盛り（秒）。間隔は 50 px 以上になるように選ぶ
+  if (c && c.total > 0) {
+    const span = tlTimeToX(c.total) - tlTimeToX(0);
+    const step = [0.5, 1, 2, 5, 10, 20, 30, 60, 120].find(s => span * s / c.total >= 50) || 300;
+    let lastX = -1e9;
+    for (let t = 0; t <= c.total + 1e-6; t += step) {
+      const x = tlTimeToX(t);
+      if (x - lastX < 36) continue;
+      lastX = x;
+      tlInnerEl.appendChild(tlDiv("tl-tick", `left:${x}px; top:${TL_RULER + TL_LANE * 3}px;` + (t === 0 ? " transform:none;" : ""), (step < 1 ? t.toFixed(1) : String(Math.round(t))) + " s"));
+    }
+  }
+  // 目盛りの帯（ドラッグでその時刻へ）と再生位置の赤い線
+  const ruler = tlDiv("tl-rulerhit", `left:0; width:${tlGeom.end + 4}px; height:${TL_RULER}px;`);
+  ruler.title = "ドラッグでその時刻の姿勢に飛びます";
+  ruler.addEventListener("mousedown", tlScrubStart);
+  tlInnerEl.appendChild(ruler);
+  const ph = tlDiv("", `height:${TL_RULER + TL_LANE * 3}px;`);
+  ph.id = "tlPlayhead";
+  ph.title = "再生位置（ドラッグで動かせます）";
+  ph.addEventListener("mousedown", tlScrubStart);
+  tlInnerEl.appendChild(ph);
+  updatePlayhead();
+  renderBreakdown();
+}
+function updatePlayhead() {
+  const ph = document.getElementById("tlPlayhead");
+  if (!ph) return;
+  const has = currentCompiled && currentCompiled.stages.length;
+  ph.style.display = has ? "" : "none";
+  if (!has) return;
+  const x = tlTimeToX(playT);
+  ph.style.left = (x - 5) + "px";
+  // 再生中は赤い線が見える所へ横にスクロールする（手で動かしたら、その再生の間はやめる）
+  if (playing && !paused && !autoScrollOff && !tlScrub) {
+    const sc = tlScrollEl;
+    if (x < sc.scrollLeft + 20 || x > sc.scrollLeft + sc.clientWidth - 40) sc.scrollLeft = x - sc.clientWidth * 0.3;
+  }
+}
+/* 段 si が見える所まで横にスクロール */
+function scrollTimelineTo(si) {
+  const sc = tlScrollEl, x = tlGeom.xs[si], w = tlGeom.ws[si];
+  if (x === undefined) { sc.scrollLeft = sc.scrollWidth; return; }
+  if (x < sc.scrollLeft) sc.scrollLeft = x - 20;
+  else if (x + w > sc.scrollLeft + sc.clientWidth) sc.scrollLeft = x + w - sc.clientWidth + TL_ADDW + 20;
+}
+/* 内訳の棒（アームだけ・車体だけ・同時・その他） */
+function renderBreakdown() {
+  const el = document.getElementById("tlBreak");
+  el.innerHTML = "";
+  const total = currentCompiled ? currentCompiled.total : 0;
+  if (!(total > 0)) { el.appendChild(tlDiv("tl-bk none", "flex:1", "シーケンスを組むと、ここに時間の内訳が出ます")); return; }
+  for (const [k, lb] of [["armOnly", "アームだけ"], ["bodyOnly", "車体だけ"], ["both", "同時に動く"], ["other", "その他・待ち"]]) {
+    const v = breakdown[k];
+    if (v <= 1e-6) continue;
+    const pc = Math.round(v / total * 100);
+    const d = tlDiv("tl-bk " + k, `flex:${v} 1 0;`, `${lb} ${v.toFixed(2)} s（${pc}%）`);
+    d.title = `${lb}: ${v.toFixed(2)} s（${(v / total * 100).toFixed(1)} %）`;
+    el.appendChild(d);
+  }
+}
+
+/* 段のクリック（選ぶ）とドラッグ（並べ替え） */
+let stageDrag = null; // {from, sx, started, dropIdx}
+const dropInd = document.createElement("div"); // 挿入位置を示す縦の線
+dropInd.id = "tlDrop";
 function cancelStageDrag() {
-  if (stageDrag) { clearTimeout(stageDrag.timer); stageDrag = null; }
-  document.querySelectorAll(".stage.dragging").forEach(el => el.classList.remove("dragging"));
+  stageDrag = null;
+  document.querySelectorAll(".tl-stage.dragging").forEach(el => el.classList.remove("dragging"));
   dropInd.remove();
   document.body.style.userSelect = "";
   document.body.style.cursor = "";
 }
 window.addEventListener("blur", cancelStageDrag); // スクショ等でウィンドウのフォーカスが外れたら解除
 document.addEventListener("visibilitychange", () => { if (document.hidden) cancelStageDrag(); });
-
-function attachStageDrag(grip, stEl, si) {
-  grip.addEventListener("mousedown", (e) => {
-    if (e.button !== 0) return;
-    e.preventDefault();
-    cancelStageDrag(); // 前回のドラッグが残っていたら掃除してから開始
-    // つまみを押した時点でつかむ（長押しは要らない）
-    stageDrag = { from: si, el: stEl, started: true, sx: e.clientX, sy: e.clientY, dropIdx: null };
-    stEl.classList.add("dragging");
+function tlStageMouseDown(e, si) {
+  if (e.button !== 0) return;
+  e.preventDefault();
+  cancelStageDrag();
+  stageDrag = { from: si, sx: e.clientX, started: false, dropIdx: null };
+}
+function tlLocalX(clientX) { return clientX - tlScrollEl.getBoundingClientRect().left + tlScrollEl.scrollLeft; }
+function updateStageDrop(clientX) {
+  const r = tlScrollEl.getBoundingClientRect();
+  // 端に近づいたら横にスクロール
+  if (clientX < r.left + 30) tlScrollEl.scrollLeft -= 12;
+  else if (clientX > r.right - 30) tlScrollEl.scrollLeft += 12;
+  const x = tlLocalX(clientX), g = tlGeom;
+  let idx = g.xs.length;
+  for (let i = 0; i < g.xs.length; i++) if (x < g.xs[i] + g.ws[i] / 2) { idx = i; break; }
+  stageDrag.dropIdx = idx;
+  if (!dropInd.parentNode) tlInnerEl.appendChild(dropInd);
+  dropInd.style.left = ((idx < g.xs.length ? g.xs[idx] : g.end) - 2) + "px";
+  dropInd.style.height = (TL_RULER + TL_LANE * 3) + "px";
+}
+window.addEventListener("mousemove", (e) => {
+  if (tlScrub) { tlScrubMove(e); return; }
+  if (!stageDrag) return;
+  if (!stageDrag.started) {
+    if (Math.abs(e.clientX - stageDrag.sx) < 6) return;
+    stageDrag.started = true;
+    const col = tlInnerEl.querySelector(`.tl-stage[data-si="${stageDrag.from}"]`);
+    if (col) col.classList.add("dragging");
     document.body.style.userSelect = "none";
     document.body.style.cursor = "grabbing";
-    requestAnimationFrame(stageAutoScroll); // 端に近づいている間の自動スクロール（ドラッグが終われば止まる）
-  });
-}
-
-function stageEls() {
-  return [...progEl.querySelectorAll(".stage")].filter(el => !el.classList.contains("initial"));
-}
-
-/* マウスの高さから挿入位置を決め、青い線を出す（各段の中点との比較） */
-function updateStageDrop(clientY) {
-  const els = stageEls();
-  let idx = els.length;
-  for (let i = 0; i < els.length; i++) {
-    const r = els[i].getBoundingClientRect();
-    if (clientY < r.top + r.height / 2) { idx = i; break; }
   }
-  stageDrag.dropIdx = idx;
-  // 挿入位置のブロック間の隙間中央に、ブロックに接触しない1本の直線を表示
-  if (!dropInd.parentNode) progEl.appendChild(dropInd);
-  let y;
-  if (idx < els.length) {
-    y = els[idx].offsetTop - 10; // 対象段の上の隙間（「↓」の位置）
-  } else {
-    const last = els[els.length - 1];
-    y = last.offsetTop + last.offsetHeight + 8; // 末尾：最後の段の下
-  }
-  dropInd.style.top = y + "px";
-}
-/* リストの端に近づいている間は、マウスを止めていても毎フレーム自動でスクロールする。
- * 端に近いほど速く、リストの外（上・下）に出たら最速 */
-const AUTO_SCROLL_ZONE = 48, AUTO_SCROLL_MAX = 18; // [px]、[px/フレーム]
-function stageAutoScroll() {
-  if (!stageDrag || !stageDrag.started) return;
-  const y = stageDrag.lastY;
-  if (y !== undefined) {
-    const sc = document.getElementById("progScroll");
-    const r = sc.getBoundingClientRect();
-    let v = 0;
-    if (y < r.top + AUTO_SCROLL_ZONE) v = -AUTO_SCROLL_MAX * Math.min(1, (r.top + AUTO_SCROLL_ZONE - y) / AUTO_SCROLL_ZONE);
-    else if (y > r.bottom - AUTO_SCROLL_ZONE) v = AUTO_SCROLL_MAX * Math.min(1, (y - (r.bottom - AUTO_SCROLL_ZONE)) / AUTO_SCROLL_ZONE);
-    if (v) {
-      const before = sc.scrollTop;
-      sc.scrollTop += v;
-      if (sc.scrollTop !== before) updateStageDrop(y); // 段が動いたので挿入位置も追従
-    }
-  }
-  requestAnimationFrame(stageAutoScroll);
-}
-
-window.addEventListener("mousemove", (e) => {
-  if (!stageDrag || !stageDrag.started) return;
   e.preventDefault();
-  stageDrag.lastY = e.clientY;
-  updateStageDrop(e.clientY);
+  updateStageDrop(e.clientX);
 });
-
 window.addEventListener("mouseup", () => {
+  if (tlScrub) { tlScrub = false; document.body.style.userSelect = ""; return; }
   if (!stageDrag) return;
   const d = stageDrag;
-  cancelStageDrag(); // 見た目と状態を必ず解除してから挿入を処理
-  if (!d.started) return;
-  let to = d.dropIdx;
-  if (to === null || to === d.from || to === d.from + 1) return; // 位置が変わらない
-  pushUndo();
-  const [st] = state.program.splice(d.from, 1);
-  if (to > d.from) to--;
-  state.program.splice(to, 0, st);
-  renderProgram(); recompute();
+  cancelStageDrag(); // 見た目と状態を必ず解除してから処理
+  if (!d.started) { selectStage(d.from === selStage ? null : d.from); return; } // クリック: 選ぶ（もう一度で外す）
+  if (d.dropIdx === null) return;
+  moveStage(d.from, d.dropIdx);
 });
+
+/* 再生位置のドラッグ: その時刻の姿勢に飛ぶ。一時停止の扱いになり、「▶ 再開」で続きから、「⏹ リセット」で再生前の姿勢に戻る */
+let tlScrub = false;
+function tlScrubStart(e) {
+  if (e.button !== 0) return;
+  e.preventDefault(); e.stopPropagation();
+  if (!currentCompiled || !currentCompiled.stages.length) return;
+  tlScrub = true;
+  document.body.style.userSelect = "none";
+  tlScrubMove(e);
+}
+function tlScrubMove(e) {
+  seekTo(tlXToTime(tlLocalX(e.clientX)));
+}
+function seekTo(t) {
+  if (!currentCompiled) return;
+  if (!playing) {
+    prePlayState = JSON.parse(JSON.stringify(state.robot));
+    playing = true;
+  }
+  if (!paused) {
+    paused = true;
+    if (recorder && recorder.state === "recording") recorder.pause();
+  }
+  playT = Math.max(0, Math.min(currentCompiled.total, t));
+  const s = stateAtTime(currentCompiled, playT);
+  state.robot.body = s.body; state.robot.arm = s.arm;
+  document.getElementById("elapsedDisp").textContent = playT.toFixed(2);
+  highlightActive(playT);
+  updatePlayBtn();
+  updatePlayhead();
+  armCtrlRefresh();
+}
+
+document.getElementById("tlScale").addEventListener("change", (e) => {
+  tlScale = e.target.value;
+  try { localStorage.setItem("lexxsim.tlScale", tlScale); } catch (err) { /* 保存できなくても動く */ }
+  tlZoom = 1;
+  renderTimeline();
+});
+const tlZoomBy = (f) => {
+  const sc = tlScrollEl, mid = sc.scrollLeft + sc.clientWidth / 2, t = tlXToTime(mid);
+  tlZoom = Math.min(16, Math.max(1, tlZoom * f));
+  renderTimeline();
+  sc.scrollLeft = tlTimeToX(t) - sc.clientWidth / 2; // 真ん中の時刻を保つ
+};
+document.getElementById("btnTlZoomIn").addEventListener("click", () => tlZoomBy(1.5));
+document.getElementById("btnTlZoomOut").addEventListener("click", () => tlZoomBy(1 / 1.5));
+tlScrollEl.addEventListener("wheel", (e) => {
+  if (e.ctrlKey) { e.preventDefault(); tlZoomBy(e.deltaY < 0 ? 1.2 : 1 / 1.2); return; }
+  if (playing) autoScrollOff = true; // 再生中に手で動かしたら、その再生の間は自動で追わない
+  if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && tlScrollEl.scrollWidth > tlScrollEl.clientWidth) { // 縦ホイールで横にスクロール
+    e.preventDefault(); tlScrollEl.scrollLeft += e.deltaY;
+  }
+}, { passive: false });
+document.getElementById("tlInit").addEventListener("click", () => { showRightTab("seq"); selectStage(null); });
+if (window.ResizeObserver) {
+  let lastW = 0;
+  new ResizeObserver(() => { if (tlScrollEl.clientWidth !== lastW) { lastW = tlScrollEl.clientWidth; renderTimeline(); } }).observe(tlScrollEl);
+}
 
 function makeBlockEl(stage, b, si, bi) {
   const el = document.createElement("div");
@@ -3445,12 +3779,13 @@ const TOUR_STEPS = [
   { target: "#btnSamples", title: "まずサンプルを見る", text: "「📂 サンプル」から、用意してあるレイアウトとシーケンスの例を開けます。どんな動きができるかを見るには、まずこれを再生してみてください。" },
   { target: "#regBox", title: "① まず位置を登録", text: "車体をキーボードの矢印キーで、アームを左ペインの「アーム操作」タブで動かし、「＋ 今の位置を登録」で名前を付けて登録します。車体の位置とアームの姿勢が 1 件にまとまり、ここが動作の目的地になります（チェックを外せば車体だけ・アームだけも登録できます）。同じ場所で登録した位置は、一覧で場所の見出しの下にまとまります。" },
   { target: "#canvasWrap", title: "② 中央ビューの操作", text: "ロボットとレイアウトを表示します。ドラッグで画面移動、マウスホイールまたは左下の＋−で拡大縮小できます。" },
-  { target: "#ctrl3d", before: () => showLeftTab("arm"), title: "②' 3D 表示とアームの手先操作", text: "「3D」に切り替えると自由な視点でロボットを見られます（左ドラッグで回転、右ドラッグで移動）。アームは FANUC CRX-20iA/L の 6 軸です。左ペインの「アーム操作」タブで、手先（X/Y/Z/W/P/R を指定。3D では手先に出る矢印をマウスでドラッグ）か関節（J1〜J6）かを選んで動かせます。手先で動かすと逆運動学で関節が決まり、関節で動かすと手先の位置が変わります。届く高さ・距離の確認に使ってください。" },
+  { target: "#viewSeg", before: () => showLeftTab("arm"), title: "②' 3D 表示とアームの手先操作", text: "「3D」に切り替えると自由な視点でロボットを見られます（左ドラッグで回転、右ドラッグで移動）。アームは FANUC CRX-20iA/L の 6 軸です。左ペインの「アーム操作」タブで、手先（X/Y/Z/W/P/R を指定。3D では手先に出る矢印をマウスでドラッグ）か関節（J1〜J6）かを選んで動かせます。手先で動かすと逆運動学で関節が決まり、関節で動かすと手先の位置が変わります。届く高さ・距離の確認に使ってください。" },
   { target: "#toolbar", title: "③ レイアウトを描く", text: "キャンバス左のツールで「箱」（設備・机。高さを持ち 3D では箱）、「区画」（床の目印）、直線をドラッグして描き、文字はクリックで置きます。Shift を押しながらだと 0.1 m 刻みになります。「下絵」で顧客のレイアウト図（PNG）を床に敷けます。" },
   { target: "#tabObj", before: () => showRightTab("obj"), title: "③' 一覧と設定", text: "描いた物は右ペインの「レイアウト」タブに並びます。選ぶと名前・位置・寸法・高さを数値で直せ、🔒 でロックすると画面上で誤って選ばれなくなります。下絵は選んで「📏 線を引いて縮尺を合わせる」で実寸に合わせます。" },
-  { target: "#colRight", title: "④ 動作シーケンスを組む", text: "「＋段を追加」で工程を並べます。各段に Move（登録した位置へ。車体＋アーム／車体だけ／アームだけを選べます）と Other Action（撮影など任意の待ち）を追加します。同じ段に並べたブロックは同時実行、段は上から順に実行されます。一番上で開始位置も指定できます。" },
-  { target: "#playbar", title: "⑤ 再生して確認", text: "「再生」で動きを確認できます（もう一度押すと一時停止、さらに押すと再開）。「録画して再生」を押すと、動きを動画（WebM）として保存できます。" },
-  { target: "#statsDetails", title: "⑥ サイクルタイムの確認", text: "合計時間がここに出ます。開くと、アーム・車体・同時動作などの内訳も見られます。「シーケンスをCSV出力」で各工程の時間をExcel用に書き出せます。" },
+  { target: "#timeline", title: "④ タイムラインで動作を組む", text: "下のタイムラインの「＋ Move」で工程を足します（登録した位置へ。車体＋アーム／車体だけ／アームだけを選べます）。撮像・把持など時間だけかかる動作は「＋ その他」です。縦の線のあいだが 1 段で、段は左から順に動き、同じ段のブロックは同時に動き始めます。斜線はもう一方を待っている時間です。段は左右にドラッグして並べ替えられます。" },
+  { target: "#colRight", before: () => showRightTab("seq"), title: "④' 段の設定", text: "タイムラインで段をクリックすると、右にその段の設定（行き先・動かすもの・走行経路・最大速度）が出ます。「この段で同時に」で同時に動くブロックを足せます。一番上で開始位置も指定できます。" },
+  { target: "#tlHead", title: "⑤ 再生して確認", text: "「再生」で動きを確認できます（もう一度押すと一時停止、さらに押すと再開）。タイムラインの上の目盛りか赤い線をドラッグすると、その時刻の姿勢に飛べます。「⏺ 録画」を押すと、再生しながら動きを動画（WebM）として保存できます。" },
+  { target: "#tlFoot", title: "⑥ サイクルタイムの確認", text: "合計時間は上のヘッダーに、アームだけ・車体だけ・同時に動く・その他の内訳はタイムラインの一番下に出ます。右の「シーケンスをCSV出力」で各工程の時間をExcel用に書き出せます。" },
   { target: "#btnSave", title: "⑦ 保存と読込", text: "「設定保存」で作った内容をファイルに保存、「設定読込」で復元できます。作業が消えないよう、こまめに保存してください。" },
   { target: null, title: "以上で完了です", text: "困ったら左ペイン下部の「操作方法」も参照してください。もう一度この案内を見たいときは、右上の「❔ 使い方」を押してください。" },
 ];
@@ -3554,6 +3889,7 @@ function applyLoadedData(data) {
       state.initial = conv.initial;
       state.program = conv.program;
       selPointName = null;
+      selStage = null;
       state.objects = objectsFromSave(data);
       selectedId = null;
       if (data.robot) state.robot = { body: data.robot.body || { x: 0, y: 0, th: 0 }, arm: fixMount(migrateArm(data.robot.arm)) };
