@@ -57,6 +57,8 @@
   .hdr-pop[hidden] { display: none; }
   .hdr-pop button { border: 0; text-align: left; padding: 6px 10px; font-size: 13px; display: flex; align-items: center; gap: 6px; white-space: nowrap; background: transparent; }
   .hdr-pop button:hover { background: var(--accent2); }
+  .hdr-pop .hdr-sep { height: 1px; background: var(--border); margin: 3px 6px; }
+  .hdr-pop button.danger { color: var(--danger); }
   .hdr-pop kbd { margin-left: auto; font-size: 10px; color: #678; }
   /* 狭い画面では、ヘッダーのボタンを記号だけ・時間の見出しを短くして 1 行に収める */
   @media (max-width: 1360px) {
@@ -340,13 +342,6 @@
   table.keyhelp { border-collapse: collapse; width: 100%; font-size: 11px; }
   table.keyhelp td { border: 1px solid #e0e4e8; padding: 2px 5px; }
   kbd { background: #eef1f4; border: 1px solid #ccd; border-radius: 3px; padding: 0 4px; font-size: 11px; }
-  #totalRow { display: flex; justify-content: space-between; font-weight: 700; padding: 4px 6px; background: var(--accent2); border-radius: 6px; margin-top: 6px; font-variant-numeric: tabular-nums; cursor: pointer; list-style: none; }
-  #totalRow::-webkit-details-marker { display: none; }
-  #totalRow .tgl { display: inline-block; margin-right: 4px; transition: transform .12s; }
-  #statsDetails[open] #totalRow .tgl { transform: rotate(90deg); }
-  #statsTable { width: 100%; font-size: 11px; margin-top: 4px; border-collapse: collapse; }
-  #statsTable td { padding: 2px 4px; border-top: 1px solid var(--border); }
-  #statsTable td:nth-child(2), #statsTable td:nth-child(3) { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
   details summary { cursor: pointer; font-weight: 600; font-size: 12px; color: #345; }
   /* ---- 使い方ツアー ---- */
   #tourHighlight {
@@ -504,7 +499,7 @@
   /* ---- オブジェクト一覧 ---- */
   #objList { overflow-y: auto; flex: 1; min-height: 80px; margin-top: 6px; border: 1px solid var(--border); border-radius: 6px; background: #fbfcfd; }
   #ltabObj button { white-space: nowrap; }
-  #inspSeq[hidden], #inspObj[hidden], #editPane[hidden], #seqActions[hidden] { display: none !important; }
+  #inspSeq[hidden], #inspObj[hidden], #editPane[hidden] { display: none !important; }
   #leftTabs .tab { padding-left: 11px; padding-right: 11px; white-space: nowrap; }
   #inspector > legend { font-size: 13px; }
   .obj-item { display: flex; align-items: center; gap: 6px; padding: 3px 6px; border-bottom: 1px dashed #e2e6ea; cursor: pointer; font-size: 12px; }
@@ -546,7 +541,7 @@
   <a class="lx-brand" href="../index.html" title="LexxMoMa Tools のトップへ" aria-label="LexxMoMa Tools のトップへ戻る"><img id="corpLogo" class="lx-logo" src="../assets/lexxpluss-logo.png" alt="LexxPluss"><span class="lx-wordmark">LexxMoMa</span></a>
   <div>
     <h1 class="lx-tool">動作シミュレーター</h1>
-    <div id="revDisp">rev.80</div>
+    <div id="revDisp">rev.81</div>
   </div>
   </div>
   <div class="time-box" id="timeBox"><span class="tb-long">経過時間 / トータル時間：</span><span class="tb-short">経過 / 合計：</span><b id="elapsedDisp">0.00</b> s / <b id="totalDisp">0.00</b> s</div>
@@ -557,11 +552,14 @@
   <button id="btnPresent" title="発表モード: 編集用のペインを隠し、全画面でロボットとタイムラインと時間だけを大きく見せます（Esc で戻る）">🖥<span class="hb-lbl"> 発表</span></button>
   <!-- サンプル・保存・読込は「ファイル」にまとめる（狭い画面でヘッダーが折れないように） -->
   <div class="hdr-menu" id="fileMenu">
-    <button id="btnFile" aria-haspopup="menu" aria-expanded="false" title="サンプルを開く・設定保存（Ctrl+S）・設定読込">📁 ファイル ▾</button>
+    <button id="btnFile" aria-haspopup="menu" aria-expanded="false" title="サンプルを開く・設定保存（Ctrl+S）・設定読込・CSV 出力・シーケンスを全部消す">📁 ファイル ▾</button>
     <div class="hdr-pop" id="filePop" role="menu" hidden>
       <button id="btnSamples" role="menuitem" title="用意してあるレイアウトとシーケンスの例を開きます">📂 サンプルを開く</button>
       <button id="btnSave" role="menuitem" title="作った内容（位置・シーケンス・レイアウト）をファイルに保存します">💾 設定保存<kbd>Ctrl+S</kbd></button>
       <button id="btnLoad" role="menuitem" title="保存したファイルを開きます">📄 設定読込</button>
+      <div class="hdr-sep"></div>
+      <button id="btnExportCsv" role="menuitem" title="各工程の内容と所要時間をCSV（Excelで開けます）で出力します">📊 シーケンスをCSV出力</button>
+      <button id="btnClearProg" role="menuitem" class="danger" title="シーケンスの段をすべて消します（Ctrl+Z で戻せます）">🗑 シーケンスを全部消す</button>
     </div>
   </div>
   <input type="file" id="fileLoad" accept=".json" style="display:none">
@@ -827,15 +825,6 @@
           <div class="efoot" id="editFoot"><button id="btnPtOvw" title="この位置を、今の車体の位置・アームの姿勢で置き換えます（Ctrl+Z で戻せます）">今の位置で上書き</button><button id="btnEditDel" class="danger" title="この位置を削除します（Ctrl+Z で戻せます）">この位置を削除</button></div>
         </div>
       </div>
-      <div class="addrow" id="seqActions">
-        <button id="btnClearProg" class="danger" title="シーケンスの段をすべて消します（Ctrl+Z で戻せます）">シーケンス全削除</button>
-        <div style="flex:1"></div>
-        <button id="btnExportCsv" title="各工程の内容と所要時間をCSV（Excelで開けます）で出力します">シーケンスをCSV出力</button>
-      </div>
-      <details id="statsDetails">
-        <summary id="totalRow"><span><span class="tgl">▸</span>トータル時間</span><span id="totalDisp2">0.00 s</span></summary>
-        <table id="statsTable"></table>
-      </details>
     </fieldset>
   </div>
 </main>
@@ -1983,7 +1972,6 @@ let prePlayState = null;
 function recompute() {
   currentCompiled = compileProgram();
   document.getElementById("totalDisp").textContent = currentCompiled.total.toFixed(2);
-  document.getElementById("totalDisp2").textContent = currentCompiled.total.toFixed(2) + " s";
   renderProgramTimes();
   updateStats();
   renderTimeline();
@@ -2008,17 +1996,6 @@ function updateStats() {
     }
   }
   breakdown = { armOnly, bodyOnly, both, other }; // タイムラインの内訳の棒で使う
-  const total = currentCompiled ? currentCompiled.total : 0;
-  const pct = v => total > 0 ? (v / total * 100).toFixed(1) + " %" : "－";
-  const rows = [
-    ["Armだけが動いている時間", armOnly],
-    ["Bodyだけ動いている時間", bodyOnly],
-    ["BodyとArmが同時に動いている時間", both],
-    ["その他の時間", other],
-  ];
-  document.getElementById("statsTable").innerHTML = rows
-    .map(([lb, v]) => `<tr><td>${lb}</td><td>${v.toFixed(2)} s</td><td>${pct(v)}</td></tr>`)
-    .join("");
 }
 
 /* 再生ボタンは 1 つ: 停止中に押すと最初から再生、再生中に押すと一時停止、一時停止中に押すと再開 */
@@ -2635,7 +2612,7 @@ let selStage = null; // タイムラインで選んでいる段の番号（な�
 let selStart = false; // タイムラインの「開始」の列を選んでいる（右に開始位置の設定を出す）
 
 document.getElementById("btnClearProg").addEventListener("click", () => {
-  if (state.program.length && !confirm("シーケンスを全削除しますか？")) return;
+  if (state.program.length && !confirm("シーケンスの段をすべて消しますか？（Ctrl+Z で戻せます）")) return;
   pushUndo();
   state.program = [];
   selStage = null;
@@ -4136,7 +4113,7 @@ const TOUR_STEPS = [
   { target: "#timeline", title: "④ タイムラインで動作を組む", text: "下のタイムラインの「＋ Move」で工程を足します（登録した位置へ。車体＋アーム／車体だけ／アームだけを選べます）。撮像・把持など時間だけかかる動作は「＋ その他」です。縦の線のあいだが 1 段で、段は左から順に動き、同じ段のブロックは同時に動き始めます。斜線はもう一方を待っている時間です。段は左右にドラッグして並べ替えられます。" },
   { target: "#colRight", before: () => showRightTab("seq"), title: "④' 段の設定", text: "タイムラインで段をクリックすると、右にその段の設定（行き先・動かすもの・走行経路・最大速度）が出ます。「この段で同時に」で同時に動くブロックを足せます。タイムラインの左端「開始」をクリックすると、開始位置（時刻 0 の車体の位置・アームの姿勢）を変えられます。" },
   { target: "#tlHead", title: "⑤ 再生して確認", text: "「再生」で動きを確認できます（もう一度押すと一時停止、さらに押すと再開）。タイムラインの上の目盛りか赤い線をドラッグすると、その時刻の姿勢に飛べます。「⏺ 録画」を押すと、再生しながら動きを動画（WebM）として保存できます。" },
-  { target: "#tlFoot", title: "⑥ サイクルタイムの確認", text: "合計時間は上のヘッダーに、アームだけ・車体だけ・同時に動く・その他の内訳はタイムラインの一番下に出ます。右の「シーケンスをCSV出力」で各工程の時間をExcel用に書き出せます。" },
+  { target: "#tlFoot", title: "⑥ サイクルタイムの確認", text: "合計時間は上のヘッダーに、アームだけ・車体だけ・同時に動く・その他の内訳はタイムラインの一番下に出ます。「📁 ファイル」の「シーケンスをCSV出力」で、各工程の時間をExcel用に書き出せます。" },
   { target: "#btnFile", title: "⑦ 保存と読込", text: "「📁 ファイル」の「設定保存」（Ctrl+S）で作った内容をファイルに保存、「設定読込」で復元できます。作業が消えないよう、こまめに保存してください。" },
   { target: null, title: "以上で完了です", text: "困ったら左ペイン下部の「操作方法」も参照してください。もう一度この案内を見たいときは、右上の「❔ 使い方」を押してください。" },
 ];
@@ -4557,9 +4534,6 @@ function showRightTab(t) {
   document.getElementById("inspSeq").hidden = t !== "seq";
   document.getElementById("inspObj").hidden = t !== "obj";
   document.getElementById("editPane").hidden = t !== "pt";
-  // シーケンス全体の操作（全削除・CSV・トータル時間）は、シーケンスを出しているときだけ
-  document.getElementById("seqActions").hidden = t !== "seq";
-  document.getElementById("statsDetails").hidden = t !== "seq";
   document.getElementById("inspTitle").textContent = t === "obj" ? "レイアウトの設定" : t === "pt" ? "位置の編集" : "シーケンス";
   const was = editOpen;
   editOpen = t === "pt";
