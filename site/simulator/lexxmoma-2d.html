@@ -39,7 +39,7 @@
   /* 発表モード（お客さんに見せる）: 編集用の部品を隠し、時間を大きく出す */
   body.present #colLeft, body.present #colRight, body.present #splitL, body.present #splitR,
   body.present #toolbar, body.present #toolOpts, body.present #view2dHint, body.present #view3dHint,
-  body.present #btnHelp, body.present #btnInfo, body.present #menuRow,
+  body.present #btnHelp, body.present #btnInfo, body.present #menubar,
   body.present #btnAddMove, body.present #btnAddOther, body.present #tlScale, body.present #btnTlZoomIn, body.present #btnTlZoomOut, body.present #btnTlFit,
   body.present .tl-add, body.present #speedWarn { display: none !important; }
   body.present .time-box { font-size: 18px; padding: 6px 18px; }
@@ -52,12 +52,13 @@
   body.present .tl-bk { line-height: 22px; }
   /* ヘッダーのメニュー（ファイル） */
   .hdr-menu { position: relative; flex: 0 0 auto; }
-  /* ヘッダーの上下を詰めて、メニューの行の分の高さを相殺する */
-  header.lx-hdr { padding-top: 6px; padding-bottom: 6px; }
-  #menuRow { flex: 0 0 auto; display: flex; align-items: center; height: 28px; padding: 0 8px; background: var(--panel); border-bottom: 1px solid var(--border); position: relative; z-index: 65; }
-  #menubar { display: flex; align-items: center; gap: 0; height: 100%; }
-  #menubar .hdr-menu { height: 100%; display: flex; align-items: center; }
-  #menubar .mb { border: 0; background: transparent; padding: 3px 10px; font-size: 13px; border-radius: 4px; color: var(--text); }
+  /* ヘッダー: ロゴの右に、ツール名（1 行目）とメニュー（2 行目） */
+  header.lx-hdr { padding-top: 6px; padding-bottom: 4px; position: relative; z-index: 65; }
+  #titleCol { display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+  #titleCol .lx-tool { line-height: 1.25 !important; }
+  #menubar { display: flex; align-items: center; gap: 0; margin-left: -8px; }
+  #menubar .hdr-menu { display: flex; align-items: center; }
+  #menubar .mb { border: 0; background: transparent; padding: 2px 8px; font-size: 13px; border-radius: 4px; color: inherit; }
   #menubar .mb:hover, #menubar .mb[aria-expanded="true"] { background: var(--accent2); }
   .hdr-ver { padding: 8px 12px; font-size: 12px; line-height: 1.6; white-space: nowrap; color: var(--text); }
   .hdr-pop button:disabled { color: #9aa6b0; background: transparent; cursor: default; }
@@ -549,9 +550,48 @@
 <header class="lx-hdr">
   <div class="lx-title">
   <a class="lx-brand" href="../index.html" title="LexxMoMa Tools のトップへ" aria-label="LexxMoMa Tools のトップへ戻る"><img id="corpLogo" class="lx-logo" src="../assets/lexxpluss-logo.png" alt="LexxPluss"><span class="lx-wordmark">LexxMoMa</span></a>
-  <div>
+  <!-- Google ドキュメントと同じ形: ロゴの右の 1 行目にツール名、2 行目にメニュー（ファイル・編集・表示・ヘルプ）。
+       一度開いたら、隣へマウスを動かすだけで切り替わる。Esc で閉じる -->
+  <div id="titleCol">
     <h1 class="lx-tool">動作シミュレーター</h1>
-    <div id="revDisp">rev.83</div>
+    <div id="revDisp">rev.84</div>
+    <nav id="menubar" role="menubar">
+      <div class="hdr-menu">
+        <button class="mb" id="btnFile" aria-haspopup="menu" aria-expanded="false">ファイル</button>
+        <div class="hdr-pop" role="menu" hidden>
+          <button id="btnSamples" role="menuitem" title="用意してあるレイアウトとシーケンスの例を開きます">サンプルを開く…</button>
+          <div class="hdr-sep"></div>
+          <button id="btnSave" role="menuitem" title="作った内容（位置・シーケンス・レイアウト）をファイルに保存します">設定保存<kbd>Ctrl+S</kbd></button>
+          <button id="btnLoad" role="menuitem" title="保存したファイルを開きます">設定読込…<kbd>Ctrl+O</kbd></button>
+          <button id="btnExportCsv" role="menuitem" title="各工程の内容と所要時間をCSV（Excelで開けます）で出力します">シーケンスをCSV出力</button>
+          <div class="hdr-sep"></div>
+          <button id="btnClearProg" role="menuitem" class="danger" title="シーケンスの段をすべて消します（Ctrl+Z で戻せます）">シーケンスを全部消す</button>
+        </div>
+      </div>
+      <div class="hdr-menu">
+        <button class="mb" id="btnEditMenu" aria-haspopup="menu" aria-expanded="false">編集</button>
+        <div class="hdr-pop" role="menu" hidden>
+          <button id="miUndo" role="menuitem">元に戻す<kbd>Ctrl+Z</kbd></button>
+          <button id="miRedo" role="menuitem">やり直す<kbd>Ctrl+Y</kbd></button>
+          <div class="hdr-sep"></div>
+          <button id="miDup" role="menuitem">選んだ物を複製</button>
+          <button id="miDel" role="menuitem">選んだ物を削除<kbd>Delete</kbd></button>
+        </div>
+      </div>
+      <div class="hdr-menu">
+        <button class="mb" id="btnViewMenu" aria-haspopup="menu" aria-expanded="false">表示</button>
+        <div class="hdr-pop" role="menu" hidden>
+          <button id="miLight" role="menuitemradio"><span class="ck"></span>ライト</button>
+          <button id="miDark" role="menuitemradio"><span class="ck"></span>ダーク</button>
+        </div>
+      </div>
+      <div class="hdr-menu">
+        <button class="mb" id="btnHelpMenu" aria-haspopup="menu" aria-expanded="false">ヘルプ</button>
+        <div class="hdr-pop" role="menu" hidden>
+          <div class="hdr-ver" id="miVersion"></div>
+        </div>
+      </div>
+    </nav>
   </div>
   </div>
   <div class="time-box" id="timeBox"><span class="tb-long">経過時間 / トータル時間：</span><span class="tb-short">経過 / 合計：</span><b id="elapsedDisp">0.00</b> s / <b id="totalDisp">0.00</b> s</div>
@@ -561,47 +601,6 @@
   <button id="btnPresent" title="発表モード: 編集用のペインを隠し、全画面でロボットとタイムラインと時間だけを大きく見せます（Esc で戻る）">🖥<span class="hb-lbl"> 発表</span></button>
   <input type="file" id="fileLoad" accept=".json" style="display:none">
 </header>
-<!-- メニューバー: 一般のアプリと同じく、タイトル（ヘッダー）のすぐ下の左端に 1 行で置く。
-     一度開いたら、隣へマウスを動かすだけで切り替わる。Esc で閉じる -->
-<div id="menuRow">
-  <nav id="menubar" role="menubar">
-    <div class="hdr-menu">
-      <button class="mb" id="btnFile" aria-haspopup="menu" aria-expanded="false">ファイル</button>
-      <div class="hdr-pop" role="menu" hidden>
-        <button id="btnSamples" role="menuitem" title="用意してあるレイアウトとシーケンスの例を開きます">サンプルを開く…</button>
-        <div class="hdr-sep"></div>
-        <button id="btnSave" role="menuitem" title="作った内容（位置・シーケンス・レイアウト）をファイルに保存します">設定保存<kbd>Ctrl+S</kbd></button>
-        <button id="btnLoad" role="menuitem" title="保存したファイルを開きます">設定読込…<kbd>Ctrl+O</kbd></button>
-        <button id="btnExportCsv" role="menuitem" title="各工程の内容と所要時間をCSV（Excelで開けます）で出力します">シーケンスをCSV出力</button>
-        <div class="hdr-sep"></div>
-        <button id="btnClearProg" role="menuitem" class="danger" title="シーケンスの段をすべて消します（Ctrl+Z で戻せます）">シーケンスを全部消す</button>
-      </div>
-    </div>
-    <div class="hdr-menu">
-      <button class="mb" id="btnEditMenu" aria-haspopup="menu" aria-expanded="false">編集</button>
-      <div class="hdr-pop" role="menu" hidden>
-        <button id="miUndo" role="menuitem">元に戻す<kbd>Ctrl+Z</kbd></button>
-        <button id="miRedo" role="menuitem">やり直す<kbd>Ctrl+Y</kbd></button>
-        <div class="hdr-sep"></div>
-        <button id="miDup" role="menuitem">選んだ物を複製</button>
-        <button id="miDel" role="menuitem">選んだ物を削除<kbd>Delete</kbd></button>
-      </div>
-    </div>
-    <div class="hdr-menu">
-      <button class="mb" id="btnViewMenu" aria-haspopup="menu" aria-expanded="false">表示</button>
-      <div class="hdr-pop" role="menu" hidden>
-        <button id="miLight" role="menuitemradio"><span class="ck"></span>ライト</button>
-        <button id="miDark" role="menuitemradio"><span class="ck"></span>ダーク</button>
-      </div>
-    </div>
-    <div class="hdr-menu">
-      <button class="mb" id="btnHelpMenu" aria-haspopup="menu" aria-expanded="false">ヘルプ</button>
-      <div class="hdr-pop" role="menu" hidden>
-        <div class="hdr-ver" id="miVersion"></div>
-      </div>
-    </div>
-  </nav>
-</div>
 
 <!-- 操作方法と前提値（ヘッダーの「ⓘ 操作と前提」で開く） -->
 <div id="infoDlg" hidden>
