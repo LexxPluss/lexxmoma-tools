@@ -39,7 +39,7 @@
   /* 発表モード（お客さんに見せる）: 編集用の部品を隠し、時間を大きく出す */
   body.present #colLeft, body.present #colRight, body.present #splitL, body.present #splitR,
   body.present #toolbar, body.present #toolOpts, body.present #view2dHint, body.present #view3dHint,
-  body.present #btnHelp, body.present #btnInfo, body.present #menubar,
+  body.present #btnHelp, body.present #btnInfo, body.present #menuRow,
   body.present #btnAddMove, body.present #btnAddOther, body.present #tlScale, body.present #btnTlZoomIn, body.present #btnTlZoomOut, body.present #btnTlFit,
   body.present .tl-add, body.present #speedWarn { display: none !important; }
   body.present .time-box { font-size: 18px; padding: 6px 18px; }
@@ -52,8 +52,12 @@
   body.present .tl-bk { line-height: 22px; }
   /* ヘッダーのメニュー（ファイル） */
   .hdr-menu { position: relative; flex: 0 0 auto; }
-  #menubar { display: flex; align-items: center; gap: 0; flex: 0 0 auto; margin-left: -4px; }
-  #menubar .mb { border: 0; background: transparent; padding: 5px 10px; font-size: 13px; border-radius: 5px; color: inherit; }
+  /* ヘッダーの上下を詰めて、メニューの行の分の高さを相殺する */
+  header.lx-hdr { padding-top: 6px; padding-bottom: 6px; }
+  #menuRow { flex: 0 0 auto; display: flex; align-items: center; height: 28px; padding: 0 8px; background: var(--panel); border-bottom: 1px solid var(--border); position: relative; z-index: 65; }
+  #menubar { display: flex; align-items: center; gap: 0; height: 100%; }
+  #menubar .hdr-menu { height: 100%; display: flex; align-items: center; }
+  #menubar .mb { border: 0; background: transparent; padding: 3px 10px; font-size: 13px; border-radius: 4px; color: var(--text); }
   #menubar .mb:hover, #menubar .mb[aria-expanded="true"] { background: var(--accent2); }
   .hdr-ver { padding: 8px 12px; font-size: 12px; line-height: 1.6; white-space: nowrap; color: var(--text); }
   .hdr-pop button:disabled { color: #9aa6b0; background: transparent; cursor: default; }
@@ -74,7 +78,6 @@
     .time-box .tb-short { display: inline; }
   }
   @media (max-width: 1100px) { .lx-hdr .lx-wordmark { display: none; } }
-  @media (max-width: 1240px) { .lx-hdr .lx-tool { display: none; } } /* 狭い画面では「動作シミュレーター」の文字を隠してメニューを残す */
   main { flex: 1; display: flex; gap: 4px; padding: 8px; min-height: 0; }
   .col { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
   #colLeft  { width: 270px; flex-shrink: 0; flex-direction: row; overflow: hidden; }
@@ -548,10 +551,19 @@
   <a class="lx-brand" href="../index.html" title="LexxMoMa Tools のトップへ" aria-label="LexxMoMa Tools のトップへ戻る"><img id="corpLogo" class="lx-logo" src="../assets/lexxpluss-logo.png" alt="LexxPluss"><span class="lx-wordmark">LexxMoMa</span></a>
   <div>
     <h1 class="lx-tool">動作シミュレーター</h1>
-    <div id="revDisp">rev.82</div>
+    <div id="revDisp">rev.83</div>
   </div>
   </div>
-  <!-- メニューバー（デスクトップのアプリと同じ: 一度開いたら、隣へマウスを動かすだけで切り替わる。Esc で閉じる） -->
+  <div class="time-box" id="timeBox"><span class="tb-long">経過時間 / トータル時間：</span><span class="tb-short">経過 / 合計：</span><b id="elapsedDisp">0.00</b> s / <b id="totalDisp">0.00</b> s</div>
+  <div style="flex:1"></div>
+  <button id="btnHelp" title="使い方の案内（ツアー）"><b class="hb-ico">?</b><span class="hb-lbl"> 使い方</span></button>
+  <button id="btnInfo" title="操作と前提: キー操作・マウス操作と、計算に使っている前提値（速度・加速度など）">ⓘ<span class="hb-lbl"> 操作と前提</span></button>
+  <button id="btnPresent" title="発表モード: 編集用のペインを隠し、全画面でロボットとタイムラインと時間だけを大きく見せます（Esc で戻る）">🖥<span class="hb-lbl"> 発表</span></button>
+  <input type="file" id="fileLoad" accept=".json" style="display:none">
+</header>
+<!-- メニューバー: 一般のアプリと同じく、タイトル（ヘッダー）のすぐ下の左端に 1 行で置く。
+     一度開いたら、隣へマウスを動かすだけで切り替わる。Esc で閉じる -->
+<div id="menuRow">
   <nav id="menubar" role="menubar">
     <div class="hdr-menu">
       <button class="mb" id="btnFile" aria-haspopup="menu" aria-expanded="false">ファイル</button>
@@ -589,13 +601,7 @@
       </div>
     </div>
   </nav>
-  <div class="time-box" id="timeBox"><span class="tb-long">経過時間 / トータル時間：</span><span class="tb-short">経過 / 合計：</span><b id="elapsedDisp">0.00</b> s / <b id="totalDisp">0.00</b> s</div>
-  <div style="flex:1"></div>
-  <button id="btnHelp" title="使い方の案内（ツアー）"><b class="hb-ico">?</b><span class="hb-lbl"> 使い方</span></button>
-  <button id="btnInfo" title="操作と前提: キー操作・マウス操作と、計算に使っている前提値（速度・加速度など）">ⓘ<span class="hb-lbl"> 操作と前提</span></button>
-  <button id="btnPresent" title="発表モード: 編集用のペインを隠し、全画面でロボットとタイムラインと時間だけを大きく見せます（Esc で戻る）">🖥<span class="hb-lbl"> 発表</span></button>
-  <input type="file" id="fileLoad" accept=".json" style="display:none">
-</header>
+</div>
 
 <!-- 操作方法と前提値（ヘッダーの「ⓘ 操作と前提」で開く） -->
 <div id="infoDlg" hidden>
