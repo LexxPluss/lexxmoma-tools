@@ -40,7 +40,7 @@
   body.present #colLeft, body.present #colRight, body.present #splitL, body.present #splitR,
   body.present #toolbar, body.present #toolOpts, body.present #view2dHint, body.present #view3dHint,
   body.present #btnHelp, body.present #btnInfo, body.present .hdr-menu, body.present .lx-theme-btn,
-  body.present #btnAddMove, body.present #btnAddOther, body.present #tlScale, body.present #btnTlZoomIn, body.present #btnTlZoomOut,
+  body.present #btnAddMove, body.present #btnAddOther, body.present #tlScale, body.present #btnTlZoomIn, body.present #btnTlZoomOut, body.present #btnTlFit,
   body.present #btnRec, body.present .tl-add, body.present #speedWarn { display: none !important; }
   body.present .time-box { font-size: 18px; padding: 6px 18px; }
   body.present .time-box b { font-size: 30px; }
@@ -173,6 +173,15 @@
   #tlDropTip { position: fixed; z-index: 80; background: var(--accent); color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 10px; pointer-events: none; white-space: nowrap; }
   #tlDropTip.ng { background: var(--danger); }
   #tlDrop { position: absolute; top: 0; width: 4px; background: var(--accent); border-radius: 2px; z-index: 4; pointer-events: none; }
+  #tlMiniRow { display: flex; align-items: center; padding: 2px 8px 0 0; }
+  #tlMiniRow[hidden] { display: none; }
+  #tlMiniRow .tl-lb { flex: 0 0 52px; height: 14px; line-height: 14px; font-weight: 400; color: #567; }
+  #tlMini { flex: 1; position: relative; height: 14px; border-radius: 3px; background: #eef1f4; cursor: pointer; overflow: hidden; }
+  #tlMiniSegs { position: absolute; inset: 2px 0; }
+  .tl-ms { position: absolute; top: 0; bottom: 0; border-right: 1px solid rgba(255,255,255,.7); }
+  .tl-ms.both { background: #2f8f8f; } .tl-ms.body { background: #0068b7; } .tl-ms.arm { background: #2e9e5b; } .tl-ms.other { background: #8e99a4; } .tl-ms.empty { background: #d5dbe1; }
+  #tlMiniView { position: absolute; top: 0; bottom: 0; border: 2px solid #f08a24; border-radius: 3px; background: rgba(240,138,36,.12); box-sizing: border-box; min-width: 6px; }
+  #tlMiniPh { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: #e0323c; }
   #tlFoot { display: flex; align-items: center; padding: 2px 8px 6px 0; }
   #tlFoot .tl-lb { flex: 0 0 52px; height: 18px; line-height: 18px; font-weight: 400; color: #567; }
   #tlBreak { flex: 1; display: flex; gap: 2px; min-width: 0; height: 18px; }
@@ -535,7 +544,7 @@
   <a class="lx-brand" href="../index.html" title="LexxMoMa Tools のトップへ" aria-label="LexxMoMa Tools のトップへ戻る"><img id="corpLogo" class="lx-logo" src="../assets/lexxpluss-logo.png" alt="LexxPluss"><span class="lx-wordmark">LexxMoMa</span></a>
   <div>
     <h1 class="lx-tool">動作シミュレーター</h1>
-    <div id="revDisp">rev.76</div>
+    <div id="revDisp">rev.77</div>
   </div>
   </div>
   <div class="time-box" id="timeBox"><span class="tb-long">経過時間 / トータル時間：</span><span class="tb-short">経過 / 合計：</span><b id="elapsedDisp">0.00</b> s / <b id="totalDisp">0.00</b> s</div>
@@ -752,6 +761,7 @@
           <option value="time" selected>時間比例</option>
           <option value="even">等幅</option>
         </select>
+        <button id="btnTlFit" class="small" title="全体を画面の幅に収めます（工程が多いと名前は隠れます）">全体</button>
         <button id="btnTlZoomOut" class="small" title="縮小">－</button>
         <button id="btnTlZoomIn" class="small" title="拡大（横にスクロール）">＋</button>
       </div>
@@ -759,6 +769,8 @@
         <div id="tlLabels"><div class="tl-ruler-sp"></div><div class="tl-lb">車体</div><div class="tl-lb">アーム</div><div class="tl-lb">その他</div></div>
         <div id="tlScroll"><div id="tlInner"></div></div>
       </div>
+      <!-- 全体の縮図: タイムラインが画面に収まらないときだけ出す。枠が今見ている範囲で、ドラッグで動かす -->
+      <div id="tlMiniRow" hidden><span class="tl-lb">全体</span><div id="tlMini" title="サイクル全体。枠が今見ている範囲です（ドラッグかクリックで移動）"><div id="tlMiniSegs"></div><div id="tlMiniView"></div><div id="tlMiniPh"></div></div></div>
       <div id="tlFoot"><span class="tl-lb">内訳</span><div id="tlBreak"></div></div>
     </div>
   </div>
@@ -2860,6 +2872,11 @@ const TL_RULER = 18, TL_AXIS = 14, TL_MINW = 22, TL_EVENW = 84, TL_ADDW = 34;
 const tlScrollEl = document.getElementById("tlScroll");
 const tlInnerEl = document.getElementById("tlInner");
 let tlZoom = 1;
+/* 自動の拡大率: 全体を幅に収めると短い段の名前が読めないほど詰まるとき（段の幅の中央値が 28 px 未満）は、
+ * 中央値が 56 px になるまで拡大して横にスクロールする。－／＋・「全体」を押したら、その拡大率を使う */
+let tlAutoZoom = true;
+let tlFitAll = false; // 「全体」: 段の最小幅も縮めて、必ず幅に収める
+const TL_READ_MIN = 28, TL_READ_TARGET = 56;
 /* レーンの高さ [px]。キャンバスとタイムラインの境目を上下にドラッグして変える（ブラウザに覚える） */
 const TL_LANE_MIN = 18, TL_LANE_MAX = 72;
 let tlLane = 26;
@@ -2907,19 +2924,28 @@ function tlLayout() {
   const avail = Math.max(200, tlScrollEl.clientWidth - TL_ADDW - TL_STARTW - 12);
   let ws;
   if (tlScale === "even") {
-    const w = Math.max(TL_EVENW, st.length ? avail / st.length : TL_EVENW) * tlZoom;
+    if (tlAutoZoom) tlZoom = 1; // 等幅は 1 段 84 px 以上あるので、自動では拡大しない
+    const w = tlFitAll && st.length ? Math.max(4, avail / st.length) : Math.max(TL_EVENW, st.length ? avail / st.length : TL_EVENW) * tlZoom;
     ws = st.map(() => w);
   } else {
-    // 時間に比例。短すぎる段は最小幅にし、その分を残りの段で割り直す
+    // 時間に比例。短すぎる段は最小幅にし、その分を残りの段で割り直す。
+    // 段が多くて最小幅でも収まらないときは、収めるための最小幅（fitMin）で全体の配分を出す
+    const fitMin = Math.max(4, Math.min(TL_MINW, st.length ? avail / st.length : TL_MINW));
     let small = new Set(), pps = 0;
     for (let k = 0; k < 4; k++) {
       const restT = st.reduce((a, s, i) => a + (small.has(i) ? 0 : s.dur), 0);
-      pps = restT > 0 ? Math.max(1, (avail - small.size * TL_MINW) / restT) : 0;
-      const ns = new Set(st.map((s, i) => i).filter(i => st[i].dur * pps < TL_MINW));
+      pps = restT > 0 ? Math.max(0.5, (avail - small.size * fitMin) / restT) : 0;
+      const ns = new Set(st.map((s, i) => i).filter(i => st[i].dur * pps < fitMin));
       if (ns.size === small.size) break;
       small = ns;
     }
-    ws = st.map(s => Math.max(TL_MINW, s.dur * pps * tlZoom));
+    if (tlAutoZoom) {
+      const fit = st.map(s => Math.max(fitMin, s.dur * pps)).sort((a, b) => a - b);
+      const med = fit.length ? fit[Math.floor(fit.length / 2)] : TL_READ_TARGET;
+      tlZoom = med < TL_READ_MIN ? Math.min(16, TL_READ_TARGET / med) : 1;
+    }
+    const minW = tlFitAll ? fitMin : TL_MINW;
+    ws = st.map(s => Math.max(minW, s.dur * pps * tlZoom));
   }
   const xs = []; let x = 4 + TL_STARTW; // 左端は「開始」の列
   for (const w of ws) { xs.push(x); x += w; }
@@ -2992,7 +3018,7 @@ function renderTimeline() {
     const col = tlDiv("tl-stage" + (si % 2 ? " alt" : "") + (si === selStage ? " sel" : "") + (si === lastActiveStageIdx ? " active" : ""),
       `left:${x}px; width:${w}px; height:${TL_RULER + tlLane * 3}px;`);
     col.dataset.si = si;
-    col.appendChild(tlDiv("tl-sno", `height:${TL_RULER}px; line-height:${TL_RULER}px;`, String(si + 1)));
+    col.appendChild(tlDiv("tl-sno", `height:${TL_RULER}px; line-height:${TL_RULER}px;`, w >= String(si + 1).length * 7 + 4 ? String(si + 1) : "")); // 入らない番号は出さない
     const prog = state.program[si];
     const tip = [`段 ${si + 1}（${st.dur.toFixed(2)} s）`];
     const bar = (lane, ww, cls, label, top, h) => {
@@ -3078,6 +3104,7 @@ function renderTimeline() {
   tlInnerEl.appendChild(ph);
   updatePlayhead();
   renderBreakdown();
+  renderMinimap();
 }
 function updatePlayhead() {
   const ph = document.getElementById("tlPlayhead");
@@ -3092,6 +3119,49 @@ function updatePlayhead() {
     const sc = tlScrollEl;
     if (x < sc.scrollLeft + 20 || x > sc.scrollLeft + sc.clientWidth - 40) sc.scrollLeft = x - sc.clientWidth * 0.3;
   }
+  updateMiniView();
+}
+/* 全体の縮図（タイムラインが画面に収まらないときだけ）。横は本当の時間に比例 */
+const tlMiniRow = document.getElementById("tlMiniRow"), tlMiniEl = document.getElementById("tlMini");
+function renderMinimap() {
+  const c = currentCompiled;
+  const show = !!(c && c.total > 0 && tlScrollEl.scrollWidth > tlScrollEl.clientWidth + 1);
+  if (tlMiniRow.hidden === show) { tlMiniRow.hidden = !show; requestAnimationFrame(resizeCanvas); } // 高さが変わるのでキャンバスも合わせる
+  if (!show) return;
+  const segs = document.getElementById("tlMiniSegs");
+  segs.innerHTML = "";
+  c.stages.forEach((st, si) => {
+    let body = false, arm = false;
+    for (const cb of st.blocks) { if (cb.bodyDur > 0) body = true; if (cb.armDur > 0) arm = true; }
+    const kind = !state.program[si] || !state.program[si].blocks.length ? "empty" : body && arm ? "both" : body ? "body" : arm ? "arm" : "other";
+    const d = tlDiv("tl-ms " + kind, `left:${st.t0 / c.total * 100}%; width:${Math.max(0.15, st.dur / c.total * 100)}%;`);
+    segs.appendChild(d);
+  });
+  updateMiniView();
+}
+function updateMiniView() {
+  const c = currentCompiled;
+  if (tlMiniRow.hidden || !c || !(c.total > 0)) return;
+  const sc = tlScrollEl;
+  const t1 = tlXToTime(sc.scrollLeft), t2 = tlXToTime(sc.scrollLeft + sc.clientWidth);
+  const v = document.getElementById("tlMiniView");
+  v.style.left = (t1 / c.total * 100) + "%";
+  v.style.width = (Math.max(0, t2 - t1) / c.total * 100) + "%";
+  document.getElementById("tlMiniPh").style.left = (Math.min(1, playT / c.total) * 100) + "%";
+}
+tlScrollEl.addEventListener("scroll", updateMiniView);
+{ // 縮図のクリック・ドラッグ: その時刻を真ん中に見る
+  let drag = false;
+  const go = (e) => {
+    const c = currentCompiled, r = tlMiniEl.getBoundingClientRect();
+    if (!c || !(c.total > 0)) return;
+    const t = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)) * c.total;
+    if (playing) autoScrollOff = true;
+    tlScrollEl.scrollLeft = tlTimeToX(t) - tlScrollEl.clientWidth / 2;
+  };
+  tlMiniEl.addEventListener("mousedown", (e) => { if (e.button !== 0) return; e.preventDefault(); drag = true; go(e); });
+  window.addEventListener("mousemove", (e) => { if (drag) go(e); });
+  window.addEventListener("mouseup", () => { drag = false; });
 }
 /* 段 si が見える所まで横にスクロール */
 function scrollTimelineTo(si) {
@@ -3279,16 +3349,22 @@ function seekTo(t) {
 document.getElementById("tlScale").addEventListener("change", (e) => {
   tlScale = e.target.value;
   try { localStorage.setItem("lexxsim.tlScale", tlScale); } catch (err) { /* 保存できなくても動く */ }
-  tlZoom = 1;
+  tlZoom = 1; tlAutoZoom = true; tlFitAll = false;
   renderTimeline();
 });
 const tlZoomBy = (f) => {
   const sc = tlScrollEl, mid = sc.scrollLeft + sc.clientWidth / 2, t = tlXToTime(mid);
+  tlAutoZoom = false; tlFitAll = false;
   tlZoom = Math.min(16, Math.max(1, tlZoom * f));
   renderTimeline();
   sc.scrollLeft = tlTimeToX(t) - sc.clientWidth / 2; // 真ん中の時刻を保つ
 };
 document.getElementById("btnTlZoomIn").addEventListener("click", () => tlZoomBy(1.5));
+document.getElementById("btnTlFit").addEventListener("click", () => { // 全体を幅に収める
+  tlAutoZoom = false; tlFitAll = true; tlZoom = 1;
+  renderTimeline();
+  tlScrollEl.scrollLeft = 0;
+});
 document.getElementById("btnTlZoomOut").addEventListener("click", () => tlZoomBy(1 / 1.5));
 tlScrollEl.addEventListener("wheel", (e) => {
   if (e.ctrlKey) { e.preventDefault(); tlZoomBy(e.deltaY < 0 ? 1.2 : 1 / 1.2); return; }
@@ -4188,6 +4264,7 @@ function applyLoadedData(data) {
       state.program = conv.program;
       selPointName = null;
       selStage = null; selStart = false;
+      tlAutoZoom = true; tlFitAll = false; tlScrollEl.scrollLeft = 0; // 読み込んだら、拡大率は自動に戻す
       state.objects = objectsFromSave(data);
       selectedId = null;
       if (data.robot) state.robot = { body: data.robot.body || { x: 0, y: 0, th: 0 }, arm: fixMount(migrateArm(data.robot.arm)) };
