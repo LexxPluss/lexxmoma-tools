@@ -134,7 +134,7 @@
   .tl-stage.active { background: #fff6cf; }
   .tl-stage.sel { background: #fff1e2; box-shadow: inset 0 0 0 2px #f08a24; z-index: 1; }
   .tl-stage.dragging { opacity: .45; }
-  .tl-sno { position: absolute; left: 0; right: 0; top: 0; text-align: center; font-size: 10px; color: #8a96a3; font-variant-numeric: tabular-nums; overflow: hidden; }
+  .tl-sno { position: absolute; left: 0; right: 0; top: 0; text-align: center; font-size: 11px; color: #6b7a87; font-variant-numeric: tabular-nums; overflow: hidden; }
   .tl-stage.sel .tl-sno { color: #e07b14; font-weight: 700; }
   .tl-bar { position: absolute; border-radius: 4px; color: #fff; font-size: 10.5px; padding: 0 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box; }
   .tl-bar.body { background: #0068b7; }
@@ -146,8 +146,8 @@
   .tl-empty { position: absolute; left: 3px; right: 3px; border: 1.5px dashed #b9c4cf; border-radius: 4px; color: #8a96a3; font-size: 11px; display: flex; align-items: center; justify-content: center; }
   .tl-add { position: absolute; border: 1.5px dashed #9cbbe0; border-radius: 5px; color: var(--accent); font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; background: #f3f7fc; }
   .tl-add:hover { background: var(--accent2); border-color: var(--accent); }
-  .tl-hint { position: absolute; font-size: 11.5px; color: #8a96a3; white-space: nowrap; }
-  .tl-tick { position: absolute; transform: translateX(-50%); font-size: 9.5px; color: #8a96a3; line-height: 14px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .tl-hint { position: absolute; font-size: 11.5px; color: #6b7a87; white-space: nowrap; }
+  .tl-tick { position: absolute; transform: translateX(-50%); font-size: 10px; color: #6b7a87; line-height: 14px; white-space: nowrap; font-variant-numeric: tabular-nums; }
   .tl-rulerhit { position: absolute; top: 0; z-index: 2; cursor: ew-resize; }
   #tlPlayhead { position: absolute; top: 0; width: 11px; z-index: 3; cursor: ew-resize; }
   #tlPlayhead::before { content: ""; position: absolute; left: 4.5px; top: 0; bottom: 0; width: 2px; background: #e0323c; }
@@ -186,6 +186,9 @@
   #regBox .regrow input { flex: 1; min-width: 0; }
   #regBox .regopts { display: flex; gap: 10px; align-items: center; font-size: 11px; color: #567; margin: 4px 0 2px; }
   #regMsg { margin-left: auto; color: var(--accent); }
+  #regBox .regopts { flex-wrap: wrap; }
+  #regBox .regopts label { white-space: nowrap; }
+  #regMsg.ng { color: var(--danger); font-weight: 600; flex-basis: 100%; margin-left: 0; }
   #pointList { flex: 1 1 auto; min-height: 120px; overflow-y: auto; margin-top: 4px; border-top: 1px solid var(--border); padding-top: 2px; }
   .loc-head { display: flex; align-items: center; gap: 4px; margin-top: 3px; padding: 1px 4px; border-radius: 4px;
     background: #eef3f7; font-size: 11px; color: #345; font-variant-numeric: tabular-nums; }
@@ -311,7 +314,7 @@
   .blk .x:hover { opacity: 1; }
   .seqline { text-align: center; color: #789; line-height: 8px; font-size: 11px; }
   .addrow { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
-  .hint { color: #567; font-size: 11px; line-height: 1.55; }
+  .hint { color: #4a5b69; font-size: 11.5px; line-height: 1.6; }
   table.keyhelp { border-collapse: collapse; width: 100%; font-size: 11px; }
   table.keyhelp td { border: 1px solid #e0e4e8; padding: 2px 5px; }
   kbd { background: #eef1f4; border: 1px solid #ccd; border-radius: 3px; padding: 0 4px; font-size: 11px; }
@@ -436,17 +439,20 @@
   #toolbar button:hover { background: var(--accent2); }
   #toolbar button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
   #toolbar .sep { height: 1px; background: #d4dae0; margin: 3px 4px; }
-  #toolbar button small { display: block; font-size: 9px; line-height: 1; margin-top: 2px; opacity: .8; }
+  #toolbar button small { display: block; font-size: 10px; line-height: 1; margin-top: 2px; }
   /* 選んだツールの設定（キャンバス上部の帯）。ツールに設定が無いときは出ない */
   #toolOpts { position: absolute; left: 52px; top: 8px; z-index: 6; display: none; align-items: center; gap: 10px; flex-wrap: wrap;
               max-width: calc(100% - 240px); background: rgba(255,255,255,.94); border: 1px solid #ccd4da; border-radius: 8px; padding: 5px 10px; font-size: 11px; color: #345; }
   #toolOpts.show { display: flex; }
   #toolOpts { max-width: calc(50% - 52px - 66px); } /* 上部中央の 2D／3D 切替と重ならないよう、左半分で折り返す */
-  body.playing #toolbar, body.playing #toolOpts, body.playing #view3dHint { display: none; } /* 再生中は描くツールと操作方法を隠す */
+  body.playing #toolbar, body.playing #toolOpts, body.playing #view3dHint, body.playing #view2dHint { display: none; } /* 再生中は描くツールと操作方法を隠す */
   #toolOpts label { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
   #toolOpts input[type=number] { width: 60px; }
   #toolOpts .hint { margin: 0; }
   #cv.drawmode { cursor: crosshair; }
+  #view2dHint { position: absolute; right: 8px; bottom: 8px; z-index: 4; max-width: calc(100% - 140px); background: rgba(255,255,255,.85); border: 1px solid #ccd4da; border-radius: 6px;
+    padding: 3px 8px; font-size: 11px; color: #31485c; pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #view2dHint[hidden] { display: none; }
   #view3dHint { position: absolute; left: 8px; bottom: 8px; z-index: 4; background: rgba(255,255,255,.85); border: 1px solid #ccd4da; border-radius: 6px; padding: 4px 8px; font-size: 11px; color: #31485c; pointer-events: none; }
   /* ---- アーム手先コントローラ ---- */
   /* 手先・関節で共通の行: ラベル｜スライダ｜数値｜単位 */
@@ -514,7 +520,7 @@
   <a class="lx-brand" href="../index.html" title="LexxMoMa Tools のトップへ" aria-label="LexxMoMa Tools のトップへ戻る"><img id="corpLogo" class="lx-logo" src="../assets/lexxpluss-logo.png" alt="LexxPluss"><span class="lx-wordmark">LexxMoMa</span></a>
   <div>
     <h1 class="lx-tool">動作シミュレーター</h1>
-    <div id="revDisp">rev.73</div>
+    <div id="revDisp">rev.74</div>
   </div>
   </div>
   <div class="time-box" id="timeBox"><span class="tb-long">経過時間 / トータル時間：</span><span class="tb-short">経過 / 合計：</span><b id="elapsedDisp">0.00</b> s / <b id="totalDisp">0.00</b> s</div>
@@ -707,6 +713,7 @@
           <label title="3D に浮いている物（箱の名前、登録した車体位置の枠）を隠します。床面の区画・文字・直線はそのまま"><input type="checkbox" id="chkHideAux"> 浮いた目印を隠す</label>
         </span>
       </div>
+      <div id="view2dHint">ドラッグ: 画面移動 ／ ホイール: 拡大縮小 ／ 矢印キー: 車体 ／ Shift＋矢印: アーム ／ Shift＋PgUp・PgDn: 手先の高さ</div>
       <div id="view3dHint" hidden>左ドラッグ: 回転 ／ 右ドラッグ: 移動 ／ ホイール: 拡大縮小 ／ 矢印キー: 車体・アームのティーチ</div>
     </div>
     <div class="hsplitter" id="splitTL" title="上下にドラッグでタイムラインの高さを変えます（ダブルクリックで元の高さ）"></div>
@@ -2240,8 +2247,11 @@ document.getElementById("btnRegPoint").addEventListener("click", () => {
   const row = document.querySelector(`#pointList .pt-row[data-name="${CSS.escape(nm)}"]`);
   if (row) row.scrollIntoView({ block: "nearest" });
   const msg = document.getElementById("regMsg");
-  msg.textContent = `「${nm}」を登録しました`;
-  clearTimeout(regMsgTimer); regMsgTimer = setTimeout(() => { msg.textContent = ""; }, 3000);
+  // 手先の目標に届いていないまま登録したら知らせる（登録されるのは、表示している最も近い姿勢）
+  const ng = wa && ikStatus && !ikStatus.ok;
+  msg.textContent = ng ? `⚠「${nm}」は手先の目標に届いていない姿勢（約 ${ikStatus.posErr.toFixed(0)} mm ずれ）で登録しました` : `「${nm}」を登録しました`;
+  msg.classList.toggle("ng", !!ng);
+  clearTimeout(regMsgTimer); regMsgTimer = setTimeout(() => { msg.textContent = ""; msg.classList.remove("ng"); }, ng ? 8000 : 3000);
 });
 
 /* シーケンスで何回使っているか（初期状態は数えない） */
@@ -4190,6 +4200,7 @@ function setViewMode(m) {
   document.getElementById("canvasWrap").classList.toggle("mode3d", m === "3d");
   document.getElementById("view3dPresets").style.display = m === "3d" ? "inline-flex" : "none";
   document.getElementById("view3dHint").hidden = m !== "3d";
+  document.getElementById("view2dHint").hidden = m === "3d";
   document.querySelectorAll("#viewSeg button").forEach(b => b.classList.toggle("on", b.dataset.mode === m));
   // 背景の図形・文字の編集（クリック位置が要る）は 2D 表示でだけ行う
   if (m === "3d" && bgMode) setBgMode(bgMode);
