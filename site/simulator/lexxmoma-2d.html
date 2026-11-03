@@ -172,6 +172,7 @@
   .tl-bar.dragging { opacity: .35; }
   #tlDropTip { position: fixed; z-index: 80; background: var(--accent); color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 10px; pointer-events: none; white-space: nowrap; }
   #tlDropTip.ng { background: var(--danger); }
+  #tlHoverLine { position: absolute; top: 0; width: 0; border-left: 1.5px dashed #f08a24; pointer-events: none; z-index: 2; }
   #tlDrop { position: absolute; top: 0; width: 4px; background: var(--accent); border-radius: 2px; z-index: 4; pointer-events: none; }
   #tlMiniRow { display: flex; align-items: center; padding: 2px 8px 0 0; }
   #tlMiniRow[hidden] { display: none; }
@@ -544,7 +545,7 @@
   <a class="lx-brand" href="../index.html" title="LexxMoMa Tools のトップへ" aria-label="LexxMoMa Tools のトップへ戻る"><img id="corpLogo" class="lx-logo" src="../assets/lexxpluss-logo.png" alt="LexxPluss"><span class="lx-wordmark">LexxMoMa</span></a>
   <div>
     <h1 class="lx-tool">動作シミュレーター</h1>
-    <div id="revDisp">rev.78</div>
+    <div id="revDisp">rev.79</div>
   </div>
   </div>
   <div class="time-box" id="timeBox"><span class="tb-long">経過時間 / トータル時間：</span><span class="tb-short">経過 / 合計：</span><b id="elapsedDisp">0.00</b> s / <b id="totalDisp">0.00</b> s</div>
@@ -1026,7 +1027,7 @@ const state = {
 
 let selPointName = null;   // 一覧で選んでいるポイント（下に数値を出す）
 let hoverPointName = null; // 一覧でマウスを乗せているポイント（キャンバスに影で出す）
-let hoverBlockGhost = null; // 右ペインでマウスを乗せている Move ブロックの、終わったときの姿勢 {body, arm}（キャンバスに影で出す）
+let hoverBlockGhost = null; // 影で出す姿勢 {body, arm}: タイムラインでマウスを乗せている時刻の姿勢か、右ペインでマウスを乗せている Move ブロックの終わりの姿勢
 
 /* ---------------- Undo / Redo（Ctrl+Z / Ctrl+Y） ----------------
  * 編集操作の直前に pushUndo() でスナップショットを積む方式。
@@ -1586,7 +1587,7 @@ function draw() {
   // アーム（上に描画）
   drawArm(state.robot.body, state.robot.arm);
   // 一覧でマウスを乗せているポイントを、半透明の影で重ねる（ロボットは動かさない）
-  if (hoverP && !playing) {
+  if (hoverP && (!playing || paused)) {
     const hb = hoverP.body || state.robot.body;
     ctx.save(); ctx.globalAlpha = 0.45;
     if (hoverP.body) drawBodyShape(hb, "rgba(230,126,34,0.25)", "rgba(230,126,34,0.95)", false);
@@ -3019,11 +3020,6 @@ function renderTimeline() {
     chip("body", ib, "body"); chip("arm", ia, "arm");
     col.title = `開始位置（時刻 0）\n車体 ${ib && ib.body ? ib.name : "今の位置（未設定）"}\nアーム ${ia && ia.arm ? ia.name : "今の位置（未設定）"}\nクリックで右に設定が出ます`;
     col.addEventListener("click", () => selectStart());
-    col.addEventListener("mouseenter", () => { // 開始の姿勢を影で出す
-      const b = ib && ib.body ? ib.body : null, a = ia && ia.arm ? ia.arm : null;
-      hoverBlockGhost = (b || a) ? { body: b, arm: a } : null;
-    });
-    col.addEventListener("mouseleave", () => { hoverBlockGhost = null; });
     tlInnerEl.appendChild(col);
   }
   const stages = c ? c.stages : [];
@@ -3073,10 +3069,6 @@ function renderTimeline() {
       for (const e of els) {
         e.dataset.bi = bi;
         e.addEventListener("mousedown", (ev) => tlBlockMouseDown(ev, si, bi)); // 棒のドラッグはブロックを動かす
-        if (b.type === "point") { // マウスを乗せると、このブロックが終わったときの姿勢を影で出す
-          e.addEventListener("mouseenter", () => { hoverBlockGhost = blockEndPose(si, bi); });
-          e.addEventListener("mouseleave", () => { hoverBlockGhost = null; });
-        }
       }
     });
     if (!prog || !prog.blocks.length) {
@@ -3177,6 +3169,25 @@ tlScrollEl.addEventListener("scroll", updateMiniView);
   window.addEventListener("mousemove", (e) => { if (drag) go(e); });
   window.addEventListener("mouseup", () => { drag = false; });
 }
+/* タイムラインのどこかにマウスを乗せると、その時刻の姿勢を影で出す（棒の上でなくてもよい）。
+ * 細い縦の点線で、どの時刻かを示す。「開始」の列は時刻 0 */
+const tlHoverLine = document.createElement("div");
+tlHoverLine.id = "tlHoverLine";
+function tlHoverOff() { hoverBlockGhost = null; tlHoverLine.remove(); }
+tlInnerEl.addEventListener("mousemove", (e) => {
+  const c = currentCompiled;
+  if (!c || (stageDrag && stageDrag.started) || tlScrub) { tlHoverOff(); return; }
+  const x = tlLocalX(e.clientX), x0 = tlGeom.xs.length ? tlGeom.xs[0] : 4 + TL_STARTW;
+  if (x < 4 || x > tlGeom.end) { tlHoverOff(); return; }
+  const t = x < x0 ? 0 : tlXToTime(x);
+  const st = stateAtTime(c, t);
+  hoverBlockGhost = { body: st.body, arm: st.arm };
+  if (!tlHoverLine.parentNode) tlInnerEl.appendChild(tlHoverLine);
+  tlHoverLine.style.left = (x < x0 ? x0 : x) + "px";
+  tlHoverLine.style.height = (TL_RULER + tlLane * 3) + "px";
+  tlHoverLine.title = `${t.toFixed(2)} s`;
+});
+tlInnerEl.addEventListener("mouseleave", tlHoverOff);
 /* 段 si が見える所まで横にスクロール */
 function scrollTimelineTo(si) {
   const sc = tlScrollEl, x = tlGeom.xs[si], w = tlGeom.ws[si];
@@ -4405,7 +4416,7 @@ function sync3D() {
   if (gz !== gizmoShown) { gizmoShown = gz; s.setGizmoMode(gz); }
   s.setRobot(state.robot.body, state.robot.arm.q, state.toolLen);
   // 一覧の位置・右ペインのブロックにマウスを乗せているときは、その姿勢を影のロボットで重ねる（2D の影と同じ）
-  const hp = playing ? null : (hoverBlockGhost || (hoverPointName ? findPoint(hoverPointName) : null));
+  const hp = (playing && !paused) ? null : (hoverBlockGhost || (hoverPointName ? findPoint(hoverPointName) : null));
   if (s.setShadow) s.setShadow(hp ? { body: hp.body || state.robot.body, q: (hp.arm || state.robot.arm).q, showBody: !!hp.body } : null);
   s.syncScene({
     objects: state.objects, selectedId,
