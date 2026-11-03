@@ -245,7 +245,9 @@
   #pointList { flex: 1 1 auto; min-height: 120px; overflow-y: auto; margin-top: 4px; border-top: 1px solid var(--border); padding-top: 2px; }
   .loc-head { display: flex; align-items: center; gap: 4px; margin-top: 3px; padding: 1px 4px; border-radius: 4px;
     background: #eef3f7; font-size: 11px; color: #345; font-variant-numeric: tabular-nums; }
-  .loc-head .lco { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .loc-head .lco { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; font-size: 12px; color: var(--text); }
+  .loc-head .lxy { flex: 0 0 auto; font-size: 10px; color: #789; }
+  .loc-head.arm .lco { font-weight: 400; font-size: 11px; color: inherit; }
   .loc-head svg { flex: 0 0 auto; }
   .pt-row { display: flex; align-items: center; gap: 4px; height: 22px; padding: 0 4px 0 8px; border-radius: 4px; cursor: pointer; }
   .pt-row:hover { background: #fdf0e3; }
@@ -297,7 +299,7 @@
   #pointDetail .jgrid input { flex: 1 1 0; min-width: 0; width: 100%; box-sizing: border-box; }
   :is(#pointDetail, #locPane) .psec { margin-top: 10px; padding: 6px 8px 8px; border: 1px solid var(--border); border-left: 4px solid #2471a3; border-radius: 6px; }
   :is(#pointDetail, #locPane) .psec.arm { border-left-color: #1e8449; }
-  #locPane .psec { margin-top: 0; }
+  #locPane .psec { margin-top: 10px; }
   #locPane .psec-head { cursor: default; } /* 車体位置の編集にはチェックが無い */
   :is(#pointDetail, #locPane) .psec.off { border-left-color: var(--border); }
   :is(#pointDetail, #locPane) .psec-top { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
@@ -587,7 +589,7 @@
        一度開いたら、隣へマウスを動かすだけで切り替わる。Esc で閉じる -->
   <div id="titleCol">
     <h1 class="lx-tool">LexxMoMa 動作シミュレーター</h1>
-    <div id="revDisp">rev.96</div>
+    <div id="revDisp">rev.97</div>
     <nav id="menubar" role="menubar">
       <div class="hdr-menu">
         <button class="mb" id="btnFile" aria-haspopup="menu" aria-expanded="false">ファイル</button>
@@ -1073,6 +1075,7 @@ const state = {
   },
   // 登録した位置（ポイント）。車体の位置とアームの姿勢のセット。どちらか一方だけでもよい（使わない方は null）
   points: [],      // {name, body: {x, y, th}|null, arm: {q:[6]}|null}
+  places: [],      // 名前を付けた車体位置 {x, y, th, name}。無い車体位置は近くのレイアウトの物から名前を作る（placeNames）
   toolLen: 0,      // ツール長 [mm]（FANUC フランジの z 方向。TCP の位置に効く）
   initial: { body: null, arm: null }, // サイクル開始状態（車体・アームそれぞれ、ポイント名。null=現在位置）
   // 段の並び。ブロックは point（ポイントへ動く。move で両方／車体だけ／アームだけ）と other（待ち・任意の動作）
@@ -1100,6 +1103,7 @@ function snapState() {
   return structuredClone({
     robot: state.robot,
     points: state.points,
+    places: state.places,
     toolLen: state.toolLen,
     initial: state.initial,
     program: state.program,
@@ -1115,6 +1119,7 @@ function applySnap(s) {
   const c = structuredClone(s);
   state.robot = c.robot;
   state.points = c.points || [];
+  state.places = c.places || [];
   state.toolLen = c.toolLen || 0;
   state.initial = c.initial || { body: null, arm: null };
   state.program = c.program;
@@ -1298,6 +1303,35 @@ function bodyLocations() {
     L.points.push(p);
   }
   return locs;
+}
+/* 車体位置の名前。付けた名前（state.places）が無ければ、近くの設備（高さのある箱）から「〇〇の前」、
+ * 近くに無ければ「車体位置 N」。同じ名前が重なったら 2, 3… を付ける。返り値は bodyLocations() と同じ並び */
+const PLACE_NEAR = 1500; // [mm] 設備の縁からこの距離までなら「〇〇の前」
+function placeOf(body) { return state.places.find(q => sameBody(q, body)) || null; }
+function autoPlaceName(body) {
+  let best = null, bd = PLACE_NEAR;
+  for (const o of state.objects) {
+    if (o.type !== "box" || !(o.h > 0) || !o.name || o.visible === false) continue;
+    // 箱の向きに合わせた座標で、箱の縁までの距離
+    const c = Math.cos(-(o.yaw || 0)), sn = Math.sin(-(o.yaw || 0));
+    const dx = body.x - o.x, dy = body.y - o.y;
+    const lx = dx * c - dy * sn, ly = dx * sn + dy * c;
+    const d = Math.hypot(Math.max(0, Math.abs(lx) - o.w / 2), Math.max(0, Math.abs(ly) - o.d / 2));
+    if (d < bd) { bd = d; best = o; }
+  }
+  return best ? best.name + "の前" : null;
+}
+function placeNames(locs) {
+  let n = 0;
+  const names = locs.map(L => { const pl = placeOf(L.body); return pl ? pl.name : autoPlaceName(L.body) || `車体位置 ${++n}`; });
+  const seen = {};
+  return names.map(nm => { seen[nm] = (seen[nm] || 0) + 1; return seen[nm] > 1 ? `${nm} ${seen[nm]}` : nm; });
+}
+/* 車体位置を動かしたら、付けた名前も一緒に動かす（その位置に姿勢が残っていなければ） */
+function carryPlaceName(from, to) {
+  const pl = placeOf(from);
+  if (!pl || !to || sameBody(from, to) || state.points.some(p => p.body && sameBody(p.body, from)) || placeOf(to)) return;
+  pl.x = to.x; pl.y = to.y; pl.th = to.th;
 }
 function hasInitialBody() { const p = findPoint(state.initial.body); return !!(p && p.body); }
 const MOVE_LABEL = { both: "車体＋アーム", body: "車体だけ", arm: "アームだけ" };
@@ -2446,7 +2480,9 @@ function closeLocEdit() {
 /* その場所のポイントを、まとめて body へ移す */
 function moveLocTo(L, body) {
   pushUndo();
+  const from = { ...L.body };
   for (const q of L.points) q.body = { x: body.x, y: body.y, th: mod2pi(body.th) };
+  carryPlaceName(from, { x: body.x, y: body.y, th: mod2pi(body.th) });
   selLoc = { x: body.x, y: body.y, th: mod2pi(body.th) };
   renderPoseLists(); renderProgram(); recompute();
 }
@@ -2458,6 +2494,25 @@ function renderLocDetail() {
   // 入力中の欄があれば作り直さない（Tab で次の欄へ移ったときなど）
   if (el.contains(document.activeElement) && document.activeElement.tagName === "INPUT") return;
   el.innerHTML = "";
+  // 名前: 空にすると自動の名前（近くの設備から）に戻る
+  const locs = bodyLocations(), names = placeNames(locs);
+  const curName = names[locs.findIndex(l => sameBody(l.body, L.body))] || "";
+  const ng = document.createElement("div"); ng.className = "pgrid";
+  const nl = document.createElement("span"); nl.textContent = "名前";
+  const nm = document.createElement("input"); nm.type = "text"; nm.className = "full"; nm.value = placeOf(L.body) ? placeOf(L.body).name : "";
+  nm.placeholder = curName;
+  nm.title = "空にすると、近くの設備から自動で名前を付けます";
+  nm.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); nm.blur(); } });
+  nm.addEventListener("change", () => {
+    const v = nm.value.trim(), pl = placeOf(L.body);
+    if ((pl ? pl.name : "") === v) return;
+    pushUndo();
+    state.places = state.places.filter(q => q !== pl);
+    if (v) state.places.push({ x: L.body.x, y: L.body.y, th: L.body.th, name: v });
+    nm.blur(); renderPoseLists();
+  });
+  ng.append(nl, nm);
+  el.appendChild(ng);
   const sec = document.createElement("div"); sec.className = "psec body";
   const top = document.createElement("div"); top.className = "psec-top";
   const hd = document.createElement("div"); hd.className = "psec-head";
@@ -2510,12 +2565,14 @@ function renderPoseLists() {
     el.appendChild(h);
   }
   const use = pointUsage();
-  for (const L of bodyLocations()) {
+  const locs = bodyLocations(), names = placeNames(locs);
+  for (const [li, L] of locs.entries()) {
     const hd = document.createElement("div");
     hd.className = "loc-head";
-    hd.innerHTML = `<span class="lco"></span>`;
-    hd.querySelector(".lco").textContent = `x:${(L.body.x / 1000).toFixed(2)} | y:${(L.body.y / 1000).toFixed(2)} | θ:${Math.round(L.body.th * 180 / Math.PI)}°`;
-    hd.title = "車体位置。この下の姿勢は、どれもこの車体位置で登録したものです（クリックで車体位置の編集）";
+    hd.innerHTML = `<span class="lco"></span><span class="lxy"></span>`;
+    hd.querySelector(".lco").textContent = names[li];
+    hd.querySelector(".lxy").textContent = `${(L.body.x / 1000).toFixed(2)}, ${(L.body.y / 1000).toFixed(2)}, ${Math.round(L.body.th * 180 / Math.PI)}°`;
+    hd.title = `車体位置「${names[li]}」（x, y [m], 向き）。この下の姿勢は、どれもここで登録したものです（クリックで名前と位置を直せます）`;
     if (inspKind === "loc" && sameBody(L.body, selLoc)) hd.classList.add("sel");
     hd.addEventListener("click", () => openLocEdit(L.body));
     el.appendChild(hd);
@@ -2551,7 +2608,7 @@ function renderPointDetail(force) {
   const changed = () => { renderPoseLists(); renderProgram(); recompute(); };
   const num = (k, step, onSet) => {
     const inp = document.createElement("input"); inp.type = "number"; inp.step = step; inp.dataset.k = k;
-    inp.addEventListener("change", () => { const v = parseFloat(inp.value); if (!isFinite(v)) { syncPointDetail(p); return; } pushUndo(); onSet(v); changed(); });
+    inp.addEventListener("change", () => { const v = parseFloat(inp.value); if (!isFinite(v)) { syncPointDetail(p); return; } const from = p.body ? { ...p.body } : null; pushUndo(); onSet(v); if (from) carryPlaceName(from, p.body); changed(); });
     return inp;
   };
   const label = (t) => { const s = document.createElement("span"); s.textContent = t; return s; };
@@ -2669,7 +2726,7 @@ document.getElementById("btnPtOvw").addEventListener("click", () => {
   const p = findPoint(selPointName); if (!p || playing) return;
   pushUndo();
   const rb = state.robot.body;
-  if (p.body) p.body = { x: rb.x, y: rb.y, th: mod2pi(rb.th) };
+  if (p.body) { const from = { ...p.body }; p.body = { x: rb.x, y: rb.y, th: mod2pi(rb.th) }; carryPlaceName(from, p.body); }
   if (p.arm) p.arm = { q: state.robot.arm.q.slice() };
   renderPoseLists(); renderProgram(); recompute();
 });
@@ -4195,6 +4252,7 @@ document.getElementById("btnSave").addEventListener("click", () => {
     toolLen: state.toolLen,
     points: state.points.map(p => ({ name: p.name, body: p.body, arm: p.arm ? { q: p.arm.q } : null })),
     initial: state.initial,
+    places: state.places, // 車体位置の名前（rev.97〜。無ければ読込時に自動の名前）
     program: state.program.map(s => ({
       blocks: s.blocks.map(b => b.type === "point"
         ? { type: "point", point: b.point, move: b.move || "both", mode: b.mode, vmax: b.vmax }
@@ -4260,7 +4318,7 @@ document.getElementById("btnExportCsv").addEventListener("click", () => {
 const TOUR_STEPS = [
   { target: null, title: "LexxMoMa 動作シミュレーターへようこそ", text: "このツールでは、モバイルマニピュレータ（走行台車＋アーム）の動作シーケンスを組み立て、サイクルタイムを見積もれます。基本の使い方を順番に案内します。" },
   { target: "#btnFile", title: "まずサンプルを見る", text: "左上の「ファイル」メニューの「サンプルを開く」から、用意してあるレイアウトとシーケンスの例を開けます。どんな動きができるかを見るには、まずこれを再生してみてください。" },
-  { target: "#regBox", title: "① まず姿勢を登録", text: "車体をキーボードの矢印キーで、アームを左ペインの「アーム」タブで動かし、「＋ 今の姿勢を登録」で名前を付けて登録します。車体の位置とアームの姿勢が 1 件にまとまり、ここが動作の目的地になります（チェックを外せば車体だけ・アームだけも登録できます）。同じ車体位置で登録した姿勢は、一覧で車体位置の見出し（x・y・θ）の下にまとまります。" },
+  { target: "#regBox", title: "① まず姿勢を登録", text: "車体をキーボードの矢印キーで、アームを左ペインの「アーム」タブで動かし、「＋ 今の姿勢を登録」で名前を付けて登録します。車体の位置とアームの姿勢が 1 件にまとまり、ここが動作の目的地になります（チェックを外せば車体だけ・アームだけも登録できます）。同じ車体位置で登録した姿勢は、一覧で車体位置の見出しの下にまとまります。見出しの名前は近くの設備から自動で付き、クリックして直せます。" },
   { target: "#canvasWrap", title: "② 中央ビューの操作", text: "ロボットとレイアウトを表示します。ドラッグで画面移動、マウスホイールまたは左下の＋−で拡大縮小できます。" },
   { target: "#viewSeg", before: () => showLeftTab("arm"), title: "②' 3D 表示とアームの手先操作", text: "「3D」に切り替えると自由な視点でロボットを見られます（左ドラッグで回転、右ドラッグで移動）。アームは FANUC CRX-20iA/L の 6 軸です。左ペインの「アーム」タブで、手先（X/Y/Z/W/P/R を指定。3D では手先に出る矢印をマウスでドラッグ）か関節（J1〜J6）かを選んで動かせます。手先で動かすと逆運動学で関節が決まり、関節で動かすと手先の位置が変わります。届く高さ・距離の確認に使ってください。" },
   { target: "#toolbar", title: "③ レイアウトを描く", text: "キャンバス左のツールで「箱」（設備・机。高さを持ち 3D では箱）、「区画」（床の目印）、直線をドラッグして描き、文字はクリックで置きます。Shift を押しながらだと 0.1 m 刻みになります。「下絵」で顧客のレイアウト図（PNG）を床に敷けます。" },
@@ -4468,6 +4526,7 @@ function applyLoadedData(data) {
       // 登録した位置とシーケンス（version 3 以前の車体位置・アーム位置は、それぞれ車体だけ・アームだけのポイントにする）
       const conv = pointsFromSave(data);
       state.points = conv.points;
+      state.places = Array.isArray(data.places) ? data.places.filter(q => q && isFinite(q.x) && isFinite(q.y) && q.name) : [];
       state.initial = conv.initial;
       state.program = conv.program;
       selPointName = null;
