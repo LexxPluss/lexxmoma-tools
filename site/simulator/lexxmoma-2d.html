@@ -41,7 +41,7 @@
   body.present #toolbar, body.present #toolOpts, body.present #view2dHint, body.present #view3dHint,
   body.present #btnHelp, body.present #btnInfo, body.present .hdr-menu, body.present .lx-theme-btn,
   body.present #btnAddMove, body.present #btnAddOther, body.present #tlScale, body.present #btnTlZoomIn, body.present #btnTlZoomOut, body.present #btnTlFit,
-  body.present #btnRec, body.present .tl-add, body.present #speedWarn { display: none !important; }
+  body.present .tl-add, body.present #speedWarn { display: none !important; }
   body.present .time-box { font-size: 18px; padding: 6px 18px; }
   body.present .time-box b { font-size: 30px; }
   body.present #btnPresent { background: var(--accent); color: #fff; border-color: var(--accent); font-size: 14px; padding: 6px 14px; }
@@ -544,7 +544,7 @@
   <a class="lx-brand" href="../index.html" title="LexxMoMa Tools のトップへ" aria-label="LexxMoMa Tools のトップへ戻る"><img id="corpLogo" class="lx-logo" src="../assets/lexxpluss-logo.png" alt="LexxPluss"><span class="lx-wordmark">LexxMoMa</span></a>
   <div>
     <h1 class="lx-tool">動作シミュレーター</h1>
-    <div id="revDisp">rev.77</div>
+    <div id="revDisp">rev.78</div>
   </div>
   </div>
   <div class="time-box" id="timeBox"><span class="tb-long">経過時間 / トータル時間：</span><span class="tb-short">経過 / 合計：</span><b id="elapsedDisp">0.00</b> s / <b id="totalDisp">0.00</b> s</div>
@@ -2100,6 +2100,10 @@ function refreshRecSnapshot() {
     const cph = clone.querySelector("#tlPlayhead");
     if (cph) cph.remove();
     clone.querySelectorAll("script").forEach(s => s.remove());
+    // 画像は SVG の中からは読めず「LexxPluss」の代わりの文字が出るので隠す（ロゴは compositeRecFrame で描く）
+    clone.querySelectorAll("img").forEach(im => { im.style.visibility = "hidden"; });
+    // 発表モードの録画には、「発表を終わる」「録画中」のボタンを映さない
+    if (presenting()) clone.querySelectorAll("#btnPresent, #btnRec").forEach(el => { el.style.visibility = "hidden"; });
     const html = new XMLSerializer().serializeToString(clone);
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w * dpr}" height="${h * dpr}" viewBox="0 0 ${w} ${h}">` +
                 `<foreignObject width="100%" height="100%">${html}</foreignObject></svg>`;
@@ -2142,10 +2146,20 @@ function compositeRecFrame() {
     const lbl = [...tb.querySelectorAll(".tb-long, .tb-short")].find(e => e.offsetParent !== null);
     const parts = [[lbl ? lbl.textContent : "経過時間 / トータル時間：", false], [playT.toFixed(2), true], [" s / ", false],
                    [(currentCompiled ? currentCompiled.total : 0).toFixed(2), true], [" s", false]];
+    // 文字の大きさは画面と同じにする（発表モードでは大きい）
+    const fb = getComputedStyle(tb.querySelector("b")), fs = getComputedStyle(tb);
     for (const [t, bold] of parts) {
-      g.font = bold ? "bold 18px system-ui, sans-serif" : "14px system-ui, sans-serif";
+      g.font = bold ? `bold ${fb.fontSize} ${fb.fontFamily}` : `${fs.fontSize} ${fs.fontFamily}`;
       g.fillText(t, x, cy); x += g.measureText(t).width;
     }
+  }
+  // ロゴ。file:// で開いているときは描くと録画できなくなる（キャンバスが汚染される）ので描かない
+  const logo = document.getElementById("corpLogo");
+  if (logo && logo.complete && logo.naturalWidth && location.protocol !== "file:") {
+    const lr = logo.getBoundingClientRect(), ls = getComputedStyle(logo);
+    const pl = parseFloat(ls.paddingLeft) || 0, pt = parseFloat(ls.paddingTop) || 0;
+    g.fillStyle = "#fff"; g.beginPath(); g.roundRect(lr.left, lr.top, lr.width, lr.height, 6); g.fill();
+    g.drawImage(logo, lr.left + pl, lr.top + pt, lr.width - pl * 2, lr.height - pt * 2);
   }
 }
 
