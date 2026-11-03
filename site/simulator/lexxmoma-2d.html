@@ -41,7 +41,7 @@
   body.present #toolbar, body.present #toolOpts, body.present #view2dHint, body.present #view3dHint,
   body.present #btnHelp, body.present #btnInfo, body.present .hdr-menu, body.present .lx-theme-btn,
   body.present #btnAddMove, body.present #btnAddOther, body.present #tlScale, body.present #btnTlZoomIn, body.present #btnTlZoomOut,
-  body.present #btnRec, body.present #tlInit, body.present .tl-add, body.present #speedWarn { display: none !important; }
+  body.present #btnRec, body.present .tl-add, body.present #speedWarn { display: none !important; }
   body.present .time-box { font-size: 18px; padding: 6px 18px; }
   body.present .time-box b { font-size: 30px; }
   body.present #btnPresent { background: var(--accent); color: #fff; border-color: var(--accent); font-size: 14px; padding: 6px 14px; }
@@ -64,7 +64,6 @@
     .hb-lbl { display: none; }
     .time-box .tb-long { display: none; }
     .time-box .tb-short { display: inline; }
-    #tlInit { display: none; }
   }
   @media (max-width: 1100px) { .lx-hdr .lx-wordmark { display: none; } }
   main { flex: 1; display: flex; gap: 4px; padding: 8px; min-height: 0; }
@@ -134,8 +133,6 @@
   #tlHead { display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-bottom: 1px solid var(--border); flex-wrap: wrap; row-gap: 4px; }
   #tlHead button, #tlHead select { white-space: nowrap; flex: 0 0 auto; }
   #tlHead select { max-width: none; }
-  #tlInit { font-size: 11px; color: #567; margin-left: 6px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 0 1 auto; }
-  #tlInit:hover { color: var(--accent); text-decoration: underline; }
   #tlBody { display: flex; min-width: 0; }
   #tlLabels { flex: 0 0 52px; padding-top: 0; }
   #tlLabels .tl-ruler-sp { height: 18px; }
@@ -144,6 +141,9 @@
   #tlInner { position: relative; }
   .tl-stage { position: absolute; top: 0; border-left: 1px solid #e1e6ed; cursor: pointer; background: #fff; }
   .tl-stage.alt { background: #f7f9fb; }
+  .tl-stage.tl-start { background: #eef4f9; border-left: 0; border-right: 2px solid #b9cede; border-radius: 4px 0 0 4px; }
+  .tl-bar.start { cursor: pointer; opacity: .85; }
+  .tl-bar.start.now { background: transparent; color: #6b7a87; border: 1.5px dashed #b9c4cf; line-height: normal !important; display: flex; align-items: center; }
   .tl-stage:hover { background: #eef5fc; }
   .tl-stage.active { background: #fff6cf; }
   .tl-stage.sel { background: #fff1e2; box-shadow: inset 0 0 0 2px #f08a24; z-index: 1; }
@@ -386,7 +386,8 @@
   :root[data-theme="dark"] .tl-stage:hover { background: #1f2c38; }
   :root[data-theme="dark"] .tl-stage.active { background: #3a2e10; }
   :root[data-theme="dark"] .tl-stage.sel { background: #3a2a18; }
-  :root[data-theme="dark"] .tl-lb, :root[data-theme="dark"] #tlInit { color: #a3b1bd; }
+  :root[data-theme="dark"] .tl-lb { color: #a3b1bd; }
+  :root[data-theme="dark"] .tl-stage.tl-start { background: #16283a; }
   :root[data-theme="dark"] .tl-add { background: #1a2632; }
   :root[data-theme="dark"] #view3dPresets button { background: #fff; color: #223; border-color: #d4dae0; }
   :root[data-theme="dark"] table.keyhelp td { border-color: #2b3741; }
@@ -534,7 +535,7 @@
   <a class="lx-brand" href="../index.html" title="LexxMoMa Tools のトップへ" aria-label="LexxMoMa Tools のトップへ戻る"><img id="corpLogo" class="lx-logo" src="../assets/lexxpluss-logo.png" alt="LexxPluss"><span class="lx-wordmark">LexxMoMa</span></a>
   <div>
     <h1 class="lx-tool">動作シミュレーター</h1>
-    <div id="revDisp">rev.75</div>
+    <div id="revDisp">rev.76</div>
   </div>
   </div>
   <div class="time-box" id="timeBox"><span class="tb-long">経過時間 / トータル時間：</span><span class="tb-short">経過 / 合計：</span><b id="elapsedDisp">0.00</b> s / <b id="totalDisp">0.00</b> s</div>
@@ -744,7 +745,6 @@
           <option value="2">×2</option>
           <option value="4">×4</option>
         </select>
-        <span id="tlInit" title="サイクルを始めるときの車体の位置とアームの姿勢。右の「シーケンス」タブで変えられます"></span>
         <div style="flex:1"></div>
         <button id="btnAddMove" title="選んでいる段の後ろに、新しい段として Move を足します（何も選んでいなければ最後に）">＋ Move</button>
         <button id="btnAddOther" title="選んでいる段の後ろに、新しい段として「その他の動作」（撮像・把持など、時間だけかかる動作）を足します">＋ その他</button>
@@ -2618,6 +2618,7 @@ function makeNameEditable(nmEl, p, list, updateRefs) {
  * 選んだ段の中身（ブロックの設定）は右ペインの「シーケンス」タブ（renderProgram）に出す */
 const progEl = document.getElementById("program");
 let selStage = null; // タイムラインで選んでいる段の番号（なければ null）
+let selStart = false; // タイムラインの「開始」の列を選んでいる（右に開始位置の設定を出す）
 
 document.getElementById("btnClearProg").addEventListener("click", () => {
   if (state.program.length && !confirm("シーケンスを全削除しますか？")) return;
@@ -2630,8 +2631,17 @@ document.getElementById("btnClearProg").addEventListener("click", () => {
 /* 段を選ぶ。右ペインをシーケンスのタブにして、その段の設定を出す */
 function selectStage(si) {
   selStage = (si === null || si === undefined || si < 0 || si >= state.program.length) ? null : si;
+  selStart = false;
   if (selStage !== null) showRightTab("seq");
   renderProgram(); renderTimeline(); renderProgramTimes();
+}
+
+/* 「開始」の列を選ぶ（もう一度で外す） */
+function selectStart() {
+  selStart = !selStart;
+  selStage = null;
+  if (selStart) showRightTab("seq");
+  renderProgram(); renderTimeline();
 }
 
 /* 新しいブロック。Move は、段で空いている方（車体／アーム）を動かす */
@@ -2720,12 +2730,17 @@ function renderProgram() {
   progEl.innerHTML = "";
   hoverBlockGhost = null; // 作り直すとマウスが離れた知らせが来ないので、ここで消す
   if (selStage !== null && selStage >= state.program.length) selStage = state.program.length ? state.program.length - 1 : null;
-  // 固定の「初期状態」ブロック：サイクル開始時の車体・アーム姿勢を選択
+  if (selStage !== null) selStart = false;
+  if (selStart) { renderStartSettings(); return; }
+  renderProgramStage();
+}
+/* 「開始」の列を選んだとき: サイクルを始めるときの車体の位置・アームの姿勢 */
+function renderStartSettings() {
   const init = document.createElement("div");
   init.className = "stage initial";
   const ih = document.createElement("div");
-  ih.style.cssText = "font-weight:600; font-size:12px; margin-bottom:3px;";
-  ih.textContent = "初期状態（サイクル開始位置）";
+  ih.style.cssText = "font-weight:600; font-size:13px; margin-bottom:6px;";
+  ih.textContent = "開始位置（時刻 0）";
   init.appendChild(ih);
   const mkInitRow = (label, list, key) => {
     const row = document.createElement("div");
@@ -2736,7 +2751,7 @@ function renderProgram() {
     const sel = document.createElement("select");
     sel.style.flex = "1";
     const op0 = document.createElement("option");
-    op0.value = ""; op0.textContent = "（現在位置）";
+    op0.value = ""; op0.textContent = "（今の位置）";
     sel.appendChild(op0);
     for (const p of list) {
       const op = document.createElement("option");
@@ -2760,13 +2775,17 @@ function renderProgram() {
   };
   init.appendChild(mkInitRow("車体", state.points.filter(p => p.body), "body"));
   init.appendChild(mkInitRow("アーム", state.points.filter(p => p.arm), "arm"));
+  const note = document.createElement("div"); note.className = "hint"; note.style.marginTop = "8px";
+  note.textContent = "サイクルを始めるときの車体の位置とアームの姿勢です。タイムラインの左端「開始」の列に出ます。「（今の位置）」のままだと、再生を始めたときのロボットの位置から動き始めます。";
+  init.appendChild(note);
   progEl.appendChild(init);
-
+}
+function renderProgramStage() {
   if (selStage === null) {
     const h = document.createElement("div"); h.className = "hint"; h.style.margin = "10px 4px";
     h.innerHTML = !state.program.length
-      ? "下のタイムラインの「＋ Move」で工程を足します。Move は登録した位置へ車体とアームを動かします（車体だけ・アームだけも選べます）。撮像・把持など時間だけかかる動作は「＋ その他」です。"
-      : "下のタイムラインで段をクリックすると、ここにその段の設定が出ます。<br><br>タイムラインの縦の線のあいだが 1 段です。段は左から順に動き、同じ段のブロックは同時に動き始めます。段の時間は遅い方で決まり、斜線はもう一方を待っている時間です。";
+      ? "下のタイムラインの「＋ Move」で工程を足します。左端の「開始」をクリックすると、開始位置を変えられます。Move は登録した位置へ車体とアームを動かします（車体だけ・アームだけも選べます）。撮像・把持など時間だけかかる動作は「＋ その他」です。"
+      : "下のタイムラインで段をクリックすると、ここにその段の設定が出ます。左端の「開始」をクリックすると、開始位置を変えられます。<br><br>タイムラインの縦の線のあいだが 1 段です。段は左から順に動き、同じ段のブロックは同時に動き始めます。段の時間は遅い方で決まり、斜線はもう一方を待っている時間です。";
     progEl.appendChild(h);
     return;
   }
@@ -2836,6 +2855,7 @@ function renderProgram() {
 /* ---------------- タイムライン ----------------
  * 横が時間。縦の線のあいだが 1 段。レーンは車体・アーム・その他。
  * 段をクリックで選ぶ、左右にドラッグで並べ替え。上の目盛りか赤い線をドラッグで、その時刻の姿勢に飛ぶ */
+const TL_STARTW = 76; // 時刻 0 の「開始」の列の幅 [px]
 const TL_RULER = 18, TL_AXIS = 14, TL_MINW = 22, TL_EVENW = 84, TL_ADDW = 34;
 const tlScrollEl = document.getElementById("tlScroll");
 const tlInnerEl = document.getElementById("tlInner");
@@ -2884,7 +2904,7 @@ let breakdown = { armOnly: 0, bodyOnly: 0, both: 0, other: 0 };
 /* 段ごとの左端 xs と幅 ws [px] */
 function tlLayout() {
   const st = currentCompiled ? currentCompiled.stages : [];
-  const avail = Math.max(200, tlScrollEl.clientWidth - TL_ADDW - 12);
+  const avail = Math.max(200, tlScrollEl.clientWidth - TL_ADDW - TL_STARTW - 12);
   let ws;
   if (tlScale === "even") {
     const w = Math.max(TL_EVENW, st.length ? avail / st.length : TL_EVENW) * tlZoom;
@@ -2901,13 +2921,13 @@ function tlLayout() {
     }
     ws = st.map(s => Math.max(TL_MINW, s.dur * pps * tlZoom));
   }
-  const xs = []; let x = 4;
+  const xs = []; let x = 4 + TL_STARTW; // 左端は「開始」の列
   for (const w of ws) { xs.push(x); x += w; }
   return { xs, ws, end: x };
 }
 function tlTimeToX(t) {
   const c = currentCompiled, g = tlGeom;
-  if (!c || !c.stages.length) return 4;
+  if (!c || !c.stages.length) return 4 + TL_STARTW;
   for (let i = 0; i < c.stages.length; i++) {
     const s = c.stages[i];
     if (t < s.t0 + s.dur || i === c.stages.length - 1) {
@@ -2943,11 +2963,29 @@ function renderTimeline() {
   const H = TL_RULER + tlLane * 3 + TL_AXIS;
   tlInnerEl.style.width = (tlGeom.end + TL_ADDW + 8) + "px";
   tlInnerEl.style.height = H + "px";
-  // 開始位置の表示（見出しの行）
-  const ib = findPoint(state.initial.body), ia = findPoint(state.initial.arm);
-  document.getElementById("tlInit").textContent = `開始位置 車体 ${ib ? ib.name : "（現在位置）"} ／ アーム ${ia ? ia.name : "（現在位置）"}`;
   const laneY = { body: TL_RULER + 3, arm: TL_RULER + tlLane + 3, other: TL_RULER + tlLane * 2 + 3 };
   const barH = tlLane - 6;
+  // 時刻 0 の「開始」の列: サイクルを始めるときの車体の位置・アームの姿勢。クリックで右に設定が出る
+  {
+    const ib = findPoint(state.initial.body), ia = findPoint(state.initial.arm);
+    const col = tlDiv("tl-stage tl-start" + (selStart ? " sel" : ""), `left:4px; width:${TL_STARTW}px; height:${TL_RULER + tlLane * 3}px;`);
+    col.appendChild(tlDiv("tl-sno", `height:${TL_RULER}px; line-height:${TL_RULER}px;`, "開始"));
+    const chip = (lane, p, key) => {
+      const ok = p && p[key];
+      const d = tlDiv("tl-bar start" + (ok ? " " + lane : " now"), `left:3px; top:${laneY[lane]}px; width:${TL_STARTW - 6}px; height:${barH}px; line-height:${barH}px;`,
+        ok ? p.name : "今の位置");
+      col.appendChild(d);
+    };
+    chip("body", ib, "body"); chip("arm", ia, "arm");
+    col.title = `開始位置（時刻 0）\n車体 ${ib && ib.body ? ib.name : "今の位置（未設定）"}\nアーム ${ia && ia.arm ? ia.name : "今の位置（未設定）"}\nクリックで右に設定が出ます`;
+    col.addEventListener("click", () => selectStart());
+    col.addEventListener("mouseenter", () => { // 開始の姿勢を影で出す
+      const b = ib && ib.body ? ib.body : null, a = ia && ia.arm ? ia.arm : null;
+      hoverBlockGhost = (b || a) ? { body: b, arm: a } : null;
+    });
+    col.addEventListener("mouseleave", () => { hoverBlockGhost = null; });
+    tlInnerEl.appendChild(col);
+  }
   const stages = c ? c.stages : [];
   stages.forEach((st, si) => {
     const x = tlGeom.xs[si], w = tlGeom.ws[si];
@@ -3009,7 +3047,7 @@ function renderTimeline() {
     col.addEventListener("mousedown", (e) => tlStageMouseDown(e, si));
     tlInnerEl.appendChild(col);
   });
-  if (!stages.length) tlInnerEl.appendChild(tlDiv("tl-hint", `left:${TL_ADDW + 16}px; top:${laneY.arm}px; line-height:${barH}px;`,
+  if (!stages.length) tlInnerEl.appendChild(tlDiv("tl-hint", `left:${tlGeom.end + TL_ADDW + 16}px; top:${laneY.arm}px; line-height:${barH}px;`,
     "まだ工程がありません。上の「＋ Move」で、登録した位置へ動く工程を足します"));
   // 末尾の「＋」: 空の段を足して選ぶ
   const add = tlDiv("tl-add", `left:${tlGeom.end + 6}px; top:${TL_RULER + 3}px; width:${TL_ADDW - 10}px; height:${tlLane * 3 - 6}px;`, "＋");
@@ -3259,7 +3297,6 @@ tlScrollEl.addEventListener("wheel", (e) => {
     e.preventDefault(); tlScrollEl.scrollLeft += e.deltaY;
   }
 }, { passive: false });
-document.getElementById("tlInit").addEventListener("click", () => { showRightTab("seq"); selectStage(null); });
 if (window.ResizeObserver) {
   let lastW = 0;
   new ResizeObserver(() => { if (tlScrollEl.clientWidth !== lastW) { lastW = tlScrollEl.clientWidth; renderTimeline(); } }).observe(tlScrollEl);
@@ -4009,7 +4046,7 @@ const TOUR_STEPS = [
   { target: "#toolbar", title: "③ レイアウトを描く", text: "キャンバス左のツールで「箱」（設備・机。高さを持ち 3D では箱）、「区画」（床の目印）、直線をドラッグして描き、文字はクリックで置きます。Shift を押しながらだと 0.1 m 刻みになります。「下絵」で顧客のレイアウト図（PNG）を床に敷けます。" },
   { target: "#tabObj", before: () => showRightTab("obj"), title: "③' 一覧と設定", text: "描いた物は右ペインの「レイアウト」タブに並びます。選ぶと名前・位置・寸法・高さを数値で直せ、🔒 でロックすると画面上で誤って選ばれなくなります。下絵は選んで「📏 線を引いて縮尺を合わせる」で実寸に合わせます。" },
   { target: "#timeline", title: "④ タイムラインで動作を組む", text: "下のタイムラインの「＋ Move」で工程を足します（登録した位置へ。車体＋アーム／車体だけ／アームだけを選べます）。撮像・把持など時間だけかかる動作は「＋ その他」です。縦の線のあいだが 1 段で、段は左から順に動き、同じ段のブロックは同時に動き始めます。斜線はもう一方を待っている時間です。段は左右にドラッグして並べ替えられます。" },
-  { target: "#colRight", before: () => showRightTab("seq"), title: "④' 段の設定", text: "タイムラインで段をクリックすると、右にその段の設定（行き先・動かすもの・走行経路・最大速度）が出ます。「この段で同時に」で同時に動くブロックを足せます。一番上で開始位置も指定できます。" },
+  { target: "#colRight", before: () => showRightTab("seq"), title: "④' 段の設定", text: "タイムラインで段をクリックすると、右にその段の設定（行き先・動かすもの・走行経路・最大速度）が出ます。「この段で同時に」で同時に動くブロックを足せます。タイムラインの左端「開始」をクリックすると、開始位置（時刻 0 の車体の位置・アームの姿勢）を変えられます。" },
   { target: "#tlHead", title: "⑤ 再生して確認", text: "「再生」で動きを確認できます（もう一度押すと一時停止、さらに押すと再開）。タイムラインの上の目盛りか赤い線をドラッグすると、その時刻の姿勢に飛べます。「⏺ 録画」を押すと、再生しながら動きを動画（WebM）として保存できます。" },
   { target: "#tlFoot", title: "⑥ サイクルタイムの確認", text: "合計時間は上のヘッダーに、アームだけ・車体だけ・同時に動く・その他の内訳はタイムラインの一番下に出ます。右の「シーケンスをCSV出力」で各工程の時間をExcel用に書き出せます。" },
   { target: "#btnFile", title: "⑦ 保存と読込", text: "「📁 ファイル」の「設定保存」（Ctrl+S）で作った内容をファイルに保存、「設定読込」で復元できます。作業が消えないよう、こまめに保存してください。" },
@@ -4150,7 +4187,7 @@ function applyLoadedData(data) {
       state.initial = conv.initial;
       state.program = conv.program;
       selPointName = null;
-      selStage = null;
+      selStage = null; selStart = false;
       state.objects = objectsFromSave(data);
       selectedId = null;
       if (data.robot) state.robot = { body: data.robot.body || { x: 0, y: 0, th: 0 }, arm: fixMount(migrateArm(data.robot.arm)) };
