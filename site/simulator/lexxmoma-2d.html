@@ -36,6 +36,20 @@
   .time-box .tb-short { display: none; }
   .hb-ico { display: inline-block; width: 15px; height: 15px; line-height: 15px; border-radius: 50%; border: 1.5px solid currentColor; text-align: center; font-size: 10px; vertical-align: -2px; }
   .lx-hdr > button, .hdr-menu > button { flex: 0 0 auto; }
+  /* 発表モード（お客さんに見せる）: 編集用の部品を隠し、時間を大きく出す */
+  body.present #colLeft, body.present #colRight, body.present #splitL, body.present #splitR,
+  body.present #toolbar, body.present #toolOpts, body.present #view2dHint, body.present #view3dHint,
+  body.present #btnHelp, body.present #btnInfo, body.present .hdr-menu, body.present .lx-theme-btn,
+  body.present #btnAddMove, body.present #btnAddOther, body.present #tlScale, body.present #btnTlZoomIn, body.present #btnTlZoomOut,
+  body.present #btnRec, body.present #tlInit, body.present .tl-add, body.present #speedWarn { display: none !important; }
+  body.present .time-box { font-size: 18px; padding: 6px 18px; }
+  body.present .time-box b { font-size: 30px; }
+  body.present #btnPresent { background: var(--accent); color: #fff; border-color: var(--accent); font-size: 14px; padding: 6px 14px; }
+  body.present .tl-stage.sel { background: inherit; box-shadow: none; }
+  body.present .tl-stage, body.present .tl-bar { cursor: default; }
+  body.present .tl-bk { font-size: 12px; }
+  body.present #tlBreak { height: 22px; }
+  body.present .tl-bk { line-height: 22px; }
   /* ヘッダーのメニュー（ファイル） */
   .hdr-menu { position: relative; flex: 0 0 auto; }
   .hdr-pop { position: absolute; right: 0; top: calc(100% + 4px); z-index: 70; min-width: 210px; background: var(--panel); border: 1px solid var(--border);
@@ -520,7 +534,7 @@
   <a class="lx-brand" href="../index.html" title="LexxMoMa Tools のトップへ" aria-label="LexxMoMa Tools のトップへ戻る"><img id="corpLogo" class="lx-logo" src="../assets/lexxpluss-logo.png" alt="LexxPluss"><span class="lx-wordmark">LexxMoMa</span></a>
   <div>
     <h1 class="lx-tool">動作シミュレーター</h1>
-    <div id="revDisp">rev.74</div>
+    <div id="revDisp">rev.75</div>
   </div>
   </div>
   <div class="time-box" id="timeBox"><span class="tb-long">経過時間 / トータル時間：</span><span class="tb-short">経過 / 合計：</span><b id="elapsedDisp">0.00</b> s / <b id="totalDisp">0.00</b> s</div>
@@ -528,6 +542,7 @@
   <button type="button" class="lx-theme-btn" data-lx-theme-toggle aria-label="ライト / ダーク切替"></button>
   <button id="btnHelp" title="使い方の案内（ツアー）"><b class="hb-ico">?</b><span class="hb-lbl"> 使い方</span></button>
   <button id="btnInfo" title="操作と前提: キー操作・マウス操作と、計算に使っている前提値（速度・加速度など）">ⓘ<span class="hb-lbl"> 操作と前提</span></button>
+  <button id="btnPresent" title="発表モード: 編集用のペインを隠し、全画面でロボットとタイムラインと時間だけを大きく見せます（Esc で戻る）">🖥<span class="hb-lbl"> 発表</span></button>
   <!-- サンプル・保存・読込は「ファイル」にまとめる（狭い画面でヘッダーが折れないように） -->
   <div class="hdr-menu" id="fileMenu">
     <button id="btnFile" aria-haspopup="menu" aria-expanded="false" title="サンプルを開く・設定保存（Ctrl+S）・設定読込">📁 ファイル ▾</button>
@@ -3082,13 +3097,13 @@ function cancelStageDrag() {
 window.addEventListener("blur", cancelStageDrag); // スクショ等でウィンドウのフォーカスが外れたら解除
 document.addEventListener("visibilitychange", () => { if (document.hidden) cancelStageDrag(); });
 function tlStageMouseDown(e, si) {
-  if (e.button !== 0) return;
+  if (e.button !== 0 || presenting()) return; // 発表中は並べ替えない
   e.preventDefault();
   cancelStageDrag();
   stageDrag = { kind: "stage", from: si, sx: e.clientX, started: false, drop: null };
 }
 function tlBlockMouseDown(e, si, bi) {
-  if (e.button !== 0) return;
+  if (e.button !== 0 || presenting()) return;
   e.preventDefault(); e.stopPropagation();
   cancelStageDrag();
   stageDrag = { kind: "block", from: si, bi, sx: e.clientX, started: false, drop: null };
@@ -4070,6 +4085,29 @@ window.addEventListener("resize", () => {
   const el = TOUR_STEPS[tourIdx].target && document.querySelector(TOUR_STEPS[tourIdx].target);
   if (el) positionTour(el); else showTourStep(tourIdx);
 });
+
+/* 発表モード: 編集用のペインと部品を隠し、全画面にする。もう一度押す・Esc・全画面を抜けると戻る */
+function presenting() { return document.body.classList.contains("present"); }
+function setPresent(on) {
+  if (on === presenting()) return;
+  document.body.classList.toggle("present", on);
+  const btn = document.getElementById("btnPresent");
+  btn.innerHTML = on ? "✕ 発表を終わる" : '🖥<span class="hb-lbl"> 発表</span>';
+  if (on) {
+    if (bgMode) exitDrawMode();
+    const fs = document.documentElement.requestFullscreen;
+    if (fs) document.documentElement.requestFullscreen().catch(() => { /* 全画面にできなくても発表モードは続ける */ });
+  } else if (document.fullscreenElement && document.exitFullscreen) {
+    document.exitFullscreen().catch(() => {});
+  }
+  requestAnimationFrame(() => { resizeCanvas(); renderTimeline(); });
+}
+document.getElementById("btnPresent").addEventListener("click", () => setPresent(!presenting()));
+document.addEventListener("fullscreenchange", () => {
+  if (!document.fullscreenElement && presenting()) setPresent(false); // Esc などで全画面を抜けたら発表モードも終える
+  requestAnimationFrame(resizeCanvas);
+});
+window.addEventListener("keydown", (e) => { if (e.key === "Escape" && presenting()) setPresent(false); });
 
 /* ヘッダーの「ファイル」メニュー。項目を押すか、外をクリック・Esc で閉じる */
 {
