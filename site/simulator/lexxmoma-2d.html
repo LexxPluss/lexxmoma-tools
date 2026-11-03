@@ -56,6 +56,8 @@
   header.lx-hdr { padding-top: 6px; padding-bottom: 4px; position: relative; z-index: 65; }
   #titleCol { display: flex; flex-direction: column; justify-content: center; min-width: 0; }
   #titleCol .lx-tool { line-height: 1.25 !important; }
+  /* LexxPluss のロゴは Google ドキュメントのアイコンと同じく、ツール名とメニューの 2 行分の高さ */
+  header.lx-hdr .lx-logo { height: 36px !important; }
   #menubar { display: flex; align-items: center; gap: 0; margin-left: -8px; }
   #menubar .hdr-menu { display: flex; align-items: center; }
   #menubar .mb { border: 0; background: transparent; padding: 2px 8px; font-size: 13px; border-radius: 4px; color: inherit; }
@@ -78,7 +80,6 @@
     .time-box .tb-long { display: none; }
     .time-box .tb-short { display: inline; }
   }
-  @media (max-width: 1100px) { .lx-hdr .lx-wordmark { display: none; } }
   main { flex: 1; display: flex; gap: 4px; padding: 8px; min-height: 0; }
   .col { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
   #colLeft  { width: 270px; flex-shrink: 0; flex-direction: row; overflow: hidden; }
@@ -549,12 +550,12 @@
 
 <header class="lx-hdr">
   <div class="lx-title">
-  <a class="lx-brand" href="../index.html" title="LexxMoMa Tools のトップへ" aria-label="LexxMoMa Tools のトップへ戻る"><img id="corpLogo" class="lx-logo" src="../assets/lexxpluss-logo.png" alt="LexxPluss"><span class="lx-wordmark">LexxMoMa</span></a>
+  <a class="lx-brand" href="../index.html" title="LexxMoMa Tools のトップへ" aria-label="LexxMoMa Tools のトップへ戻る"><img id="corpLogo" class="lx-logo" src="../assets/lexxpluss-logo.png" alt="LexxPluss"></a>
   <!-- Google ドキュメントと同じ形: ロゴの右の 1 行目にツール名、2 行目にメニュー（ファイル・編集・表示・ヘルプ）。
        一度開いたら、隣へマウスを動かすだけで切り替わる。Esc で閉じる -->
   <div id="titleCol">
-    <h1 class="lx-tool">動作シミュレーター</h1>
-    <div id="revDisp">rev.84</div>
+    <h1 class="lx-tool">LexxMoMa 動作シミュレーター</h1>
+    <div id="revDisp">rev.85</div>
     <nav id="menubar" role="menubar">
       <div class="hdr-menu">
         <button class="mb" id="btnFile" aria-haspopup="menu" aria-expanded="false">ファイル</button>
