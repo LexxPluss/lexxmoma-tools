@@ -26,7 +26,7 @@
   }
   /* ヘッダーは LexxMoMa Tools 共通の .lx-hdr(../assets/theme.js) */
   header.lx-hdr { gap: 16px; }
-  #revDisp { font-size: 10px; opacity: 0.65; line-height: 1.2; } /* 変更のたびに rev をインクリメントする */
+  #revDisp { display: none; } /* 変更のたびに rev をインクリメントする（保存 JSON に記録。表示は「ヘルプ」） */
   .time-box {
     font-variant-numeric: tabular-nums; background: var(--accent2); color: var(--text);
     border-radius: 6px; padding: 4px 12px; font-size: 14px;
@@ -39,7 +39,7 @@
   /* 発表モード（お客さんに見せる）: 編集用の部品を隠し、時間を大きく出す */
   body.present #colLeft, body.present #colRight, body.present #splitL, body.present #splitR,
   body.present #toolbar, body.present #toolOpts, body.present #view2dHint, body.present #view3dHint,
-  body.present #btnHelp, body.present #btnInfo, body.present .hdr-menu, body.present .lx-theme-btn,
+  body.present #btnHelp, body.present #btnInfo, body.present #menubar,
   body.present #btnAddMove, body.present #btnAddOther, body.present #tlScale, body.present #btnTlZoomIn, body.present #btnTlZoomOut, body.present #btnTlFit,
   body.present .tl-add, body.present #speedWarn { display: none !important; }
   body.present .time-box { font-size: 18px; padding: 6px 18px; }
@@ -52,7 +52,13 @@
   body.present .tl-bk { line-height: 22px; }
   /* ヘッダーのメニュー（ファイル） */
   .hdr-menu { position: relative; flex: 0 0 auto; }
-  .hdr-pop { position: absolute; right: 0; top: calc(100% + 4px); z-index: 70; min-width: 210px; background: var(--panel); border: 1px solid var(--border);
+  #menubar { display: flex; align-items: center; gap: 0; flex: 0 0 auto; margin-left: -4px; }
+  #menubar .mb { border: 0; background: transparent; padding: 5px 10px; font-size: 13px; border-radius: 5px; color: inherit; }
+  #menubar .mb:hover, #menubar .mb[aria-expanded="true"] { background: var(--accent2); }
+  .hdr-ver { padding: 8px 12px; font-size: 12px; line-height: 1.6; white-space: nowrap; color: var(--text); }
+  .hdr-pop button:disabled { color: #9aa6b0; background: transparent; cursor: default; }
+  .hdr-pop .ck { display: inline-block; width: 14px; }
+  .hdr-pop { position: absolute; left: 0; top: calc(100% + 2px); z-index: 70; min-width: 210px; background: var(--panel); border: 1px solid var(--border);
     border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.15); padding: 4px; display: flex; flex-direction: column; gap: 2px; }
   .hdr-pop[hidden] { display: none; }
   .hdr-pop button { border: 0; text-align: left; padding: 6px 10px; font-size: 13px; display: flex; align-items: center; gap: 6px; white-space: nowrap; background: transparent; }
@@ -68,6 +74,7 @@
     .time-box .tb-short { display: inline; }
   }
   @media (max-width: 1100px) { .lx-hdr .lx-wordmark { display: none; } }
+  @media (max-width: 1240px) { .lx-hdr .lx-tool { display: none; } } /* 狭い画面では「動作シミュレーター」の文字を隠してメニューを残す */
   main { flex: 1; display: flex; gap: 4px; padding: 8px; min-height: 0; }
   .col { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
   #colLeft  { width: 270px; flex-shrink: 0; flex-direction: row; overflow: hidden; }
@@ -541,27 +548,52 @@
   <a class="lx-brand" href="../index.html" title="LexxMoMa Tools のトップへ" aria-label="LexxMoMa Tools のトップへ戻る"><img id="corpLogo" class="lx-logo" src="../assets/lexxpluss-logo.png" alt="LexxPluss"><span class="lx-wordmark">LexxMoMa</span></a>
   <div>
     <h1 class="lx-tool">動作シミュレーター</h1>
-    <div id="revDisp">rev.81</div>
+    <div id="revDisp">rev.82</div>
   </div>
   </div>
+  <!-- メニューバー（デスクトップのアプリと同じ: 一度開いたら、隣へマウスを動かすだけで切り替わる。Esc で閉じる） -->
+  <nav id="menubar" role="menubar">
+    <div class="hdr-menu">
+      <button class="mb" id="btnFile" aria-haspopup="menu" aria-expanded="false">ファイル</button>
+      <div class="hdr-pop" role="menu" hidden>
+        <button id="btnSamples" role="menuitem" title="用意してあるレイアウトとシーケンスの例を開きます">サンプルを開く…</button>
+        <div class="hdr-sep"></div>
+        <button id="btnSave" role="menuitem" title="作った内容（位置・シーケンス・レイアウト）をファイルに保存します">設定保存<kbd>Ctrl+S</kbd></button>
+        <button id="btnLoad" role="menuitem" title="保存したファイルを開きます">設定読込…<kbd>Ctrl+O</kbd></button>
+        <button id="btnExportCsv" role="menuitem" title="各工程の内容と所要時間をCSV（Excelで開けます）で出力します">シーケンスをCSV出力</button>
+        <div class="hdr-sep"></div>
+        <button id="btnClearProg" role="menuitem" class="danger" title="シーケンスの段をすべて消します（Ctrl+Z で戻せます）">シーケンスを全部消す</button>
+      </div>
+    </div>
+    <div class="hdr-menu">
+      <button class="mb" id="btnEditMenu" aria-haspopup="menu" aria-expanded="false">編集</button>
+      <div class="hdr-pop" role="menu" hidden>
+        <button id="miUndo" role="menuitem">元に戻す<kbd>Ctrl+Z</kbd></button>
+        <button id="miRedo" role="menuitem">やり直す<kbd>Ctrl+Y</kbd></button>
+        <div class="hdr-sep"></div>
+        <button id="miDup" role="menuitem">選んだ物を複製</button>
+        <button id="miDel" role="menuitem">選んだ物を削除<kbd>Delete</kbd></button>
+      </div>
+    </div>
+    <div class="hdr-menu">
+      <button class="mb" id="btnViewMenu" aria-haspopup="menu" aria-expanded="false">表示</button>
+      <div class="hdr-pop" role="menu" hidden>
+        <button id="miLight" role="menuitemradio"><span class="ck"></span>ライト</button>
+        <button id="miDark" role="menuitemradio"><span class="ck"></span>ダーク</button>
+      </div>
+    </div>
+    <div class="hdr-menu">
+      <button class="mb" id="btnHelpMenu" aria-haspopup="menu" aria-expanded="false">ヘルプ</button>
+      <div class="hdr-pop" role="menu" hidden>
+        <div class="hdr-ver" id="miVersion"></div>
+      </div>
+    </div>
+  </nav>
   <div class="time-box" id="timeBox"><span class="tb-long">経過時間 / トータル時間：</span><span class="tb-short">経過 / 合計：</span><b id="elapsedDisp">0.00</b> s / <b id="totalDisp">0.00</b> s</div>
   <div style="flex:1"></div>
-  <button type="button" class="lx-theme-btn" data-lx-theme-toggle aria-label="ライト / ダーク切替"></button>
   <button id="btnHelp" title="使い方の案内（ツアー）"><b class="hb-ico">?</b><span class="hb-lbl"> 使い方</span></button>
   <button id="btnInfo" title="操作と前提: キー操作・マウス操作と、計算に使っている前提値（速度・加速度など）">ⓘ<span class="hb-lbl"> 操作と前提</span></button>
   <button id="btnPresent" title="発表モード: 編集用のペインを隠し、全画面でロボットとタイムラインと時間だけを大きく見せます（Esc で戻る）">🖥<span class="hb-lbl"> 発表</span></button>
-  <!-- サンプル・保存・読込は「ファイル」にまとめる（狭い画面でヘッダーが折れないように） -->
-  <div class="hdr-menu" id="fileMenu">
-    <button id="btnFile" aria-haspopup="menu" aria-expanded="false" title="サンプルを開く・設定保存（Ctrl+S）・設定読込・CSV 出力・シーケンスを全部消す">📁 ファイル ▾</button>
-    <div class="hdr-pop" id="filePop" role="menu" hidden>
-      <button id="btnSamples" role="menuitem" title="用意してあるレイアウトとシーケンスの例を開きます">📂 サンプルを開く</button>
-      <button id="btnSave" role="menuitem" title="作った内容（位置・シーケンス・レイアウト）をファイルに保存します">💾 設定保存<kbd>Ctrl+S</kbd></button>
-      <button id="btnLoad" role="menuitem" title="保存したファイルを開きます">📄 設定読込</button>
-      <div class="hdr-sep"></div>
-      <button id="btnExportCsv" role="menuitem" title="各工程の内容と所要時間をCSV（Excelで開けます）で出力します">📊 シーケンスをCSV出力</button>
-      <button id="btnClearProg" role="menuitem" class="danger" title="シーケンスの段をすべて消します（Ctrl+Z で戻せます）">🗑 シーケンスを全部消す</button>
-    </div>
-  </div>
   <input type="file" id="fileLoad" accept=".json" style="display:none">
 </header>
 
@@ -580,9 +612,9 @@
           <tr><td>アーム 伸縮（手先を水平に出し入れ）</td><td><kbd>Shift</kbd>＋<kbd>↑</kbd> / <kbd>↓</kbd></td></tr>
           <tr><td>アーム 上下（手先の高さ）</td><td><kbd>Shift</kbd>＋<kbd>PgUp</kbd> / <kbd>PgDn</kbd></td></tr>
           <tr><td>描画モードを解除</td><td><kbd>Esc</kbd></td></tr>
-          <tr><td>選択したオブジェクトを削除</td><td><kbd>Delete</kbd></td></tr>
+          <tr><td>選んだ物（段・レイアウトの物・位置）を削除</td><td><kbd>Delete</kbd></td></tr>
           <tr><td>元に戻す / やり直す</td><td><kbd>Ctrl</kbd>＋<kbd>Z</kbd> / <kbd>Y</kbd></td></tr>
-          <tr><td>設定保存（ファイルに保存）</td><td><kbd>Ctrl</kbd>＋<kbd>S</kbd></td></tr>
+          <tr><td>設定保存 / 設定読込</td><td><kbd>Ctrl</kbd>＋<kbd>S</kbd> / <kbd>O</kbd></td></tr>
         </table>
         <div style="font-weight:600; margin-top:6px;">マウス（中央ペイン）</div>
         <table class="keyhelp" style="margin-top:2px;">
@@ -1896,7 +1928,7 @@ window.addEventListener("keydown", (e) => {
   const typing = (t.tagName === "INPUT" && !["range", "checkbox", "radio", "button", "color"].includes(t.type)) || t.tagName === "SELECT" || t.tagName === "TEXTAREA";
   if (typing) return;
   if (t.tagName === "INPUT" && TEACH_KEYS.includes(e.key)) t.blur(); // スライダーから外して、以後のキーも素直に届くようにする
-  if ((e.key === "Delete" || e.key === "Backspace") && selectedId && !playing) { e.preventDefault(); deleteSelectedObject(); return; }
+  if ((e.key === "Delete" || e.key === "Backspace") && !playing && selectedThing()) { e.preventDefault(); deleteSelected(); return; } // 右ペインに出している物（段・レイアウトの物・位置）を消す
   // Undo / Redo（Ctrl+Z / Ctrl+Y、Ctrl+Shift+Z も Redo）
   if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === "z") { e.preventDefault(); doUndo(); return; }
   if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === "y" || (e.shiftKey && e.key.toLowerCase() === "z"))) { e.preventDefault(); doRedo(); return; }
@@ -4104,7 +4136,7 @@ document.getElementById("btnExportCsv").addEventListener("click", () => {
 /* ---------------- 使い方ツアー ---------------- */
 const TOUR_STEPS = [
   { target: null, title: "LexxMoMa 動作シミュレーターへようこそ", text: "このツールでは、モバイルマニピュレータ（走行台車＋アーム）の動作シーケンスを組み立て、サイクルタイムを見積もれます。基本の使い方を順番に案内します。" },
-  { target: "#btnFile", title: "まずサンプルを見る", text: "「📁 ファイル」の「サンプルを開く」から、用意してあるレイアウトとシーケンスの例を開けます。どんな動きができるかを見るには、まずこれを再生してみてください。" },
+  { target: "#btnFile", title: "まずサンプルを見る", text: "左上の「ファイル」メニューの「サンプルを開く」から、用意してあるレイアウトとシーケンスの例を開けます。どんな動きができるかを見るには、まずこれを再生してみてください。" },
   { target: "#regBox", title: "① まず位置を登録", text: "車体をキーボードの矢印キーで、アームを左ペインの「アーム」タブで動かし、「＋ 今の位置を登録」で名前を付けて登録します。車体の位置とアームの姿勢が 1 件にまとまり、ここが動作の目的地になります（チェックを外せば車体だけ・アームだけも登録できます）。同じ場所で登録した位置は、一覧で場所の見出しの下にまとまります。" },
   { target: "#canvasWrap", title: "② 中央ビューの操作", text: "ロボットとレイアウトを表示します。ドラッグで画面移動、マウスホイールまたは左下の＋−で拡大縮小できます。" },
   { target: "#viewSeg", before: () => showLeftTab("arm"), title: "②' 3D 表示とアームの手先操作", text: "「3D」に切り替えると自由な視点でロボットを見られます（左ドラッグで回転、右ドラッグで移動）。アームは FANUC CRX-20iA/L の 6 軸です。左ペインの「アーム」タブで、手先（X/Y/Z/W/P/R を指定。3D では手先に出る矢印をマウスでドラッグ）か関節（J1〜J6）かを選んで動かせます。手先で動かすと逆運動学で関節が決まり、関節で動かすと手先の位置が変わります。届く高さ・距離の確認に使ってください。" },
@@ -4113,8 +4145,8 @@ const TOUR_STEPS = [
   { target: "#timeline", title: "④ タイムラインで動作を組む", text: "下のタイムラインの「＋ Move」で工程を足します（登録した位置へ。車体＋アーム／車体だけ／アームだけを選べます）。撮像・把持など時間だけかかる動作は「＋ その他」です。縦の線のあいだが 1 段で、段は左から順に動き、同じ段のブロックは同時に動き始めます。斜線はもう一方を待っている時間です。段は左右にドラッグして並べ替えられます。" },
   { target: "#colRight", before: () => showRightTab("seq"), title: "④' 段の設定", text: "タイムラインで段をクリックすると、右にその段の設定（行き先・動かすもの・走行経路・最大速度）が出ます。「この段で同時に」で同時に動くブロックを足せます。タイムラインの左端「開始」をクリックすると、開始位置（時刻 0 の車体の位置・アームの姿勢）を変えられます。" },
   { target: "#tlHead", title: "⑤ 再生して確認", text: "「再生」で動きを確認できます（もう一度押すと一時停止、さらに押すと再開）。タイムラインの上の目盛りか赤い線をドラッグすると、その時刻の姿勢に飛べます。「⏺ 録画」を押すと、再生しながら動きを動画（WebM）として保存できます。" },
-  { target: "#tlFoot", title: "⑥ サイクルタイムの確認", text: "合計時間は上のヘッダーに、アームだけ・車体だけ・同時に動く・その他の内訳はタイムラインの一番下に出ます。「📁 ファイル」の「シーケンスをCSV出力」で、各工程の時間をExcel用に書き出せます。" },
-  { target: "#btnFile", title: "⑦ 保存と読込", text: "「📁 ファイル」の「設定保存」（Ctrl+S）で作った内容をファイルに保存、「設定読込」で復元できます。作業が消えないよう、こまめに保存してください。" },
+  { target: "#tlFoot", title: "⑥ サイクルタイムの確認", text: "合計時間は上のヘッダーに、アームだけ・車体だけ・同時に動く・その他の内訳はタイムラインの一番下に出ます。「ファイル」メニューの「シーケンスをCSV出力」で、各工程の時間をExcel用に書き出せます。" },
+  { target: "#btnFile", title: "⑦ 保存と読込", text: "「ファイル」メニューの「設定保存」（Ctrl+S）で作った内容をファイルに保存、「設定読込」（Ctrl+O）で復元できます。作業が消えないよう、こまめに保存してください。" },
   { target: null, title: "以上で完了です", text: "困ったら左ペイン下部の「操作方法」も参照してください。もう一度この案内を見たいときは、右上の「❔ 使い方」を押してください。" },
 ];
 let tourIdx = -1;
@@ -4211,18 +4243,82 @@ document.addEventListener("fullscreenchange", () => {
 });
 window.addEventListener("keydown", (e) => { if (e.key === "Escape" && presenting()) setPresent(false); });
 
-/* ヘッダーの「ファイル」メニュー。項目を押すか、外をクリック・Esc で閉じる */
+/* メニューバー（ファイル・編集・表示・ヘルプ）。クリックで開き、開いている間は隣のメニューにマウスを乗せるだけで切り替わる。
+ * 項目を押すか、外をクリック・Esc で閉じる */
 {
-  const btn = document.getElementById("btnFile"), pop = document.getElementById("filePop");
-  const setOpen = (on) => { pop.hidden = !on; btn.setAttribute("aria-expanded", on ? "true" : "false"); };
-  btn.addEventListener("click", (e) => { e.stopPropagation(); setOpen(pop.hidden); });
-  pop.addEventListener("click", () => setOpen(false));
-  document.addEventListener("mousedown", (e) => { if (!pop.hidden && !document.getElementById("fileMenu").contains(e.target)) setOpen(false); });
+  const menus = [...document.querySelectorAll("#menubar .hdr-menu")];
+  let openM = null;
+  const setOpen = (m) => {
+    for (const x of menus) {
+      x.querySelector(".hdr-pop").hidden = x !== m;
+      x.querySelector(".mb").setAttribute("aria-expanded", x === m ? "true" : "false");
+    }
+    openM = m;
+    if (m) refreshMenus();
+  };
+  for (const m of menus) {
+    m.querySelector(".mb").addEventListener("click", (e) => { e.stopPropagation(); setOpen(openM === m ? null : m); });
+    m.querySelector(".mb").addEventListener("mouseenter", () => { if (openM && openM !== m) setOpen(m); });
+    m.querySelector(".hdr-pop").addEventListener("click", (e) => { if (e.target.closest("button")) setOpen(null); });
+  }
+  document.addEventListener("mousedown", (e) => { if (openM && !document.getElementById("menubar").contains(e.target)) setOpen(null); });
   window.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") setOpen(false);
+    if (e.key === "Escape" && openM) setOpen(null);
+    const t = e.target, typing = (t.tagName === "INPUT" && !["range", "checkbox", "radio", "button", "color"].includes(t.type)) || t.tagName === "SELECT" || t.tagName === "TEXTAREA";
     if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === "s") { e.preventDefault(); document.getElementById("btnSave").click(); } // Ctrl+S で設定保存
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === "o" && !typing) { e.preventDefault(); document.getElementById("btnLoad").click(); } // Ctrl+O で設定読込
   });
 }
+/* 編集メニューの「選んだ物」: 右ペインに出している物（タイムラインの段／レイアウトの物／登録した位置）。
+ * 何を指すかを項目名に出し、無ければ押せなくする */
+function selectedThing() {
+  if (inspKind === "seq" && selStage !== null && state.program[selStage]) return { kind: "stage", label: `段 ${selStage + 1}` };
+  if (inspKind === "obj" && selectedObject()) return { kind: "obj", label: selectedObject().name || "レイアウトの物" };
+  if (inspKind === "pt" && findPoint(selPointName)) return { kind: "pt", label: selPointName };
+  if (selectedId && selectedObject()) return { kind: "obj", label: selectedObject().name || "レイアウトの物" }; // キャンバスで選んだままの物
+  return null;
+}
+function duplicateSelected() {
+  const t = selectedThing();
+  if (!t || playing) return;
+  if (t.kind === "stage") {
+    pushUndo();
+    state.program.splice(selStage + 1, 0, structuredClone(state.program[selStage]));
+    selStage = selStage + 1;
+    renderProgram(); recompute();
+  } else if (t.kind === "obj") document.getElementById("btnObjDup").click();
+}
+function deleteSelected() {
+  const t = selectedThing();
+  if (!t || playing) return;
+  if (t.kind === "stage") {
+    pushUndo();
+    state.program.splice(selStage, 1);
+    selStage = state.program.length ? Math.min(selStage, state.program.length - 1) : null;
+    renderProgram(); recompute();
+  } else if (t.kind === "obj") deleteSelectedObject();
+  else if (t.kind === "pt") deleteSelectedPoint();
+}
+function refreshMenus() {
+  document.getElementById("miUndo").disabled = !undoStack.length;
+  document.getElementById("miRedo").disabled = !redoStack.length;
+  const t = selectedThing();
+  const dup = document.getElementById("miDup"), del = document.getElementById("miDel");
+  dup.disabled = !t || t.kind === "pt" || playing; // 登録した位置の複製はできない
+  del.disabled = !t || playing;
+  dup.firstChild.textContent = t && t.kind !== "pt" ? `選んだ物を複製（${t.label}）` : "選んだ物を複製";
+  del.firstChild.textContent = t ? `選んだ物を削除（${t.label}）` : "選んだ物を削除";
+  const dark = window.lxTheme && window.lxTheme.get() === "dark";
+  document.querySelector("#miLight .ck").textContent = dark ? "" : "✓";
+  document.querySelector("#miDark .ck").textContent = dark ? "✓" : "";
+  document.getElementById("miVersion").innerHTML = `LexxMoMa 動作シミュレーター<br><b>${currentRev()}</b>`;
+}
+document.getElementById("miUndo").addEventListener("click", doUndo);
+document.getElementById("miRedo").addEventListener("click", doRedo);
+document.getElementById("miDup").addEventListener("click", duplicateSelected);
+document.getElementById("miDel").addEventListener("click", deleteSelected);
+document.getElementById("miLight").addEventListener("click", () => { if (window.lxTheme) window.lxTheme.set("light"); });
+document.getElementById("miDark").addEventListener("click", () => { if (window.lxTheme) window.lxTheme.set("dark"); });
 document.getElementById("btnLoad").addEventListener("click", () => document.getElementById("fileLoad").click());
 document.getElementById("fileLoad").addEventListener("change", (e) => {
   const f = e.target.files[0];
