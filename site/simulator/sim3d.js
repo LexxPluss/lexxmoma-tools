@@ -14,6 +14,7 @@ const { OrbitControls, TransformControls, STLLoader } = THREE;
 
 const CRX = window.CRX;
 const M = CRX.MODEL;
+const LABEL_PX = 13; // ラベルの文字の大きさ（画面上の px）
 
 const COLORS = {
   floor: 0xf4f6f8, grid: 0xdfe5ea, gridMajor: 0xc3ccd4,
@@ -535,6 +536,12 @@ class Sim3D {
     const { bodyLen, bodyWid, mountZ } = dims;
     const mat = new THREE.LineBasicMaterial({ color: COLORS.ghost, transparent: true, opacity: 0.55 });
     const boxGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(bodyLen, bodyWid, mountZ));
+    // 向きだけ違う同じ場所の位置は、名前を 1 つのラベルにまとめる（重ねて書くと読めないため）
+    const labelOf = new Map();
+    for (const p of poses) {
+      const near = [...labelOf.keys()].find(q => Math.hypot(q.x - p.x, q.y - p.y) < 80);
+      if (near) labelOf.set(near, labelOf.get(near) + "・" + p.name); else labelOf.set(p, p.name);
+    }
     for (const p of poses) {
       const g = new THREE.Group();
       g.position.set(p.x, p.y, 0); g.rotation.z = p.th;
@@ -545,23 +552,50 @@ class Sim3D {
       const tm = new THREE.Mesh(new THREE.ShapeGeometry(tri), new THREE.MeshBasicMaterial({ color: COLORS.ghost, transparent: true, opacity: 0.3, depthWrite: false }));
       tm.position.z = 5; g.add(tm);
       // 名前ラベル（ビルボード）
-      g.add(this.makeLabel(p.name, bodyLen / 2 + 60, 0, mountZ + 120));
+      if (labelOf.has(p)) {
+        const lb = this.makeLabel(labelOf.get(p), 0, 0, mountZ + 120);
+        lb.position.set(p.x, p.y, mountZ + 120); // 車体の向きによらず真上に出す
+        this.ghostGroup.add(lb);
+      }
       this.ghostGroup.add(g);
     }
   }
 
-  /* 画面上で一定の大きさに見えるビルボード文字 */
+  /* 画面上で一定の大きさ（文字 LABEL_PX）に見えるビルボード文字。近づいても大きくならない。
+   * 大きさは render() の updateLabelScale で画面の高さに合わせる */
   makeLabel(text, x, y, z, color) {
     const cv = document.createElement("canvas");
     const g2 = cv.getContext("2d");
-    g2.font = "bold 40px sans-serif";
-    cv.width = Math.ceil(g2.measureText(text).width + 24); cv.height = 56;
-    g2.font = "bold 40px sans-serif"; g2.fillStyle = color || "rgba(36,113,163,0.9)"; g2.textBaseline = "middle";
-    g2.fillText(text, 12, 28);
-    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthTest: false }));
-    sp.scale.set(cv.width * 4, cv.height * 4, 1);
+    // 画面の画素と 1 対 1 で描く（縮めて貼ると文字がにじんで薄く見えるため）
+    const dpr = Math.min(3, window.devicePixelRatio || 1), fs = LABEL_PX * dpr, pad = 4 * dpr;
+    const font = `bold ${fs}px sans-serif`;
+    g2.font = font;
+    cv.width = Math.ceil(g2.measureText(text).width + pad * 2); cv.height = Math.ceil(fs * 1.5);
+    g2.font = font; g2.textBaseline = "middle"; g2.lineJoin = "round";
+    g2.strokeStyle = "rgba(255,255,255,0.92)"; g2.lineWidth = 3 * dpr; g2.strokeText(text, pad, cv.height / 2); // 白い縁取りで、何の上でも読める
+    g2.fillStyle = color || "rgba(24,92,140,1)";
+    g2.fillText(text, pad, cv.height / 2);
+    const tex = new THREE.CanvasTexture(cv);
+    tex.colorSpace = THREE.SRGBColorSpace; // 色が白っぽく飛ばないように
+    tex.generateMipmaps = false; tex.minFilter = THREE.LinearFilter;
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, sizeAttenuation: false, toneMapped: false }));
+    sp.userData.labelPx = [cv.width / dpr, cv.height / dpr];
+    sp.renderOrder = 10;
+    this.scaleLabel(sp);
     sp.position.set(x, y, z);
     return sp;
+  }
+  /* sizeAttenuation:false のスプライトは scale × (画面の高さ ÷ 2tan(fov/2)) [px] に見える */
+  scaleLabel(sp) {
+    const h = Math.max(200, this.container ? this.container.clientHeight : 600);
+    const k = 2 * Math.tan(this.camera.fov * Math.PI / 360) / h;
+    sp.scale.set(sp.userData.labelPx[0] * k, sp.userData.labelPx[1] * k, 1);
+  }
+  updateLabelScale() {
+    const h = this.container ? this.container.clientHeight : 0;
+    if (h === this.labelH) return;
+    this.labelH = h;
+    this.scene.traverse(o => { if (o.isSprite && o.userData.labelPx) this.scaleLabel(o); });
   }
 
   /* paths: [{ pts: [[x,y],...], reverse: bool }] */
@@ -626,6 +660,7 @@ class Sim3D {
 
   resize() {
     if (!this.ready) return;
+    this.labelH = -1; // ラベルの大きさを画面の高さに合わせ直す
     const w = Math.max(200, this.container.clientWidth), h = Math.max(200, this.container.clientHeight);
     this.renderer.setSize(w, h);
     this.camera.aspect = w / h;
@@ -635,6 +670,7 @@ class Sim3D {
   render() {
     if (!this.ready) return;
     this.orbit.update();
+    this.updateLabelScale();
     this.renderer.render(this.scene, this.camera);
   }
 

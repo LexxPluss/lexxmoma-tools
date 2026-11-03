@@ -32,6 +32,27 @@
     border-radius: 6px; padding: 4px 12px; font-size: 14px;
   }
   .time-box b { font-size: 18px; }
+  .time-box, .lx-hdr .lx-tool, .lx-hdr > button { white-space: nowrap; }
+  .time-box .tb-short { display: none; }
+  .hb-ico { display: inline-block; width: 15px; height: 15px; line-height: 15px; border-radius: 50%; border: 1.5px solid currentColor; text-align: center; font-size: 10px; vertical-align: -2px; }
+  .lx-hdr > button, .hdr-menu > button { flex: 0 0 auto; }
+  /* ヘッダーのメニュー（ファイル） */
+  .hdr-menu { position: relative; flex: 0 0 auto; }
+  .hdr-pop { position: absolute; right: 0; top: calc(100% + 4px); z-index: 70; min-width: 210px; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.15); padding: 4px; display: flex; flex-direction: column; gap: 2px; }
+  .hdr-pop[hidden] { display: none; }
+  .hdr-pop button { border: 0; text-align: left; padding: 6px 10px; font-size: 13px; display: flex; align-items: center; gap: 6px; white-space: nowrap; background: transparent; }
+  .hdr-pop button:hover { background: var(--accent2); }
+  .hdr-pop kbd { margin-left: auto; font-size: 10px; color: #678; }
+  /* 狭い画面では、ヘッダーのボタンを記号だけ・時間の見出しを短くして 1 行に収める */
+  @media (max-width: 1360px) {
+    header.lx-hdr { gap: 10px; padding-left: 16px; padding-right: 16px; }
+    .hb-lbl { display: none; }
+    .time-box .tb-long { display: none; }
+    .time-box .tb-short { display: inline; }
+    #tlInit { display: none; }
+  }
+  @media (max-width: 1100px) { .lx-hdr .lx-wordmark { display: none; } }
   main { flex: 1; display: flex; gap: 4px; padding: 8px; min-height: 0; }
   .col { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
   #colLeft  { width: 270px; flex-shrink: 0; flex-direction: row; overflow: hidden; }
@@ -90,8 +111,13 @@
   .editable-val { cursor: text; border-bottom: 1px dotted #8aa; }
   .editable-val:hover { background: var(--accent2); }
   /* ---- タイムライン（中央の下。シーケンスを組む・再生する） ---- */
+  /* キャンバスとタイムラインの境目（上下にドラッグで高さを変える） */
+  #colMid { gap: 0; }
+  .hsplitter { flex: 0 0 8px; cursor: row-resize; position: relative; }
+  .hsplitter::after { content: ""; position: absolute; left: 50%; top: 2px; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px; background: transparent; transition: background .12s; }
+  .hsplitter:hover::after, .hsplitter.dragging::after { background: #b7cbdb; }
   #timeline { flex: 0 0 auto; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; min-width: 0; }
-  #tlHead { display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-bottom: 1px solid var(--border); overflow: hidden; }
+  #tlHead { display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-bottom: 1px solid var(--border); flex-wrap: wrap; row-gap: 4px; }
   #tlHead button, #tlHead select { white-space: nowrap; flex: 0 0 auto; }
   #tlHead select { max-width: none; }
   #tlInit { font-size: 11px; color: #567; margin-left: 6px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 0 1 auto; }
@@ -99,7 +125,7 @@
   #tlBody { display: flex; min-width: 0; }
   #tlLabels { flex: 0 0 52px; padding-top: 0; }
   #tlLabels .tl-ruler-sp { height: 18px; }
-  .tl-lb { height: 26px; line-height: 26px; text-align: right; padding-right: 8px; font-size: 11px; font-weight: 700; color: #345; white-space: nowrap; }
+  .tl-lb { height: var(--tl-lane, 26px); line-height: var(--tl-lane, 26px); text-align: right; padding-right: 8px; font-size: 11px; font-weight: 700; color: #345; white-space: nowrap; }
   #tlScroll { flex: 1; min-width: 0; overflow-x: auto; overflow-y: hidden; }
   #tlInner { position: relative; }
   .tl-stage { position: absolute; top: 0; border-left: 1px solid #e1e6ed; cursor: pointer; background: #fff; }
@@ -165,8 +191,13 @@
   .pt-row.unused .nm { opacity: .5; }
   .pt-row canvas { flex: 0 0 auto; }
   .pt-row .nm { flex: 1; min-width: 0; font-weight: 600; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .pt-row button.small, .loc-head button.small { flex: 0 0 auto; width: 22px; padding: 1px 0; text-align: center; }
-  .pt-row button.small.arm { width: 26px; font-size: 10px; }
+  .pt-row button.small, .loc-head button.small { flex: 0 0 auto; padding: 0 6px; height: 19px; line-height: 17px; white-space: nowrap; }
+  /* 行・見出しの操作ボタンは、マウスを乗せたとき（行は選んでいるときも）だけ出す */
+  .pt-row .acts, .loc-head .acts { display: none; gap: 3px; flex: 0 0 auto; }
+  .pt-row:hover .acts, .pt-row.sel .acts, .loc-head:hover .acts { display: inline-flex; }
+  .loc-head { min-height: 21px; }
+  .pt-tag { flex: 0 0 auto; font-size: 10px; color: #567; background: #eef1f4; border-radius: 3px; padding: 0 4px; }
+  .pt-row .acts button.edit.on { background: var(--accent); color: #fff; border-color: var(--accent); }
   /* ---- 設定欄の共通部品（レイアウトの設定・登録した位置の設定で使う） ---- */
   .ibtn { flex: 0 0 auto; width: 26px; height: 26px; padding: 0; border: none; border-radius: 7px; background: transparent;
     color: #5b6b78; font-size: 12px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
@@ -477,17 +508,23 @@
   <a class="lx-brand" href="../index.html" title="LexxMoMa Tools のトップへ" aria-label="LexxMoMa Tools のトップへ戻る"><img id="corpLogo" class="lx-logo" src="../assets/lexxpluss-logo.png" alt="LexxPluss"><span class="lx-wordmark">LexxMoMa</span></a>
   <div>
     <h1 class="lx-tool">動作シミュレーター</h1>
-    <div id="revDisp">rev.71</div>
+    <div id="revDisp">rev.72</div>
   </div>
   </div>
-  <div class="time-box" id="timeBox">経過時間 / トータル時間：<b id="elapsedDisp">0.00</b> s / <b id="totalDisp">0.00</b> s</div>
+  <div class="time-box" id="timeBox"><span class="tb-long">経過時間 / トータル時間：</span><span class="tb-short">経過 / 合計：</span><b id="elapsedDisp">0.00</b> s / <b id="totalDisp">0.00</b> s</div>
   <div style="flex:1"></div>
   <button type="button" class="lx-theme-btn" data-lx-theme-toggle aria-label="ライト / ダーク切替"></button>
-  <button id="btnHelp">❔ 使い方</button>
-  <button id="btnInfo" title="キー操作・マウス操作と、計算に使っている前提値（速度・加速度など）">ⓘ 操作と前提</button>
-  <button id="btnSamples" title="用意してあるレイアウトとシーケンスの例を開きます">📂 サンプル</button>
-  <button id="btnSave">設定保存</button>
-  <button id="btnLoad">設定読込</button>
+  <button id="btnHelp" title="使い方の案内（ツアー）"><b class="hb-ico">?</b><span class="hb-lbl"> 使い方</span></button>
+  <button id="btnInfo" title="操作と前提: キー操作・マウス操作と、計算に使っている前提値（速度・加速度など）">ⓘ<span class="hb-lbl"> 操作と前提</span></button>
+  <!-- サンプル・保存・読込は「ファイル」にまとめる（狭い画面でヘッダーが折れないように） -->
+  <div class="hdr-menu" id="fileMenu">
+    <button id="btnFile" aria-haspopup="menu" aria-expanded="false" title="サンプルを開く・設定保存（Ctrl+S）・設定読込">📁 ファイル ▾</button>
+    <div class="hdr-pop" id="filePop" role="menu" hidden>
+      <button id="btnSamples" role="menuitem" title="用意してあるレイアウトとシーケンスの例を開きます">📂 サンプルを開く</button>
+      <button id="btnSave" role="menuitem" title="作った内容（位置・シーケンス・レイアウト）をファイルに保存します">💾 設定保存<kbd>Ctrl+S</kbd></button>
+      <button id="btnLoad" role="menuitem" title="保存したファイルを開きます">📄 設定読込</button>
+    </div>
+  </div>
   <input type="file" id="fileLoad" accept=".json" style="display:none">
 </header>
 
@@ -508,6 +545,7 @@
           <tr><td>描画モードを解除</td><td><kbd>Esc</kbd></td></tr>
           <tr><td>選択したオブジェクトを削除</td><td><kbd>Delete</kbd></td></tr>
           <tr><td>元に戻す / やり直す</td><td><kbd>Ctrl</kbd>＋<kbd>Z</kbd> / <kbd>Y</kbd></td></tr>
+          <tr><td>設定保存（ファイルに保存）</td><td><kbd>Ctrl</kbd>＋<kbd>S</kbd></td></tr>
         </table>
         <div style="font-weight:600; margin-top:6px;">マウス（中央ペイン）</div>
         <table class="keyhelp" style="margin-top:2px;">
@@ -664,6 +702,7 @@
       </div>
       <div id="view3dHint" hidden>左ドラッグ: 回転 ／ 右ドラッグ: 移動 ／ ホイール: 拡大縮小 ／ 矢印キー: 車体・アームのティーチ</div>
     </div>
+    <div class="hsplitter" id="splitTL" title="上下にドラッグでタイムラインの高さを変えます（ダブルクリックで元の高さ）"></div>
     <!-- タイムライン: シーケンスを時間の横棒で見せ、ここで段を選ぶ・並べ替える。再生の操作もここ -->
     <div id="timeline">
       <div id="tlHead">
@@ -1461,13 +1500,13 @@ function draw() {
   // 登録した車体の場所（同じ場所のポイントは 1 つの枠にまとめ、名前を並べる）。一覧でマウスを乗せた場所はオレンジ
   // 影を出す対象: 右ペインで乗せている Move ブロックの終わりの姿勢か、左ペインで乗せている位置
   const hoverP = hoverBlockGhost || (hoverPointName ? findPoint(hoverPointName) : null);
+  const locLabels = []; // 名前はロボットを描いた後に、重ならないよう並べて書く（drawLocLabels）
   for (const L of bodyLocations()) {
     const hot = hoverP && hoverP.body && sameBody(hoverP.body, L.body);
     drawBodyShape(L.body, hot ? "rgba(230,126,34,0.16)" : "rgba(36,113,163,0.10)", hot ? "rgba(230,126,34,0.9)" : "rgba(36,113,163,0.45)", true);
     const [sx, sy] = w2s(L.body.x, L.body.y);
-    ctx.fillStyle = "rgba(36,113,163,0.8)";
-    ctx.font = "11px sans-serif";
-    ctx.fillText(L.points.map(q => q.name).join("・"), sx + 4, sy - 4);
+    const sel = !!selPointName && L.points.some(q => q.name === selPointName);
+    locLabels.push({ sx, sy, names: L.points.map(q => q.name), pri: hot ? 2 : sel ? 1 : 0 });
   }
 
   // 車体の走行の予定パス（前進=青、後進=オレンジ）
@@ -1514,8 +1553,47 @@ function draw() {
     ctx.restore();
   }
 
+  drawLocLabels(locLabels);
   // スケール表示（左下・最前面）：1グリッド = 1m
   drawScaleBar();
+}
+
+/* 登録した場所の名前。向きだけ違う同じ場所（画面で 14px 以内）は 1 つにまとめ、
+ * 既に書いた名前・ロボットと重なるなら上下左右にずらし、それでも重なる名前は書かない。
+ * マウスを乗せている場所・選んでいる位置の名前は先に書くので、必ず出る */
+function drawLocLabels(list) {
+  const groups = [];
+  for (const L of list) {
+    const g = groups.find(q => Math.hypot(q.sx - L.sx, q.sy - L.sy) < 14);
+    if (g) { for (const n of L.names) if (!g.names.includes(n)) g.names.push(n); g.pri = Math.max(g.pri, L.pri); }
+    else groups.push({ sx: L.sx, sy: L.sy, names: L.names.slice(), pri: L.pri });
+  }
+  groups.sort((a, b) => b.pri - a.pri);
+  const placed = [];
+  { // ロボット（車体とアームの届く範囲の中心付近）は避ける
+    const [rx, ry] = w2s(state.robot.body.x, state.robot.body.y);
+    const r = Math.max(10, BODY_LEN / 2 * view.scale);
+    placed.push({ x: rx - r, y: ry - r, w: r * 2, h: r * 2, soft: true });
+  }
+  const hit = (a) => placed.some(b => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h);
+  ctx.save();
+  ctx.font = "11px sans-serif"; ctx.textBaseline = "alphabetic"; ctx.lineJoin = "round";
+  for (const g of groups) {
+    const text = g.names.join("・");
+    const w = ctx.measureText(text).width, h = 13;
+    // 右上 → 右下 → さらに上 → 左上 の順に空いている所を探す（x, y は文字の左上）
+    const cands = [[g.sx + 5, g.sy - 4 - h], [g.sx + 5, g.sy + 4], [g.sx + 5, g.sy - 4 - h * 2], [g.sx - 5 - w, g.sy - 4 - h]];
+    let pos = cands.map(c => ({ x: c[0], y: c[1], w, h })).find(r => !hit(r));
+    if (!pos) { if (g.pri <= 0) continue; pos = { x: cands[0][0], y: cands[0][1], w, h }; }
+    placed.push(pos);
+    ctx.strokeStyle = "rgba(255,255,255,0.92)"; ctx.lineWidth = 3;
+    ctx.strokeText(text, pos.x, pos.y + h - 2);
+    ctx.fillStyle = g.pri >= 2 ? "rgba(201,98,10,0.95)" : g.pri === 1 ? "rgba(16,82,140,0.95)" : "rgba(36,113,163,0.85)";
+    if (g.pri >= 1) ctx.font = "bold 11px sans-serif";
+    ctx.fillText(text, pos.x, pos.y + h - 2);
+    ctx.font = "11px sans-serif";
+  }
+  ctx.restore();
 }
 
 /* オブジェクト（箱・区画・直線・文字）の 2D 描画。選択中は青の破線で囲む */
@@ -2020,7 +2098,8 @@ function compositeRecFrame() {
     g.fillStyle = cs.color; g.textBaseline = "middle";
     const cy = box.top + box.height / 2 + 1;
     let x = box.left + 12;
-    const parts = [["経過時間 / トータル時間：", false], [playT.toFixed(2), true], [" s / ", false],
+    const lbl = [...tb.querySelectorAll(".tb-long, .tb-short")].find(e => e.offsetParent !== null);
+    const parts = [[lbl ? lbl.textContent : "経過時間 / トータル時間：", false], [playT.toFixed(2), true], [" s / ", false],
                    [(currentCompiled ? currentCompiled.total : 0).toFixed(2), true], [" s", false]];
     for (const [t, bold] of parts) {
       g.font = bold ? "bold 18px system-ui, sans-serif" : "14px system-ui, sans-serif";
@@ -2218,15 +2297,18 @@ function pointRow(p, use) {
   nm.className = "nm"; nm.textContent = p.name;
   div.appendChild(nm);
   makeNameEditable(nm, p, state.points, renamePointRefs);
-  div.appendChild(smallBtn("→", p.body && p.arm ? "ロボットをこの位置へ動かす（車体とアーム）" : p.body ? "車体をこの位置へ動かす" : "アームをこの姿勢にする",
-    () => moveRobotTo(p.body, p.arm)));
-  // 「腕」はアームと車体の両方を持つ位置だけ。無い行も同じ幅を空けて、ボタンの列をそろえる
-  const armBt = smallBtn("腕", "アームだけこの姿勢にする（車体は今の場所のまま）", () => moveRobotTo(null, p.arm), "arm");
-  if (!(p.body && p.arm)) { armBt.style.visibility = "hidden"; armBt.disabled = true; }
-  div.appendChild(armBt);
-  const ed = smallBtn("✎", "編集（左ペインの右側に数値を出す）", () => openPointEdit(p.name), "edit");
+  // 車体だけの位置は印を付ける（アームだけの位置は「アームだけ」の見出しの下にまとまる）
+  if (p.body && !p.arm) { const t = document.createElement("span"); t.className = "pt-tag"; t.textContent = "車体だけ"; div.appendChild(t); }
+  // 操作のボタンは、マウスを乗せた行と選んでいる行にだけ出す（一覧をすっきりさせる）
+  const acts = document.createElement("span");
+  acts.className = "acts";
+  acts.appendChild(smallBtn("動かす", p.body && p.arm ? "ロボットをこの位置へ動かす（車体とアーム）" : p.body ? "車体をこの位置へ動かす" : "アームをこの姿勢にする",
+    () => moveRobotTo(p.body, p.arm), "txt"));
+  if (p.body && p.arm) acts.appendChild(smallBtn("アームだけ", "アームだけこの姿勢にする（車体は今の場所のまま）", () => moveRobotTo(null, p.arm), "txt"));
+  const ed = smallBtn("編集", "名前・位置・関節の数値を、左ペインの右側で直す", () => openPointEdit(p.name), "txt edit");
   if (editOpen && selPointName === p.name) ed.classList.add("on");
-  div.appendChild(ed);
+  acts.appendChild(ed);
+  div.appendChild(acts);
   div.addEventListener("click", () => { // 一覧は作り直さない（名前のダブルクリック編集を壊さないため）
     selPointName = p.name;
     document.querySelectorAll("#pointList .pt-row").forEach(r => {
@@ -2281,14 +2363,17 @@ function renderPoseLists() {
     hd.innerHTML = `<span class="lco"></span>`;
     hd.querySelector(".lco").textContent = `x:${(L.body.x / 1000).toFixed(2)} | y:${(L.body.y / 1000).toFixed(2)} | θ:${Math.round(L.body.th * 180 / Math.PI)}°`;
     hd.title = "車体の場所。この下のポイントは、どれもこの場所で登録したものです";
-    hd.appendChild(smallBtn("→", "車体だけこの場所へ動かす（アームはそのまま）", () => moveRobotTo(L.body, null)));
-    hd.appendChild(smallBtn("↻", L.points.length > 1 ? `この場所の ${L.points.length} 件をまとめて、今の車体の位置へ移す` : "今の車体の位置へ移す", () => {
+    const acts = document.createElement("span");
+    acts.className = "acts";
+    hd.appendChild(acts);
+    acts.appendChild(smallBtn("車体を動かす", "車体だけこの場所へ動かす（アームはそのまま）", () => moveRobotTo(L.body, null), "txt"));
+    acts.appendChild(smallBtn("今の場所に更新", L.points.length > 1 ? `この場所の ${L.points.length} 件をまとめて、今の車体の位置へ移す（Ctrl+Z で戻せます）` : "今の車体の位置へ移す（Ctrl+Z で戻せます）", () => {
       if (playing) return;
       pushUndo();
       const rb = state.robot.body;
       for (const q of L.points) q.body = { x: rb.x, y: rb.y, th: mod2pi(rb.th) };
       renderPoseLists(); renderProgram(); recompute();
-    }));
+    }, "txt"));
     el.appendChild(hd);
     for (const q of L.points) el.appendChild(pointRow(q, use));
   }
@@ -2719,10 +2804,45 @@ function renderProgram() {
 /* ---------------- タイムライン ----------------
  * 横が時間。縦の線のあいだが 1 段。レーンは車体・アーム・その他。
  * 段をクリックで選ぶ、左右にドラッグで並べ替え。上の目盛りか赤い線をドラッグで、その時刻の姿勢に飛ぶ */
-const TL_RULER = 18, TL_LANE = 26, TL_AXIS = 14, TL_MINW = 22, TL_EVENW = 84, TL_ADDW = 34;
+const TL_RULER = 18, TL_AXIS = 14, TL_MINW = 22, TL_EVENW = 84, TL_ADDW = 34;
 const tlScrollEl = document.getElementById("tlScroll");
 const tlInnerEl = document.getElementById("tlInner");
 let tlZoom = 1;
+/* レーンの高さ [px]。キャンバスとタイムラインの境目を上下にドラッグして変える（ブラウザに覚える） */
+const TL_LANE_MIN = 18, TL_LANE_MAX = 72;
+let tlLane = 26;
+try { const v = parseFloat(localStorage.getItem("lexxsim.tlLane")); if (v >= TL_LANE_MIN && v <= TL_LANE_MAX) tlLane = v; } catch (e) { /* 既定のまま */ }
+function setTlLane(v, save) {
+  tlLane = Math.round(Math.min(TL_LANE_MAX, Math.max(TL_LANE_MIN, v)));
+  document.getElementById("timeline").style.setProperty("--tl-lane", tlLane + "px");
+  if (save) try { localStorage.setItem("lexxsim.tlLane", String(tlLane)); } catch (e) { /* 覚えられなくても動く */ }
+}
+setTlLane(tlLane);
+{
+  const sp = document.getElementById("splitTL");
+  let drag = null;
+  sp.addEventListener("mousedown", (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    drag = { y: e.clientY, lane: tlLane };
+    sp.classList.add("dragging");
+    document.body.style.cursor = "row-resize"; document.body.style.userSelect = "none";
+  });
+  window.addEventListener("mousemove", (e) => {
+    if (!drag) return;
+    const before = tlLane;
+    setTlLane(drag.lane + (drag.y - e.clientY) / 3); // 3 レーン分なので、動かした量の 1/3 ずつ
+    if (tlLane !== before) { renderTimeline(); resizeCanvas(); }
+  });
+  window.addEventListener("mouseup", () => {
+    if (!drag) return;
+    drag = null;
+    sp.classList.remove("dragging");
+    document.body.style.cursor = ""; document.body.style.userSelect = "";
+    setTlLane(tlLane, true);
+  });
+  sp.addEventListener("dblclick", () => { setTlLane(26, true); renderTimeline(); resizeCanvas(); }); // ダブルクリックで元の高さ
+}
 let tlScale = "time"; // "time": 時間どおり / "even": 段の幅をそろえる
 try { tlScale = localStorage.getItem("lexxsim.tlScale") === "even" ? "even" : "time"; } catch (e) { /* 保存できない環境では既定 */ }
 document.getElementById("tlScale").value = tlScale;
@@ -2788,19 +2908,19 @@ function renderTimeline() {
   tlInnerEl.innerHTML = "";
   hoverBlockGhost = null;
   tlGeom = tlLayout();
-  const H = TL_RULER + TL_LANE * 3 + TL_AXIS;
+  const H = TL_RULER + tlLane * 3 + TL_AXIS;
   tlInnerEl.style.width = (tlGeom.end + TL_ADDW + 8) + "px";
   tlInnerEl.style.height = H + "px";
   // 開始位置の表示（見出しの行）
   const ib = findPoint(state.initial.body), ia = findPoint(state.initial.arm);
   document.getElementById("tlInit").textContent = `開始位置 車体 ${ib ? ib.name : "（現在位置）"} ／ アーム ${ia ? ia.name : "（現在位置）"}`;
-  const laneY = { body: TL_RULER + 3, arm: TL_RULER + TL_LANE + 3, other: TL_RULER + TL_LANE * 2 + 3 };
-  const barH = TL_LANE - 6;
+  const laneY = { body: TL_RULER + 3, arm: TL_RULER + tlLane + 3, other: TL_RULER + tlLane * 2 + 3 };
+  const barH = tlLane - 6;
   const stages = c ? c.stages : [];
   stages.forEach((st, si) => {
     const x = tlGeom.xs[si], w = tlGeom.ws[si];
     const col = tlDiv("tl-stage" + (si % 2 ? " alt" : "") + (si === selStage ? " sel" : "") + (si === lastActiveStageIdx ? " active" : ""),
-      `left:${x}px; width:${w}px; height:${TL_RULER + TL_LANE * 3}px;`);
+      `left:${x}px; width:${w}px; height:${TL_RULER + tlLane * 3}px;`);
     col.dataset.si = si;
     col.appendChild(tlDiv("tl-sno", `height:${TL_RULER}px; line-height:${TL_RULER}px;`, String(si + 1)));
     const prog = state.program[si];
@@ -2822,7 +2942,7 @@ function renderTimeline() {
       if (b.type === "point") {
         const mv = blockMoves(b);
         tip.push(`Move → ${b.point || "?"}` + (cb.err ? "（位置が未登録）" : `　車体 ${mv.body ? cb.bodyDur.toFixed(2) + " s" : "－"} ／ アーム ${mv.arm ? cb.armDur.toFixed(2) + " s" : "－"}`));
-        if (cb.err) { els.push(bar("body", w, "err", "未登録", laneY.body, TL_LANE * 2 - 6)); }
+        if (cb.err) { els.push(bar("body", w, "err", "未登録", laneY.body, tlLane * 2 - 6)); }
         else {
           for (const lane of ["body", "arm"]) {
             if (!mv[lane]) continue;
@@ -2846,7 +2966,7 @@ function renderTimeline() {
       }
     });
     if (!prog || !prog.blocks.length) {
-      col.appendChild(tlDiv("tl-empty", `top:${laneY.body}px; height:${TL_LANE * 3 - 6}px;`, "空"));
+      col.appendChild(tlDiv("tl-empty", `top:${laneY.body}px; height:${tlLane * 3 - 6}px;`, "空"));
       tip.push("空の段");
     }
     col.title = tip.join("\n");
@@ -2856,7 +2976,7 @@ function renderTimeline() {
   if (!stages.length) tlInnerEl.appendChild(tlDiv("tl-hint", `left:${TL_ADDW + 16}px; top:${laneY.arm}px; line-height:${barH}px;`,
     "まだ工程がありません。上の「＋ Move」で、登録した位置へ動く工程を足します"));
   // 末尾の「＋」: 空の段を足して選ぶ
-  const add = tlDiv("tl-add", `left:${tlGeom.end + 6}px; top:${TL_RULER + 3}px; width:${TL_ADDW - 10}px; height:${TL_LANE * 3 - 6}px;`, "＋");
+  const add = tlDiv("tl-add", `left:${tlGeom.end + 6}px; top:${TL_RULER + 3}px; width:${TL_ADDW - 10}px; height:${tlLane * 3 - 6}px;`, "＋");
   add.title = "段を最後に足します";
   add.addEventListener("click", () => { selStage = state.program.length - 1; addStageWith(null); });
   tlInnerEl.appendChild(add);
@@ -2869,7 +2989,7 @@ function renderTimeline() {
       const x = tlTimeToX(t);
       if (x - lastX < 36) continue;
       lastX = x;
-      tlInnerEl.appendChild(tlDiv("tl-tick", `left:${x}px; top:${TL_RULER + TL_LANE * 3}px;` + (t === 0 ? " transform:none;" : ""), (step < 1 ? t.toFixed(1) : String(Math.round(t))) + " s"));
+      tlInnerEl.appendChild(tlDiv("tl-tick", `left:${x}px; top:${TL_RULER + tlLane * 3}px;` + (t === 0 ? " transform:none;" : ""), (step < 1 ? t.toFixed(1) : String(Math.round(t))) + " s"));
     }
   }
   // 目盛りの帯（ドラッグでその時刻へ）と再生位置の赤い線
@@ -2877,7 +2997,7 @@ function renderTimeline() {
   ruler.title = "ドラッグでその時刻の姿勢に飛びます";
   ruler.addEventListener("mousedown", tlScrubStart);
   tlInnerEl.appendChild(ruler);
-  const ph = tlDiv("", `height:${TL_RULER + TL_LANE * 3}px;`);
+  const ph = tlDiv("", `height:${TL_RULER + tlLane * 3}px;`);
   ph.id = "tlPlayhead";
   ph.title = "再生位置（ドラッグで動かせます）";
   ph.addEventListener("mousedown", tlScrubStart);
@@ -2953,7 +3073,7 @@ function updateStageDrop(clientX) {
   stageDrag.dropIdx = idx;
   if (!dropInd.parentNode) tlInnerEl.appendChild(dropInd);
   dropInd.style.left = ((idx < g.xs.length ? g.xs[idx] : g.end) - 2) + "px";
-  dropInd.style.height = (TL_RULER + TL_LANE * 3) + "px";
+  dropInd.style.height = (TL_RULER + tlLane * 3) + "px";
 }
 window.addEventListener("mousemove", (e) => {
   if (tlScrub) { tlScrubMove(e); return; }
@@ -3776,7 +3896,7 @@ document.getElementById("btnExportCsv").addEventListener("click", () => {
 /* ---------------- 使い方ツアー ---------------- */
 const TOUR_STEPS = [
   { target: null, title: "LexxMoMa 動作シミュレーターへようこそ", text: "このツールでは、モバイルマニピュレータ（走行台車＋アーム）の動作シーケンスを組み立て、サイクルタイムを見積もれます。基本の使い方を順番に案内します。" },
-  { target: "#btnSamples", title: "まずサンプルを見る", text: "「📂 サンプル」から、用意してあるレイアウトとシーケンスの例を開けます。どんな動きができるかを見るには、まずこれを再生してみてください。" },
+  { target: "#btnFile", title: "まずサンプルを見る", text: "「📁 ファイル」の「サンプルを開く」から、用意してあるレイアウトとシーケンスの例を開けます。どんな動きができるかを見るには、まずこれを再生してみてください。" },
   { target: "#regBox", title: "① まず位置を登録", text: "車体をキーボードの矢印キーで、アームを左ペインの「アーム操作」タブで動かし、「＋ 今の位置を登録」で名前を付けて登録します。車体の位置とアームの姿勢が 1 件にまとまり、ここが動作の目的地になります（チェックを外せば車体だけ・アームだけも登録できます）。同じ場所で登録した位置は、一覧で場所の見出しの下にまとまります。" },
   { target: "#canvasWrap", title: "② 中央ビューの操作", text: "ロボットとレイアウトを表示します。ドラッグで画面移動、マウスホイールまたは左下の＋−で拡大縮小できます。" },
   { target: "#viewSeg", before: () => showLeftTab("arm"), title: "②' 3D 表示とアームの手先操作", text: "「3D」に切り替えると自由な視点でロボットを見られます（左ドラッグで回転、右ドラッグで移動）。アームは FANUC CRX-20iA/L の 6 軸です。左ペインの「アーム操作」タブで、手先（X/Y/Z/W/P/R を指定。3D では手先に出る矢印をマウスでドラッグ）か関節（J1〜J6）かを選んで動かせます。手先で動かすと逆運動学で関節が決まり、関節で動かすと手先の位置が変わります。届く高さ・距離の確認に使ってください。" },
@@ -3786,7 +3906,7 @@ const TOUR_STEPS = [
   { target: "#colRight", before: () => showRightTab("seq"), title: "④' 段の設定", text: "タイムラインで段をクリックすると、右にその段の設定（行き先・動かすもの・走行経路・最大速度）が出ます。「この段で同時に」で同時に動くブロックを足せます。一番上で開始位置も指定できます。" },
   { target: "#tlHead", title: "⑤ 再生して確認", text: "「再生」で動きを確認できます（もう一度押すと一時停止、さらに押すと再開）。タイムラインの上の目盛りか赤い線をドラッグすると、その時刻の姿勢に飛べます。「⏺ 録画」を押すと、再生しながら動きを動画（WebM）として保存できます。" },
   { target: "#tlFoot", title: "⑥ サイクルタイムの確認", text: "合計時間は上のヘッダーに、アームだけ・車体だけ・同時に動く・その他の内訳はタイムラインの一番下に出ます。右の「シーケンスをCSV出力」で各工程の時間をExcel用に書き出せます。" },
-  { target: "#btnSave", title: "⑦ 保存と読込", text: "「設定保存」で作った内容をファイルに保存、「設定読込」で復元できます。作業が消えないよう、こまめに保存してください。" },
+  { target: "#btnFile", title: "⑦ 保存と読込", text: "「📁 ファイル」の「設定保存」（Ctrl+S）で作った内容をファイルに保存、「設定読込」で復元できます。作業が消えないよう、こまめに保存してください。" },
   { target: null, title: "以上で完了です", text: "困ったら左ペイン下部の「操作方法」も参照してください。もう一度この案内を見たいときは、右上の「❔ 使い方」を押してください。" },
 ];
 let tourIdx = -1;
@@ -3860,6 +3980,18 @@ window.addEventListener("resize", () => {
   if (el) positionTour(el); else showTourStep(tourIdx);
 });
 
+/* ヘッダーの「ファイル」メニュー。項目を押すか、外をクリック・Esc で閉じる */
+{
+  const btn = document.getElementById("btnFile"), pop = document.getElementById("filePop");
+  const setOpen = (on) => { pop.hidden = !on; btn.setAttribute("aria-expanded", on ? "true" : "false"); };
+  btn.addEventListener("click", (e) => { e.stopPropagation(); setOpen(pop.hidden); });
+  pop.addEventListener("click", () => setOpen(false));
+  document.addEventListener("mousedown", (e) => { if (!pop.hidden && !document.getElementById("fileMenu").contains(e.target)) setOpen(false); });
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") setOpen(false);
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === "s") { e.preventDefault(); document.getElementById("btnSave").click(); } // Ctrl+S で設定保存
+  });
+}
 document.getElementById("btnLoad").addEventListener("click", () => document.getElementById("fileLoad").click());
 document.getElementById("fileLoad").addEventListener("change", (e) => {
   const f = e.target.files[0];
