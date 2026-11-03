@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-"""別の環境で再開するときの復元(ループ 9): 公開側の暗号化データ(site/members/eoat-db/data.enc.json)から、
+"""別の環境で再開するときの復元(ループ 9): 公開側のデータ(site/eoat-db/data.json + data.detail.json。2026-11 の社外公開より前は暗号化した data.enc.json)から、
 候補 URL(data/candidates.json)・取得元(data/search_sources.json, data/sier_sources.json)・LLM レビュー結果(data/llm_out/recovered_published.json)を作る。
 
 data/ と raw/ は gitignore なので、環境が変わると消える。公開データには事例ごとの出典 URL とレビュー済みの値(method: inferred)が入っているので、
 そこから「取得し直す URL」と「レビューをやり直さなくてよい値」を戻せる。原本 HTML・画像は crawl.py / images.py で取り直す(2 秒間隔)。
-使い方: python recover.py --password …   → そのあと crawl.py → extract.py → classify.py → images.py → llm_merge.py → build.py
+使い方: python recover.py(古い暗号化データからなら --password …)→ そのあと crawl.py → extract.py → classify.py → images.py → llm_merge.py → build.py
 """
 import argparse
 import base64
@@ -21,20 +21,33 @@ REGION_OF = {"japan": "日本", "jp": "日本", "na": "北米", "us": "北米", 
 def decrypt(password):
     from cryptography.hazmat.primitives.ciphers.aead import AESGCM
     from build import derive_key
+    from build import merge_detail
     enc = jload(SITE_OUT / "data.enc.json")
     key = derive_key(password, base64.b64decode(enc["salt"]))
-    plain = zlib.decompress(AESGCM(key).decrypt(base64.b64decode(enc["iv"]), base64.b64decode(enc["ct"]), None))
-    return json.loads(plain)
+    open_ = lambda e: json.loads(zlib.decompress(AESGCM(key).decrypt(base64.b64decode(e["iv"]), base64.b64decode(e["ct"]), None)))
+    data = open_(enc)
+    # ループ 10 から出典の証拠文(fieldSources)などは詳細用(data.detail.enc.json)にある
+    if data.get("detail"):
+        data = merge_detail(data, open_(jload(SITE_OUT / data["detail"])))
+    return data
+
+
+def load_public():
+    """社外公開版(平文)の一覧用と詳細用を 1 つに戻す。"""
+    from build import merge_detail
+    data = jload(SITE_OUT / "data.json")
+    if data and data.get("detail"):
+        data = merge_detail(data, jload(SITE_OUT / data["detail"]))
+    return data
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--password")
+    ap.add_argument("--password", help="社内版(暗号化)の古いデータから戻すとき")
     a = ap.parse_args()
-    pw = a.password or os.environ.get("EOAT_PW") or os.environ.get("FACTORY_PW") or os.environ.get("PEOPLE_PW")
-    if not pw:
-        raise SystemExit("パスワードが必要です(--password か EOAT_PW)")
-    pub = decrypt(pw)
+    pub = decrypt(a.password) if a.password else load_public()
+    if not pub:
+        raise SystemExit(f"{SITE_OUT / 'data.json'} がありません")
     jdump(pub, DATA / "published_prev.json")
     src_yaml = {s["label"]: s for s in yload(HERE / "sources.yaml")["sources"]}
     s = SIER_DATA.read_text(encoding="utf-8")
@@ -44,7 +57,8 @@ def main():
     cands = jload(DATA / "candidates.json", {})
     search_src = jload(DATA / "search_sources.json", {})
     sier_src = jload(DATA / "sier_sources.json", {})
-    reviews, unknown = [], set()
+    reviews, unknown, photo = [], set(), {}
+    PGROUP = {it["key"]: g["key"] for g in yload(HERE.parent / "taxonomy" / "principles.yaml")["groups"] for it in g["items"]}
     for r in pub["cases"]:
         for i, so in enumerate(r["sources"]):
             pubn = so.get("publisher") or ""
@@ -79,7 +93,16 @@ def main():
                 ev, note = fs["evidence"][0], fs.get("note") or ""
                 break
         mass = r["workpiece"].get("mass_kg")
-        reviews.append({"id": r["id"], "is_case": True, "categories": r["workpiece"]["categories"], "principles": r["end_effector"]["principles"],
+        prs = r["end_effector"]["principles"]
+        pfs = r["fieldSources"].get("end_effector.principles") or {}
+        if pfs.get("method") == "photo":
+            # 写真から判定した掴み方はレビューの値に混ぜず、photo_grasp.py merge で付け直す(本文に記載が無いことを残す)
+            photo[r["id"]] = {"p1": {"group": PGROUP.get(prs[0], "unknown"), "subtype": None if prs[0].endswith("_photo") else prs[0], "conf": "high",
+                                     "seen": (pfs.get("evidence") or [""])[0], "sheet": "recovered"}}
+            prs = ["hand_unspecified"]
+        elif pfs.get("method") == "estimated":
+            prs = ["hand_unspecified"]     # 推定は grasp_estimate.py で付け直す(レビューの値に混ぜない)
+        reviews.append({"id": r["id"], "is_case": True, "categories": r["workpiece"]["categories"], "principles": prs,
                         "tasks": r["tasks"], "materials": r["workpiece"]["materials"], "robot_class": r["robot"].get("class"),
                         "is_mobile": bool(r["robot"].get("is_mobile_manipulator")), "mass_kg": (mass["max"] if mass else None),
                         "workpiece_name": r["workpiece"].get("name") or "", "evidence": ev, "note": note or "(公開済みデータから復元)"})
@@ -87,6 +110,8 @@ def main():
     jdump(search_src, DATA / "search_sources.json")
     jdump(sier_src, DATA / "sier_sources.json")
     jdump(reviews, DATA / "llm_out" / "recovered_published.json")
+    if photo:
+        jdump(dict(jload(DATA / "photo_grasp" / "results.json", {}) or {}, **photo), DATA / "photo_grasp" / "results.json")
     bad = [r["id"] for r in pub["cases"] if url_id(r["sources"][0]["url"]) != r["id"]]
     print(f"公開 {len(pub['cases'])} 件 → 候補 {len(cands)} / 検索取得元 {len(search_src)} / SIer {len(sier_src)} / レビュー {len(reviews)}"
           f"(取得元が分からない publisher: {sorted(unknown)}、id の不一致 {len(bad)})")

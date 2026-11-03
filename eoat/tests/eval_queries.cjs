@@ -3,7 +3,7 @@
 'use strict';
 const fs = require('node:fs');
 const path = require('node:path');
-const S = require(path.join(__dirname, '..', '..', 'site', 'members', 'eoat-db', 'search.js'));
+const S = require(path.join(__dirname, '..', '..', 'site', 'eoat-db', 'search.js'));
 const Q = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
 const D = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
 const TAX = D.taxonomy;

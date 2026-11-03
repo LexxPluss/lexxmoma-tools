@@ -10,7 +10,7 @@
 - 検索(WebSearch)は **1 エージェント 25 回まで**(日本語の site: 指定は standard モードで効かないことがある。SIer 事例を狙うときは extended モード)。ページを開いて確かめる(WebFetch)のは必要なときだけ(目安 10 回まで)。**curl 等で直接取らない**(2 秒間隔・robots.txt は後段の crawl.py が守る)。
 - `eoat/data/crawl_blocked.txt`(無ければ README の blocked の取得元)にあるドメインは取れないので **除外**する(検索語に `-site:` を付ける)。
 - 既に一覧ページを巡回している取得元は、この分担では **狙わない**(別の手段で取っている): universal-robots.com, robotiq.com, onrobot.com, schunk.com, schmalz.com, piab.com, kuka.com, fanuc.co.jp, fanuc.eu, fanucamerica.com, robotsi.fanuc.co.jp, kawasakirobotics.com, motoman.com, yaskawa.co.jp, mujin.co.jp, mech-mind.com, formic.co, tm-robot.com, zimmer-group.com, weiss-robotics.com, dobot-robots.com, kassowrobots.com, aubo-robotics.cn, elibot.com, daihen-robot.com, global.yamaha-motor.com, mobile-industrial-robots.com, vention.com, hirebotics.com, ifr.org, soft-gripping.com, xyzrobotics.com, neura-robotics.com, denso-wave.com, iai-robot.co.jp
-- PDF・動画だけのページ(YouTube 等)・SNS・ログインが要るページ・ニュースリリースの一覧ページ・製品カタログの一覧は出さない。**1 事例 = 1 ページ** の URL だけ。
+- 研究論文(arXiv・PMC・Wiley 等。実機の導入事例ではない)・PDF・動画だけのページ(YouTube 等)・SNS・ログインが要るページ・ニュースリリースの一覧ページ・製品カタログの一覧は出さない。**1 事例 = 1 ページ** の URL だけ。
 - robots.txt やボット対策を回避する手段は使わない。
 
 ## 良い URL の条件

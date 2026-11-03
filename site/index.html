@@ -66,6 +66,8 @@ header{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--panel
 .nav .lx-theme-btn{color:var(--muted);border-color:var(--line)}
 @media (max-width:760px){.nav a.ghost{display:none}.logo .mark{height:28px}}
 @media (max-width:480px){.logo .divider,.logo .mark~*{display:none}}
+/* 狭い画面: ダークでは白い台座の分ロゴが広くなり、右端のテーマ切替がはみ出していた。ロゴを縮められるようにし、間隔も詰める */
+@media (max-width:760px){.nav{gap:10px}.logo{min-width:0;flex:0 1 auto;overflow:hidden;text-overflow:ellipsis;gap:8px}}
 
 /* hero */
 .hero{padding:40px 0 24px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:32px;align-items:center}
@@ -100,27 +102,57 @@ h2 .num{display:inline-grid;place-items:center;width:24px;height:24px;border-rad
 .sub{color:var(--muted);font-size:13px;margin:0 0 16px}
 section{padding:22px 0}
 
-/* phase journey */
-.phases{display:grid;grid-template-columns:repeat(var(--n,5),1fr);gap:10px;position:relative}
-.phase{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px 14px 12px;cursor:pointer;text-align:left;font:inherit;color:var(--text);transition:transform .15s,border-color .15s,box-shadow .15s}
-.phase:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
-.phase.on{border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 20%,transparent)}
-.phase .idx{font-size:11px;color:var(--faint);letter-spacing:.08em;font-weight:600}
-.phase .t{font-weight:700;font-size:15px;margin:2px 0 4px}
-.phase .d{font-size:12px;color:var(--muted);line-height:1.5}
-.phase .cnt{position:absolute;top:12px;right:12px;font-size:11px;background:var(--panel-2);border-radius:999px;padding:1px 8px;color:var(--muted)}
-.phase::after{content:"";position:absolute;right:-9px;top:50%;width:8px;height:8px;border-top:2px solid var(--line);border-right:2px solid var(--line);transform:translateY(-50%) rotate(45deg)}
-.phase:last-child::after{display:none}
-@media (max-width:900px){.phases{grid-template-columns:repeat(2,1fr)}.phase::after{display:none}}
-@media (max-width:520px){.phases{grid-template-columns:1fr}}
-
-/* worry chips */
-.chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:999px;padding:7px 14px;font:inherit;font-size:13px;cursor:pointer;transition:background .15s,border-color .15s}
-.chip:hover{background:var(--panel-2)}
-.chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
+/* 絞り込み(検討フェーズ + よくある問い を 1 枚にまとめる。縦に場所を取らないよう、各 1〜2 行) */
+.finder{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;margin:0 0 16px;display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+.frow{display:flex;align-items:flex-start;gap:12px;min-width:0}
+.frow .lab{flex:none;width:88px;font-size:12px;font-weight:700;color:var(--muted);padding-top:6px}
+.phases,.chips{display:flex;gap:6px;flex-wrap:wrap;min-width:0}
+.phase,.chip{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:999px;padding:5px 12px;font:inherit;font-size:13px;cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s}
+.phase:hover,.chip:hover{background:var(--panel-2)}
+.phase.on,.chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.phase .i{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--panel-2);color:var(--muted);font-size:11px;font-weight:700;margin-right:6px}
+.phase.on .i{background:rgba(255,255,255,.25);color:#fff}
+.phase .cnt{font-size:11px;color:var(--faint);margin-left:6px}
+.phase.on .cnt{color:rgba(255,255,255,.75)}
 .chip .q{color:var(--faint);margin-right:4px}
 .chip.on .q{color:rgba(255,255,255,.7)}
+@media (max-width:720px){
+  .frow{flex-direction:column;gap:6px}
+  .frow .lab{width:auto;padding-top:0}
+  /* スマホでは折り返さず横にスクロール(縦の長さを増やさない) */
+  .phases,.chips{flex-wrap:nowrap;overflow-x:auto;width:100%;padding-bottom:4px;scrollbar-width:thin}
+}
+
+/* 新しいツールのお知らせ(ポップアップ・NEW の印)。NEWS に 1 件足すと出る */
+.badge.b-new,.nav .newdot{background:#e8590c;color:#fff;font-weight:700;letter-spacing:.04em}
+.nav .newdot{font-size:10px;border-radius:999px;padding:1px 6px;margin-left:4px;vertical-align:2px}
+.card.hl{animation:hl 2.4s ease-out 1}
+@keyframes hl{0%,40%{box-shadow:0 0 0 4px color-mix(in srgb,#e8590c 55%,transparent)}100%{box-shadow:0 0 0 0 transparent}}
+.lx-news{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:2147482000;width:360px;max-width:calc(100vw - 32px);background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 48px rgba(16,32,48,.22);overflow:hidden;opacity:0;transform:translateY(12px);transition:opacity .3s,transform .3s}
+.lx-news.show{opacity:1;transform:none}
+.lx-news .shot{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;object-position:top left;border-bottom:1px solid var(--line);background:var(--panel-2)}
+.lx-news .bd{padding:14px 16px 16px}
+.lx-news .kick{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.06em}
+.lx-news .kick b{background:#e8590c;color:#fff;border-radius:999px;padding:2px 8px;letter-spacing:.08em}
+.lx-news h3{margin:6px 0 4px;font-size:16px;line-height:1.45}
+.lx-news p{margin:0 0 12px;font-size:13px;color:var(--muted);line-height:1.6}
+.lx-news .acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.lx-news .x{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;border:0;background:rgba(0,0,0,.55);color:#fff;font-size:16px;line-height:30px;cursor:pointer}
+.lx-news .x:hover{background:rgba(0,0,0,.75)}
+.lx-news .later{margin-left:auto;background:none;border:0;color:var(--muted);font:inherit;font-size:12px;cursor:pointer;padding:4px}
+.lx-news .later:hover{color:var(--text);text-decoration:underline}
+@media (max-width:560px){
+  /* スマホは写真を外して小さく(画面を覆いすぎない) */
+  .lx-news{left:8px;right:8px;width:auto;max-width:none;bottom:calc(8px + env(safe-area-inset-bottom,0px))}
+  .lx-news .shot{display:none}
+  .lx-news .bd{padding:12px 44px 12px 14px}
+  .lx-news h3{font-size:15px;margin:4px 0 2px}
+  .lx-news p{font-size:12px;margin:0 0 10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .lx-news .btn{padding:7px 12px}
+  .lx-news .x{background:var(--panel-2);color:var(--muted);border:1px solid var(--line)}
+  .lx-news .x:hover{background:var(--line);color:var(--text)}
+}
+@media (prefers-reduced-motion:reduce){.lx-news{transition:none}.card.hl{animation:none;outline:3px solid #e8590c}}
 
 /* toolbar */
 .bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px}
@@ -217,9 +249,7 @@ footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--faint);f
   <div class="wrap nav">
     <a class="logo" href="#top"><img class="mark" src="assets/lexxpluss-logo.png" alt="LexxPluss" width="480" height="154"><span class="divider"></span>LexxMoMa Tools</a>
     <span class="sp"></span>
-    <a class="ghost" href="#phases">フェーズから</a>
-    <a class="ghost" href="#worries">悩みから</a>
-    <a class="ghost" href="#tools">すべてのツール</a>
+    <a class="ghost" href="#tools" id="navTools">ツールを探す</a>
     <a class="tourlink" href="library/index.html" id="navTour">🎫 見学ツアー</a>
     <button type="button" class="lx-theme-btn" data-lx-theme-toggle aria-label="ライト / ダーク切替"></button>
   </div>
@@ -272,20 +302,13 @@ footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--faint);f
     <div class="bulbs" aria-hidden="true" id="bulbsBot"></div>
   </section>
 
-  <section id="phases">
-    <h2><span class="num">1</span>検討フェーズから選ぶ</h2>
-    <p class="sub">今どの段階にいるかをクリックすると、その段階で使うツールに絞り込みます。</p>
-    <div class="phases" id="phaseList"></div>
-  </section>
-
-  <section id="worries">
-    <h2><span class="num">2</span>悩みから選ぶ</h2>
-    <p class="sub">お客さまからよく聞く問いです。当てはまるものを選んでください(複数可)。</p>
-    <div class="chips" id="chipList"></div>
-  </section>
-
   <section id="tools">
-    <h2><span class="num">3</span>ツール</h2>
+    <h2>ツールを探す</h2>
+    <p class="sub">検討の段階や、お客さまからよく聞く問いで絞り込めます(どちらも任意。問いは複数選べます)。</p>
+    <div class="finder" id="finder">
+      <div class="frow"><span class="lab">検討フェーズ</span><div class="phases" id="phaseList" role="group" aria-label="検討フェーズ"></div></div>
+      <div class="frow"><span class="lab">よくある問い</span><div class="chips" id="chipList" role="group" aria-label="よくある問い"></div></div>
+    </div>
     <div class="bar">
       <span class="res" id="res"></span>
       <button class="clear" id="clear" hidden>絞り込みを解除</button>
@@ -344,6 +367,15 @@ const WORRIES = [
   {id:"parts",  t:"交換部品はすぐ手に入る?"},
 ];
 
+// ===== 新しいツールのお知らせ(ここに 1 件足すと、トップで 1 回だけポップアップ + until まで NEW の印) =====
+// id: お知らせごとに変える(見た・閉じたの記録のキー) / tool: TOOLS の id / until: NEW の印を出す最終日(公開から 20 日ほど。この日を過ぎるとポップアップも出さない)
+const NEWS = [
+  {id:"eoatdb-2026-11", tool:"eoatdb", until:"2026-11-22", kicker:"新しいツール",
+   title:"エンドエフェクタ事例データベースを公開しました",
+   desc:"掴みたいモノを入れると、世界のロボット導入事例 1,920 件から、どの掴み方が使われているかの傾向が画像付きで分かります。",
+   img:"assets/news/eoatdb.webp"},
+];
+
 // ===== ツール一覧(ここに1件足すとカードが増える) =====
 // status: web=ブラウザで即実行 / local=ローカル実行(Python) / plan=開発中
 const TOOLS = [
@@ -355,13 +387,6 @@ const TOOLS = [
     icon:"ticket", href:"library/index.html"
   },
   {
-    id:"sim2d", cat:"SIMULATION", name:"LexxMoMa 動作シミュレーター(2D)",
-    desc:"工場図面の上で、LexxMoMaの走行とアーム動作を組み立てるツール。動きと所要時間を確認し、導入する工程のサイクルタイムを試算できます。",
-    solves:"<b>動線とサイクルタイム</b>を検討する。",
-    phases:["know","assess"], worries:["cycle","layout"], status:"web", ver:"rev.60",
-    icon:"grid", href:"simulator/lexxmoma-2d.html"
-  },
-  {
     id:"sketch", cat:"SIMULATION", name:"工程シミュレーター(2D)",
     desc:"設備と作業者を置いてつなぎ、工程図を作成。人とモノの動きや生産数をシミュレーションし、LexxMoMa導入前後を比較できます。",
     solves:"<b>工程図と導入前後の比較</b>を打合せで共有する。",
@@ -369,10 +394,18 @@ const TOOLS = [
     icon:"flow", href:"process-sketch/dist/process-sketch.html"
   },
   {
-    id:"eoat", cat:"DESIGN", name:"エンドエフェクタ設計ツール",
-    desc:"ワークのCADデータをもとに、ハンドや吸着パッド、搭載機器を検討するツール。部品の選定から把持の確認、設計データの出力まで支援する予定です。",
-    solves:"<b>ワークのつかみ方と必要な機器</b>を検討する。",
-    phases:["design"], worries:["grip","equip","teach"], status:"plan", ver:"近日公開", icon:"hand"
+    id:"sim2d", cat:"SIMULATION", name:"LexxMoMa 動作シミュレーター(2D)",
+    desc:"工場図面の上で、LexxMoMaの走行とアーム動作を組み立てるツール。動きと所要時間を確認し、導入する工程のサイクルタイムを試算できます。",
+    solves:"<b>動線とサイクルタイム</b>を検討する。",
+    phases:["know","assess"], worries:["cycle","layout"], status:"web", ver:"rev.60",
+    icon:"grid", href:"simulator/lexxmoma-2d.html"
+  },
+  {
+    id:"roi", cat:"BUSINESS", name:"何年で元が取れる？ 自走マニピュレータ 回収シミュレーター",
+    desc:"人件費・省人化人数・導入費から、投資回収年数と年間効果を試算（ROI 計算）。条件を変えて比較し、導入判断に使う結果を印刷・保存できます。",
+    solves:"<b>導入コストと期待効果</b>を数字で比較する。",
+    phases:["assess","deploy"], worries:["roi"], status:"web", ver:"v1",
+    icon:"yen", href:"lexxmoma-roi/dist/lexxmoma_roi.html"
   },
   {
     id:"sier", cat:"PARTNER", name:"ロボットSIerデータベース",
@@ -382,11 +415,17 @@ const TOOLS = [
     icon:"map", href:"robot-sier-map/index.html"
   },
   {
-    id:"roi", cat:"BUSINESS", name:"何年で元が取れる？ 自走マニピュレータ 回収シミュレーター",
-    desc:"人件費・省人化人数・導入費から、投資回収年数と年間効果を試算（ROI 計算）。条件を変えて比較し、導入判断に使う結果を印刷・保存できます。",
-    solves:"<b>導入コストと期待効果</b>を数字で比較する。",
-    phases:["assess","deploy"], worries:["roi"], status:"web", ver:"v1",
-    icon:"yen", href:"lexxmoma-roi/dist/lexxmoma_roi.html"
+    id:"eoatdb", cat:"DESIGN", name:"エンドエフェクタ事例データベース",
+    desc:"掴みたいモノ・やりたいことを入れると、世界のロボットSIer・メーカーが公開している導入事例を画像付きで検索。ワークごとに、どの掴み方が使われているかの傾向が分かります。",
+    solves:"<b>このワークは一般にどう掴むか</b>を事例で確かめる。",
+    phases:["know","design"], worries:["grip"], status:"web", ver:"v1",
+    icon:"hand", href:"eoat-db/index.html"
+  },
+  {
+    id:"eoat", cat:"DESIGN", name:"エンドエフェクタ設計ツール",
+    desc:"ワークのCADデータをもとに、ハンドや吸着パッド、搭載機器を検討するツール。部品の選定から把持の確認、設計データの出力まで支援する予定です。",
+    solves:"<b>ワークのつかみ方と必要な機器</b>を検討する。",
+    phases:["design"], worries:["grip","equip","teach"], status:"plan", ver:"近日公開", icon:"hand"
   },
   {
     id:"parts", cat:"MAINTENANCE", name:"サービスパーツカタログ",
@@ -421,10 +460,8 @@ function renderPhases(){
   // ツールが1件も無いフェーズは出さない(番号は表示順で振り直す)
   $("#phaseList").innerHTML = PHASES.filter(p=>TOOLS.some(t=>t.phases.includes(p.id))).map((p,i)=>{
     const n = TOOLS.filter(t=>t.phases.includes(p.id)).length;
-    return `<button class="phase ${state.phase===p.id?"on":""}" data-id="${p.id}">
-      <div class="idx">PHASE ${i+1}</div><div class="t">${p.t}</div><div class="d">${p.d}</div><span class="cnt">${n}</span></button>`;
+    return `<button class="phase ${state.phase===p.id?"on":""}" data-id="${p.id}" title="${p.d}" aria-pressed="${state.phase===p.id}"><span class="i">${i+1}</span>${p.t}<span class="cnt">${n}</span></button>`;
   }).join("");
-  $("#phaseList").style.setProperty("--n", $("#phaseList").children.length);
   $("#phaseList").querySelectorAll(".phase").forEach(b=>b.onclick=()=>{
     const on = state.phase!==b.dataset.id;
     state.phase = on?b.dataset.id:null;
@@ -433,7 +470,7 @@ function renderPhases(){
   });
 }
 function renderChips(){
-  $("#chipList").innerHTML = WORRIES.map(w=>`<button class="chip ${state.worries.has(w.id)?"on":""}" data-id="${w.id}"><span class="q">Q.</span>${w.t}</button>`).join("");
+  $("#chipList").innerHTML = WORRIES.map(w=>`<button class="chip ${state.worries.has(w.id)?"on":""}" data-id="${w.id}" aria-pressed="${state.worries.has(w.id)}"><span class="q">Q.</span>${w.t}</button>`).join("");
   $("#chipList").querySelectorAll(".chip").forEach(b=>b.onclick=()=>{
     const id=b.dataset.id;
     if(state.worries.has(id)) state.worries.delete(id);
@@ -446,6 +483,9 @@ function matches(t){
   if(state.worries.size && ![...state.worries].some(w=>t.worries.includes(w))) return false;
   return true;
 }
+// 有効なお知らせ(until の日まで)
+const today = new Date().toISOString().slice(0,10);
+const newsFor = id => NEWS.find(n=>n.tool===id && today<=n.until);
 function card(t){
   const [cls,label] = STATUS[t.status];
   const phaseBadges = t.phases.map(p=>`<span class="badge b-phase">${PHASES.find(x=>x.id===p).t}</span>`).join("");
@@ -461,9 +501,9 @@ function card(t){
   }
   if(t.help && t.status!=="plan") actions += `<a class="btn s" href="${enc(t.help)}" target="_blank" rel="noopener" ${ev("help")}>使い方</a>`;
   const note = t.note ? `<br><span class="note">※ ${t.note}</span>` : "";
-  return `<article class="card ${t.status==="plan"?"plan":""}">
+  return `<article class="card ${t.status==="plan"?"plan":""}" id="tool-${t.id}">
     <div class="top"><div class="icon">${ICONS[t.icon]}</div><div><div class="cat">${t.cat}</div><h3>${t.name}</h3></div></div>
-    <div class="badges">${t.ver==="ベータ版"?'<span class="badge b-beta">ベータ版</span>':""}<span class="badge ${cls}">${label}</span>${phaseBadges}</div>
+    <div class="badges">${newsFor(t.id)?'<span class="badge b-new">NEW</span>':""}${t.ver==="ベータ版"?'<span class="badge b-beta">ベータ版</span>':""}<span class="badge ${cls}">${label}</span>${phaseBadges}</div>
     <p>${t.desc}</p>
     <div class="solves">${t.solves}${note}</div>
     <div class="actions">${actions}${t.ver==="ベータ版"?"":`<span class="ver">${t.ver}</span>`}</div>
@@ -536,6 +576,55 @@ $("#clear").onclick=()=>{state.phase=null; state.worries.clear(); render();};
   if (robot) robot.addEventListener("click", () => { if (++pets % 3 === 0) setTimeout(() => say("下で私の本気の映像が観られます！", 2.4), 1700); });
 })();
 render();
+
+// ===== 新しいツールのお知らせ(ポップアップ) =====
+// 導線: トップを開いて 1.5 秒後に左下(スマホは下)に出す。画面は塞がない
+//   「使ってみる」→ ツールを新しいタブで / 「一覧で見る」→ カードまでスクロールして光らせる / × ・「あとで」・Esc → 閉じる
+//   どれを押してもこのお知らせは二度と出さない(localStorage lx_news_seen に id)。NEW の印はカードとメニューに until まで残る
+//   同じ訪問で常連パスのカード(assets/keep.js)が自動で開く予定でも、お知らせを出したときはパスを次の訪問に回す
+// 確認用: ?lx_news=1 で必ず出す、?lx_news=reset で見た記録を消す
+(function(){
+  const KEY = "lx_news_seen";
+  const q = new URLSearchParams(location.search).get("lx_news");
+  const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch(e) { return []; } };
+  const mark = id => { try { const a = load(); if (!a.includes(id)) localStorage.setItem(KEY, JSON.stringify(a.concat(id).slice(-20))); } catch(e) {} };
+  if (q === "reset") { try { localStorage.removeItem(KEY); } catch(e) {} }
+  const active = NEWS.filter(n => today <= n.until && TOOLS.some(t => t.id === n.tool));
+  if (active.length) { const m = $("#navTools"); if (m) m.insertAdjacentHTML("beforeend", '<span class="newdot">NEW</span>'); }
+  const n = active.find(x => q === "1" || !load().includes(x.id));
+  if (!n) return;
+  const t = TOOLS.find(x => x.id === n.tool);
+  window.__lxNewsOpen = true;   // keep.js: 常連パスの自動表示をこの訪問では見送る
+  setTimeout(() => {
+    const el = document.createElement("aside");
+    el.className = "lx-news"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "新しいツールのお知らせ");
+    el.innerHTML = `${n.img ? `<img class="shot" src="${n.img}" alt="${t.name} の画面">` : ""}
+      <button type="button" class="x" aria-label="閉じる">×</button>
+      <div class="bd"><div class="kick"><b>NEW</b>${n.kicker}</div><h3>${n.title}</h3><p>${n.desc}</p>
+      <div class="acts"><a class="btn p" href="${enc(t.href)}" target="_blank" rel="noopener" data-a="open">使ってみる ↗</a><button type="button" class="btn s" data-a="list">一覧で見る</button><button type="button" class="later" data-a="close">あとで</button></div></div>`;
+    document.body.appendChild(el);
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("show")));
+    track(`news/${n.id}/show`, n.title);
+    const close = how => {
+      mark(n.id); track(`news/${n.id}/${how}`, n.title);
+      el.classList.remove("show"); setTimeout(() => el.remove(), 300);
+      document.removeEventListener("keydown", onKey);
+    };
+    const onKey = e => { if (e.key === "Escape") close("close"); };
+    document.addEventListener("keydown", onKey);
+    el.querySelector(".x").onclick = () => close("close");
+    el.addEventListener("click", e => {
+      const b = e.target.closest("[data-a]"); if (!b) return;
+      if (b.dataset.a === "list") {
+        // 絞り込みでカードが隠れていたら外してから
+        if (!TOOLS.filter(matches).includes(t)) { state.phase = null; state.worries.clear(); render(); }
+        const c = document.getElementById("tool-" + t.id);
+        if (c) { c.scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center"}); c.classList.remove("hl"); void c.offsetWidth; c.classList.add("hl"); }
+      }
+      close(b.dataset.a);
+    });
+  }, 1500);
+})();
 </script>
 </body>
 </html>

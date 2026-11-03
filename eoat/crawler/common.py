@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """エンドエフェクタ事例データベース(eoat/) 共通処理。
 
-- パス定義(eoat/ 配下と公開先 site/members/eoat-db/)
+- パス定義(eoat/ 配下と公開先 site/eoat-db/)
 - HTTP 取得: robots.txt を尊重し、1ドメインあたり 2 秒以上あける。User-Agent に社名と連絡先を入れる。
   取得した原本は raw/ に残し(gitignore)、同じ URL は再取得しない(冪等)
 - JSON の読み書き、安定 ID、実行ログ(logs/YYYY-MM-DD.json)
@@ -29,7 +29,7 @@ LOGS = EOAT / "logs"                            # 実行ログ(.gitignore)
 TAXONOMY = EOAT / "taxonomy"
 TESTS = EOAT / "tests"
 FIXTURES = TESTS / "fixtures"
-SITE_OUT = REPO / "site" / "members" / "eoat-db"   # 公開 UI と暗号化データ
+SITE_OUT = REPO / "site" / "eoat-db"   # 公開 UI とデータ(2026-11 に社外公開へ移行。それまでは site/members/eoat-db に暗号化して置いていた)
 SIER_DATA = REPO / "site" / "robot-sier-map" / "data" / "siers.js"
 
 CONTACT = os.environ.get("EOAT_CONTACT", "https://lexxpluss.com/")   # 連絡先は環境変数で渡す(公開リポジトリに個人のアドレスを書かない)
@@ -65,11 +65,47 @@ def _robots_ok(url):
         return True
 
 
+def crawl_delay(url):
+    """robots.txt の Crawl-delay(ループ 10: knapp.com が 10 秒)。無ければ MIN_INTERVAL。_robots_ok の後に呼ぶ。"""
+    parts = urllib.parse.urlsplit(url)
+    rp = _robots.get(f"{parts.scheme}://{parts.netloc}")
+    try:
+        d = rp.crawl_delay(USER_AGENT) if rp else None
+    except Exception:
+        d = None
+    return max(MIN_INTERVAL, float(d or 0))
+
+
+def _reserve_shared(host, slot, interval=MIN_INTERVAL):
+    """別のプロセス(discover と crawl、取得元を調べるエージェント)が同じドメインに同時に行っても 2 秒あくよう、
+    ドメインごとの予約時刻を logs/.ratelimit/<host> に置いてファイルロックで回す(ループ 10)。使えない環境ではプロセス内の予約だけ。"""
+    try:
+        import fcntl
+        d = LOGS / ".ratelimit"
+        d.mkdir(parents=True, exist_ok=True)
+        with open(d / re.sub(r"[^A-Za-z0-9.-]", "_", host), "a+") as f:
+            fcntl.flock(f, fcntl.LOCK_EX)
+            f.seek(0)
+            try:
+                prev = float(f.read().strip() or 0)
+            except ValueError:
+                prev = 0.0
+            slot = max(slot, prev + interval)
+            f.seek(0)
+            f.truncate()
+            f.write(f"{slot:.3f}")
+        return slot
+    except Exception:
+        return slot
+
+
 def polite_wait(url):
-    """同一ドメインへの前回アクセスから MIN_INTERVAL 秒以上あける。並列実行でも守れるよう、ロックの中で次の枠を予約してから待つ。"""
+    """同一ドメインへの前回アクセスから MIN_INTERVAL 秒(robots.txt に Crawl-delay があればその秒数)以上あける。並列実行でも守れるよう、ロックの中で次の枠を予約してから待つ。"""
     host = urllib.parse.urlsplit(url).netloc.replace("www.", "")
     with _hit_lock:
-        slot = max(time.time(), _last_hit.get(host, 0) + MIN_INTERVAL)
+        interval = crawl_delay(url)
+        slot = max(time.time(), _last_hit.get(host, 0) + interval)
+        slot = _reserve_shared(host, slot, interval)
         _last_hit[host] = slot
     w = slot - time.time()
     if w > 0:

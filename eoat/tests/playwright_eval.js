@@ -1,18 +1,16 @@
 // エンドエフェクタ事例DB の UI 評価(7-3): 1440px / 390px × ライト / ダーク で開き、速さ・コンソールエラー・横スクロール・外部画像リクエストを測る。
-// 使い方: python3 scripts/serve.py 8750 を起動してから  EOAT_PW=… node eoat/tests/playwright_eval.js [出力ディレクトリ]
+// 使い方: python3 scripts/serve.py 8750 を起動してから  node eoat/tests/playwright_eval.js [出力ディレクトリ](2026-11 の社外公開からパスワードなし)
 // 結果は <出力ディレクトリ>/eval.json とスクリーンショット。CI では動かさない(手元・セッションでの確認用)。
 'use strict';
 const { chromium } = require('playwright');
 const fs = require('node:fs');
 const path = require('node:path');
-const BASE = process.env.EOAT_BASE || 'http://localhost:8750/members/eoat-db/';
-const PW = process.env.EOAT_PW || 'pilot-test';
+const BASE = process.env.EOAT_BASE || 'http://localhost:8750/eoat-db/';
 const OUT = process.argv[2] || path.join(__dirname, '..', 'data', 'eval');
 fs.mkdirSync(OUT, { recursive: true });
 
 async function session(browser, opts) {
   const ctx = await browser.newContext({ viewport: opts.viewport, colorScheme: opts.scheme, deviceScaleFactor: 1, isMobile: opts.mobile, hasTouch: opts.mobile });
-  await ctx.addInitScript((pw) => { try { sessionStorage.setItem('lx_members_pw_v1', pw); } catch (e) { } }, PW);
   if (opts.throttle) {
     const cdp = await ctx.newCDPSession(await ctx.newPage());
     await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: 150, downloadThroughput: 1.6 * 1024 * 1024 / 8, uploadThroughput: 750 * 1024 / 8 });
