@@ -1,0 +1,11 @@
+{
+  "_comment": "シミュレーターの「📂 サンプル」に出る一覧。file は samples/ からの相対パス。id は URL（?sample=<id>）で使う。追加したらここに 1 件足す。description はどういう動作かを短く",
+  "samples": [
+    {
+      "id": "booth-demo",
+      "title": "展示会デモ: 可動域の披露 → ピック → 加工機へ",
+      "description": "開始位置でアームの可動域を見せてから、Pick 台でワークを取り、後退して加工機に置いて開始位置へ戻る。",
+      "file": "booth-demo.json"
+    }
+  ]
+}

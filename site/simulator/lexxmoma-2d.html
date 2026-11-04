@@ -34,9 +34,20 @@
   .time-box b { font-size: 18px; }
   main { flex: 1; display: flex; gap: 4px; padding: 8px; min-height: 0; }
   .col { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
-  #colLeft  { width: 270px; overflow-y: auto; flex-shrink: 0; }
+  #colLeft  { width: 270px; flex-shrink: 0; flex-direction: row; overflow: hidden; }
+  /* 左ペインの中身（縦に並ぶ）と、右側に開く位置の編集欄 */
+  #leftMain { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; overflow-x: hidden; }
+  #leftEdit { flex: 0 0 290px; display: flex; flex-direction: column; min-height: 0; }
+  #leftEdit[hidden] { display: none; }
+  #editPane { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
+  #editPane .efoot { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: 6px; }
+  #editPane .efoot[hidden] { display: none; }
+  #editPane .ehead { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  #editPane .ehead b { flex: 1; font-size: 13px; }
+  #pointDetail { border-top: none !important; margin-top: 0 !important; padding-top: 0 !important; }
+  .pt-row button.small.edit.on { background: var(--accent); color: #fff; border-color: var(--accent); }
   #colMid   { flex: 1; min-width: 300px; }
-  #colRight { width: 330px; overflow-y: auto; flex-shrink: 0; }
+  #colRight { width: 330px; overflow-y: auto; flex-shrink: 0; gap: 0; }
   .splitter {
     flex: 0 0 6px; cursor: col-resize; border-radius: 3px;
     background: transparent; transition: background .12s;
@@ -45,7 +56,9 @@
   fieldset {
     background: var(--panel); border: 1px solid var(--border);
     border-radius: 8px; padding: 8px 10px; margin: 0;
+    min-inline-size: 0; /* 既定の min-content だとペインを狭めた時に中身がはみ出す */
   }
+  .rtab, .col { min-width: 0; }
   legend { font-weight: 600; padding: 0 4px; font-size: 12px; color: #345; }
   label.row { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin: 3px 0; }
   label.row span { flex: 1; }
@@ -64,7 +77,6 @@
   #canvasWrap { position: relative; flex: 1; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; min-height: 0; }
   #cv { width: 100%; height: 100%; display: block; outline: none; cursor: grab; }
   #cv.drawmode { cursor: crosshair; }
-  #cv.movemode { cursor: move; }
   #zoomCtrl { position: absolute; left: 8px; bottom: 52px; display: flex; flex-direction: column; gap: 4px; }
   #zoomCtrl button { width: 28px; padding: 2px 0; }
   /* 走行速度が標準値（SIM_PARAMS.body.vmaxStd）から変更されている時に中央ペイン右上へ出す警告 */
@@ -86,6 +98,79 @@
   .pose-item .nm { flex: 1; font-weight: 600; }
   .pose-item .co { color: #667; font-size: 11px; }
   .pose-item button.small { flex: 0 0 auto; width: 22px; padding: 1px 0; text-align: center; } /* →と×を同サイズに */
+  /* ---- 登録した位置（ポイント）の一覧: 1 行 1 件、同じ場所のポイントは場所の見出しの下にまとめる ---- */
+  #leftTabs { margin-top: -2px; }
+  #colLeft .rtab + .rtab, #leftTabs + .rtab { margin-top: -8px; } /* タブとパネルをつなげる（.col の gap を打ち消す） */
+  #paneRegister { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+  #regBox .regrow { display: flex; gap: 4px; }
+  #regBox .regrow input { flex: 1; min-width: 0; }
+  #regBox .regopts { display: flex; gap: 10px; align-items: center; font-size: 11px; color: #567; margin: 4px 0 2px; }
+  #regMsg { margin-left: auto; color: var(--accent); }
+  #pointList { flex: 1 1 auto; min-height: 120px; overflow-y: auto; margin-top: 4px; border-top: 1px solid var(--border); padding-top: 2px; }
+  .loc-head { display: flex; align-items: center; gap: 4px; margin-top: 3px; padding: 1px 4px; border-radius: 4px;
+    background: #eef3f7; font-size: 11px; color: #345; font-variant-numeric: tabular-nums; }
+  .loc-head .lco { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .loc-head svg { flex: 0 0 auto; }
+  .pt-row { display: flex; align-items: center; gap: 4px; height: 22px; padding: 0 4px 0 8px; border-radius: 4px; cursor: pointer; }
+  .pt-row:hover { background: #fdf0e3; }
+  .pt-row.sel { background: var(--accent2); }
+  .pt-row.unused .nm { opacity: .5; }
+  .pt-row canvas { flex: 0 0 auto; }
+  .pt-row .nm { flex: 1; min-width: 0; font-weight: 600; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pt-row button.small, .loc-head button.small { flex: 0 0 auto; width: 22px; padding: 1px 0; text-align: center; }
+  .pt-row button.small.arm { width: 26px; font-size: 10px; }
+  /* ---- 設定欄の共通部品（レイアウトの設定・登録した位置の設定で使う） ---- */
+  .ibtn { flex: 0 0 auto; width: 26px; height: 26px; padding: 0; border: none; border-radius: 7px; background: transparent;
+    color: #5b6b78; font-size: 12px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+  .ibtn:hover { background: #e6ecf1; color: #1f3446; }
+  .ibtn.danger { color: var(--danger); }
+  .ibtn.danger:hover { background: #fbe9e9; }
+  .ibtn.ph { visibility: hidden; }
+  .fld { display: flex; flex-direction: column; gap: 3px; min-width: 0; grid-column: 1 / -1; }
+  .fld.half { grid-column: auto; }
+  .fld > .lb { font-size: 11px; color: #5b6b78; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .in { display: flex; align-items: center; gap: 4px; height: 28px; padding: 0 8px; border: 1px solid #cfd8e0; border-radius: 7px;
+    background: #fff; min-width: 0; box-sizing: border-box; cursor: text; }
+  .in:hover { border-color: #b3c0cb; }
+  .in:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(10,110,189,.15); }
+  .in:has(input:disabled) { background: #f3f5f7; color: #9aa6b0; }
+  .in input { flex: 1; min-width: 0; width: 100%; height: 100%; border: none; outline: none; background: transparent; padding: 0; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+  .in .u { flex: 0 0 auto; font-size: 11px; color: #8a98a4; }
+  .in2 { display: flex; gap: 6px; min-width: 0; }
+  .in2 .in { flex: 1 1 0; }
+  input.sw { appearance: none; -webkit-appearance: none; flex: 0 0 auto; width: 30px; height: 17px; margin: 0; border-radius: 9px;
+    background: #c5ced6; position: relative; cursor: pointer; transition: background .15s; }
+  input.sw::after { content: ""; position: absolute; left: 2px; top: 2px; width: 13px; height: 13px; border-radius: 50%; background: #fff;
+    box-shadow: 0 1px 2px rgba(0,0,0,.2); transition: left .15s; }
+  input.sw:checked { background: var(--accent); }
+  input.sw:checked::after { left: 15px; }
+  input.sw:focus-visible { outline: 2px solid rgba(10,110,189,.4); outline-offset: 2px; }
+  .swrow { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #1f3446; grid-column: 1 / -1; cursor: pointer; min-height: 22px; }
+  .sec { border: 1px solid #e1e7ec; border-radius: 10px; padding: 8px 10px 10px; margin-top: 8px; background: #fff; }
+  .sec-h { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 12px; color: #1f3446; cursor: pointer; }
+  .sec-b { margin-top: 8px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 6px; }
+  .sec .note { grid-column: 1 / -1; font-size: 11px; color: #6b7a86; font-variant-numeric: tabular-nums; }
+  .sec.off .sec-h { color: #8a98a4; }
+  #pointDetail { margin-top: 6px; border-top: 1px solid var(--border); padding-top: 6px; }
+  #pointDetail .jgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px 6px; }
+  #pointDetail .jgrid label { display: flex; align-items: center; gap: 2px; min-width: 0; font-size: 11px; color: #567; }
+  #pointDetail .jgrid input { flex: 1 1 0; min-width: 0; width: 100%; box-sizing: border-box; }
+  #pointDetail .ro { color: #456; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* 編集欄の表（ラベル｜入力）。レイアウトの設定欄の共通の指定より優先する */
+  #leftEdit #pointDetail .pgrid { grid-template-columns: auto minmax(0, 1fr); gap: 5px 8px; align-items: center; }
+  #leftEdit #pointDetail .pgrid .full { grid-column: 2 / -1; }
+  #leftEdit #pointDetail .pgrid .pair { display: flex; align-items: center; gap: 4px; min-width: 0; }
+  #leftEdit #pointDetail .pgrid .pair input { flex: 1 1 0; min-width: 0; }
+  #leftEdit #pointDetail .jgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px 6px; }
+  /* ---- 操作方法と前提値（ヘッダーの ⓘ で開く） ---- */
+  #infoDlg { position: fixed; inset: 0; z-index: 60; background: rgba(20,30,40,.35); display: flex; align-items: center; justify-content: center; }
+  #infoDlg[hidden] { display: none; }
+  #infoDlg .box { background: #fff; border-radius: 10px; width: min(860px, 94vw); max-height: 88vh; overflow: auto; padding: 12px 16px 16px; box-shadow: 0 8px 30px rgba(0,0,0,.25); }
+  #infoDlg .dlg-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  #infoDlg .dlg-head b { flex: 1; font-size: 15px; }
+  #infoDlg .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  #infoDlg h3 { margin: 4px 0; font-size: 13px; }
+  @media (max-width: 700px) { #infoDlg .cols { grid-template-columns: 1fr; } }
   /* ---- program blocks ---- */
   #program { display: flex; flex-direction: column; gap: 4px; }
   .stage {
@@ -103,6 +188,13 @@
   .stage.initial { background: #eef4f9; border-color: #b9cede; display: block; } /* 固定の初期状態ブロック */
   .stage.initial select { width: 100%; }
   .stage .stage-blocks { flex: 1; display: flex; flex-wrap: wrap; gap: 4px; }
+  /* 段の左端のつまみ（6 つの点）。押してドラッグすると段を並べ替える */
+  .stage .stage-grip { flex: 0 0 auto; align-self: stretch; width: 20px; margin: -2px 0 -2px -2px; border-radius: 5px;
+    position: relative; display: flex; align-items: center; justify-content: center; color: #9aa7b2; cursor: grab; } /* 6 つの点は段の高さの中央 */
+  /* 段の番号（スクロールしてもどの段か分かるように） */
+  .stage .stage-grip .sno { position: absolute; top: 4px; left: 0; right: 0; text-align: center; font-size: 11px; font-weight: 700; color: #4a5d6c; font-variant-numeric: tabular-nums; line-height: 1; }
+  .stage .stage-grip:hover { background: #e6ecf1; color: #4a5d6c; }
+  .stage.dragging .stage-grip { cursor: grabbing; }
   .stage .stage-side { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
   .stage-time { font-size: 11px; color: #345; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .blk {
@@ -111,11 +203,22 @@
   }
   .blk.body  { background: #2471a3; }
   .blk.arm   { background: #1e8449; }
+  .blk.both  { background: linear-gradient(110deg, #2471a3 50%, #1e8449 50%); } /* 車体とアームを両方動かす移動: 斜めの線で左が青（車体・Body）、右が緑（アーム・Arm）。「動かす」のチェックの並びと同じ */
   .blk.other { background: #a9741a; }
   .blk.err   { outline: 3px solid var(--danger); }
   .blk .blk-head { display: flex; align-items: center; gap: 4px; font-weight: 600; }
-  .blk .blk-head .t { flex: 1; }
-  .blk .blk-time { font-size: 11px; font-variant-numeric: tabular-nums; opacity: .95; }
+  .blk .blk-head .t { flex: 1; min-width: 0; }
+  .stage .stage-blocks { min-width: 0; }
+  .blk { max-width: 100%; box-sizing: border-box; }
+  .blk .blk-head .blk-dest { font-size: 13px; font-weight: 700; white-space: nowrap; display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; margin-left: 4px; }   /* 見出しの行き先（Move → Front_Pick） */
+  .blk select.blk-destsel { height: 20px; padding: 0 2px; opacity: .9; } /* 行き先を変えるプルダウン（見出しにあるので控えめに） */
+  /* 移動ブロックの Body・Arm の切替ボタン（色付きのカードの上なので白基調） */
+  /* 動かすもの: Body・Arm のチェックボックス（チェックが入っていれば動かす） */
+  .blk .mvchk { display: inline-flex; align-items: center; gap: 4px; margin-right: 10px; font-size: 12px; font-weight: 600; color: #fff; cursor: pointer; }
+  .blk .mvchk input { margin: 0; width: 14px; height: 14px; accent-color: #fff; cursor: pointer; }
+  .blk .mvchk.dis { opacity: .4; cursor: default; }
+  .blk .mvchk.dis input { cursor: default; }
+  .blk .blk-time { white-space: nowrap; font-size: 11px; font-weight: 400; font-variant-numeric: tabular-nums; opacity: .95; }
   .blk select, .blk input { font-size: 11px; }
   .blk input.wname { width: 90px; }
   .blk input.wsec  { width: 55px; }
@@ -183,7 +286,129 @@
   :root[data-theme="dark"] #tourBox { background: #171f26; box-shadow: 0 8px 30px rgba(0,0,0,0.6); }
   :root[data-theme="dark"] #tourBox h3 { color: #8cc4f0; }
   :root[data-theme="dark"] #tourBox .tour-step { color: #a3b1bd; }
+  /* 3D・登録した位置・レイアウトの設定欄（rev.63〜70 で足した部品） */
+  :root[data-theme="dark"] #leftTabs .tab, :root[data-theme="dark"] #rightTabs .tab { background: #0f1519; color: #7f8e9a; border-color: #2b3741; }
+  :root[data-theme="dark"] #leftTabs .tab:hover, :root[data-theme="dark"] #rightTabs .tab:hover { background: #1e2831; color: #c5d0d9; }
+  :root[data-theme="dark"] #leftTabs .tab.on, :root[data-theme="dark"] #rightTabs .tab.on { background: var(--panel); color: var(--text); }
+  :root[data-theme="dark"] .loc-head { background: #1e2831; color: #a3b1bd; }
+  :root[data-theme="dark"] .pt-row:hover { background: #26323c; }
+  :root[data-theme="dark"] .pt-row.sel { background: #1f3a52; }
+  :root[data-theme="dark"] .pt-row.unused .nm { color: #7f8e9a; }
+  :root[data-theme="dark"] .ptitle .ty { background: #1e2831; color: #a3b1bd; }
+  :root[data-theme="dark"] .in { background: #0f1519; border-color: #3a4a58; }
+  :root[data-theme="dark"] .in input { color: var(--text); }
+  :root[data-theme="dark"] .fld > .lb, :root[data-theme="dark"] .in .u { color: #a3b1bd; }
+  :root[data-theme="dark"] .swrow { color: var(--text); }
+  :root[data-theme="dark"] input.sw { background: #3a4a58; }
+  :root[data-theme="dark"] input.sw:checked { background: var(--accent); }
+  :root[data-theme="dark"] #infoDlg .box { background: var(--panel); color: var(--text); }
+  :root[data-theme="dark"] .obj-item:hover { background: #26323c; }
+  :root[data-theme="dark"] #objList { background: #0f1519; border-color: #2b3741; }
+  :root[data-theme="dark"] .obj-item { border-bottom-color: #2b3741; color: var(--text); }
+  :root[data-theme="dark"] .obj-item.sel { background: #1f3a52; }
+  /* キャンバスの上に浮く部品は、白い図面の上なのでライトのまま */
+  :root[data-theme="dark"] #viewSeg button { background: transparent; color: #31485c; }
+  :root[data-theme="dark"] #viewSeg button.on { background: var(--accent); color: #fff; }
+  :root[data-theme="dark"] #toolbar button { background: transparent; color: #345; }
+  :root[data-theme="dark"] #toolbar button.on { background: var(--accent); color: #fff; }
+  :root[data-theme="dark"] #toolOpts { background: rgba(255,255,255,.95); color: #223; }
+  /* ---- 2D / 3D 表示 ---- */
+  /* 2D と 3D の描画領域は重ねて置き、見せない方は visibility:hidden にする。
+   * display:none にすると領域の大きさが 0 になり、ドラッグ中（ポインタキャプチャ中）に届いたマウス移動を
+   * 視点操作（OrbitControls）が「移動量 ÷ 高さ」で処理して 0 除算 → カメラが NaN になるため */
+  #view3d { position: absolute; inset: 0; visibility: hidden; background: #fff; }
+  #view3d canvas { outline: none; }
+  #canvasWrap.mode3d #cv { visibility: hidden; }
+  #canvasWrap.mode3d #view3d { visibility: visible; }
+  #canvasWrap.mode3d #zoomCtrl { display: none; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; padding: 3px 10px; }
+  .seg button + button { border-left: 1px solid var(--border); }
+  .seg button.on { background: var(--accent); color: #fff; }
+  #viewSeg { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); z-index: 6;
+    background: rgba(255,255,255,.92); box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+  #viewSeg button { padding: 5px 16px; font-size: 13px; font-weight: 600; background: transparent; }
+  #viewSeg button.on { background: var(--accent); }
+  #ctrl3d { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  #ctrl3d label { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; white-space: nowrap; }
+  #ctrl3d button, #playbar button { white-space: nowrap; }
+  /* キャンバス左端の縦ツールバー（2D で描く・選ぶ） */
+  #toolbar { position: absolute; left: 8px; top: 8px; z-index: 6; display: flex; flex-direction: column; gap: 2px;
+             background: rgba(255,255,255,.92); border: 1px solid #ccd4da; border-radius: 8px; padding: 4px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  #toolbar button { width: 34px; height: 34px; padding: 0; border: 1px solid transparent; border-radius: 6px; background: transparent; font-size: 16px; line-height: 1; color: #345; }
+  #toolbar button:hover { background: var(--accent2); }
+  #toolbar button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  #toolbar .sep { height: 1px; background: #d4dae0; margin: 3px 4px; }
+  #toolbar button small { display: block; font-size: 9px; line-height: 1; margin-top: 2px; opacity: .8; }
+  /* 選んだツールの設定（キャンバス上部の帯）。ツールに設定が無いときは出ない */
+  #toolOpts { position: absolute; left: 52px; top: 8px; z-index: 6; display: none; align-items: center; gap: 10px; flex-wrap: wrap;
+              max-width: calc(100% - 240px); background: rgba(255,255,255,.94); border: 1px solid #ccd4da; border-radius: 8px; padding: 5px 10px; font-size: 11px; color: #345; }
+  #toolOpts.show { display: flex; }
+  #toolOpts { max-width: calc(50% - 52px - 66px); } /* 上部中央の 2D／3D 切替と重ならないよう、左半分で折り返す */
+  body.playing #toolbar, body.playing #toolOpts, body.playing #view3dHint { display: none; } /* 再生中は描くツールと操作方法を隠す */
+  #toolOpts label { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+  #toolOpts input[type=number] { width: 60px; }
+  #toolOpts .hint { margin: 0; }
+  #cv.drawmode { cursor: crosshair; }
+  #view3dHint { position: absolute; left: 8px; bottom: 8px; z-index: 4; background: rgba(255,255,255,.85); border: 1px solid #ccd4da; border-radius: 6px; padding: 4px 8px; font-size: 11px; color: #31485c; pointer-events: none; }
+  /* ---- アーム手先コントローラ ---- */
+  /* 手先・関節で共通の行: ラベル｜スライダ｜数値｜単位 */
+  #armCtrl .grid6 { display: grid; grid-template-columns: auto minmax(0, 1fr) 64px auto; gap: 3px 6px; align-items: center; font-size: 12px; }
+  #armCtrl .grid6 input[type=range] { width: 100%; min-width: 0; }
+  #armCtrl .grid6 input[type=number] { width: 64px; min-width: 0; box-sizing: border-box; font-size: 11px; padding: 1px 3px; }
+  #armCtrl .grid6 .unit { font-size: 11px; color: #567; }
+  #armCtrl .tcpinfo { font-size: 11px; color: #345; margin-top: 4px; font-variant-numeric: tabular-nums; line-height: 1.5; }
+  #armCtrl .ikng { color: var(--danger); font-weight: 600; }
+  #armCtrl .jogrow { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+  /* ---- 右ペインのタブ（シーケンス／オブジェクト） ---- */
+  /* 右ペインのタブ: 選ばれたタブはパネルと一体（同じ背景、境界線なし）、他は一段下がった薄いグレー */
+  #rightTabs, #leftTabs { display: flex; align-items: flex-end; gap: 2px; padding: 0 6px; }
+  #rightTabs .tab, #leftTabs .tab {
+    border: 1px solid var(--border); border-bottom: none; border-radius: 8px 8px 0 0;
+    background: #e9eef2; color: #567; padding: 6px 14px 5px; font-size: 12px; cursor: pointer;
+    margin-bottom: -1px; position: relative;
+  }
+  #rightTabs .tab:hover, #leftTabs .tab:hover { background: #f1f4f7; color: #345; }
+  #rightTabs .tab.on, #leftTabs .tab.on { background: var(--panel); color: #16324a; font-weight: 600; padding-bottom: 6px; z-index: 1; }
+  .rtab { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  .rtab[hidden] { display: none; }
+  /* タブのパネル: 上辺の左は角を立てて、タブとつながって見えるようにする */
+  .rtab > fieldset { border-top-left-radius: 0; }
+  .rtab > fieldset > legend { display: none; }
+  /* ---- オブジェクト一覧 ---- */
+  #objList { overflow-y: auto; flex: 1; min-height: 80px; max-height: 40%; margin-top: 6px; border: 1px solid var(--border); border-radius: 6px; background: #fbfcfd; }
+  #tabObj button { white-space: nowrap; }
+  .obj-item { display: flex; align-items: center; gap: 6px; padding: 3px 6px; border-bottom: 1px dashed #e2e6ea; cursor: pointer; font-size: 12px; }
+  .obj-item:hover { background: var(--accent2); }
+  .obj-item.sel { background: #dcebf7; outline: 1px solid var(--accent); }
+  .obj-item.hidden-obj { opacity: 0.45; }
+  .obj-item .sw { width: 12px; height: 12px; border-radius: 3px; border: 1px solid rgba(0,0,0,.2); flex: 0 0 auto; }
+  .obj-item .ty { font-size: 10px; color: #567; background: #eef1f4; border-radius: 3px; padding: 0 4px; flex: 0 0 auto; }
+  .obj-item .nm { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .obj-item .lock { border: 0; background: transparent; cursor: pointer; font-size: 12px; opacity: .35; padding: 0 2px; flex: 0 0 auto; }
+  .obj-item .lock.on { opacity: 1; }
+  .obj-item:hover .lock { opacity: .7; }
+  .obj-item:hover .lock.on { opacity: 1; }
+  .obj-item .sw.img { background: linear-gradient(135deg, #cfd8e3 0 50%, #eef1f4 50% 100%); }
+  .obj-item .dim { font-size: 11px; color: #667; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  #objProps { margin-top: 6px; border-top: 1px solid var(--border); padding-top: 6px; overflow-y: auto; }
+  /* 設定欄: 4 列（ラベル｜入力｜ラベル｜入力）。ペインが狭いときは入力欄が縮んで横にはみ出さない。チェックボックスは左寄せ */
+  #objProps .pgrid, #pointDetail .pgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 6px; align-items: end; font-size: 12px; }
+  #objProps .pgrid input[type=number], #objProps .pgrid input[type=text], #pointDetail .pgrid input[type=number], #pointDetail .pgrid input[type=text] { width: 100%; min-width: 0; box-sizing: border-box; }
+  #objProps .pgrid input[type=checkbox], #pointDetail .pgrid input[type=checkbox] { justify-self: start; margin: 0; }
+
+  #objProps .pgrid span, #pointDetail .pgrid span { white-space: nowrap; }
+  #colRight, #colLeft { overflow-x: hidden; }
+  #objProps .ptitle, #pointDetail .ptitle { font-weight: 600; font-size: 12px; margin-bottom: 8px; display: flex; gap: 6px; align-items: center; }
+  #objProps .ptitle .ty, #pointDetail .ptitle .ty { font-size: 10px; color: #567; background: #eef1f4; border-radius: 3px; padding: 0 4px; }
 </style>
+<!-- CRX-20iA/L 運動学（依存なし・古典スクリプト。本体と Node のテストで共用） -->
+<script src="crx-kinematics.js"></script>
+<!-- Three.js（vendor/ の ES モジュールを build.py で普通のスクリプト 1 本にまとめたもの）・アームの形（埋め込み）・3D ビュー。
+     HTML をダブルクリック（file://）で開いても動くよう、ES モジュールや fetch は使わない -->
+<script src="vendor/three.bundle.js"></script>
+<script src="meshes/crx20ia_l.js"></script>
+<script src="sim3d.js"></script>
 </head>
 <body>
 
@@ -192,132 +417,133 @@
   <a class="lx-brand" href="../index.html" title="LexxMoMa Tools のトップへ" aria-label="LexxMoMa Tools のトップへ戻る"><img id="corpLogo" class="lx-logo" src="../assets/lexxpluss-logo.png" alt="LexxPluss"><span class="lx-wordmark">LexxMoMa</span></a>
   <div>
     <h1 class="lx-tool">動作シミュレーター</h1>
-    <div id="revDisp">rev.62</div>
+    <div id="revDisp">rev.70</div>
   </div>
   </div>
-  <div class="time-box">経過時間 <b id="elapsedDisp">0.00</b> s</div>
-  <div class="time-box">トータル <b id="totalDisp">0.00</b> s</div>
+  <div class="time-box" id="timeBox">経過時間 / トータル時間：<b id="elapsedDisp">0.00</b> s / <b id="totalDisp">0.00</b> s</div>
   <div style="flex:1"></div>
   <button type="button" class="lx-theme-btn" data-lx-theme-toggle aria-label="ライト / ダーク切替"></button>
   <button id="btnHelp">❔ 使い方</button>
+  <button id="btnInfo" title="キー操作・マウス操作と、計算に使っている前提値（速度・加速度など）">ⓘ 操作と前提</button>
+  <button id="btnSamples" title="用意してあるレイアウトとシーケンスの例を開きます">📂 サンプル</button>
   <button id="btnSave">設定保存</button>
   <button id="btnLoad">設定読込</button>
   <input type="file" id="fileLoad" accept=".json" style="display:none">
 </header>
 
-<main>
-  <!-- ============ 左：パラメータ・登録 ============ -->
-  <div class="col" id="colLeft">
-    <fieldset id="paneRegister">
-      <legend>位置姿勢の登録</legend>
-      <div class="hint">ロボットの現在位置を登録します。</div>
-      <div style="display:flex; gap:4px; margin:6px 0 2px;">
-        <input type="text" id="poseName" placeholder="名前 (例: P1)" style="flex:1">
-      </div>
-      <div style="display:flex; gap:4px;">
-        <button id="btnRegBody" class="primary" style="flex:1">車体位置を登録</button>
-        <button id="btnRegArm" class="primary" style="flex:1">アーム位置を登録</button>
-      </div>
-      <div style="margin-top:6px; font-weight:600;">車体位置</div>
-      <div class="poselist" id="bodyPoseList"></div>
-      <div style="margin-top:6px; font-weight:600;">アーム位置</div>
-      <div class="poselist" id="armPoseList"></div>
-    </fieldset>
-
-    <fieldset id="paneBg">
-      <legend>背景</legend>
-      <div style="font-weight:600;">背景画像取り込み</div>
-      <div style="display:flex; gap:4px; margin-top:4px;">
-        <button id="btnBgImgLoad" class="primary" style="flex:1">画像を読込 (PNG)</button>
-        <button id="btnBgImgClear" class="danger" style="display:none">削除</button>
-        <input type="file" id="fileBgImg" accept="image/png,image/*" style="display:none">
-      </div>
-      <div id="bgImgCtrl" style="display:none; margin-top:6px;">
-        <button id="btnBgCalib" style="width:100%;">📏 線を引いて縮尺を合わせる</button>
-        <div id="calibPanel" style="display:none; margin:6px 0; padding:6px; background:#fdf0f5; border:1px solid #e7a3bd; border-radius:6px;">
-          <div class="hint" style="margin-bottom:4px;">引いた線の実際の長さを入力してください。</div>
-          <div style="display:flex; gap:4px; align-items:center;">
-            <span style="white-space:nowrap;">実寸</span>
-            <input type="number" id="calibLen" step="0.01" min="0.01" placeholder="例: 3.6" style="flex:1; min-width:0; width:auto;">
-            <span>m</span>
-          </div>
-          <div style="display:flex; gap:4px; justify-content:flex-end; margin-top:4px;">
-            <button id="btnCalibApply" class="primary">適用</button>
-            <button id="btnCalibCancel">取消</button>
-          </div>
-        </div>
-        <label class="row"><span>縮尺 [px/m]</span><input type="number" id="bgImgPxPerM" step="any" min="0.001" value="100"></label>
-        <label class="row"><span>位置 X（画像中心）[m]</span><input type="number" id="bgImgX" step="0.1" value="0"></label>
-        <label class="row"><span>位置 Y（画像中心）[m]</span><input type="number" id="bgImgY" step="0.1" value="0"></label>
-        <label class="row"><span>透明度</span><input type="range" id="bgImgOpacity" min="0.05" max="1" step="0.05" value="0.6" style="width:100px"></label>
-        <div class="hint" id="bgImgInfo"></div>
-      </div>
-      <div class="hint" style="margin-top:4px;">レイアウト図などを背景に表示できます。</div>
-
-      <div style="border-top:1px solid var(--border); margin-top:10px;"></div>
-      <div style="font-weight:600; margin-top:8px;">図形描画</div>
-      <div style="display:flex; gap:6px; align-items:center; margin-top:4px;">
-        <label>色 <input type="color" id="bgShapeColor" value="#e68282"></label>
-        <button id="btnBgDraw" style="flex:1">四角描画</button>
-        <button id="btnBgLine" style="flex:1">直線描画</button>
-      </div>
-
-      <div style="border-top:1px solid var(--border); margin-top:10px;"></div>
-      <div style="font-weight:600; margin-top:8px;">文字描画</div>
-      <div style="display:flex; gap:6px; align-items:center; margin-top:4px;">
-        <label>色 <input type="color" id="bgTextColor" value="#888888"></label>
-        <button id="btnBgText" style="flex:1">文字描画</button>
-      </div>
-      <div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap; margin-top:6px;">
-        <input type="text" id="bgText" placeholder="文字 (例: 棚A)" style="flex:1; min-width:80px;">
-        <label>サイズ[m] <input type="number" id="bgTextSize" step="0.1" min="0.1" value="0.5" style="width:52px"></label>
-        <select id="bgTextDir" title="文字の向き">
-          <option value="h" selected>横書き</option>
-          <option value="v">縦書き</option>
-        </select>
-      </div>
-
-      <div style="border-top:1px solid var(--border); margin-top:10px;"></div>
-      <div style="display:flex; margin-top:8px;">
-        <button id="btnBgMove" style="flex:1">オブジェクト移動</button>
-      </div>
-      <div style="display:flex; margin-top:4px;">
-        <button id="btnBgErase" style="flex:1">オブジェクト削除</button>
-      </div>
-      <div class="hint" id="bgHint" style="margin-top:4px;"></div>
-    </fieldset>
-
-    <fieldset>
-      <details open>
-        <summary>操作方法</summary>
+<!-- 操作方法と前提値（ヘッダーの「ⓘ 操作と前提」で開く） -->
+<div id="infoDlg" hidden>
+  <div class="box" role="dialog" aria-label="操作方法と前提値">
+    <div class="dlg-head"><b>操作方法と前提値</b><button id="btnInfoClose">✕ 閉じる</button></div>
+    <div class="cols">
+      <div>
+        <h3>操作方法</h3>
         <div style="font-weight:600; margin-top:4px;">キーボード</div>
         <table class="keyhelp" style="margin-top:2px;">
           <tr><td>車体 前後移動</td><td><kbd>↑</kbd> / <kbd>↓</kbd></td></tr>
           <tr><td>車体 回転</td><td><kbd>←</kbd> / <kbd>→</kbd></td></tr>
-          <tr><td>アーム 回転（1軸目）</td><td><kbd>Shift</kbd>＋<kbd>←</kbd> / <kbd>→</kbd></td></tr>
-          <tr><td>アーム 伸縮（2・3軸目）</td><td><kbd>Shift</kbd>＋<kbd>↑</kbd> / <kbd>↓</kbd></td></tr>
-          <tr><td>背景描画モードを解除</td><td><kbd>Esc</kbd></td></tr>
+          <tr><td>アーム 回転（J1）</td><td><kbd>Shift</kbd>＋<kbd>←</kbd> / <kbd>→</kbd></td></tr>
+          <tr><td>アーム 伸縮（手先を水平に出し入れ）</td><td><kbd>Shift</kbd>＋<kbd>↑</kbd> / <kbd>↓</kbd></td></tr>
+          <tr><td>アーム 上下（手先の高さ）</td><td><kbd>Shift</kbd>＋<kbd>PgUp</kbd> / <kbd>PgDn</kbd></td></tr>
+          <tr><td>描画モードを解除</td><td><kbd>Esc</kbd></td></tr>
+          <tr><td>選択したオブジェクトを削除</td><td><kbd>Delete</kbd></td></tr>
           <tr><td>元に戻す / やり直す</td><td><kbd>Ctrl</kbd>＋<kbd>Z</kbd> / <kbd>Y</kbd></td></tr>
         </table>
         <div style="font-weight:600; margin-top:6px;">マウス（中央ペイン）</div>
         <table class="keyhelp" style="margin-top:2px;">
           <tr><td>画面移動（パン）</td><td>ドラッグ（中ボタンも可）</td></tr>
           <tr><td>ズーム</td><td>ホイール ／ 左下の＋−</td></tr>
-          <tr><td>姿勢の名前・数値を変更</td><td>左ペインのリストをダブルクリック</td></tr>
-          <tr><td>最大並進速度を下げる</td><td>左下「シミュレートパラメータ」の値をダブルクリック</td></tr>
-          <tr><td>走行経路ごとに最大並進速度を下げる</td><td>Move Body ブロックの「最大速度」に入力（空欄なら全体設定値）</td></tr>
-          <tr><td>0.1m刻みで配置</td><td><kbd>Shift</kbd>＋クリック／ドラッグ（描画・移動時）</td></tr>
-          <tr><td>シーケンスの段を並べ替え</td><td>段を長押し → ドラッグ</td></tr>
+          <tr><td>3D: 視点を回す／パン</td><td>左ドラッグ／右ドラッグ</td></tr>
+          <tr><td>位置の名前を変更</td><td>左ペインの一覧で名前をダブルクリック</td></tr>
+          <tr><td>位置の数値を変更</td><td>一覧で選び、下に出る数値をダブルクリック</td></tr>
+          <tr><td>最大並進速度を下げる</td><td>右の「前提値」の値をダブルクリック</td></tr>
+          <tr><td>走行経路ごとに最大並進速度を下げる</td><td>車体を動かす Move ブロックの「最大速度」に入力（空欄なら全体設定値）</td></tr>
+          <tr><td>描くツールの切替</td><td><kbd>V</kbd> 選択 / <kbd>B</kbd> 箱 / <kbd>Z</kbd> 区画 / <kbd>L</kbd> 直線 / <kbd>T</kbd> 文字 / <kbd>I</kbd> 下絵</td></tr>
+          <tr><td>0.1m刻みで配置</td><td><kbd>Shift</kbd>＋ドラッグ（描画・移動時）</td></tr>
+          <tr><td>シーケンスの段を並べ替え</td><td>段の左端のつまみ（⋮⋮）をドラッグ</td></tr>
         </table>
-      </details>
-    </fieldset>
-
-    <fieldset>
-      <details open>
-        <summary>シミュレートパラメータ</summary>
+      </div>
+      <div>
+        <h3>前提値（シミュレートパラメータ）</h3>
         <div class="hint" id="simParamsText" style="margin-top:4px;"></div>
-      </details>
+      </div>
+    </div>
+  </div>
+</div>
+<main>
+  <!-- ============ 左：パラメータ・登録 ============ -->
+  <div class="col" id="colLeft">
+  <div id="leftMain">
+    <!-- 登録の欄は、どちらのタブを開いていても使えるよう上に固定する（アームを動かしてすぐ登録できる） -->
+    <fieldset id="regBox">
+      <legend>位置の登録</legend>
+      <div class="regrow">
+        <input type="text" id="poseName" placeholder="名前 (例: P1)">
+        <button id="btnRegPoint" class="primary" title="今の車体の位置とアームの姿勢を、1 件の位置として登録します">＋ 今の位置を登録</button>
+      </div>
+      <div class="regopts">登録するもの
+        <label><input type="checkbox" id="regBody" checked> 車体</label>
+        <label><input type="checkbox" id="regArm" checked> アーム</label>
+        <span id="regMsg"></span>
+      </div>
     </fieldset>
+    <div id="leftTabs" role="tablist">
+      <button class="tab on" role="tab" data-ltab="pts">登録した位置</button>
+      <button class="tab" role="tab" data-ltab="arm">アーム操作</button>
+    </div>
+    <div class="rtab" id="ltabPts">
+    <fieldset id="paneRegister">
+      <legend>登録した位置</legend>
+      <div id="pointList"></div>
+    </fieldset>
+    </div>
+    <div class="rtab" id="ltabArm" hidden>
+      <fieldset id="armCtrl">
+        <legend>アーム操作</legend>
+        <div class="hint">FANUC CRX-20iA/L</div>
+          <div style="display:flex; gap:6px; align-items:center; margin-top:6px;">
+            <span style="font-size:12px;">操作</span>
+            <div class="seg" id="armModeSeg" title="手先（TCP）で動かすか、関節ごとに動かすか。どちらで動かしても連動します">
+              <button data-am="tcp" class="on">手先（TCP）</button>
+              <button data-am="joint">関節（J1〜J6）</button>
+            </div>
+          </div>
+          <!-- 手先モード: 位置・姿勢の入力と、3D 上の手先の矢印（マウスで動かす） -->
+          <div id="armModeTcp">
+            <div class="grid6" id="tcpRows" style="margin-top:6px;"></div>
+            <div style="display:flex; gap:4px; align-items:center; margin-top:6px; flex-wrap:wrap;">
+              <span style="font-size:12px;">3D でマウス操作</span>
+              <div class="seg" id="gizmoSeg">
+                <button data-gz="translate">移動</button>
+                <button data-gz="rotate">回転</button>
+                <button data-gz="">なし</button>
+              </div>
+              <label style="font-size:12px;"><input type="checkbox" id="gizmoLocal"> 手先の向きを基準に回す</label>
+            </div>
+          </div>
+          <!-- 関節モード: J1〜J6 のスライダ -->
+          <div id="armModeJoint" hidden>
+            <div class="grid6" id="jointSliders" style="margin-top:6px;"></div>
+          </div>
+          <div class="tcpinfo" id="tcpInfo"></div>
+          <div class="jogrow">
+            <button id="btnArmHome" class="small">全軸 0°</button>
+            <button id="btnArmReady" class="small">待機姿勢</button>
+            <label style="font-size:11px; margin-left:auto;">ツール長 <input type="number" id="toolLen" step="10" min="0" style="width:60px"> mm</label>
+          </div>
+      </fieldset>
+    </div>
+  </div>
+  <!-- 位置の編集（一覧の ✎ で開く。左ペインを右へ広げて出す） -->
+  <div id="leftEdit" hidden>
+    <fieldset id="editPane">
+      <legend>位置の編集</legend>
+      <div class="ehead"><b id="editTitle"></b><button id="btnEditClose" class="small" title="編集欄を閉じる">✕ 閉じる</button></div>
+      <div id="pointDetail"></div>
+      <!-- 編集欄の下端に、今の位置で上書きと削除 -->
+      <div class="efoot" id="editFoot"><button id="btnPtOvw" title="この位置を、今の車体の位置・アームの姿勢で置き換えます（Ctrl+Z で戻せます）">今の位置で上書き</button><button id="btnEditDel" class="danger" title="この位置を削除します（Ctrl+Z で戻せます）">この位置を削除</button></div>
+    </fieldset>
+  </div>
   </div>
 
   <div class="splitter" id="splitL" title="ドラッグで幅を調整"></div>
@@ -332,10 +558,40 @@
         <button id="btnZoomOut">－</button>
       </div>
       <div id="speedWarn" hidden></div>
+      <!-- 描く・選ぶツール（2D）。3D 表示中に描くツールを押すと 2D に切り替わる -->
+      <div id="toolbar" role="toolbar">
+        <button id="btnBgSelect" title="選択／移動 (V)&#10;クリックで選ぶ、ドラッグで動かす。何も無い所のドラッグで画面移動&#10;もう一度押すと OFF（ドラッグは常に画面移動、物は選ばない・動かない）">↖<small>選択</small></button>
+        <div class="sep"></div>
+        <button id="btnBgBox" title="箱 (B)&#10;設備・机・加工機など。ドラッグで描く。高さを持ち 3D では箱">▭<small>箱</small></button>
+        <button id="btnBgZone" title="区画 (Z)&#10;床の区画・目印（高さ 0）。ドラッグで描く">▦<small>区画</small></button>
+        <button id="btnBgLine" title="直線 (L)&#10;ドラッグで引く">╱<small>直線</small></button>
+        <button id="btnBgText" title="文字 (T)&#10;置きたい所をクリック">Ｔ<small>文字</small></button>
+        <div class="sep"></div>
+        <button id="btnBgImgTool" title="下絵 (I)&#10;レイアウト図（PNG）を床に敷く。何枚でも。最初はロック">🖼<small>下絵</small></button>
+      </div>
+      <div id="toolOpts">
+        <span id="drawOptShape" style="display:none; gap:8px; align-items:center;">
+          <label>色 <input type="color" id="bgShapeColor" value="#e68282"></label>
+          <label id="drawOptHeight">高さ <input type="number" id="bgRectH" step="50" min="0" value="500"> mm</label>
+        </span>
+        <span id="drawOptText" style="display:none; gap:6px; align-items:center; flex-wrap:wrap;">
+          <label>色 <input type="color" id="bgTextColor" value="#888888"></label>
+          <input type="text" id="bgText" placeholder="文字 (例: 棚A)" style="width:120px;">
+          <label>サイズ <input type="number" id="bgTextSize" step="0.1" min="0.1" value="0.5"> m</label>
+          <select id="bgTextDir" title="文字の向き"><option value="h" selected>横書き</option><option value="v">縦書き</option></select>
+        </span>
+        <span class="hint" id="bgHint"></span>
+      </div>
+      <div id="view3d"></div>
+      <!-- 2D／3D の切替。一番目立つ、キャンバス上部の中央に置く -->
+      <div class="seg" id="viewSeg" title="2D（上から）と 3D（自由視点）を切り替えます">
+        <button data-mode="2d" class="on">2D</button>
+        <button data-mode="3d">3D</button>
+      </div>
+      <div id="view3dHint" hidden>左ドラッグ: 回転 ／ 右ドラッグ: 移動 ／ ホイール: 拡大縮小 ／ 矢印キー: 車体・アームのティーチ</div>
     </div>
     <div id="playbar">
-      <button id="btnPlay" class="primary">▶ 再生</button>
-      <button id="btnPause">⏸ 一時停止</button>
+      <button id="btnPlay" class="primary" title="再生／一時停止（押すたびに切り替わります）">▶ 再生</button>
       <button id="btnStop">⏹ リセット</button>
       <button id="btnRec" title="再生開始から終了までを、左右ペイン含む画面全体のWebM動画として保存します">⏺ 録画して再生</button>
       <label>再生速度
@@ -347,17 +603,33 @@
         </select>
       </label>
       <div style="flex:1"></div>
+      <div id="ctrl3d">
+        <span id="view3dPresets" style="display:none; gap:4px; align-items:center;">
+          <span style="font-size:12px;">視点</span>
+          <button class="small" data-view="iso">斜め</button>
+          <button class="small" data-view="front">正面</button>
+          <button class="small" data-view="side">側面</button>
+          <button class="small" data-view="top">上</button>
+          <label><input type="checkbox" id="chkFollow" checked> 追従</label>
+          <label><input type="checkbox" id="chkEnvelope"> 可動範囲</label>
+          <label title="3D に浮いている物（箱の名前、登録した車体位置の枠）を隠します。床面の区画・文字・直線はそのまま"><input type="checkbox" id="chkHideAux"> 浮いた目印を隠す</label>
+        </span>
+      </div>
     </div>
   </div>
 
   <div class="splitter" id="splitR" title="ドラッグで幅を調整"></div>
 
-  <!-- ============ 右：動作ブロック ============ -->
+  <!-- ============ 右：動作ブロック／オブジェクト ============ -->
   <div class="col" id="colRight">
+    <div id="rightTabs" role="tablist">
+      <button class="tab on" role="tab" data-tab="seq">動作シーケンス</button>
+      <button class="tab" role="tab" data-tab="obj">レイアウト</button>
+    </div>
+    <div class="rtab" id="tabSeq">
     <fieldset style="flex:1; display:flex; flex-direction:column; min-height:0;">
       <legend>動作シーケンス</legend>
-      <div class="hint">縦に並べた段は順次実行、同じ段に並べたブロックは並列実行されます。段の時間＝ブロックの最大値。</div>
-      <div id="progScroll" style="overflow-y:auto; flex:1; margin-top:6px;">
+      <div id="progScroll" style="overflow-y:auto; flex:1;" title="縦に並べた段は順次実行、同じ段に並べたブロックは並列実行されます。段の時間＝ブロックの最大値">
         <div id="program"></div>
       </div>
       <div class="addrow">
@@ -371,6 +643,44 @@
         <table id="statsTable"></table>
       </details>
     </fieldset>
+    </div>
+    <div class="rtab" id="tabObj" hidden>
+    <fieldset style="flex:1; display:flex; flex-direction:column; min-height:0;">
+      <legend>レイアウト</legend>
+      <input type="file" id="fileBgImg" accept="image/png,image/*" style="display:none">
+      <!-- 縮尺合わせ（下絵を選んで「線を引いて縮尺を合わせる」を押すと出る） -->
+      <div id="calibPanel" style="display:none; margin:6px 0; padding:6px; background:#fdf0f5; border:1px solid #e7a3bd; border-radius:6px;">
+        <div class="hint" style="margin-bottom:4px;">引いた線の実際の長さを入力してください。</div>
+        <div style="display:flex; gap:4px; align-items:center;">
+          <span style="white-space:nowrap;">実寸</span>
+          <input type="number" id="calibLen" step="0.01" min="0.01" placeholder="例: 3.6" style="flex:1; min-width:0; width:auto;">
+          <span>m</span>
+        </div>
+        <div style="display:flex; gap:4px; justify-content:flex-end; margin-top:4px;">
+          <button id="btnCalibApply" class="primary">適用</button>
+          <button id="btnCalibCancel">取消</button>
+        </div>
+      </div>
+      <!-- 一覧 -->
+      <div style="display:flex; gap:4px; align-items:center; margin-top:6px; flex-wrap:wrap;">
+        <select id="objFilter" title="種類で絞り込み">
+          <option value="all">すべて</option>
+          <option value="box">設備（箱）</option>
+          <option value="zone">区画</option>
+          <option value="line">直線</option>
+          <option value="text">文字</option>
+          <option value="image">下絵</option>
+        </select>
+        <span style="flex:1"></span>
+        <button id="btnObjDup" class="small">複製</button>
+        <button id="btnObjVis" class="small">表示／非表示</button>
+        <button id="btnObjFocus" class="small" title="2D の表示をこのオブジェクトに合わせる">表示位置へ</button>
+        <button id="btnObjDel" class="small danger">削除</button>
+      </div>
+      <div id="objList"></div>
+      <div id="objProps"><div class="hint">一覧から選ぶと、ここに設定が出ます。2D・3D 上のクリックでも選べます。</div></div>
+    </fieldset>
+    </div>
   </div>
 </main>
 
@@ -382,10 +692,28 @@
  * ========================================================= */
 
 const TAU = Math.PI * 2;
-const LINK = 709;          // リンク長 [mm]（1,418mm を半分ずつ）
-const REACH_MAX = 2 * LINK;
+const ARM = CRX.MODEL;     // FANUC CRX-20iA/L の運動学モデル（crx-kinematics.js）
 const BODY_LEN = 750;      // 車体 前後 [mm]
 const BODY_WID = 600;      // 車体 左右 [mm]
+const ARM_MOUNT_Z = 750;   // アーム取付面の床からの高さ [mm]（Output/02 の案。要確認）
+// アームの取付向き: J1 = 0° が車体のどちらを向くか [rad]（反時計回りが正）。
+// 実機は J1 の可動限界（±180°）が車体の右側に来るように載せているので、J1 = 0° は左向き（+90°）。
+// → 前 = J1 −90°、後ろ = +90°、右 = ±180°（限界で届かない方向）
+const ARM_MOUNT_YAW = Math.PI / 2;
+const ARM_READY_Q = [-90, 20, -30, 0, -40, 0].map(d => d * Math.PI / 180); // 待機姿勢（前方に軽く構える）
+/* 手先（TCP）を車体基準（x 前・y 左・z 上、原点は J1 回転中心）で表す。アーム基準との差は取付向きの回転だけ */
+function tcpInfoVeh(q, toolLen) {
+  const i = CRX.tcpInfo(q, toolLen);
+  const c = Math.cos(ARM_MOUNT_YAW), s = Math.sin(ARM_MOUNT_YAW);
+  let r = i.r + ARM_MOUNT_YAW * 180 / Math.PI; r = ((r + 180) % 360 + 360) % 360 - 180;
+  return Object.assign({}, i, { x: i.x * c - i.y * s, y: i.x * s + i.y * c, r });
+}
+/* 車体基準の位置 [mm]・W/P/R [deg] → IK に渡す目標（base_link 基準の 4x4） */
+function vehTargetToArm(x, y, z, w, pch, r) {
+  const c = Math.cos(-ARM_MOUNT_YAW), s = Math.sin(-ARM_MOUNT_YAW);
+  return CRX.targetFromXYZWPR(x * c - y * s, x * s + y * c, z, w, pch, r - ARM_MOUNT_YAW * 180 / Math.PI);
+}
+function wrapPi(a) { return Math.atan2(Math.sin(a), Math.cos(a)); }
 
 function mod2pi(x) { let r = x % TAU; if (r < 0) r += TAU; return r; }
 function angDiff(a, b) { // b-a を [-π, π] に正規化
@@ -522,17 +850,27 @@ function dubinsSample(path, s) {
 const state = {
   robot: {
     body: { x: 0, y: 0, th: 0 },       // ワールド [mm, rad]
-    arm: { q1: 0, reach: 1000 },       // q1: 車体相対 [rad], reach [mm]
+    arm: { q: ARM_READY_Q.slice() },   // 6 関節角 [rad]（J1〜J6、車体相対）。旧形式 {q1, reach} は読込時に変換
   },
-  bodyPoses: [],   // {name, x, y, th}
-  armPoses: [],    // {name, q1, reach}
-  initial: { bodyPose: null, armPose: null }, // サイクル開始状態（登録姿勢名。null=現在位置）
-  program: [],     // [{blocks:[{type:'body'|'arm'|'other', pose?, name?, wait?}]}]
-  bgRects: [],     // {x1,y1,x2,y2,color} 対角2点 [mm]
-  bgLines: [],     // {x1,y1,x2,y2,color} 直線（連続描画の各区間） [mm]
-  bgTexts: [],     // {x,y,text,size,color,vertical} 中心位置 [mm]、size: 文字高さ [mm]、vertical: 縦書き
-  bgImage: null,   // {src(dataURL), pxPerM, x, y, opacity}  x,y: 画像中心のワールド座標 [mm]
+  // 登録した位置（ポイント）。車体の位置とアームの姿勢のセット。どちらか一方だけでもよい（使わない方は null）
+  points: [],      // {name, body: {x, y, th}|null, arm: {q:[6]}|null}
+  toolLen: 0,      // ツール長 [mm]（FANUC フランジの z 方向。TCP の位置に効く）
+  initial: { body: null, arm: null }, // サイクル開始状態（車体・アームそれぞれ、ポイント名。null=現在位置）
+  // 段の並び。ブロックは point（ポイントへ動く。move で両方／車体だけ／アームだけ）と other（待ち・任意の動作）
+  program: [],     // [{blocks:[{type:'point', point, move:'both'|'body'|'arm', mode?, vmax?} | {type:'other', name, wait}]}]
+  // レイアウト上のオブジェクト（旧 bgRects / bgLines / bgTexts を統合。読込時に変換）
+  //  共通: id, type, name, visible
+  //  box : 設備・区画。中心 x,y [mm]、向き yaw [rad]、幅 w（x 方向）・奥行 d（y 方向）・高さ h [mm]、底面の高さ z0 [mm]（0=床に接地）、color
+  //        h=0 は床の区画（3D では床の塗り）、h>0 は 3D で箱
+  //  line: x1,y1,x2,y2 [mm]、color
+  //  text: 中心 x,y [mm]、text、size: 文字高さ [mm]、color、vertical: 縦書き
+  //  image: 下絵（レイアウト図）。src(dataURL)、pxPerM、中心 x,y [mm]、opacity。何枚でも置ける。読込直後は locked
+  objects: [],
 };
+
+let selPointName = null;   // 一覧で選んでいるポイント（下に数値を出す）
+let hoverPointName = null; // 一覧でマウスを乗せているポイント（キャンバスに影で出す）
+let hoverBlockGhost = null; // 右ペインでマウスを乗せている Move ブロックの、終わったときの姿勢 {body, arm}（キャンバスに影で出す）
 
 /* ---------------- Undo / Redo（Ctrl+Z / Ctrl+Y） ----------------
  * 編集操作の直前に pushUndo() でスナップショットを積む方式。
@@ -542,14 +880,11 @@ const undoStack = [], redoStack = [];
 function snapState() {
   return structuredClone({
     robot: state.robot,
-    bodyPoses: state.bodyPoses,
-    armPoses: state.armPoses,
+    points: state.points,
+    toolLen: state.toolLen,
     initial: state.initial,
     program: state.program,
-    bgRects: state.bgRects,
-    bgLines: state.bgLines,
-    bgTexts: state.bgTexts,
-    bgImage: state.bgImage,
+    objects: state.objects,
   });
 }
 function pushUndo(snap) { // snap 省略時は現在状態。新しい編集なので redo 履歴は破棄
@@ -560,16 +895,14 @@ function pushUndo(snap) { // snap 省略時は現在状態。新しい編集な�
 function applySnap(s) {
   const c = structuredClone(s);
   state.robot = c.robot;
-  state.bodyPoses = c.bodyPoses;
-  state.armPoses = c.armPoses;
-  state.initial = c.initial || { bodyPose: null, armPose: null };
+  state.points = c.points || [];
+  state.toolLen = c.toolLen || 0;
+  state.initial = c.initial || { body: null, arm: null };
   state.program = c.program;
-  state.bgRects = c.bgRects;
-  state.bgLines = c.bgLines || [];
-  state.bgTexts = c.bgTexts;
-  setBgImage(c.bgImage);
+  state.objects = c.objects || [];
+  if (selectedId && !state.objects.some(o => o.id === selectedId)) selectedId = null;
   stopPlayback(false);
-  renderPoseLists(); renderProgram(); recompute();
+  renderPoseLists(); renderProgram(); recompute(); armCtrlRefresh(); renderObjectList();
 }
 function doUndo() {
   if (!undoStack.length) return;
@@ -592,17 +925,13 @@ function bindUndoOnEdit(el) {
  * 例外として車体の最大並進速度 body.vmax は、左ペイン「シミュレートパラメータ」の値を
  * ダブルクリックすると編集できる。ただし標準値 body.vmaxStd（1.5 m/s）を超える値は
  * 入力しても標準値に戻す（下げる方向のみ許可）。
- * アームは FANUC CRX-20iA/L の J1〜J3 最大速度（データシート値）。
+ * アームは FANUC CRX-20iA/L の J1〜J6 最大速度（FANUC 公式 ROS 記述の値。crx-kinematics.js）。
  * 角加速度は非公開のため「最大速度に0.4秒で到達」と仮定した推定値。 */
 const SIM_PARAMS = {
   // その場旋回: 角速度 = 7rad/s の75% = 5.25rad/s ≒ 300.8°/s
   //            角加速度 = 車輪加速度1.5m/s² ÷ 車輪間距離600mmの半分0.3m = 5rad/s² ≒ 286.5°/s²
   body: { turnR: 0.5, acc: 1.5, vmax: 1.5, vmaxStd: 1.5, spinW: 300.8, spinA: 286.5 }, // [m] [m/s²] [m/s] [m/s] ／ その場旋回 [°/s] [°/s²]
-  arm: [
-    { a: 200, w: 80 },   // 1軸 [°/s²] [°/s]
-    { a: 200, w: 80 },   // 2軸
-    { a: 300, w: 120 },  // 3軸
-  ],
+  arm: ARM.vmaxDeg.map((w, i) => ({ a: ARM.accDeg[i], w })), // J1〜J6 [°/s²] [°/s]
 };
 
 function params() {
@@ -649,18 +978,21 @@ function renderSpeedWarn() {
 function renderSimParams() {
   const b = SIM_PARAMS.body;
   const rows = SIM_PARAMS.arm
-    .map((x, i) => `${i + 1}軸: 最大角速度 ${x.w}°/s ／ 角加速度 ${x.a}°/s²`)
+    .map((x, i) => `J${i + 1}: 最大角速度 ${x.w}°/s ／ 角加速度 ${x.a}°/s² ／ 可動範囲 ±${ARM.limitsDeg[i][1]}°`)
     .join("<br>");
   document.getElementById("simParamsText").innerHTML =
-    `<b>車体（Move Body）</b><br>` +
+    `<b>車体</b><br>` +
     `最小旋回半径 ${b.turnR} m<br>` +
     `最大並進速度 <span id="vmaxVal" class="editable-val" title="ダブルクリックで変更（標準値 ${b.vmaxStd} m/s 以下のみ）">${b.vmax}</span> m/s` +
     (b.vmax !== b.vmaxStd ? ` <span style="color:#a15c00;">（標準 ${b.vmaxStd}）</span>` : "") + `<br>` +
     `並進加減速度 ${b.acc} m/s²<br>` +
     `超信地旋回時 最大角速度 ${b.spinW}°/s<br>` +
     `超信地旋回時 角加減速度 ${b.spinA}°/s²<br>` +
-    `<b style="display:inline-block; margin-top:4px;">アーム（Move Arm）— FANUC CRX-20iA/L J1〜J3 相当</b><br>` +
+    `<b style="display:inline-block; margin-top:4px;">アーム — FANUC CRX-20iA/L（6 軸）</b><br>` +
+    `リンク: 取付面→J2 ${ARM.L.base} mm、上腕 ${ARM.L.l2} mm、前腕 ${ARM.L.l4} mm、手首オフセット ${ARM.L.l5} mm、フランジ ${ARM.L.l6} mm（最大リーチ ${ARM.reach} mm）<br>` +
+    `取付: 車体中心、床から ${ARM_MOUNT_Z} mm（案・要確認）。J1 = 0° は車体の左向き（可動限界 ±180° が右側）<br>` +
     rows +
+    `<br>※関節配置・可動範囲・最大速度は FANUC 公式の ROS 2 記述（fanuc_description, Apache-2.0）の値` +
     `<br>※角加速度は非公開のため、最大速度に0.4秒で到達する想定の推定値` +
     `<br>※最大並進速度はダブルクリックで下げられます（${b.vmaxStd} m/s より大きい値は ${b.vmaxStd} に戻ります）`;
 
@@ -697,20 +1029,199 @@ function renderSimParams() {
   renderSpeedWarn();
 }
 
-/* reach [mm] → 2軸角度 q2 [rad]（対称姿勢 r = 2L·cos(q2)、3軸角度 = 2·q2 とみなす） */
-function reachToQ2(r) { return Math.acos(clamp(r / REACH_MAX, -1, 1)); }
+/* 旧形式のアーム姿勢 {q1, reach} → 6 関節 {q}。新形式ならそのまま */
+function migrateArm(a) {
+  if (!a) return { q: ARM_READY_Q.slice() };
+  if (Array.isArray(a.q) && a.q.length === 6) return { q: a.q.map(v => +v || 0) };
+  const q = CRX.fromLegacy(wrapPi((+a.q1 || 0) - ARM_MOUNT_YAW), +a.reach || 1000, 0); // 旧形式の q1 は車体基準の向き
+  return { q };
+}
+/* 取付向きが違う版で保存された 6 軸姿勢を、今の取付向きに合わせる（J1 を回し、±180° に畳んで可動範囲に収める） */
+function shiftArmMount(q, fromYaw) {
+  const d = fromYaw - ARM_MOUNT_YAW;
+  if (!d) return q;
+  const r = q.slice();
+  r[0] = clamp(wrapPi(r[0] + d), ARM.limits[0][0], ARM.limits[0][1]);
+  return r;
+}
+function migrateArmPose(p) { return Object.assign({ name: p.name }, migrateArm(p)); }
+
+/* ---------------- ポイント（登録した位置） ---------------- */
+function findPoint(name) { return name ? (state.points.find(p => p.name === name) || null) : null; }
+/* ブロックが実際に動かすもの。ポイントに無い方は動かさない */
+function blockMoves(b) {
+  const p = b.type === "point" ? findPoint(b.point) : null;
+  if (!p) return { p: null, body: false, arm: false };
+  const mv = b.move || "both";
+  return { p, body: mv !== "arm" && !!p.body, arm: mv !== "body" && !!p.arm };
+}
+/* 段の中で、車体・アームを動かすブロックがあるか（1 段に車体 1 つ・アーム 1 つまで） */
+function stageUse(stage, except) {
+  const u = { body: false, arm: false };
+  for (const o of stage.blocks) {
+    if (o === except || o.type !== "point") continue;
+    const m = blockMoves(o);
+    u.body = u.body || m.body; u.arm = u.arm || m.arm;
+  }
+  return u;
+}
+/* 同じ車体の位置か（1 mm・0.1° 未満の差は同じ場所とみなす） */
+function sameBody(a, c) {
+  return !!(a && c) && Math.abs(a.x - c.x) < 1 && Math.abs(a.y - c.y) < 1 && Math.abs(angDiff(a.th, c.th)) < 0.002;
+}
+/* 車体の位置が同じポイントを、1 つの場所にまとめる（一覧の見出しと、地図の枠に使う） */
+function bodyLocations() {
+  const locs = [];
+  for (const p of state.points) {
+    if (!p.body) continue;
+    let L = locs.find(l => sameBody(l.body, p.body));
+    if (!L) { L = { body: p.body, points: [] }; locs.push(L); }
+    L.points.push(p);
+  }
+  return locs;
+}
+function hasInitialBody() { const p = findPoint(state.initial.body); return !!(p && p.body); }
+const MOVE_LABEL = { both: "車体＋アーム", body: "車体だけ", arm: "アームだけ" };
+
+/* 保存データのアームの取付向きを、今の取付向きに合わせる関数を返す。
+ * 記録が無い版（rev.67 以前）は J1 = 0° が前向きだったので 0° として扱う */
+function saveMountFix(data) {
+  const fromYaw = (data.armMountYawDeg !== undefined) ? data.armMountYawDeg * Math.PI / 180
+                : (data.version >= 2 ? 0 : ARM_MOUNT_YAW); // 旧 2D 形式は migrateArm 内で車体基準から変換する
+  return (a) => Object.assign({}, a, { q: shiftArmMount(a.q, fromYaw) });
+}
+/* 保存データ → { points, initial, program }。
+ * version 4 は points をそのまま読む。それより前（車体位置 bodyPoses・アーム位置 armPoses が別々）は、
+ * それぞれ「車体だけ」「アームだけ」のポイントに変え、Move Body / Move Arm のブロックを移動ブロックに置き換える */
+function pointsFromSave(data) {
+  const fixMount = saveMountFix(data);
+  const armOf = (a) => fixMount(migrateArm(a));
+  if (Array.isArray(data.points)) {
+    const points = data.points.map(p => ({
+      name: String(p.name),
+      body: p.body ? { x: +p.body.x || 0, y: +p.body.y || 0, th: +p.body.th || 0 } : null,
+      arm: p.arm ? armOf(p.arm) : null,
+    })).filter(p => p.body || p.arm);
+    const program = (data.program || []).map(s => ({ blocks: (s.blocks || []).map(o => Object.assign({}, o)) }));
+    const ini = data.initial || {};
+    return { points, program, initial: { body: ini.body || null, arm: ini.arm || null } };
+  }
+  const points = [], bodyMap = {}, armMap = {};
+  for (const q of data.bodyPoses || []) {
+    const nm = uniqueName(q.name, points);
+    bodyMap[q.name] = nm;
+    points.push({ name: nm, body: { x: +q.x || 0, y: +q.y || 0, th: +q.th || 0 }, arm: null });
+  }
+  for (const q of data.armPoses || []) {
+    const base = points.some(o => o.name === q.name) ? q.name + "（アーム）" : q.name; // 車体位置と同じ名前なら区別する
+    const nm = uniqueName(base, points);
+    armMap[q.name] = nm;
+    points.push({ name: nm, body: null, arm: armOf(q) });
+  }
+  const program = (data.program || []).map(s => ({
+    blocks: (s.blocks || []).map(o => {
+      if (o.type === "body") {
+        const nb = { type: "point", point: bodyMap[o.pose] || o.pose, move: "body", mode: o.mode || (o.reverse ? "backward" : "forward") };
+        if (o.vmax !== undefined && o.vmax !== null && o.vmax !== "") nb.vmax = o.vmax;
+        return nb;
+      }
+      if (o.type === "arm") return { type: "point", point: armMap[o.pose] || o.pose, move: "arm" };
+      return Object.assign({}, o);
+    }),
+  }));
+  const ini = data.initial || {};
+  return { points, program, initial: { body: bodyMap[ini.bodyPose] || null, arm: armMap[ini.armPose] || null } };
+}
 
 /* ---------------- シーケンスのコンパイル ----------------
  * 現在のロボット状態を初期状態として、各段・各ブロックの
  * 所要時間とアニメーション関数を計算する。 */
 /* サイクル開始状態（初期状態ブロックで選択した姿勢。未選択・未登録なら現在位置） */
 function initialBody() {
-  const p = state.bodyPoses.find(q => q.name === state.initial.bodyPose);
-  return p ? { x: p.x, y: p.y, th: p.th } : { ...state.robot.body };
+  const p = findPoint(state.initial.body);
+  return (p && p.body) ? { x: p.body.x, y: p.body.y, th: p.body.th } : { ...state.robot.body };
 }
 function initialArm() {
-  const p = state.armPoses.find(q => q.name === state.initial.armPose);
-  return p ? { q1: p.q1, reach: p.reach } : { ...state.robot.arm };
+  const p = findPoint(state.initial.arm);
+  return (p && p.arm) ? { q: p.arm.q.slice() } : { q: state.robot.arm.q.slice() };
+}
+
+/* 車体の走行（s → goal）。ブロックの走行経路のモードに従って候補を作り、{dur, anim, path, line, reverse} を返す。
+ * 既にその場所にいるとき（車体＋アームの移動でアームだけが変わる場合など）は動かない */
+function bodyMotion(s, goal, b, P) {
+  if (Math.hypot(goal.x - s.x, goal.y - s.y) < 1 && Math.abs(angDiff(s.th, goal.th)) < 1e-4) {
+    return { dur: 0, path: null, line: null, reverse: false, anim: () => ({ body: { ...goal } }) };
+  }
+  const vmax = blockVmax(b) * 1000; // mm/s（このブロックの最大並進速度）
+  // Dubins走行（前進 rev=false / 後進 rev=true）の候補を作る
+  const buildDubins = (rev) => {
+    const q0 = rev ? { x: s.x, y: s.y, th: s.th + Math.PI } : s;
+    const q1 = rev ? { x: goal.x, y: goal.y, th: goal.th + Math.PI } : goal;
+    const pp = dubinsShortest(q0, q1, P.turnR);
+    const D = pp ? pp.length : 0;
+    const dd = trapDur(D, P.acc, vmax);
+    return {
+      dur: dd, path: pp, line: null, reverse: rev,
+      anim: (tl) => {
+        if (!pp || dd <= 0 || tl >= dd) return { body: { ...goal } };
+        const q = dubinsSample(pp, trapPos(tl, pp.length, P.acc, vmax));
+        return { body: rev ? { x: q.x, y: q.y, th: q.th + Math.PI } : q };
+      },
+    };
+  };
+  // 最短距離（その場旋回 → 直線 → その場旋回）の候補。走行向きは旋回量が小さい方
+  const buildShortest = () => {
+    const dx = goal.x - s.x, dy = goal.y - s.y;
+    const D = Math.hypot(dx, dy);
+    const ux = D > 1e-6 ? dx / D : 0, uy = D > 1e-6 ? dy / D : 0;
+    const hdgF = D > 1e-6 ? Math.atan2(dy, dx) : s.th;
+    let bc = null;
+    for (const back of [false, true]) {
+      if (back && D <= 1e-6) continue;
+      const hdg = back ? hdgF + Math.PI : hdgF;
+      const a1 = angDiff(s.th, hdg), a2 = angDiff(hdg, goal.th);
+      const tot = Math.abs(a1) + Math.abs(a2);
+      if (!bc || tot < bc.tot) bc = { back, hdg, a1, a2, tot };
+    }
+    const { back, hdg, a1, a2 } = bc;
+    const d1 = trapDur(Math.abs(a1), P.spinA, P.spinW);
+    const d2 = trapDur(D, P.acc, vmax);
+    const d3 = trapDur(Math.abs(a2), P.spinA, P.spinW);
+    const dd = d1 + d2 + d3;
+    return {
+      dur: dd, path: null, line: { x1: s.x, y1: s.y, x2: goal.x, y2: goal.y, back }, reverse: back,
+      anim: (tl) => {
+        if (tl >= dd) return { body: { ...goal } };
+        if (tl < d1) return { body: { x: s.x, y: s.y, th: s.th + Math.sign(a1) * trapPos(tl, Math.abs(a1), P.spinA, P.spinW) } };
+        if (tl < d1 + d2) {
+          const dm = trapPos(tl - d1, D, P.acc, vmax);
+          return { body: { x: s.x + dm * ux, y: s.y + dm * uy, th: hdg } };
+        }
+        return { body: { x: goal.x, y: goal.y, th: hdg + Math.sign(a2) * trapPos(tl - d1 - d2, Math.abs(a2), P.spinA, P.spinW) } };
+      },
+    };
+  };
+  const mode = b.mode || (b.reverse ? "backward" : "forward");
+  let cand;
+  if (mode === "forward") cand = buildDubins(false);
+  else if (mode === "backward") cand = buildDubins(true);
+  else if (mode === "shortest") cand = buildShortest();
+  else { // "auto"（最短時間）：全案のうち所要時間が最小のものを採用
+    cand = [buildDubins(false), buildDubins(true), buildShortest()]
+      .reduce((a, c) => c.dur < a.dur ? c : a);
+  }
+  return cand;
+}
+/* アームの関節移動（qs → qg）。6 軸が同時に動き、各軸は台形速度プロファイル。所要時間は各軸の最大値 */
+function armMotion(qs, qg, P) {
+  const dq = qg.map((v, i) => v - qs[i]);
+  const durs = dq.map((d, i) => trapDur(Math.abs(d), P.j[i].a, P.j[i].w));
+  return {
+    dur: Math.max(...durs),
+    anim: (tl) => ({
+      arm: { q: qs.map((v, i) => (tl >= durs[i]) ? qg[i] : v + Math.sign(dq[i]) * trapPos(tl, Math.abs(dq[i]), P.j[i].a, P.j[i].w)) },
+    }),
+  };
 }
 
 function compileProgram() {
@@ -725,99 +1236,25 @@ function compileProgram() {
     let bodyEnd = null, armEnd = null;
     const cblocks = [];
     for (const b of stage.blocks) {
-      let dur = 0, anim = null, err = false, path = null, line = null;
-      if (b.type === "body") {
-        const pose = state.bodyPoses.find(p => p.name === b.pose);
-        if (!pose) { err = true; }
+      let dur = 0, anim = null, err = false, path = null, line = null, reverse = false, bodyDur = 0, armDur = 0;
+      if (b.type === "point") {
+        // ポイントへ動く: 車体とアームは同時に動き始め、ブロックの時間は遅い方
+        const mv = blockMoves(b);
+        if (!mv.body && !mv.arm) { err = true; }
         else {
-          const s = { x: body.x, y: body.y, th: body.th };
-          const goal = { x: pose.x, y: pose.y, th: pose.th };
-          const vmax = blockVmax(b) * 1000; // mm/s（このブロックの最大並進速度）
-          // Dubins走行（前進 rev=false / 後進 rev=true）の候補を作る
-          const buildDubins = (rev) => {
-            const q0 = rev ? { x: s.x, y: s.y, th: s.th + Math.PI } : s;
-            const q1 = rev ? { x: goal.x, y: goal.y, th: goal.th + Math.PI } : goal;
-            const pp = dubinsShortest(q0, q1, P.turnR);
-            const D = pp ? pp.length : 0;
-            const dd = trapDur(D, P.acc, vmax);
-            return {
-              dur: dd, path: pp, line: null, reverse: rev,
-              anim: (tl) => {
-                if (!pp || dd <= 0 || tl >= dd) return { body: { ...goal } };
-                const q = dubinsSample(pp, trapPos(tl, pp.length, P.acc, vmax));
-                return { body: rev ? { x: q.x, y: q.y, th: q.th + Math.PI } : q };
-              },
-            };
-          };
-          // 最短距離（その場旋回 → 直線 → その場旋回）の候補。走行向きは旋回量が小さい方
-          const buildShortest = () => {
-            const dx = goal.x - s.x, dy = goal.y - s.y;
-            const D = Math.hypot(dx, dy);
-            const ux = D > 1e-6 ? dx / D : 0, uy = D > 1e-6 ? dy / D : 0;
-            const hdgF = D > 1e-6 ? Math.atan2(dy, dx) : s.th;
-            let bc = null;
-            for (const back of [false, true]) {
-              if (back && D <= 1e-6) continue;
-              const hdg = back ? hdgF + Math.PI : hdgF;
-              const a1 = angDiff(s.th, hdg), a2 = angDiff(hdg, goal.th);
-              const tot = Math.abs(a1) + Math.abs(a2);
-              if (!bc || tot < bc.tot) bc = { back, hdg, a1, a2, tot };
-            }
-            const { back, hdg, a1, a2 } = bc;
-            const d1 = trapDur(Math.abs(a1), P.spinA, P.spinW);
-            const d2 = trapDur(D, P.acc, vmax);
-            const d3 = trapDur(Math.abs(a2), P.spinA, P.spinW);
-            const dd = d1 + d2 + d3;
-            return {
-              dur: dd, path: null, line: { x1: s.x, y1: s.y, x2: goal.x, y2: goal.y, back }, reverse: back,
-              anim: (tl) => {
-                if (tl >= dd) return { body: { ...goal } };
-                if (tl < d1) return { body: { x: s.x, y: s.y, th: s.th + Math.sign(a1) * trapPos(tl, Math.abs(a1), P.spinA, P.spinW) } };
-                if (tl < d1 + d2) {
-                  const dm = trapPos(tl - d1, D, P.acc, vmax);
-                  return { body: { x: s.x + dm * ux, y: s.y + dm * uy, th: hdg } };
-                }
-                return { body: { x: goal.x, y: goal.y, th: hdg + Math.sign(a2) * trapPos(tl - d1 - d2, Math.abs(a2), P.spinA, P.spinW) } };
-              },
-            };
-          };
-          const mode = b.mode || (b.reverse ? "backward" : "forward");
-          let cand;
-          if (mode === "forward") cand = buildDubins(false);
-          else if (mode === "backward") cand = buildDubins(true);
-          else if (mode === "shortest") cand = buildShortest();
-          else { // "auto"（最短時間）：全案のうち所要時間が最小のものを採用
-            cand = [buildDubins(false), buildDubins(true), buildShortest()]
-              .reduce((a, c) => c.dur < a.dur ? c : a);
-          }
-          dur = cand.dur; anim = cand.anim; path = cand.path; line = cand.line;
-          b._chosenReverse = cand.reverse; // 描画色（前進=青／後進・後ろ向き=オレンジ）用
-          bodyEnd = { ...goal };
-        }
-      } else if (b.type === "arm") {
-        const pose = state.armPoses.find(p => p.name === b.pose);
-        if (!pose) { err = true; }
-        else {
-          const q1s = arm.q1, q1g = pose.q1;
-          const d1 = angDiff(q1s, q1g);
-          const q2s = reachToQ2(arm.reach), q2g = reachToQ2(pose.reach);
-          const d2 = q2g - q2s;
-          const dur1 = trapDur(Math.abs(d1), P.j[0].a, P.j[0].w);
-          const dur2 = trapDur(Math.abs(d2), P.j[1].a, P.j[1].w);
-          const dur3 = trapDur(Math.abs(2 * d2), P.j[2].a, P.j[2].w); // 3軸目は2軸の2倍角
-          dur = Math.max(dur1, dur2, dur3);
-          anim = (tl) => {
-            const q1 = (tl >= dur1) ? q1g : q1s + Math.sign(d1) * trapPos(tl, Math.abs(d1), P.j[0].a, P.j[0].w);
-            const q2 = (tl >= dur2) ? q2g : q2s + Math.sign(d2) * trapPos(tl, Math.abs(d2), P.j[1].a, P.j[1].w);
-            return { arm: { q1, reach: REACH_MAX * Math.cos(q2) } };
-          };
-          armEnd = { q1: pose.q1, reach: pose.reach };
+          const bc = mv.body ? bodyMotion({ x: body.x, y: body.y, th: body.th }, { ...mv.p.body }, b, P) : null;
+          const ac = mv.arm ? armMotion(arm.q.slice(), mv.p.arm.q.slice(), P) : null;
+          bodyDur = bc ? bc.dur : 0; armDur = ac ? ac.dur : 0;
+          dur = Math.max(bodyDur, armDur);
+          anim = (tl) => Object.assign({}, bc ? bc.anim(Math.min(tl, bodyDur)) : null, ac ? ac.anim(Math.min(tl, armDur)) : null);
+          if (bc) { path = bc.path; line = bc.line; reverse = bc.reverse; bodyEnd = { ...mv.p.body }; }
+          if (ac) armEnd = { q: mv.p.arm.q.slice() };
         }
       } else { // other action
         dur = Math.max(0, parseFloat(b.wait) || 0);
       }
       b._dur = dur; b._err = err;
-      cblocks.push({ block: b, dur, anim, err, path, line, reverse: b.type === "body" && !!b._chosenReverse });
+      cblocks.push({ block: b, dur, anim, err, path, line, reverse, bodyDur, armDur });
       stageDur = Math.max(stageDur, dur);
     }
     stages.push({ t0: t, dur: stageDur, blocks: cblocks });
@@ -831,7 +1268,7 @@ function compileProgram() {
 /* 時刻 t におけるロボット状態を返す */
 function stateAtTime(compiled, t) {
   let body = { ...compiled.startBody };
-  let arm = { ...compiled.startArm };
+  let arm = { q: compiled.startArm.q.slice() };
   for (const st of compiled.stages) {
     if (t >= st.t0 + st.dur) {
       for (const cb of st.blocks) {
@@ -864,6 +1301,7 @@ function resizeCanvas() {
   const r = wrap.getBoundingClientRect();
   cv.width = Math.max(200, Math.floor(r.width));
   cv.height = Math.max(200, Math.floor(r.height));
+  if (window.LexxSim3D && window.LexxSim3D.ready) window.LexxSim3D.resize();
   draw();
 }
 window.addEventListener("resize", resizeCanvas);
@@ -884,8 +1322,8 @@ function draw() {
   // 画面表示と同じ白（--panel）で不透明に塗りつぶす
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, cv.width, cv.height);
-  // 背景画像（最背面）
-  drawBgImage();
+  // 下絵（最背面。何枚でも）
+  drawImages();
   // グリッド (1m)
   ctx.strokeStyle = "#e8ecef"; ctx.lineWidth = 1;
   const [wx0, wy1] = s2w(0, 0), [wx1, wy0] = s2w(cv.width, cv.height);
@@ -908,41 +1346,9 @@ function draw() {
     ctx.beginPath(); ctx.arc(ox, oy, 5, 0, TAU); ctx.stroke();
   }
 
-  // 背景の四角（薄い塗り＋枠線）
-  for (const R of state.bgRects) {
-    const [sx1, sy1] = w2s(R.x1, R.y1), [sx2, sy2] = w2s(R.x2, R.y2);
-    const x = Math.min(sx1, sx2), y = Math.min(sy1, sy2);
-    const w = Math.abs(sx2 - sx1), h = Math.abs(sy2 - sy1);
-    ctx.save(); ctx.globalAlpha = 0.10; ctx.fillStyle = R.color; ctx.fillRect(x, y, w, h); ctx.restore();
-    ctx.strokeStyle = R.color; ctx.lineWidth = 2;
-    ctx.strokeRect(x, y, w, h);
-  }
-  // 背景の直線
-  for (const L of state.bgLines) {
-    const [sx1, sy1] = w2s(L.x1, L.y1), [sx2, sy2] = w2s(L.x2, L.y2);
-    ctx.strokeStyle = L.color; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2); ctx.stroke();
-  }
-  // 背景の文字（中心位置基準・高さはワールド寸法でズームに追従）
-  if (state.bgTexts.length || (bgMode === "text" && bgMouse)) {
-    ctx.save();
-    ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    for (const T of state.bgTexts) drawBgTextItem(T);
-    // 文字配置プレビュー（マウス位置に半透明表示）
-    if (bgMode === "text" && bgMouse) {
-      const txt = document.getElementById("bgText").value.trim();
-      if (txt) {
-        ctx.globalAlpha = 0.5;
-        drawBgTextItem({
-          x: bgMouse[0], y: bgMouse[1], text: txt, size: bgTextSizeMm(),
-          color: document.getElementById("bgTextColor").value,
-          vertical: document.getElementById("bgTextDir").value === "v",
-        });
-      }
-    }
-    ctx.restore();
-  }
-  // 四角 描画途中：1点目の印＋マウス位置までのプレビュー
+  // オブジェクト: 区画（h=0）→ 箱 → 直線 → 文字 の順に描く（上にある物ほど後）
+  drawObjects();
+  // 箱・区画 描画途中：1点目の印＋マウス位置までのプレビュー
   if (bgTemp) {
     const color = document.getElementById("bgShapeColor").value;
     const [px, py] = w2s(bgTemp[0], bgTemp[1]);
@@ -976,20 +1382,23 @@ function draw() {
     if (seg) drawCalibLine(seg[0], seg[1], !calibLine);
   }
 
-  // 登録済み車体位置（ゴースト）
-  for (const p of state.bodyPoses) {
-    drawBodyShape(p, "rgba(36,113,163,0.10)", "rgba(36,113,163,0.45)", true);
-    const [sx, sy] = w2s(p.x, p.y);
+  // 登録した車体の場所（同じ場所のポイントは 1 つの枠にまとめ、名前を並べる）。一覧でマウスを乗せた場所はオレンジ
+  // 影を出す対象: 右ペインで乗せている Move ブロックの終わりの姿勢か、左ペインで乗せている位置
+  const hoverP = hoverBlockGhost || (hoverPointName ? findPoint(hoverPointName) : null);
+  for (const L of bodyLocations()) {
+    const hot = hoverP && hoverP.body && sameBody(hoverP.body, L.body);
+    drawBodyShape(L.body, hot ? "rgba(230,126,34,0.16)" : "rgba(36,113,163,0.10)", hot ? "rgba(230,126,34,0.9)" : "rgba(36,113,163,0.45)", true);
+    const [sx, sy] = w2s(L.body.x, L.body.y);
     ctx.fillStyle = "rgba(36,113,163,0.8)";
     ctx.font = "11px sans-serif";
-    ctx.fillText(p.name, sx + 4, sy - 4);
+    ctx.fillText(L.points.map(q => q.name).join("・"), sx + 4, sy - 4);
   }
 
-  // Move Body の予定パス（前進=青、後進=オレンジ）
+  // 車体の走行の予定パス（前進=青、後進=オレンジ）
   // 初期状態が未設定のときは最初の車体移動の始点が現在位置になるため、そのパスだけ表示しない
   if (currentCompiled) {
     ctx.lineWidth = 1.5; ctx.setLineDash([6, 5]);
-    let firstBodyPathSkipped = state.bodyPoses.some(p => p.name === state.initial.bodyPose);
+    let firstBodyPathSkipped = hasInitialBody();
     for (const st of currentCompiled.stages) {
       for (const cb of st.blocks) {
         const hasDubins = cb.path && cb.path.length > 0;
@@ -1020,9 +1429,89 @@ function draw() {
   drawBodyShape(state.robot.body, "#f6f8f9", "#6d7a84", false);
   // アーム（上に描画）
   drawArm(state.robot.body, state.robot.arm);
+  // 一覧でマウスを乗せているポイントを、半透明の影で重ねる（ロボットは動かさない）
+  if (hoverP && !playing) {
+    const hb = hoverP.body || state.robot.body;
+    ctx.save(); ctx.globalAlpha = 0.45;
+    if (hoverP.body) drawBodyShape(hb, "rgba(230,126,34,0.25)", "rgba(230,126,34,0.95)", false);
+    drawArm(hb, hoverP.arm || state.robot.arm);
+    ctx.restore();
+  }
 
   // スケール表示（左下・最前面）：1グリッド = 1m
   drawScaleBar();
+}
+
+/* オブジェクト（箱・区画・直線・文字）の 2D 描画。選択中は青の破線で囲む */
+function drawObjects() {
+  const objs = state.objects.filter(o => o.visible !== false);
+  const boxes = objs.filter(o => o.type === "box").sort((a, b) => (a.h > 0) - (b.h > 0) || (a.z0 || 0) - (b.z0 || 0));
+  for (const o of boxes) {
+    const [sx, sy] = w2s(o.x, o.y);
+    const W = o.w * view.scale, D = o.d * view.scale;
+    ctx.save();
+    ctx.translate(sx, sy); ctx.rotate(-(o.yaw || 0));
+    ctx.globalAlpha = o.h > 0 ? 0.18 : 0.10; ctx.fillStyle = o.color; ctx.fillRect(-W / 2, -D / 2, W, D);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = o.color; ctx.lineWidth = o.h > 0 ? 3.5 : 2;
+    ctx.strokeRect(-W / 2, -D / 2, W, D);
+    if (o.id === selectedId) drawSelectionRect(-W / 2, -D / 2, W, D);
+    // 名前と高さ（箱は「h 0.50m」、浮いていれば底面高さも）
+    ctx.fillStyle = o.color; ctx.font = "11px sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "top";
+    let label = o.name || "";
+    if (o.h > 0) label += (label ? "  " : "") + `h ${(o.h / 1000).toFixed(2)}m` + (o.z0 > 0 ? ` ↑${(o.z0 / 1000).toFixed(2)}m` : "");
+    if (label && W > 30 && D > 14) ctx.fillText(label, -W / 2 + 4, -D / 2 + 3);
+    ctx.restore();
+  }
+  for (const o of objs) {
+    if (o.type !== "line") continue;
+    const [sx1, sy1] = w2s(o.x1, o.y1), [sx2, sy2] = w2s(o.x2, o.y2);
+    if (o.id === selectedId) {
+      ctx.strokeStyle = "rgba(10,110,189,0.9)"; ctx.lineWidth = 7; ctx.setLineDash([6, 4]);
+      ctx.beginPath(); ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2); ctx.stroke(); ctx.setLineDash([]);
+    }
+    ctx.strokeStyle = o.color; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2); ctx.stroke();
+  }
+  ctx.save();
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  for (const o of objs) {
+    if (o.type !== "text") continue;
+    drawBgTextItem(o);
+    if (o.id === selectedId) {
+      const b = textBoundsMm(o);
+      const [sx, sy] = w2s(o.x, o.y);
+      drawSelectionRect(sx - b.w * view.scale / 2, sy - b.h * view.scale / 2, b.w * view.scale, b.h * view.scale);
+    }
+  }
+  // 文字配置プレビュー（マウス位置に半透明表示）
+  if (bgMode === "text" && bgMouse) {
+    const txt = document.getElementById("bgText").value.trim();
+    if (txt) {
+      ctx.globalAlpha = 0.5;
+      drawBgTextItem({
+        x: bgMouse[0], y: bgMouse[1], text: txt, size: bgTextSizeMm(),
+        color: document.getElementById("bgTextColor").value,
+        vertical: document.getElementById("bgTextDir").value === "v",
+      });
+    }
+  }
+  ctx.restore();
+}
+function drawSelectionRect(x, y, w, h) {
+  ctx.save();
+  ctx.strokeStyle = "#0a6ebd"; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+  ctx.strokeRect(x - 5, y - 5, w + 10, h + 10);
+  ctx.setLineDash([]);
+  ctx.fillStyle = "#0a6ebd";
+  for (const [cx, cy] of [[x - 5, y - 5], [x + w + 5, y - 5], [x - 5, y + h + 5], [x + w + 5, y + h + 5]]) ctx.fillRect(cx - 3, cy - 3, 6, 6);
+  ctx.restore();
+}
+/* 文字の表示枠 [mm]（当たり判定・選択枠に使う） */
+function textBoundsMm(T) {
+  if (T.vertical) { const n = Math.max(1, Array.from(T.text || "").length); return { w: T.size, h: n * T.size }; }
+  ctx.font = `${Math.max(2, T.size * view.scale)}px sans-serif`;
+  return { w: ctx.measureText(T.text || "").width / view.scale, h: T.size };
 }
 
 // 背景文字1件を描画（textAlign=center / textBaseline=middle 前提）
@@ -1110,21 +1599,44 @@ function drawBodyShape(pose, fill, stroke, ghost) {
   ctx.lineWidth = ghost ? 1 : Math.max(1.5, 14 * view.scale);
   ctx.beginPath(); ctx.roundRect(-L / 2, -W / 2, L, W, cr); ctx.fill(); ctx.stroke();
   if (!ghost) {
-    // 左右のドライブユニット（濃グレー）
-    const padL = L * 0.46, padW = W * 0.13;
-    ctx.fillStyle = "#3a4145";
+    // 差動二輪の駆動輪（φ180・幅50 mm、車体中央の左右。3D と同じ位置）
+    const wD = 180 * view.scale, wW = 50 * view.scale, wIn = 10 * view.scale;
+    ctx.fillStyle = "#2b3135";
     ctx.beginPath();
-    ctx.roundRect(-padL / 2, -W / 2 + W * 0.05, padL, padW, padW * 0.4);
-    ctx.roundRect(-padL / 2,  W / 2 - W * 0.05 - padW, padL, padW, padW * 0.4);
+    ctx.roundRect(-wD / 2, -W / 2 + wIn, wD, wW, wW * 0.3);
+    ctx.roundRect(-wD / 2,  W / 2 - wIn - wW, wD, wW, wW * 0.3);
     ctx.fill();
-    // 前端のバンパーライン（前方向を示す。中央がアームに隠れても左右が見える）
-    // アームの緑アクセントと区別できるよう青にする
-    ctx.strokeStyle = "#3da9fc"; ctx.lineCap = "round";
+    // 車軸線（左右の車輪を結ぶ細い線）
+    ctx.strokeStyle = "#8a969e"; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(0, -W / 2 + wIn); ctx.lineTo(0, W / 2 - wIn); ctx.stroke();
+    ctx.setLineDash([]);
+    // 前後の目印: 前端は青いバンパー、後端は赤いテールランプ（アームの緑と区別できる色）
+    ctx.lineCap = "round";
     ctx.lineWidth = Math.max(2, 45 * view.scale);
+    ctx.strokeStyle = "#3da9fc";
     ctx.beginPath();
     ctx.moveTo(L / 2 - Math.max(1, 40 * view.scale) / 2, -W * 0.35);
     ctx.lineTo(L / 2 - Math.max(1, 40 * view.scale) / 2, W * 0.35);
     ctx.stroke();
+    ctx.strokeStyle = "#e74c3c";
+    ctx.beginPath();
+    ctx.moveTo(-L / 2 + Math.max(1, 40 * view.scale) / 2, -W * 0.35);
+    ctx.lineTo(-L / 2 + Math.max(1, 40 * view.scale) / 2, W * 0.35);
+    ctx.stroke();
+    // 前向きの矢印（前寄り。アームの下に隠れても左右の羽根が見える）
+    ctx.fillStyle = "rgba(61,169,252,0.55)";
+    ctx.beginPath();
+    ctx.moveTo(L * 0.40, 0); ctx.lineTo(L * 0.22, -W * 0.30); ctx.lineTo(L * 0.22, W * 0.30); ctx.closePath();
+    ctx.fill();
+    // 前後の文字（拡大している時だけ）
+    if (L > 70) {
+      ctx.save(); ctx.scale(1, 1); ctx.fillStyle = "#3da9fc"; ctx.font = `bold ${Math.max(8, 70 * view.scale)}px sans-serif`;
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.translate(L / 2 - 90 * view.scale, 0); ctx.rotate(Math.PI / 2); ctx.fillText("F", 0, 0); ctx.restore();
+      ctx.save(); ctx.fillStyle = "#e74c3c"; ctx.font = `bold ${Math.max(8, 70 * view.scale)}px sans-serif`;
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.translate(-L / 2 + 90 * view.scale, 0); ctx.rotate(Math.PI / 2); ctx.fillText("R", 0, 0); ctx.restore();
+    }
   } else {
     // ゴーストは前方が分かる矢印
     ctx.beginPath();
@@ -1138,99 +1650,75 @@ function drawBodyShape(pose, fill, stroke, ghost) {
   ctx.restore();
 }
 
-/* アーム描画：アーム座標系（x=アーム方向, y=肩オフセット方向, 単位mm）に変換してから、
- * 軸平行の（角丸）矩形の組み合わせで構成する。
- * 各パーツは「輪郭ぶん拡張したグレー矩形 → 白矩形」の2度塗りで輪郭付きに見せる。
- * 複数矩形を1パスにまとめて塗ると継ぎ目なしの一体パーツになる。
- * レイヤー順（下から）: 基部関節 → スタブ → 2軸マーカー → 上腕(平行部+ジョグ)
- *                     → リンク2 → 3軸マーカー → 手先フランジ */
+/* アーム描画（2D・上から見た図）: 6 軸の順運動学で各関節の位置を求め、車体座標に投影して描く。
+ * リンクは太い線、関節は丸。下側（取付面に近い）から順に描き、上のリンクが下を隠す。
+ * 車体の回転に合わせて ctx を回し、y を反転して車体座標 [mm] をそのまま使う */
 function drawArm(body, arm) {
-  const dir = body.th + arm.q1;            // ワールドでのアーム方向
-  const r = clamp(arm.reach, 0, REACH_MAX);
-  const OFF = 160;                         // 肩の横オフセット [mm]
-  const HW = 60;                           // リンク半幅（幅120mm）
-  const EDGE = 14;                         // 輪郭線の太さ [mm]
-  const xj3 = r - LINK;                    // 肘（3軸）のアーム方向位置 [mm]
-  const green = "#43b02a";                 // FANUC CRX グリーン（3軸）
-  const dgreen = "#2e7d32";                // 濃い緑（2軸）
-  const GRAY = "#9aa5ad", WHITE = "#f6f8f9";
+  const P = CRX.topViewPoints(arm.q, state.toolLen); // base_link 基準 [mm]
   const [sbx, sby] = w2s(body.x, body.y);
   ctx.save();
   ctx.translate(sbx, sby);
-  ctx.rotate(-dir);                        // 画面はy反転のため回転符号も反転
-  ctx.scale(view.scale, view.scale);       // 以降の座標・寸法は mm
-
-  // ベース関節（1軸）：濃色サークル＋緑リング（最下層）
-  ctx.fillStyle = "#3a4145";
-  ctx.beginPath(); ctx.arc(0, 0, 100, 0, TAU); ctx.fill();
-  ctx.strokeStyle = green; ctx.lineWidth = 18;
-  ctx.beginPath(); ctx.arc(0, 0, 60, 0, TAU); ctx.stroke();
-
-  // 矩形群を1パーツとして「グレー(輪郭ぶん拡張) → 白」の順に塗るヘルパ
-  // rects: [x, y, w, h, 角丸半径] の配列。半径は数値（全角）または [tl,tr,br,bl] の配列
-  const fillPart = (rects) => {
-    for (const [color, e] of [[GRAY, EDGE / 2], [WHITE, 0]]) {
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      for (const [x, y, w, h, rr] of rects) {
-        const rad = Array.isArray(rr) ? rr.map(v => v + e) : (rr || 0) + e;
-        ctx.roundRect(x - e, y - e, w + 2 * e, h + 2 * e, rad);
-      }
-      ctx.fill();
+  ctx.rotate(-(body.th + ARM_MOUNT_YAW));    // 画面は y 反転のため回転符号も反転。アームの取付向きも足す
+  ctx.scale(view.scale, -view.scale);        // 以降はアーム基準座標 [mm]（J1 = 0° の向きが +x）
+  ctx.lineCap = "round"; ctx.lineJoin = "round";
+  const GRAY = "#9aa5ad", WHITE = "#f6f8f9", GREEN = "#43b02a", DGREEN = "#2e7d32";
+  // 輪郭付きの太い線分（グレーで太く → 白で細く）
+  const link = (a, b, w) => {
+    for (const [c, e] of [[GRAY, 14], [WHITE, 0]]) {
+      ctx.strokeStyle = c; ctx.lineWidth = w + e;
+      ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
     }
   };
-
-  // リンクの境界＝緑のジョイントマーカー位置。境界線（グレー）はそこにだけ出る。
-  // J2境界: スタブ上の y=58（マーカー y36..80 の中央）／ J3境界: ジョグ上の y=80（マーカー y58..102 の中央）
-  const J2Y = OFF / 2 - 22; // 58
-  const J3Y = OFF / 2;      // 80
-
-  // リンク1（基部側）：基部 → J2マーカー下端（y=80）まで。基部側の端は丸める
-  // （マーカー全体がリンク1の上に乗り、隠れず全部見える）
-  fillPart([[-HW, -HW, HW * 2, J3Y + HW, [HW, HW, 0, 0]]]);
-  // 肩（2軸）マーカー：リンク1の上・以降のリンクの下（濃い緑）
-  ctx.fillStyle = dgreen;
-  ctx.fillRect(-65, J2Y - 22, 130, 44);
-  // リンク2（中間）：J2マーカー下端 → 肩の曲がり → 平行部 → ジョグ → J3境界。1パスで一体形状。
-  // 外周に見える曲がり角だけ丸める
-  const runL = Math.min(0, xj3) - HW, runR = Math.max(0, xj3) + HW;
-  fillPart([
-    [-HW, J3Y, HW * 2, OFF + HW - J3Y, [0, 0, HW, HW]],     // スタブ上部（y80..220）
-    [runL, OFF - HW, runR - runL, HW * 2, [0, 0, HW, HW]],  // 平行部
-    [xj3 - HW, J3Y, HW * 2, OFF + HW - J3Y, [0, 0, HW, HW]],// ジョグ上部
-  ]);
-  // リンク3（先端側）：J3境界 → 肘の曲がり → 先端。1パスで一体形状（肘に境界線は出ない）
-  fillPart([
-    [xj3 - HW, -HW, HW * 2, J3Y + HW, [40, 0, 0, 0]],       // ジョグ下部（露出する角を丸め）
-    [xj3, -HW, LINK, HW * 2, 0],                            // 前腕（肘→先端）
-  ]);
-  // 肘（3軸）マーカー：リンク3との相対位置は姿勢によらず一定のため、常に見えるよう上に描く
-  ctx.fillStyle = green;
-  ctx.fillRect(xj3 - 65, J3Y - 22, 130, 44);
-  // 手先フランジ：リンク3と同じ幅（±60mm）にして、つなぎ目に段差が出ないようにする。
-  // 輪郭もリンクと同じ「拡張グレー→本体色」方式で塗り、外形線が面一につながる
-  for (const [color, e] of [[GRAY, EDGE / 2], ["#7f8c8d", 0]]) {
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.rect(r - 55 - e, -HW - e, 110 + 2 * e, HW * 2 + 2 * e);
-    ctx.fill();
+  const dot = (p, r, fill, stroke) => {
+    ctx.fillStyle = fill; ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, TAU); ctx.fill();
+    if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 14; ctx.stroke(); }
+  };
+  // ベース（J1）: 濃色円＋緑リング
+  dot(P.j1, 110, "#3a4145");
+  ctx.strokeStyle = GREEN; ctx.lineWidth = 18; ctx.beginPath(); ctx.arc(P.j1[0], P.j1[1], 70, 0, TAU); ctx.stroke();
+  // 上腕（J2→J3）、前腕（J3→J5）、手首（J5→J6→フランジ）
+  link(P.j2, P.j3, 120);
+  dot(P.j3, 75, DGREEN);
+  link(P.j3, P.j5, 110);
+  dot(P.j5, 70, GREEN);
+  link(P.j5, P.j6, 90);
+  link(P.j6, P.flange, 90);
+  dot(P.flange, 55, "#7f8c8d", GRAY);
+  // ツール（フランジ→TCP）と TCP の印
+  if (state.toolLen > 1) {
+    ctx.strokeStyle = "#5d6d7e"; ctx.lineWidth = 28;
+    ctx.beginPath(); ctx.moveTo(P.flange[0], P.flange[1]); ctx.lineTo(P.tcp[0], P.tcp[1]); ctx.stroke();
   }
+  dot(P.tcp, 24, "#d6336c");
   ctx.restore();
+  // 手先の高さ（床から）を TCP の横に表示
+  const thA = body.th + ARM_MOUNT_YAW;
+  const [tx, ty] = w2s(body.x + P.tcp[0] * Math.cos(thA) - P.tcp[1] * Math.sin(thA),
+                       body.y + P.tcp[0] * Math.sin(thA) + P.tcp[1] * Math.cos(thA));
+  ctx.fillStyle = "rgba(214,51,108,0.9)"; ctx.font = "11px sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+  ctx.fillText(`手先 h ${((P.tcp[2] + ARM_MOUNT_Z) / 1000).toFixed(2)}m`, tx + 6, ty - 6);
 }
 
 /* ---------------- キーボード操作（ティーチ） ---------------- */
 const pressed = new Set();
+const TEACH_KEYS = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown"];
 window.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && tourIdx >= 0) { endTour(); return; } // ツアー中はEscで閉じる
   if (e.key === "Escape") cancelStageDrag(); // ドラッグ中の段があれば解除
   if (e.key === "Escape" && bgMode) { setBgMode(bgMode); return; } // 描画系モードを解除（入力中でも有効）
-  if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.target.tagName === "TEXTAREA") return;
+  // 文字・数値を打ち込む欄にいるときはキーをその欄に任せる。スライダー・チェックボックスにフォーカスが残っているだけなら、
+  // 矢印キーはロボットの操作に使う（スライダーが矢印キーで動くと、Shift＋←→ の J1 回転が手先の操作に化けるため）
+  const t = e.target;
+  const typing = (t.tagName === "INPUT" && !["range", "checkbox", "radio", "button", "color"].includes(t.type)) || t.tagName === "SELECT" || t.tagName === "TEXTAREA";
+  if (typing) return;
+  if (t.tagName === "INPUT" && TEACH_KEYS.includes(e.key)) t.blur(); // スライダーから外して、以後のキーも素直に届くようにする
+  if ((e.key === "Delete" || e.key === "Backspace") && selectedId && !playing) { e.preventDefault(); deleteSelectedObject(); return; }
   // Undo / Redo（Ctrl+Z / Ctrl+Y、Ctrl+Shift+Z も Redo）
   if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === "z") { e.preventDefault(); doUndo(); return; }
   if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === "y" || (e.shiftKey && e.key.toLowerCase() === "z"))) { e.preventDefault(); doRedo(); return; }
-  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+  if (TEACH_KEYS.includes(e.key)) {
     // ティーチ移動の開始時（矢印キーが押されていない状態からの押下）に1回だけ履歴を積む
-    if (!playing && !["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].some(k => pressed.has(k))) pushUndo();
+    if (!playing && !TEACH_KEYS.some(k => pressed.has(k))) pushUndo();
     pressed.add(e.key);
     pressed[e.shiftKey ? "add" : "delete"]("Shift");
     e.preventDefault();
@@ -1254,9 +1742,9 @@ function teachStep(dt) {
   // 回転キーを離した瞬間：角度を5度刻みにスナップ（直角などに合わせやすくする）
   const SNAP = deg2rad(5);
   if (rotatingBody && !rotBodyNow) { b.th = Math.round(b.th / SNAP) * SNAP; moved = true; }
-  if (rotatingArm && !rotArmNow)   { a.q1 = Math.round(a.q1 / SNAP) * SNAP; moved = true; }
+  if (rotatingArm && !rotArmNow)   { a.q[0] = clamp(Math.round(a.q[0] / SNAP) * SNAP, ARM.limits[0][0], ARM.limits[0][1]); moved = true; }
   rotatingBody = rotBodyNow; rotatingArm = rotArmNow;
-  if (pressed.size === 0) return moved;
+  if (pressed.size === 0) { if (moved) armCtrlRefresh(); return moved; }
   const V = 800, W = deg2rad(90), AV = deg2rad(90), RV = 600; // 操作速度
   if (!shift) {
     if (pressed.has("ArrowUp"))    { b.x += V * dt * Math.cos(b.th); b.y += V * dt * Math.sin(b.th); moved = true; }
@@ -1264,12 +1752,33 @@ function teachStep(dt) {
     if (pressed.has("ArrowLeft"))  { b.th += W * dt; moved = true; }
     if (pressed.has("ArrowRight")) { b.th -= W * dt; moved = true; }
   } else {
-    if (pressed.has("ArrowLeft"))  { a.q1 += AV * dt; moved = true; }
-    if (pressed.has("ArrowRight")) { a.q1 -= AV * dt; moved = true; }
-    if (pressed.has("ArrowUp"))    { a.reach = clamp(a.reach + RV * dt, 100, REACH_MAX); moved = true; }
-    if (pressed.has("ArrowDown"))  { a.reach = clamp(a.reach - RV * dt, 100, REACH_MAX); moved = true; }
+    if (pressed.has("ArrowLeft"))  { a.q[0] = clamp(a.q[0] + AV * dt, ARM.limits[0][0], ARM.limits[0][1]); moved = true; }
+    if (pressed.has("ArrowRight")) { a.q[0] = clamp(a.q[0] - AV * dt, ARM.limits[0][0], ARM.limits[0][1]); moved = true; }
+    // 伸縮・上下: 手先（TCP）を姿勢そのままで水平／鉛直に動かし、IK で 6 軸を解く
+    let dR = 0, dZ = 0;
+    if (pressed.has("ArrowUp"))   dR += RV * dt;
+    if (pressed.has("ArrowDown")) dR -= RV * dt;
+    if (pressed.has("PageUp"))    dZ += RV * dt;
+    if (pressed.has("PageDown"))  dZ -= RV * dt;
+    if (dR || dZ) { jogTcp(dR, dZ); moved = true; }
   }
+  if (moved) armCtrlRefresh();
   return moved;
+}
+
+/* 手先を「J1 軸からの半径方向に dR」「鉛直に dZ」[mm] 動かす（姿勢は保つ）。届かない時は動かさない */
+function jogTcp(dR, dZ) {
+  const a = state.robot.arm;
+  const info = CRX.tcpInfo(a.q, state.toolLen);
+  let ux, uy;
+  if (info.horizontal > 1) { ux = info.x / info.horizontal; uy = info.y / info.horizontal; }
+  else { ux = Math.cos(a.q[0]); uy = Math.sin(a.q[0]); }
+  const Tw = CRX.toWbase(info.fk.tcp);
+  const R = CRX.rotOf(Tw);
+  const target = CRX.fromWbase(CRX.fromRotPos(R, [info.x + ux * dR, info.y + uy * dR, info.z + dZ]));
+  const res = CRX.ik(target, a.q, state.toolLen, { iters: 40 });
+  if (res.posErr < 3 && res.rotErr < 0.01) { a.q = res.q; return true; }
+  return false;
 }
 
 /* ---------------- 再生 ---------------- */
@@ -1292,8 +1801,8 @@ function updateStats() {
     for (const st of currentCompiled.stages) {
       let bodyD = 0, armD = 0;
       for (const cb of st.blocks) {
-        if (cb.block.type === "body") bodyD = Math.max(bodyD, cb.dur);
-        else if (cb.block.type === "arm") armD = Math.max(armD, cb.dur);
+        bodyD = Math.max(bodyD, cb.bodyDur || 0);
+        armD = Math.max(armD, cb.armDur || 0);
       }
       const ov = Math.min(bodyD, armD);
       both += ov;
@@ -1315,23 +1824,30 @@ function updateStats() {
     .join("");
 }
 
+/* 再生ボタンは 1 つ: 停止中に押すと最初から再生、再生中に押すと一時停止、一時停止中に押すと再開 */
+function updatePlayBtn() {
+  const btn = document.getElementById("btnPlay");
+  btn.textContent = !playing ? "▶ 再生" : paused ? "▶ 再開" : "⏸ 一時停止";
+  btn.classList.toggle("primary", !playing || paused);
+  // 再生中（一時停止中も）は描くツールバーを隠す。再生中に描くことはなく、キャンバスが見やすい
+  if (playing && bgMode) exitDrawMode();
+  document.body.classList.toggle("playing", playing);
+}
 document.getElementById("btnPlay").addEventListener("click", () => {
-  if (playing && paused) { paused = false; return; }
-  if (playing) return;
+  if (playing) {
+    paused = !paused;
+    // 録画中は一時停止に合わせて録画も止める（静止画区間が動画に入らないように）
+    if (recorder && recorder.state !== "inactive") { paused ? recorder.pause() : recorder.resume(); }
+    updatePlayBtn();
+    return;
+  }
   stopPlayback(false);
   prePlayState = JSON.parse(JSON.stringify(state.robot));
   recompute();
-  if (!currentCompiled || currentCompiled.total <= 0 && state.program.length === 0) {
-    if (state.program.length === 0) { alert("シーケンスが空です。ブロックを追加してください。"); return; }
-  }
+  if (state.program.length === 0) { alert("シーケンスが空です。ブロックを追加してください。"); return; }
   playing = true; paused = false; playT = 0;
   autoScrollOff = false; // 新しい再生では自動スクロールを再度有効にする
-});
-document.getElementById("btnPause").addEventListener("click", () => {
-  if (!playing) return;
-  paused = !paused;
-  // 録画中は一時停止に合わせて録画も止める（静止画区間が動画に入らないように）
-  if (recorder && recorder.state !== "inactive") { paused ? recorder.pause() : recorder.resume(); }
+  updatePlayBtn();
 });
 document.getElementById("btnStop").addEventListener("click", () => stopPlayback(true));
 
@@ -1373,7 +1889,7 @@ function refreshRecSnapshot() {
     });
     // スクロール位置はクローンに引き継がれないため、先頭の子に負マージンを与えて擬似的に再現する
     // （自動スクロールで動く右ペインの表示位置を動画にも反映する）
-    const scrollSel = "#colLeft, #colRight, #progScroll, .poselist";
+    const scrollSel = "#leftMain, #colRight, #progScroll, .poselist";
     const liveScroll = document.querySelectorAll(scrollSel);
     const clScroll = clone.querySelectorAll(scrollSel);
     liveScroll.forEach((el, i) => {
@@ -1401,27 +1917,26 @@ function compositeRecFrame() {
   g.fillStyle = "#f4f6f8";
   g.fillRect(0, 0, w, h);
   if (recSnapshot) g.drawImage(recSnapshot, 0, 0, w, h);
-  const r = cv.getBoundingClientRect();
-  g.drawImage(cv, r.left, r.top, r.width, r.height);
-  // ヘッダーの時間表示はスナップショット更新間隔ぶん遅れるため、毎フレーム描き直す
-  const times = [
-    ["経過時間 ", playT.toFixed(2), document.getElementById("elapsedDisp")],
-    ["トータル ", (currentCompiled ? currentCompiled.total : 0).toFixed(2), document.getElementById("totalDisp")],
-  ];
-  for (const [label, val, el] of times) {
-    if (!el) continue;
-    const box = el.parentElement.getBoundingClientRect();
-    g.fillStyle = "#0d2233";
+  // 表示中のキャンバス（2D または 3D）を貼る
+  const srcCv = (viewMode === "3d" && window.LexxSim3D && window.LexxSim3D.canvas) ? window.LexxSim3D.canvas : cv;
+  const r = srcCv.getBoundingClientRect();
+  g.drawImage(srcCv, r.left, r.top, r.width, r.height);
+  // ヘッダーの時間表示はスナップショット更新間隔ぶん遅れるため、毎フレーム描き直す（「経過時間 / トータル時間：x.xx s / y.yy s」）
+  const tb = document.getElementById("timeBox");
+  if (tb) {
+    const box = tb.getBoundingClientRect();
+    const cs = getComputedStyle(tb); // 共通ヘッダー・ダークテーマの色に合わせる
+    g.fillStyle = cs.backgroundColor;
     g.beginPath(); g.roundRect(box.left, box.top, box.width, box.height, 6); g.fill();
-    g.fillStyle = "#fff"; g.textBaseline = "middle";
+    g.fillStyle = cs.color; g.textBaseline = "middle";
     const cy = box.top + box.height / 2 + 1;
     let x = box.left + 12;
-    g.font = "14px system-ui, sans-serif";
-    g.fillText(label, x, cy); x += g.measureText(label).width;
-    g.font = "bold 18px system-ui, sans-serif";
-    g.fillText(val, x, cy); x += g.measureText(val).width;
-    g.font = "14px system-ui, sans-serif";
-    g.fillText(" s", x, cy);
+    const parts = [["経過時間 / トータル時間：", false], [playT.toFixed(2), true], [" s / ", false],
+                   [(currentCompiled ? currentCompiled.total : 0).toFixed(2), true], [" s", false]];
+    for (const [t, bold] of parts) {
+      g.font = bold ? "bold 18px system-ui, sans-serif" : "14px system-ui, sans-serif";
+      g.fillText(t, x, cy); x += g.measureText(t).width;
+    }
   }
 }
 
@@ -1478,7 +1993,8 @@ function stopPlayback(restore) {
   playing = false; paused = false; playT = 0;
   document.getElementById("elapsedDisp").textContent = "0.00";
   highlightActive(-1);
-  recompute();
+  updatePlayBtn();
+  recompute(); armCtrlRefresh();
 }
 
 let lastActiveStageIdx = -1; // 自動スクロールは段が切り替わった瞬間だけ行う
@@ -1524,6 +2040,7 @@ function loop(ts) {
       playT = currentCompiled.total;
       playing = false;
       highlightActive(-1);
+      updatePlayBtn();
       // 再生が最後まで到達したら、完了直後で動画が切れないよう2秒後に録画を停止して保存
       // （この間も合成フレームは流れ続けるので、最終状態が2秒間映る）
       if (recorder && recorder.state === "recording") {
@@ -1536,10 +2053,11 @@ function loop(ts) {
     const s = stateAtTime(currentCompiled, playT);
     state.robot.body = s.body; state.robot.arm = s.arm;
     document.getElementById("elapsedDisp").textContent = playT.toFixed(2);
+    if (!playing) armCtrlRefresh(); // 再生完了
   } else if (teachStep(dt)) {
     recompute(); // 初期姿勢が変わると各ブロック時間も変わる
   }
-  draw();
+  if (viewMode === "3d") sync3D(); else draw();
   if (recorder && recorder.state === "recording") compositeRecFrame(); // 録画中は画面全体を合成
   requestAnimationFrame(loop);
 }
@@ -1551,104 +2069,287 @@ function uniqueName(base, list) {
   while (list.some(p => p.name === (base || "P") + i)) i++;
   return (base || "P") + i;
 }
-document.getElementById("btnRegBody").addEventListener("click", () => {
-  const nm = uniqueName(document.getElementById("poseName").value.trim(), state.bodyPoses);
-  const b = state.robot.body;
+let regMsgTimer = null;
+document.getElementById("btnRegPoint").addEventListener("click", () => {
+  const wb = document.getElementById("regBody").checked, wa = document.getElementById("regArm").checked;
+  if (!wb && !wa) { alert("「車体」か「アーム」のどちらかにチェックを入れてください。"); return; }
+  const nm = uniqueName(document.getElementById("poseName").value.trim(), state.points);
+  const rb = state.robot.body;
   pushUndo();
-  state.bodyPoses.push({ name: nm, x: b.x, y: b.y, th: mod2pi(b.th) });
+  state.points.push({ name: nm, body: wb ? { x: rb.x, y: rb.y, th: mod2pi(rb.th) } : null, arm: wa ? { q: state.robot.arm.q.slice() } : null });
   document.getElementById("poseName").value = "";
+  selPointName = nm;
   renderPoseLists(); renderProgram(); recompute();
-});
-document.getElementById("btnRegArm").addEventListener("click", () => {
-  const nm = uniqueName(document.getElementById("poseName").value.trim(), state.armPoses);
-  const a = state.robot.arm;
-  pushUndo();
-  state.armPoses.push({ name: nm, q1: a.q1, reach: a.reach });
-  document.getElementById("poseName").value = "";
-  renderPoseLists(); renderProgram(); recompute();
+  const row = document.querySelector(`#pointList .pt-row[data-name="${CSS.escape(nm)}"]`);
+  if (row) row.scrollIntoView({ block: "nearest" });
+  const msg = document.getElementById("regMsg");
+  msg.textContent = `「${nm}」を登録しました`;
+  clearTimeout(regMsgTimer); regMsgTimer = setTimeout(() => { msg.textContent = ""; }, 3000);
 });
 
-function renderPoseLists() {
-  const bl = document.getElementById("bodyPoseList");
-  bl.innerHTML = "";
-  for (const p of state.bodyPoses) {
-    const div = document.createElement("div");
-    div.className = "pose-item";
-    div.innerHTML = `<span class="nm"></span>`;
-    div.querySelector(".nm").textContent = p.name;
-    const co = document.createElement("span");
-    co.className = "co";
-    appendEditableValues(co, [
-      ["x ", (p.x / 1000).toFixed(2), "m, ", v => p.x = v * 1000],
-      ["y ", (p.y / 1000).toFixed(2), "m, ", v => p.y = v * 1000],
-      ["θ ", (p.th * 180 / Math.PI).toFixed(0), "°", v => p.th = mod2pi(deg2rad(v))],
-    ]);
-    div.appendChild(co);
-    makeNameEditable(div.querySelector(".nm"), p, state.bodyPoses, (oldN, newN) => {
-      for (const st of state.program) for (const b of st.blocks) {
-        if (b.type === "body" && b.pose === oldN) b.pose = newN;
-      }
-      if (state.initial.bodyPose === oldN) state.initial.bodyPose = newN;
-    });
-    const jump = document.createElement("button");
-    jump.className = "small"; jump.textContent = "→"; jump.title = "この姿勢にロボットを移動";
-    jump.addEventListener("click", () => {
-      if (playing) stopPlayback(false);
-      pushUndo();
-      state.robot.body = { x: p.x, y: p.y, th: p.th };
-      recompute();
-    });
-    div.appendChild(jump);
-    const del = document.createElement("button");
-    del.className = "small danger"; del.textContent = "×";
-    del.addEventListener("click", () => {
-      pushUndo();
-      state.bodyPoses = state.bodyPoses.filter(q => q !== p);
-      renderPoseLists(); renderProgram(); recompute();
-    });
-    div.appendChild(del);
-    bl.appendChild(div);
-  }
-  const al = document.getElementById("armPoseList");
-  al.innerHTML = "";
-  for (const p of state.armPoses) {
-    const div = document.createElement("div");
-    div.className = "pose-item";
-    div.innerHTML = `<span class="nm"></span>`;
-    div.querySelector(".nm").textContent = p.name;
-    const co = document.createElement("span");
-    co.className = "co";
-    appendEditableValues(co, [
-      ["1軸 ", (p.q1 * 180 / Math.PI).toFixed(0), "°, ", v => p.q1 = deg2rad(v)],
-      ["リーチ ", (p.reach / 1000).toFixed(2), "m", v => p.reach = clamp(v * 1000, 100, REACH_MAX)],
-    ]);
-    div.appendChild(co);
-    makeNameEditable(div.querySelector(".nm"), p, state.armPoses, (oldN, newN) => {
-      for (const st of state.program) for (const b of st.blocks) {
-        if (b.type === "arm" && b.pose === oldN) b.pose = newN;
-      }
-      if (state.initial.armPose === oldN) state.initial.armPose = newN;
-    });
-    const jump = document.createElement("button");
-    jump.className = "small"; jump.textContent = "→"; jump.title = "この姿勢にアームを移動";
-    jump.addEventListener("click", () => {
-      if (playing) stopPlayback(false);
-      pushUndo();
-      state.robot.arm = { q1: p.q1, reach: p.reach };
-      recompute();
-    });
-    div.appendChild(jump);
-    const del = document.createElement("button");
-    del.className = "small danger"; del.textContent = "×";
-    del.addEventListener("click", () => {
-      pushUndo();
-      state.armPoses = state.armPoses.filter(q => q !== p);
-      renderPoseLists(); renderProgram(); recompute();
-    });
-    div.appendChild(del);
-    al.appendChild(div);
-  }
+/* シーケンスで何回使っているか（初期状態は数えない） */
+function pointUsage() {
+  const u = {};
+  for (const st of state.program) for (const o of st.blocks) if (o.type === "point" && o.point) u[o.point] = (u[o.point] || 0) + 1;
+  return u;
 }
+/* ポイント名の変更に、シーケンスと初期状態の参照を追従させる */
+function renamePointRefs(oldN, newN) {
+  for (const st of state.program) for (const o of st.blocks) if (o.type === "point" && o.point === oldN) o.point = newN;
+  if (state.initial.body === oldN) state.initial.body = newN;
+  if (state.initial.arm === oldN) state.initial.arm = newN;
+  if (selPointName === oldN) selPointName = newN;
+}
+function moveRobotTo(body, arm) {
+  if (playing) stopPlayback(false);
+  pushUndo();
+  if (body) state.robot.body = { x: body.x, y: body.y, th: body.th };
+  if (arm) state.robot.arm = { q: arm.q.slice() };
+  recompute(); armCtrlRefresh();
+}
+/* 共通部品: ラベルが上の入力欄（単位は欄の中）。input を包んで返す */
+function inBox(input, unit) {
+  const w = document.createElement("label"); w.className = "in";
+  w.appendChild(input);
+  if (unit) { const u = document.createElement("span"); u.className = "u"; u.textContent = unit; w.appendChild(u); }
+  return w;
+}
+function fieldBox(label, control, cls) {
+  const f = document.createElement("div"); f.className = "fld" + (cls ? " " + cls : "");
+  const lb = document.createElement("span"); lb.className = "lb"; lb.textContent = label;
+  f.append(lb, control);
+  return f;
+}
+
+function pointTooltip(p) {
+  const lines = [p.name];
+  if (p.body) lines.push(`車体 x ${(p.body.x / 1000).toFixed(2)} m, y ${(p.body.y / 1000).toFixed(2)} m, θ ${(p.body.th * 180 / Math.PI).toFixed(0)}°`);
+  if (p.arm) {
+    const info = tcpInfoVeh(p.arm.q, state.toolLen);
+    lines.push(`手先（車体基準）x ${(info.x / 1000).toFixed(2)} y ${(info.y / 1000).toFixed(2)} z ${(info.z / 1000).toFixed(2)} m`);
+    lines.push("関節 " + p.arm.q.map((v, i) => `J${i + 1} ${(v * 180 / Math.PI).toFixed(0)}°`).join(" "));
+  }
+  return lines.join("\n");
+}
+function smallBtn(text, title, onClick, cls) {
+  const bt = document.createElement("button");
+  bt.className = "small" + (cls ? " " + cls : ""); bt.textContent = text; bt.title = title;
+  bt.addEventListener("click", (e) => { e.stopPropagation(); onClick(); });
+  return bt;
+}
+function pointRow(p, use) {
+  const div = document.createElement("div");
+  const used = use[p.name] || state.initial.body === p.name || state.initial.arm === p.name;
+  div.className = "pt-row" + (selPointName === p.name ? " sel" : "") + (used ? "" : " unused");
+  div.dataset.name = p.name;
+  div.title = pointTooltip(p) + (used ? "" : "\n（シーケンスで使っていません）");
+  const nm = document.createElement("span");
+  nm.className = "nm"; nm.textContent = p.name;
+  div.appendChild(nm);
+  makeNameEditable(nm, p, state.points, renamePointRefs);
+  div.appendChild(smallBtn("→", p.body && p.arm ? "ロボットをこの位置へ動かす（車体とアーム）" : p.body ? "車体をこの位置へ動かす" : "アームをこの姿勢にする",
+    () => moveRobotTo(p.body, p.arm)));
+  // 「腕」はアームと車体の両方を持つ位置だけ。無い行も同じ幅を空けて、ボタンの列をそろえる
+  const armBt = smallBtn("腕", "アームだけこの姿勢にする（車体は今の場所のまま）", () => moveRobotTo(null, p.arm), "arm");
+  if (!(p.body && p.arm)) { armBt.style.visibility = "hidden"; armBt.disabled = true; }
+  div.appendChild(armBt);
+  const ed = smallBtn("✎", "編集（左ペインの右側に数値を出す）", () => openPointEdit(p.name), "edit");
+  if (editOpen && selPointName === p.name) ed.classList.add("on");
+  div.appendChild(ed);
+  div.addEventListener("click", () => { // 一覧は作り直さない（名前のダブルクリック編集を壊さないため）
+    selPointName = p.name;
+    document.querySelectorAll("#pointList .pt-row").forEach(r => {
+      r.classList.toggle("sel", r.dataset.name === p.name);
+      const e = r.querySelector("button.edit"); if (e) e.classList.toggle("on", editOpen && r.dataset.name === p.name);
+    });
+    renderPointDetail();
+  });
+  div.addEventListener("mouseenter", () => { hoverPointName = p.name; });
+  div.addEventListener("mouseleave", () => { if (hoverPointName === p.name) hoverPointName = null; });
+  return div;
+}
+
+/* 位置の編集欄: ✎ で開き、左ペインを右へ広げてその右側に出す。✕ で閉じて元の幅に戻す */
+const EDIT_W = 298; // 編集欄の幅＋すき間 [px]
+let editOpen = false;
+function openPointEdit(name) {
+  selPointName = name;
+  if (!editOpen) {
+    editOpen = true;
+    document.getElementById("leftEdit").hidden = false;
+    const col = document.getElementById("colLeft");
+    col.style.width = (col.getBoundingClientRect().width + EDIT_W) + "px";
+    resizeCanvas();
+  }
+  renderPoseLists();
+  renderPointDetail(true);
+}
+function closePointEdit() {
+  if (!editOpen) return;
+  editOpen = false;
+  document.getElementById("leftEdit").hidden = true;
+  const col = document.getElementById("colLeft");
+  col.style.width = Math.max(220, col.getBoundingClientRect().width - EDIT_W) + "px";
+  resizeCanvas();
+  renderPoseLists();
+}
+document.getElementById("btnEditClose").addEventListener("click", closePointEdit);
+function renderPoseLists() {
+  const el = document.getElementById("pointList");
+  el.innerHTML = "";
+  hoverPointName = null;
+  if (!state.points.length) {
+    const h = document.createElement("div"); h.className = "hint"; h.style.margin = "6px 2px";
+    h.textContent = "まだ登録がありません。車体とアームを動かして「＋ 今の位置を登録」を押してください。";
+    el.appendChild(h);
+  }
+  const use = pointUsage();
+  for (const L of bodyLocations()) {
+    const hd = document.createElement("div");
+    hd.className = "loc-head";
+    hd.innerHTML = `<span class="lco"></span>`;
+    hd.querySelector(".lco").textContent = `x:${(L.body.x / 1000).toFixed(2)} | y:${(L.body.y / 1000).toFixed(2)} | θ:${Math.round(L.body.th * 180 / Math.PI)}°`;
+    hd.title = "車体の場所。この下のポイントは、どれもこの場所で登録したものです";
+    hd.appendChild(smallBtn("→", "車体だけこの場所へ動かす（アームはそのまま）", () => moveRobotTo(L.body, null)));
+    hd.appendChild(smallBtn("↻", L.points.length > 1 ? `この場所の ${L.points.length} 件をまとめて、今の車体の位置へ移す` : "今の車体の位置へ移す", () => {
+      if (playing) return;
+      pushUndo();
+      const rb = state.robot.body;
+      for (const q of L.points) q.body = { x: rb.x, y: rb.y, th: mod2pi(rb.th) };
+      renderPoseLists(); renderProgram(); recompute();
+    }));
+    el.appendChild(hd);
+    for (const q of L.points) el.appendChild(pointRow(q, use));
+  }
+  const armOnly = state.points.filter(q => !q.body);
+  if (armOnly.length) {
+    const hd = document.createElement("div");
+    hd.className = "loc-head";
+    hd.innerHTML = `<span class="lco">アームだけ（どの場所でも使う）</span>`;
+    el.appendChild(hd);
+    for (const q of armOnly) el.appendChild(pointRow(q, use));
+  }
+  renderPointDetail();
+}
+
+/* 選んだ位置の設定欄（レイアウトの「設定」と同じ形）。値はその場で直せる */
+function renderPointDetail(force) {
+  const el = document.getElementById("pointDetail");
+  const p = findPoint(selPointName);
+  document.getElementById("editTitle").textContent = p ? p.name : "";
+  document.getElementById("editFoot").hidden = !p;
+  if (!p) { el.dataset.name = ""; el.innerHTML = '<div class="hint">一覧から選ぶと、ここに設定が出ます。</div>'; return; }
+  // 入力中の欄があれば作り直さず値だけ更新する（Tab で次の欄へ移ったときなど）
+  if (!force && el.dataset.name === p.name && el.contains(document.activeElement)) { syncPointDetail(p); return; }
+  el.dataset.name = p.name;
+  el.innerHTML = "";
+  const title = document.createElement("div"); title.className = "ptitle";
+  const ty = document.createElement("span"); ty.className = "ty"; ty.textContent = p.body && p.arm ? "車体＋アーム" : p.body ? "車体" : "アーム";
+  const tt = document.createElement("span"); tt.textContent = "設定";
+  title.append(ty, tt);
+  el.appendChild(title);
+  const grid = document.createElement("div"); grid.className = "pgrid";
+  el.appendChild(grid);
+  const changed = () => { renderPoseLists(); renderProgram(); recompute(); };
+  const num = (k, step, onSet) => {
+    const inp = document.createElement("input"); inp.type = "number"; inp.step = step; inp.dataset.k = k;
+    inp.addEventListener("change", () => { const v = parseFloat(inp.value); if (!isFinite(v)) { syncPointDetail(p); return; } pushUndo(); onSet(v); changed(); });
+    return inp;
+  };
+  const label = (t) => { const s = document.createElement("span"); s.textContent = t; return s; };
+  // 名前
+  const nm = document.createElement("input"); nm.type = "text"; nm.className = "full"; nm.dataset.k = "name";
+  const applyName = () => {
+    const nv = nm.value.trim();
+    if (!nv || nv === p.name) { nm.value = p.name; return; }
+    if (state.points.some(q => q !== p && q.name === nv)) { alert("同じ名前が既にあります。"); nm.value = p.name; return; }
+    pushUndo(); const oldN = p.name; p.name = nv; renamePointRefs(oldN, nv); renderPointDetail(true); changed();
+  };
+  nm.addEventListener("change", applyName);
+  nm.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); nm.blur(); } });
+  grid.append(label("名前"), nm);
+  // 車体
+  const hasB = document.createElement("input"); hasB.type = "checkbox"; hasB.dataset.k = "hasBody";
+  hasB.title = "外すと、この位置ではアームだけを動かします";
+  hasB.addEventListener("change", () => {
+    if (!hasB.checked && !p.arm) { hasB.checked = true; alert("車体とアームの両方を外すことはできません。"); return; }
+    pushUndo(); const r = state.robot.body;
+    p.body = hasB.checked ? { x: r.x, y: r.y, th: mod2pi(r.th) } : null; // 入れるときは今の車体の位置
+    renderPointDetail(true); changed();
+  });
+  grid.append(label("車体"), hasB);
+  if (p.body) {
+    const wrap = document.createElement("div"); wrap.className = "pair full";
+    const sep = document.createElement("span"); sep.textContent = ",";
+    wrap.append(num("x", 0.01, v => p.body.x = v * 1000), sep, num("y", 0.01, v => p.body.y = v * 1000));
+    grid.append(label("位置 X:Y [m]"), wrap);
+    const th = num("th", 1, v => p.body.th = mod2pi(deg2rad(v))); th.classList.add("full");
+    grid.append(label("向き [°]"), th);
+  }
+  // アーム
+  const hasA = document.createElement("input"); hasA.type = "checkbox"; hasA.dataset.k = "hasArm";
+  hasA.title = "外すと、この位置では車体だけを動かします";
+  hasA.addEventListener("change", () => {
+    if (!hasA.checked && !p.body) { hasA.checked = true; alert("車体とアームの両方を外すことはできません。"); return; }
+    pushUndo();
+    p.arm = hasA.checked ? { q: state.robot.arm.q.slice() } : null; // 入れるときは今のアームの姿勢
+    renderPointDetail(true); changed();
+  });
+  grid.append(label("アーム"), hasA);
+  if (p.arm) {
+    const tcp = document.createElement("span"); tcp.className = "ro full"; tcp.dataset.k = "tcp";
+    const tl = label("手先 [m]"); tl.title = "車体基準（x 前・y 左・z 上）。手先は関節から決まるので、直すときは関節か、アーム操作で動かして「今の位置で上書き」";
+    grid.append(tl, tcp);
+    const jg = document.createElement("div"); jg.className = "jgrid full";
+    for (let i = 0; i < 6; i++) {
+      const lb = document.createElement("label"); lb.textContent = `J${i + 1}`;
+      lb.appendChild(num("j" + i, 1, v => { p.arm.q[i] = clamp(deg2rad(v), ARM.limits[i][0], ARM.limits[i][1]); }));
+      jg.appendChild(lb);
+    }
+    grid.append(label("関節 [°]"), jg);
+  }
+  syncPointDetail(p);
+}
+/* 設定欄の値を内部値から更新（入力中の欄は触らない） */
+function syncPointDetail(p) {
+  const el = document.getElementById("pointDetail");
+  const val = {
+    name: p.name, hasBody: !!p.body, hasArm: !!p.arm,
+    x: p.body ? +(p.body.x / 1000).toFixed(2) : "", y: p.body ? +(p.body.y / 1000).toFixed(2) : "", // m は 0.01 刻み
+    th: p.body ? Math.round(p.body.th * 180 / Math.PI) : "", // 角度は 1° 刻み
+  };
+  if (p.arm) p.arm.q.forEach((v, i) => { val["j" + i] = Math.round(v * 180 / Math.PI); });
+  el.querySelectorAll("[data-k]").forEach(inp => {
+    if (inp === document.activeElement) return;
+    const k = inp.dataset.k;
+    if (k === "tcp") {
+      const info = tcpInfoVeh(p.arm.q, state.toolLen);
+      inp.textContent = `x ${(info.x / 1000).toFixed(2)}  y ${(info.y / 1000).toFixed(2)}  z ${(info.z / 1000).toFixed(2)}`;
+      return;
+    }
+    if (inp.type === "checkbox") inp.checked = val[k]; else inp.value = val[k];
+  });
+}
+/* 一覧の上のボタン: 複製・今の位置で上書き・削除（選んだ位置が対象） */
+
+document.getElementById("btnPtOvw").addEventListener("click", () => {
+  const p = findPoint(selPointName); if (!p || playing) return;
+  pushUndo();
+  const rb = state.robot.body;
+  if (p.body) p.body = { x: rb.x, y: rb.y, th: mod2pi(rb.th) };
+  if (p.arm) p.arm = { q: state.robot.arm.q.slice() };
+  renderPoseLists(); renderProgram(); recompute();
+});
+function deleteSelectedPoint() {
+  const p = findPoint(selPointName); if (!p) return;
+  pushUndo();
+  state.points = state.points.filter(q => q !== p);
+  selPointName = null;
+  if (hoverPointName === p.name) hoverPointName = null;
+  renderPoseLists(); renderProgram(); recompute();
+}
+// 編集欄の削除: 消したら編集欄も閉じる
+document.getElementById("btnEditDel").addEventListener("click", () => { deleteSelectedPoint(); closePointEdit(); });
 
 /* 座標値のダブルクリック編集。items: [ラベル, 表示値, 単位サフィックス, 確定時のsetter(数値)] の配列。
  * 値部分だけを編集可能なスパンにして親要素へ追加する */
@@ -1740,18 +2441,18 @@ document.getElementById("btnClearProg").addEventListener("click", () => {
 });
 
 function addBlock(stage, type) {
-  if ((type === "body" || type === "arm") && stage.blocks.some(b => b.type === type)) {
-    alert("同じ段に同じ種類の動作ブロックは置けません（並列は車体×アーム等の組み合わせで指定します）。");
-    return;
-  }
-  if (type === "body") {
-    if (!state.bodyPoses.length) { alert("先に車体位置を登録してください。"); return; }
+  if (type === "point") {
+    const use = stageUse(stage);
+    if (use.body && use.arm) { alert("この段では、もう車体もアームも動かしています。"); return; }
+    if (!state.points.length) { alert("先に位置を登録してください（左ペインの「＋ 今の位置を登録」）。"); return; }
+    // 空いている方を動かすブロックにする
+    let p, move;
+    if (use.body) { p = state.points.find(q => q.arm); move = "arm"; }
+    else if (use.arm) { p = state.points.find(q => q.body); move = "body"; }
+    else { p = state.points[0]; move = (p.body && p.arm) ? "both" : p.body ? "body" : "arm"; }
+    if (!p) { alert(use.body ? "アームの姿勢を持つ位置がありません。" : "車体の位置を持つ位置がありません。"); return; }
     pushUndo();
-    stage.blocks.push({ type, pose: state.bodyPoses[0].name, mode: "auto" }); // 初期は最短時間
-  } else if (type === "arm") {
-    if (!state.armPoses.length) { alert("先にアーム位置を登録してください。"); return; }
-    pushUndo();
-    stage.blocks.push({ type, pose: state.armPoses[0].name });
+    stage.blocks.push({ type: "point", point: p.name, move, mode: "auto" }); // 走行経路の初期は最短時間
   } else {
     pushUndo();
     stage.blocks.push({ type: "other", name: "動作", wait: 1.0 });
@@ -1759,8 +2460,38 @@ function addBlock(stage, type) {
   renderProgram(); recompute();
 }
 
+/* 移動ブロックの行き先・動かすものを変える。同じ段で車体（アーム）を動かすブロックと重なるなら取り消す */
+function setBlockTarget(stage, b, cand, sel, oldVal) {
+  const next = Object.assign({}, b, cand);
+  const p = findPoint(next.point);
+  if (p && cand.point !== undefined) { // ポイントに無い方は動かせないので、動かすものを合わせる
+    if (!p.arm) next.move = "body";
+    else if (!p.body) next.move = "arm";
+  }
+  const u = stageUse(stage, b), m = blockMoves(next);
+  if ((u.body && m.body) || (u.arm && m.arm)) {
+    alert("同じ段で、車体（またはアーム）を動かすブロックが重なります。同じ段で同時に動かせるのは、車体 1 つとアーム 1 つです。");
+    if (sel) sel.value = oldVal;
+    return;
+  }
+  pushUndo();
+  b.point = next.point; b.move = next.move;
+  renderProgram(); recompute();
+}
+
+/* Move ブロックが終わったときの姿勢。動かさない方は、その段が始まるときの姿勢のまま */
+function blockEndPose(si, bi) {
+  if (!currentCompiled) return null;
+  const st = currentCompiled.stages[si];
+  const cb = st && st.blocks[bi];
+  if (!cb || !cb.anim) return null;
+  const s0 = stateAtTime(currentCompiled, st.t0);
+  const r = cb.anim(cb.dur);
+  return { body: r.body || s0.body, arm: r.arm || s0.arm };
+}
 function renderProgram() {
   progEl.innerHTML = "";
+  hoverBlockGhost = null; // 作り直すとマウスが離れた知らせが来ないので、ここで消す
   // 固定の「初期状態」ブロック：サイクル開始時の車体・アーム姿勢を選択
   const init = document.createElement("div");
   init.className = "stage initial";
@@ -1799,9 +2530,14 @@ function renderProgram() {
     row.appendChild(lb); row.appendChild(sel);
     return row;
   };
-  init.appendChild(mkInitRow("車体", state.bodyPoses, "bodyPose"));
-  init.appendChild(mkInitRow("アーム", state.armPoses, "armPose"));
+  init.appendChild(mkInitRow("車体", state.points.filter(p => p.body), "body"));
+  init.appendChild(mkInitRow("アーム", state.points.filter(p => p.arm), "arm"));
   progEl.appendChild(init);
+  if (!state.program.length) {
+    const h = document.createElement("div"); h.className = "hint"; h.style.margin = "8px 4px";
+    h.textContent = "「＋ 段を追加」で工程を並べます。縦に並べた段は順番に、同じ段に置いたブロックは同時に動きます。「＋Move」は登録した位置へ車体とアームを動かします（車体だけ・アームだけも選べます）。段の時間はブロックの最大値です。";
+    progEl.appendChild(h);
+  }
 
   state.program.forEach((stage, si) => {
     {
@@ -1812,8 +2548,11 @@ function renderProgram() {
     const stEl = document.createElement("div");
     stEl.className = "stage";
     stEl.id = `stage-${si}`;
-    stEl.title = "長押しでつかんでドラッグすると並べ替えできます";
-    attachStageDrag(stEl, si);
+    const grip = document.createElement("div");
+    grip.className = "stage-grip"; grip.title = "ドラッグで並べ替え";
+    grip.innerHTML = `<span class="sno">${si + 1}</span>` + '<svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor"><circle cx="2" cy="2" r="1.3"/><circle cx="6" cy="2" r="1.3"/><circle cx="2" cy="7" r="1.3"/><circle cx="6" cy="7" r="1.3"/><circle cx="2" cy="12" r="1.3"/><circle cx="6" cy="12" r="1.3"/></svg>';
+    stEl.appendChild(grip);
+    attachStageDrag(grip, stEl, si);
     const blocksEl = document.createElement("div");
     blocksEl.className = "stage-blocks";
     stage.blocks.forEach((b, bi) => {
@@ -1822,9 +2561,10 @@ function renderProgram() {
     // ブロック追加ボタン
     const addEl = document.createElement("div");
     addEl.style.cssText = "display:flex; flex-direction:column; gap:2px;";
-    for (const [ty, lb] of [["body", "＋車体"], ["arm", "＋アーム"], ["other", "＋その他"]]) {
-      // 車体・アームは1段に1つまでなので、既にある場合は追加ボタン自体を表示しない
-      if ((ty === "body" || ty === "arm") && stage.blocks.some(b => b.type === ty)) continue;
+    const use = stageUse(stage);
+    for (const [ty, lb] of [["point", "＋Move"], ["other", "＋その他"]]) {
+      // 車体もアームも動かすブロックが既にある段には、移動を足せない
+      if (ty === "point" && use.body && use.arm) continue;
       const bt = document.createElement("button");
       bt.className = "small"; bt.textContent = lb;
       bt.addEventListener("click", () => addBlock(stage, ty));
@@ -1867,7 +2607,7 @@ function renderProgram() {
 }
 
 /* ---------------- 段のドラッグ＆ドロップ並べ替え ----------------
- * 段を左クリック長押し（300ms）でつかみ、ドラッグで挿入位置（青いライン）を選んで
+ * 段の左端のつまみを押すとつかみ、ドラッグで挿入位置（青いライン）を選んで
  * マウスを離すとその位置に挿入する。ボタン・セレクト等の操作部から始まるドラッグは無効 */
 let stageDrag = null; // {from, el, timer, started, sx, sy, dropIdx}
 const dropInd = document.createElement("div"); // 挿入位置インジケータ（1本の直線）
@@ -1885,19 +2625,17 @@ function cancelStageDrag() {
 window.addEventListener("blur", cancelStageDrag); // スクショ等でウィンドウのフォーカスが外れたら解除
 document.addEventListener("visibilitychange", () => { if (document.hidden) cancelStageDrag(); });
 
-function attachStageDrag(stEl, si) {
-  stEl.addEventListener("mousedown", (e) => {
+function attachStageDrag(grip, stEl, si) {
+  grip.addEventListener("mousedown", (e) => {
     if (e.button !== 0) return;
-    if (e.target.closest("button, select, input, textarea")) return;
+    e.preventDefault();
     cancelStageDrag(); // 前回のドラッグが残っていたら掃除してから開始
-    stageDrag = { from: si, el: stEl, started: false, sx: e.clientX, sy: e.clientY, dropIdx: null };
-    stageDrag.timer = setTimeout(() => {
-      if (!stageDrag) return;
-      stageDrag.started = true;
-      stEl.classList.add("dragging");
-      document.body.style.userSelect = "none";
-      document.body.style.cursor = "grabbing";
-    }, 300);
+    // つまみを押した時点でつかむ（長押しは要らない）
+    stageDrag = { from: si, el: stEl, started: true, sx: e.clientX, sy: e.clientY, dropIdx: null };
+    stEl.classList.add("dragging");
+    document.body.style.userSelect = "none";
+    document.body.style.cursor = "grabbing";
+    requestAnimationFrame(stageAutoScroll); // 端に近づいている間の自動スクロール（ドラッグが終われば止まる）
   });
 }
 
@@ -1905,23 +2643,13 @@ function stageEls() {
   return [...progEl.querySelectorAll(".stage")].filter(el => !el.classList.contains("initial"));
 }
 
-window.addEventListener("mousemove", (e) => {
-  if (!stageDrag) return;
-  if (!stageDrag.started) {
-    // 長押し成立前に大きく動いたらドラッグ開始を取りやめる（誤操作防止）
-    if (Math.hypot(e.clientX - stageDrag.sx, e.clientY - stageDrag.sy) > 5) {
-      clearTimeout(stageDrag.timer);
-      stageDrag = null;
-    }
-    return;
-  }
-  e.preventDefault();
-  // マウス位置から挿入インデックスを決定（各段の中点との比較）
+/* マウスの高さから挿入位置を決め、青い線を出す（各段の中点との比較） */
+function updateStageDrop(clientY) {
   const els = stageEls();
   let idx = els.length;
   for (let i = 0; i < els.length; i++) {
     const r = els[i].getBoundingClientRect();
-    if (e.clientY < r.top + r.height / 2) { idx = i; break; }
+    if (clientY < r.top + r.height / 2) { idx = i; break; }
   }
   stageDrag.dropIdx = idx;
   // 挿入位置のブロック間の隙間中央に、ブロックに接触しない1本の直線を表示
@@ -1934,11 +2662,33 @@ window.addEventListener("mousemove", (e) => {
     y = last.offsetTop + last.offsetHeight + 8; // 末尾：最後の段の下
   }
   dropInd.style.top = y + "px";
-  // リストの端に近づいたら自動スクロール
-  const sc = document.getElementById("progScroll");
-  const r = sc.getBoundingClientRect();
-  if (e.clientY < r.top + 24) sc.scrollTop -= 8;
-  else if (e.clientY > r.bottom - 24) sc.scrollTop += 8;
+}
+/* リストの端に近づいている間は、マウスを止めていても毎フレーム自動でスクロールする。
+ * 端に近いほど速く、リストの外（上・下）に出たら最速 */
+const AUTO_SCROLL_ZONE = 48, AUTO_SCROLL_MAX = 18; // [px]、[px/フレーム]
+function stageAutoScroll() {
+  if (!stageDrag || !stageDrag.started) return;
+  const y = stageDrag.lastY;
+  if (y !== undefined) {
+    const sc = document.getElementById("progScroll");
+    const r = sc.getBoundingClientRect();
+    let v = 0;
+    if (y < r.top + AUTO_SCROLL_ZONE) v = -AUTO_SCROLL_MAX * Math.min(1, (r.top + AUTO_SCROLL_ZONE - y) / AUTO_SCROLL_ZONE);
+    else if (y > r.bottom - AUTO_SCROLL_ZONE) v = AUTO_SCROLL_MAX * Math.min(1, (y - (r.bottom - AUTO_SCROLL_ZONE)) / AUTO_SCROLL_ZONE);
+    if (v) {
+      const before = sc.scrollTop;
+      sc.scrollTop += v;
+      if (sc.scrollTop !== before) updateStageDrop(y); // 段が動いたので挿入位置も追従
+    }
+  }
+  requestAnimationFrame(stageAutoScroll);
+}
+
+window.addEventListener("mousemove", (e) => {
+  if (!stageDrag || !stageDrag.started) return;
+  e.preventDefault();
+  stageDrag.lastY = e.clientY;
+  updateStageDrop(e.clientY);
 });
 
 window.addEventListener("mouseup", () => {
@@ -1959,11 +2709,28 @@ function makeBlockEl(stage, b, si, bi) {
   const el = document.createElement("div");
   el.className = "blk " + b.type;
   el.id = `blk-${si}-${bi}`;
+  if (b.type === "point") { // マウスを乗せると、このブロックが終わったときの姿勢を中央に影で出す
+    el.addEventListener("mouseenter", () => { hoverBlockGhost = blockEndPose(si, bi); });
+    el.addEventListener("mouseleave", () => { hoverBlockGhost = null; });
+  }
   const head = document.createElement("div");
   head.className = "blk-head";
   const title = document.createElement("span");
   title.className = "t";
-  title.textContent = b.type === "body" ? "Move Body" : b.type === "arm" ? "Move Arm" : "Other Action";
+  const mv = b.type === "point" ? blockMoves(b) : null;
+  if (mv) el.className = "blk " + (mv.body && mv.arm ? "both" : mv.arm ? "arm" : "body"); // 色: 両方=青→緑、車体=青、アーム=緑
+  // 英語の名前。動かすものに合わせる（両方 / 車体だけ / アームだけ）
+  title.textContent = b.type === "point" ? "Move" : "Other Action"; // 何を動かすかは色と「動かす」で分かるので、名前は Move に統一
+  if (b.type === "point") { // 行き先を見出しに出す（Move が続いても見分けられるように）
+    const dest = document.createElement("span");
+    dest.className = "blk-dest";
+    dest.textContent = "→ " + (b.point || "?");
+    title.appendChild(dest);
+  }
+  // ブロックの時間は名前の横に「Move (0.96 s)」と出す（renderProgramTimes が入れる）
+  const tm = document.createElement("span");
+  tm.className = "blk-time"; tm.id = `blk-time-${si}-${bi}`;
+  title.appendChild(tm);
   head.appendChild(title);
   const x = document.createElement("button");
   x.className = "x"; x.textContent = "✕"; x.title = "削除";
@@ -1975,25 +2742,53 @@ function makeBlockEl(stage, b, si, bi) {
   head.appendChild(x);
   el.appendChild(head);
 
-  if (b.type === "body" || b.type === "arm") {
+  if (b.type === "point") {
+    // 行き先（登録した位置）
     const sel = document.createElement("select");
-    const list = b.type === "body" ? state.bodyPoses : state.armPoses;
-    for (const p of list) {
+    for (const p of state.points) {
       const op = document.createElement("option");
-      op.value = p.name; op.textContent = p.name;
+      op.value = p.name; op.textContent = p.name + (p.body && p.arm ? "" : p.body ? "（車体）" : "（アーム）");
       sel.appendChild(op);
     }
-    if (!list.some(p => p.name === b.pose)) {
+    if (!findPoint(b.point)) {
       const op = document.createElement("option");
-      op.value = b.pose; op.textContent = (b.pose || "?") + "（未登録）";
+      op.value = b.point; op.textContent = (b.point || "?") + "（未登録）";
       sel.appendChild(op);
     }
-    sel.value = b.pose;
-    sel.addEventListener("change", () => { pushUndo(); b.pose = sel.value; recompute(); });
+    sel.value = b.point;
+    sel.className = "blk-destsel"; sel.title = "行き先（登録した位置）";
+    sel.addEventListener("change", () => setBlockTarget(stage, b, { point: sel.value }, sel, b.point));
     el.appendChild(sel);
+    // 何を動かすか（ポイントに無い方は選べない）
+    const p = findPoint(b.point);
+    const mvRow = document.createElement("div");
+    mvRow.style.cssText = "display:flex; gap:4px; align-items:center;";
+    // Body・Arm のチェックボックス。チェックが入っている方を動かす（両方なら両方。両方外すことはできない）
+    const cur = b.move || "both";
+    const on = { body: cur !== "arm", arm: cur !== "body" };
+    const lbl = document.createElement("span");
+    lbl.textContent = "動かす";
+    lbl.style.cssText = "font-size:11px; opacity:0.85; white-space:nowrap; margin-right:6px;";
+    mvRow.appendChild(lbl);
+    for (const [key, label] of [["body", "Body"], ["arm", "Arm"]]) {
+      const wrap = document.createElement("label");
+      const has = !p || (key === "body" ? !!p.body : !!p.arm);
+      wrap.className = "mvchk" + (has ? "" : " dis");
+      wrap.title = !has ? `この位置には${key === "body" ? "車体の位置" : "アームの姿勢"}がありません` : `チェックを入れると${key === "body" ? "車体" : "アーム"}を動かします`;
+      const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = on[key]; cb.disabled = !has;
+      cb.addEventListener("change", () => {
+        const next = { ...on, [key]: cb.checked };
+        if (!next.body && !next.arm) { cb.checked = true; alert("Body か Arm のどちらかにはチェックを入れてください。"); return; }
+        setBlockTarget(stage, b, { move: next.body && next.arm ? "both" : next.body ? "body" : "arm" }, null, cur);
+        if ((b.move || "both") === cur) { renderProgram(); renderProgramTimes(); } // 重なりで取り消されたときはチェックを元に戻す
+      });
+      wrap.append(cb, label);
+      mvRow.appendChild(wrap);
+    }
+    el.appendChild(mvRow);
 
-    // 車体のみ：前進 / 後進の選択（後進はDubinsの始点終点姿勢を反転して生成）
-    if (b.type === "body") {
+    // 車体を動かすときだけ：走行経路（後進はDubinsの始点終点姿勢を反転して生成）と最大速度
+    if (mv.body) {
       const dirRow = document.createElement("div");
       dirRow.style.cssText = "display:flex; gap:4px; align-items:center; margin-top:3px;";
       const lbl = document.createElement("span");
@@ -2081,9 +2876,6 @@ function makeBlockEl(stage, b, si, bi) {
     row.appendChild(nm); row.appendChild(sec); row.appendChild(u);
     el.appendChild(row);
   }
-  const tm = document.createElement("div");
-  tm.className = "blk-time"; tm.id = `blk-time-${si}-${bi}`;
-  el.appendChild(tm);
   return el;
 }
 
@@ -2095,105 +2887,86 @@ function renderProgramTimes() {
     st.blocks.forEach((cb, bi) => {
       const el = document.getElementById(`blk-${si}-${bi}`);
       const tm = document.getElementById(`blk-time-${si}-${bi}`);
-      if (tm) tm.textContent = cb.err ? "位置未登録!" : cb.dur.toFixed(2) + " s";
+      if (tm) tm.textContent = cb.err ? " (位置未登録!)" : ` (${cb.dur.toFixed(2)} s)`;
       if (el) el.classList.toggle("err", !!cb.err);
     });
   });
 }
 
-/* ---------------- 背景画像（PNG） ---------------- */
-let bgImgEl = null;  // 読込済み Image オブジェクト（state.bgImage.src と対応）
-
-function drawBgImage() {
-  const B = state.bgImage;
-  if (!B || !bgImgEl || !bgImgEl.complete || !bgImgEl.naturalWidth) return;
-  const mmPerPx = 1000 / Math.max(1e-6, B.pxPerM); // 画像1pxの実寸 [mm]
-  const k = view.scale * mmPerPx;                  // 画像1px → 画面px
-  const wMm = bgImgEl.naturalWidth * mmPerPx, hMm = bgImgEl.naturalHeight * mmPerPx;
-  const [sx, sy] = w2s(B.x - wMm / 2, B.y + hMm / 2); // 画像左上のワールド座標 → 画面
-  ctx.save();
-  ctx.globalAlpha = B.opacity;
-  ctx.drawImage(bgImgEl, sx, sy, bgImgEl.naturalWidth * k, bgImgEl.naturalHeight * k);
-  ctx.restore();
-}
-
-function setBgImage(bg) { // bg: state.bgImage 形式 or null
-  state.bgImage = bg;
-  bgImgEl = null;
-  if (bg && bg.src) {
-    bgImgEl = new Image();
-    bgImgEl.onload = updateBgImgUI;
-    bgImgEl.src = bg.src;
+/* ---------------- 下絵（レイアウト図の画像） ----------------
+ * type:"image" のオブジェクト。src は dataURL。描画用の Image 要素は id ごとにキャッシュする */
+const imgCache = new Map(); // id → { src, el }
+function imageEl(o) {
+  let c = imgCache.get(o.id);
+  if (!c || c.src !== o.src) {
+    const el = new Image();
+    el.src = o.src;
+    c = { src: o.src, el };
+    imgCache.set(o.id, c);
   }
-  updateBgImgUI();
+  return c.el;
 }
-
-function updateBgImgUI() {
-  const B = state.bgImage;
-  document.getElementById("bgImgCtrl").style.display = B ? "" : "none";
-  if (!B && bgMode === "calib") setBgMode("calib"); // 画像が無くなったら縮尺合わせを終了
-  document.getElementById("btnBgImgClear").style.display = B ? "" : "none"; // 画像読込時のみ表示
-  if (!B) return;
-  document.getElementById("bgImgPxPerM").value = Math.round(B.pxPerM * 1000) / 1000;
-  document.getElementById("bgImgX").value = (B.x / 1000).toFixed(2);
-  document.getElementById("bgImgY").value = (B.y / 1000).toFixed(2);
-  document.getElementById("bgImgOpacity").value = B.opacity;
-  updateBgImgInfo();
+function imageReady(o) { const el = imageEl(o); return (el.complete && el.naturalWidth) ? el : null; }
+/* 下絵の実寸 [mm]（まだ読めていなければ null） */
+function imageSizeMm(o) {
+  const el = imageReady(o);
+  return el ? { w: el.naturalWidth * 1000 / o.pxPerM, d: el.naturalHeight * 1000 / o.pxPerM } : null;
 }
-
-function updateBgImgInfo() {
-  const B = state.bgImage;
-  const info = document.getElementById("bgImgInfo");
-  if (B && bgImgEl && bgImgEl.complete && bgImgEl.naturalWidth) {
-    const wM = bgImgEl.naturalWidth / B.pxPerM, hM = bgImgEl.naturalHeight / B.pxPerM;
-    info.textContent = `画像 ${bgImgEl.naturalWidth}×${bgImgEl.naturalHeight}px → 実寸 ${wM.toFixed(1)}×${hM.toFixed(1)}m`;
-  } else {
-    info.textContent = "";
+function drawImages() {
+  for (const o of state.objects) {
+    if (o.type !== "image" || o.visible === false) continue;
+    const el = imageReady(o);
+    if (!el) { imageEl(o); continue; }
+    const mmPerPx = 1000 / Math.max(1e-6, o.pxPerM);
+    const k = view.scale * mmPerPx;
+    const wMm = el.naturalWidth * mmPerPx, hMm = el.naturalHeight * mmPerPx;
+    const [sx, sy] = w2s(o.x - wMm / 2, o.y + hMm / 2);
+    ctx.save(); ctx.globalAlpha = o.opacity; ctx.drawImage(el, sx, sy, el.naturalWidth * k, el.naturalHeight * k); ctx.restore();
+    if (o.id === selectedId) drawSelectionRect(sx, sy, wMm * view.scale, hMm * view.scale);
   }
 }
-
-document.getElementById("btnBgImgLoad").addEventListener("click", () => document.getElementById("fileBgImg").click());
+/* 下絵全体が中央ペインに収まるよう表示位置・ズームを合わせる */
+function fitViewToImage(o) {
+  const sz = imageSizeMm(o);
+  if (!sz) return;
+  view.cx = o.x; view.cy = o.y;
+  view.scale = clamp(Math.min(cv.width / sz.w, cv.height / sz.d) * 0.9, 0.01, 0.5);
+}
+let imgReplaceTarget = null; // 「画像を差し替え」で選んだ下絵。null なら新規追加
 document.getElementById("fileBgImg").addEventListener("change", (e) => {
   const f = e.target.files[0];
   if (!f) return;
   const rd = new FileReader();
   rd.onload = () => {
-    const prev = state.bgImage;
     pushUndo();
-    setBgImage({
-      src: rd.result,
-      pxPerM: prev ? prev.pxPerM : (parseFloat(document.getElementById("bgImgPxPerM").value) || 100),
-      x: prev ? prev.x : 0,
-      y: prev ? prev.y : 0,
-      opacity: prev ? prev.opacity : 0.6,
-    });
-    // 取り込み直後：画像全体が見えるよう表示を合わせる（縮尺合わせモードはユーザー操作で開始）
-    const img = bgImgEl;
-    if (img.complete && img.naturalWidth) fitViewToBgImage();
-    else img.addEventListener("load", fitViewToBgImage, { once: true });
+    let o = imgReplaceTarget && state.objects.find(q => q === imgReplaceTarget);
+    if (o) { o.src = rd.result; }
+    else {
+      o = { id: uid(), type: "image", name: autoObjName("image"), visible: true, locked: true, src: rd.result, pxPerM: 100, x: view.cx, y: view.cy, opacity: 0.6 };
+      state.objects.unshift(o); // 一番下に敷く（描画順＝配列順）
+    }
+    imgReplaceTarget = null;
+    const el = imageEl(o);
+    const after = () => { fitViewToImage(o); selectObject(o.id, { keepTab: true }); };
+    if (el.complete && el.naturalWidth) after(); else el.addEventListener("load", after, { once: true });
+    renderObjectList();
   };
   rd.readAsDataURL(f);
   e.target.value = "";
 });
-document.getElementById("btnBgImgClear").addEventListener("click", () => {
-  if (state.bgImage) pushUndo();
-  setBgImage(null);
+// ツール行の「下絵」: 新しい下絵を読み込む（何枚でも）
+document.getElementById("btnBgImgTool").addEventListener("click", () => {
+  if (viewMode === "3d") setViewMode("2d");
+  imgReplaceTarget = null;
+  document.getElementById("fileBgImg").click();
 });
-
-/* 背景画像全体が中央ペインに収まるよう表示位置・ズームを合わせる */
-function fitViewToBgImage() {
-  const B = state.bgImage;
-  if (!B || !bgImgEl || !bgImgEl.naturalWidth) return;
-  const wMm = bgImgEl.naturalWidth * 1000 / B.pxPerM, hMm = bgImgEl.naturalHeight * 1000 / B.pxPerM;
-  view.cx = B.x; view.cy = B.y;
-  view.scale = clamp(Math.min(cv.width / wMm, cv.height / hMm) * 0.9, 0.01, 0.5);
-}
 
 /* ---------------- 縮尺合わせ（線を引いて実寸を入力） ----------------
  * 背景画像上の既知の長さ（柱間・通路幅など）に沿って線を引き、その実寸[m]を入力すると
  * 画像の px/m を逆算して設定する。線の始点は画像上の同じ点に留まるよう画像中心も補正する。 */
 let calibStart = null; // 1点目 [x,y] mm（2点目待ち）
 let calibLine = null;  // 確定した線 [[x1,y1],[x2,y2]] mm（実寸入力待ち）
+let calibTarget = null; // 縮尺を合わせる下絵（オブジェクト）
 const calibPanel = document.getElementById("calibPanel");
 const calibLenEl = document.getElementById("calibLen");
 
@@ -2219,7 +2992,7 @@ function calibClick(w, shift) {
   document.getElementById("bgHint").textContent = "線の実寸 [m] を入力して「適用」（Enter）を押してください。引き直す場合はキャンバスをクリック。";
 }
 function applyCalib() {
-  const B = state.bgImage;
+  const B = calibTarget && state.objects.find(o => o === calibTarget);
   const realM = parseFloat(calibLenEl.value);
   if (!B || !calibLine) return;
   if (!isFinite(realM) || realM <= 0) { alert("実寸には 0 より大きい数値 [m] を入力してください。"); calibLenEl.focus(); return; }
@@ -2232,204 +3005,239 @@ function applyCalib() {
   B.x = a[0] + (B.x - a[0]) * k;
   B.y = a[1] + (B.y - a[1]) * k;
   B.pxPerM = newPxPerM;
-  updateBgImgUI();
   setBgMode("calib"); // モード終了
+  renderObjectList();
   document.getElementById("bgHint").textContent =
     `縮尺を ${newPxPerM.toFixed(2)} px/m に設定しました。`;
 }
-document.getElementById("btnBgCalib").addEventListener("click", () => setBgMode("calib"));
+
 document.getElementById("btnCalibApply").addEventListener("click", applyCalib);
 document.getElementById("btnCalibCancel").addEventListener("click", () => setBgMode("calib"));
 calibLenEl.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); applyCalib(); } });
-// 背景画像の数値編集（縮尺・位置・透明度）もUndo対象にする
-for (const id of ["bgImgPxPerM", "bgImgX", "bgImgY", "bgImgOpacity"]) {
-  bindUndoOnEdit(document.getElementById(id));
-}
-document.getElementById("bgImgPxPerM").addEventListener("input", () => {
-  if (!state.bgImage) return;
-  state.bgImage.pxPerM = Math.max(1e-6, parseFloat(document.getElementById("bgImgPxPerM").value) || 100);
-  updateBgImgInfo();
-});
-document.getElementById("bgImgX").addEventListener("input", () => {
-  if (!state.bgImage) return;
-  state.bgImage.x = (parseFloat(document.getElementById("bgImgX").value) || 0) * 1000;
-});
-document.getElementById("bgImgY").addEventListener("input", () => {
-  if (!state.bgImage) return;
-  state.bgImage.y = (parseFloat(document.getElementById("bgImgY").value) || 0) * 1000;
-});
-document.getElementById("bgImgOpacity").addEventListener("input", () => {
-  if (!state.bgImage) return;
-  state.bgImage.opacity = parseFloat(document.getElementById("bgImgOpacity").value) || 0.6;
-});
 
-/* ---------------- 背景描画（四角・文字） ---------------- */
-let bgMode = null;      // null | 'draw' | 'line' | 'text' | 'erase'
-let bgTemp = null;      // 四角描画の1点目 [x,y] mm
+/* ---------------- オブジェクトの追加・選択・移動（2D） ----------------
+ * bgMode: null（通常: クリックで選択、ドラッグでパン） | 'box' | 'zone' | 'line' | 'text' | 'move' | 'calib' */
+let bgMode = null;
+let bgTemp = null;      // 箱・区画描画の1点目 [x,y] mm
 let bgLineStart = null; // 直線描画の直前の頂点 [x,y] mm（連続描画用）
 let bgMouse = null;     // 描画モード中のマウス位置 [x,y] mm（プレビュー用）
-const btnBgDraw = document.getElementById("btnBgDraw");
+let selectedId = null;  // 選択中のオブジェクト id
+const btnBgBox = document.getElementById("btnBgBox");
+const btnBgZone = document.getElementById("btnBgZone");
 const btnBgLine = document.getElementById("btnBgLine");
 const btnBgText = document.getElementById("btnBgText");
-const btnBgMove = document.getElementById("btnBgMove");
-const btnBgErase = document.getElementById("btnBgErase");
+const btnBgSelect = document.getElementById("btnBgSelect");
 
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function bgRectHeightMm() { // 箱の高さ入力 [mm]（空欄・不正は 0 = 床の区画）
+  return Math.max(0, parseFloat(document.getElementById("bgRectH").value) || 0);
+}
 function bgTextSizeMm() { // 文字サイズ入力 [m] → 文字高さ [mm]
   return Math.max(0.05, parseFloat(document.getElementById("bgTextSize").value) || 0.5) * 1000;
+}
+/* 種類ごとの連番の名前（箱1、区画2 …） */
+function autoObjName(type, h) {
+  const base = type === "box" ? (h > 0 ? "箱" : "区画") : type === "line" ? "直線" : type === "image" ? "下絵" : "文字";
+  let i = 1;
+  while (state.objects.some(o => o.name === base + i)) i++;
+  return base + i;
+}
+/* 対角 2 点から箱（または区画）を作る */
+function makeBox(x1, y1, x2, y2, h, color) {
+  return { id: uid(), type: "box", name: autoObjName("box", h), visible: true,
+           x: (x1 + x2) / 2, y: (y1 + y2) / 2, yaw: 0, w: Math.abs(x2 - x1), d: Math.abs(y2 - y1), h: Math.max(0, h || 0), z0: 0, color };
 }
 
 function setBgMode(m) {
   bgMode = (bgMode === m) ? null : m;
   bgTemp = null; bgLineStart = null; bgMouse = null; bgDrag = null;
   resetCalib();
-  document.getElementById("btnBgCalib").classList.toggle("primary", bgMode === "calib");
-  btnBgDraw.classList.toggle("primary", bgMode === "draw");
-  btnBgLine.classList.toggle("primary", bgMode === "line");
-  btnBgText.classList.toggle("primary", bgMode === "text");
-  btnBgMove.classList.toggle("primary", bgMode === "move");
-  btnBgErase.classList.toggle("primary", bgMode === "erase");
+  if (bgMode && viewMode === "3d") setViewMode("2d"); // 描く・選ぶのは 2D のキャンバスで
+  if (bgMode) showRightTab("obj");
+  // 選んだツールの設定だけキャンバス上部の帯に出す
+  const shape = (bgMode === "box" || bgMode === "zone" || bgMode === "line");
+  document.getElementById("drawOptShape").style.display = shape ? "inline-flex" : "none";
+  document.getElementById("drawOptHeight").style.display = bgMode === "box" ? "" : "none";
+  document.getElementById("drawOptText").style.display = bgMode === "text" ? "inline-flex" : "none";
+  document.getElementById("toolOpts").classList.toggle("show", bgMode !== null);
+  updateSelectBtn();
+  btnBgBox.classList.toggle("on", bgMode === "box");
+  btnBgZone.classList.toggle("on", bgMode === "zone");
+  btnBgLine.classList.toggle("on", bgMode === "line");
+  btnBgText.classList.toggle("on", bgMode === "text");
   cv.classList.toggle("drawmode", bgMode !== null);
-  cv.classList.toggle("movemode", bgMode === "move");
   document.getElementById("bgHint").textContent =
-    bgMode === "calib" ? "背景画像の長さが分かっている箇所（柱間・通路幅など）の始点 → 終点をクリックしてください。Shiftで水平・垂直に固定。Escで中止。" :
-    bgMode === "draw" ? "1つ目の角をクリック → 対角の角をクリックで四角を追加します。" :
-    bgMode === "line" ? "クリックするたびに頂点を追加して連続で直線を引きます。ダブルクリックまたはEscで終了。" :
-    bgMode === "text" ? "配置したい位置をクリックすると入力欄の文字を置きます（連続配置できます）。" :
-    bgMode === "move" ? "移動したい四角・直線・文字をドラッグしてください。" :
-    bgMode === "erase" ? "削除したい四角・直線・文字をクリックしてください。" :
+    bgMode === "calib" ? "下絵の長さが分かっている箇所（柱間・通路幅など）で、始点 → 終点をクリック。Shift で水平・垂直。Esc で中止" :
+    bgMode === "box" ? "ドラッグして箱を描きます。Shift で 0.1 m 刻み" :
+    bgMode === "zone" ? "ドラッグして床の区画を描きます。Shift で 0.1 m 刻み" :
+    bgMode === "line" ? "ドラッグして直線を引きます。Shift で 0.1 m 刻み" :
+    bgMode === "text" ? "置きたい所をクリック。Shift で 0.1 m 刻み" :
     "";
+  if (bgMode === "text") setTimeout(() => document.getElementById("bgText").focus(), 0);
 }
-btnBgDraw.addEventListener("click", () => setBgMode("draw"));
+/* 選択ツールの ON／OFF。OFF のときはドラッグが常に画面移動になり、クリックで物を選ばない（物を誤って動かさないため） */
+let selectOn = false; // 最初は OFF（ドラッグは画面移動。物を選ぶ・動かすときに押して ON）
+function updateSelectBtn() {
+  btnBgSelect.classList.toggle("on", bgMode === null && selectOn);
+  cv.classList.toggle("selectmode", bgMode === null && selectOn);
+}
+function exitDrawMode() { selectOn = true; if (bgMode) setBgMode(bgMode); else updateSelectBtn(); }
+function toggleSelectTool() {
+  if (bgMode) { exitDrawMode(); return; } // 描くツールから選択に戻る
+  selectOn = !selectOn;
+  if (!selectOn) selectObject(null, { keepTab: true }); // OFF にしたら選択も外す
+  updateSelectBtn();
+}
+btnBgSelect.addEventListener("click", toggleSelectTool);
+btnBgBox.addEventListener("click", () => setBgMode("box"));
+btnBgZone.addEventListener("click", () => setBgMode("zone"));
 btnBgLine.addEventListener("click", () => setBgMode("line"));
 btnBgText.addEventListener("click", () => setBgMode("text"));
-btnBgMove.addEventListener("click", () => setBgMode("move"));
-btnBgErase.addEventListener("click", () => setBgMode("erase"));
+// ショートカット: V 選択 / B 箱 / Z 区画 / L 直線 / T 文字 / I 下絵（入力欄にいる時は無効）
+window.addEventListener("keydown", (e) => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (["INPUT", "SELECT", "TEXTAREA"].includes(e.target.tagName)) return;
+  if (playing) return; // 再生中はツールバーを隠しているので、ショートカットも効かせない
+  const k = e.key.toLowerCase();
+  const map = { v: null, b: "box", z: "zone", l: "line", t: "text" };
+  if (k === "i") { e.preventDefault(); document.getElementById("btnBgImgTool").click(); return; }
+  if (!(k in map)) return;
+  e.preventDefault();
+  if (map[k] === null) toggleSelectTool(); else if (bgMode !== map[k]) setBgMode(map[k]);
+});
 
 // Shiftキー押下中は 0.1m（100mm）グリッドにスナップして配置できる
 const SNAP_GRID = 100;
 function snapToGrid(w) { return [Math.round(w[0] / SNAP_GRID) * SNAP_GRID, Math.round(w[1] / SNAP_GRID) * SNAP_GRID]; }
 
 cv.addEventListener("mousemove", (e) => {
-  if (bgMode !== "draw" && bgMode !== "line" && bgMode !== "text" && bgMode !== "calib") { bgMouse = null; return; }
+  if (!["box", "zone", "line", "text", "calib"].includes(bgMode)) { bgMouse = null; return; }
   const [px, py] = cvPixel(e);
   if (bgMode === "calib") { bgMouse = calibConstrain(s2w(px, py), e.shiftKey); return; }
   bgMouse = e.shiftKey ? snapToGrid(s2w(px, py)) : s2w(px, py);
 });
 
-cv.addEventListener("dblclick", () => {
-  if (bgMode !== "line") return;
-  // ダブルクリック＝click2回分が先に発火するため、末尾にできた長さ0の区間を取り除いてから終了
-  const last = state.bgLines[state.bgLines.length - 1];
-  if (last && Math.hypot(last.x2 - last.x1, last.y2 - last.y1) < 1e-6) {
-    state.bgLines.pop();
-    undoStack.pop(); // その区間追加時に積んだ履歴も取り消す
-  }
-  bgLineStart = null; // 連続描画を終了（モードは維持。次のクリックから新しい線を開始）
-});
+
+function selectObject(id, opts) {
+  selectedId = id;
+  renderObjectList();
+  if (id && !(opts && opts.keepTab)) showRightTab("obj");
+}
 
 cv.addEventListener("click", (e) => {
   cv.focus();
-  if (!bgMode) return;
   const r = cv.getBoundingClientRect();
   let [wx, wy] = s2w((e.clientX - r.left) * cv.width / r.width, (e.clientY - r.top) * cv.height / r.height);
-  if (bgMode === "calib") { calibClick([wx, wy], e.shiftKey); return; }
-  // 配置系モードでShift押下中は 0.1m グリッドにスナップ（削除の当たり判定には適用しない）
-  if (e.shiftKey && (bgMode === "draw" || bgMode === "line" || bgMode === "text")) {
-    [wx, wy] = snapToGrid([wx, wy]);
+  if (!bgMode) { // 通常モード: ドラッグ（パン）でなければクリック位置のオブジェクトを選択
+    if (lastPanMoved > 4 || !selectOn) return; // 選択ツールが OFF なら選ばない
+    const hit = hitTestObject(wx, wy);
+    selectObject(hit ? hit.id : null, { keepTab: !hit });
+    return;
   }
-  if (bgMode === "draw") {
-    if (!bgTemp) { bgTemp = [wx, wy]; }
-    else {
-      pushUndo();
-      state.bgRects.push({ x1: bgTemp[0], y1: bgTemp[1], x2: wx, y2: wy, color: document.getElementById("bgShapeColor").value });
-      bgTemp = null;
-    }
-  } else if (bgMode === "line") {
-    // 連続直線：最初のクリックで始点、以降クリックごとに区間を追加して繋いでいく
-    if (!bgLineStart) { bgLineStart = [wx, wy]; }
-    else {
-      pushUndo();
-      state.bgLines.push({ x1: bgLineStart[0], y1: bgLineStart[1], x2: wx, y2: wy, color: document.getElementById("bgShapeColor").value });
-      bgLineStart = [wx, wy];
-    }
-  } else if (bgMode === "text") {
+  if (bgMode === "calib") { calibClick([wx, wy], e.shiftKey); return; }
+  // 配置系モードでShift押下中は 0.1m グリッドにスナップ
+  if (e.shiftKey && ["box", "zone", "line", "text"].includes(bgMode)) [wx, wy] = snapToGrid([wx, wy]);
+  if (bgMode === "text") {
     const txt = document.getElementById("bgText").value.trim();
-    if (!txt) { document.getElementById("bgHint").textContent = "先に入力欄へ文字を入力してください。"; return; }
+    if (!txt) { document.getElementById("bgHint").textContent = "先に上の欄へ文字を入力してください。"; document.getElementById("bgText").focus(); return; }
     pushUndo();
-    state.bgTexts.push({
-      x: wx, y: wy, text: txt, size: bgTextSizeMm(),
-      color: document.getElementById("bgTextColor").value,
-      vertical: document.getElementById("bgTextDir").value === "v",
-    });
-  } else if (bgMode === "erase") {
-    const hit = hitTestBgObject(wx, wy);
-    if (!hit) return;
-    pushUndo();
-    if (hit.kind === "text") state.bgTexts.splice(hit.index, 1);
-    else if (hit.kind === "line") state.bgLines.splice(hit.index, 1);
-    else state.bgRects.splice(hit.index, 1);
+    const o = { id: uid(), type: "text", name: txt, visible: true, x: wx, y: wy, text: txt, size: bgTextSizeMm(),
+                color: document.getElementById("bgTextColor").value, vertical: document.getElementById("bgTextDir").value === "v" };
+    state.objects.push(o);
+    exitDrawMode();
+    selectObject(o.id, { keepTab: true });
   }
 });
 
-/* 背景オブジェクトの当たり判定（移動・削除で共用）。優先順: 文字 → 直線 → 四角 */
-function hitTestBgObject(wx, wy) {
+/* 箱・区画・直線はドラッグで描く: 押した所が 1 点目、離した所が 2 点目。小さすぎれば作らない。描いたら選択ツールに戻る */
+let drawDrag = null; // { start:[x,y] }
+cv.addEventListener("mousedown", (e) => {
+  if (!["box", "zone", "line"].includes(bgMode) || e.button !== 0) return;
+  e.preventDefault();
+  let w = s2w(...cvPixel(e));
+  if (e.shiftKey) w = snapToGrid(w);
+  drawDrag = { start: w };
+  if (bgMode === "line") bgLineStart = w; else bgTemp = w; // プレビュー用
+});
+window.addEventListener("mouseup", (e) => {
+  if (!drawDrag) return;
+  const start = drawDrag.start; drawDrag = null;
+  if (!["box", "zone", "line"].includes(bgMode)) { bgTemp = null; bgLineStart = null; return; }
+  let w = s2w(...cvPixel(e));
+  if (e.shiftKey) w = snapToGrid(w);
+  const color = document.getElementById("bgShapeColor").value;
+  let o = null;
+  if (bgMode === "line") {
+    if (Math.hypot(w[0] - start[0], w[1] - start[1]) >= 50) o = { id: uid(), type: "line", name: autoObjName("line"), visible: true, x1: start[0], y1: start[1], x2: w[0], y2: w[1], color };
+  } else if (Math.abs(w[0] - start[0]) >= 50 && Math.abs(w[1] - start[1]) >= 50) {
+    o = makeBox(start[0], start[1], w[0], w[1], bgMode === "box" ? bgRectHeightMm() : 0, color);
+  }
+  bgTemp = null; bgLineStart = null;
+  if (!o) return; // ただのクリック: 何もしない（ツールはそのまま）
+  pushUndo();
+  state.objects.push(o);
+  exitDrawMode();
+  selectObject(o.id, { keepTab: true });
+});
+
+/* オブジェクトの当たり判定（選択・移動で共用）。優先順: 文字 → 直線 → 箱（面積が小さい＝内側の物を優先）。非表示は除く */
+function hitTestObject(wx, wy) {
   const tolMm = 8 / view.scale;
-  // 文字（表示中の文字枠＋許容量。面積が小さいものを優先）
-  let bestTi = -1, bestTa = Infinity;
-  state.bgTexts.forEach((T, i) => {
-    let wMm, hMm;
-    if (T.vertical) { // 縦書き：幅≒1文字分、高さ＝文字数分
-      const n = Math.max(1, Array.from(T.text).length);
-      wMm = T.size; hMm = n * T.size;
-    } else {
-      ctx.font = `${Math.max(2, T.size * view.scale)}px sans-serif`;
-      wMm = ctx.measureText(T.text).width / view.scale; hMm = T.size;
+  const objs = state.objects.filter(o => o.visible !== false && !o.locked); // ロック中の物はキャンバスから選べない
+  let best = null, bestA = Infinity;
+  for (const o of objs) {
+    if (o.type !== "text") continue;
+    const b = textBoundsMm(o);
+    if (Math.abs(wx - o.x) <= b.w / 2 + tolMm && Math.abs(wy - o.y) <= b.h / 2 + tolMm) {
+      const a = (b.w + 2 * tolMm) * (b.h + 2 * tolMm);
+      if (a < bestA) { bestA = a; best = o; }
     }
-    const xlo = T.x - wMm / 2 - tolMm, xhi = T.x + wMm / 2 + tolMm;
-    const ylo = T.y - hMm / 2 - tolMm, yhi = T.y + hMm / 2 + tolMm;
-    if (wx >= xlo && wx <= xhi && wy >= ylo && wy <= yhi) {
-      const a = (xhi - xlo) * (yhi - ylo);
-      if (a < bestTa) { bestTa = a; bestTi = i; }
-    }
-  });
-  if (bestTi >= 0) return { kind: "text", index: bestTi };
-  // 直線（最も近い区間、許容距離内）
-  let bestLi = -1, bestLd = tolMm;
-  state.bgLines.forEach((L, i) => {
-    const dx = L.x2 - L.x1, dy = L.y2 - L.y1;
+  }
+  if (best) return best;
+  let bestD = tolMm;
+  for (const o of objs) {
+    if (o.type !== "line") continue;
+    const dx = o.x2 - o.x1, dy = o.y2 - o.y1;
     const len2 = dx * dx + dy * dy;
-    const t = len2 ? clamp(((wx - L.x1) * dx + (wy - L.y1) * dy) / len2, 0, 1) : 0;
-    const d = Math.hypot(wx - (L.x1 + t * dx), wy - (L.y1 + t * dy));
-    if (d <= bestLd) { bestLd = d; bestLi = i; }
-  });
-  if (bestLi >= 0) return { kind: "line", index: bestLi };
-  // 四角（クリック点を含むもののうち面積最小＝内側のもの）
-  let bestI = -1, bestA = Infinity;
-  state.bgRects.forEach((R, i) => {
-    const xlo = Math.min(R.x1, R.x2) - tolMm, xhi = Math.max(R.x1, R.x2) + tolMm;
-    const ylo = Math.min(R.y1, R.y2) - tolMm, yhi = Math.max(R.y1, R.y2) + tolMm;
-    if (wx >= xlo && wx <= xhi && wy >= ylo && wy <= yhi) {
-      const a = (xhi - xlo) * (yhi - ylo);
-      if (a < bestA) { bestA = a; bestI = i; }
+    const t = len2 ? clamp(((wx - o.x1) * dx + (wy - o.y1) * dy) / len2, 0, 1) : 0;
+    const d = Math.hypot(wx - (o.x1 + t * dx), wy - (o.y1 + t * dy));
+    if (d <= bestD) { bestD = d; best = o; }
+  }
+  if (best) return best;
+  for (const o of objs) {
+    if (o.type !== "box") continue;
+    // 箱の向きに合わせた座標系で判定
+    const c = Math.cos(-(o.yaw || 0)), s = Math.sin(-(o.yaw || 0));
+    const lx = (wx - o.x) * c - (wy - o.y) * s, ly = (wx - o.x) * s + (wy - o.y) * c;
+    if (Math.abs(lx) <= o.w / 2 + tolMm && Math.abs(ly) <= o.d / 2 + tolMm) {
+      const a = (o.w + 2 * tolMm) * (o.d + 2 * tolMm);
+      if (a < bestA) { bestA = a; best = o; }
     }
-  });
-  if (bestI >= 0) return { kind: "rect", index: bestI };
-  return null;
+  }
+  if (best) return best;
+  // 下絵: ロックを外しているものだけ、ほかに何も無い場所で選べる（複数あれば小さい方）
+  for (const o of objs) {
+    if (o.type !== "image") continue;
+    const sz = imageSizeMm(o);
+    if (sz && Math.abs(wx - o.x) <= sz.w / 2 && Math.abs(wy - o.y) <= sz.d / 2) {
+      const a = sz.w * sz.d;
+      if (a < bestA) { bestA = a; best = o; }
+    }
+  }
+  return best;
 }
 
-/* オブジェクト移動モード：ドラッグで四角・直線・文字を動かす */
-let bgDrag = null; // {kind, obj, lastW:[x,y], snap, moved}
+/* 選択／移動モード: ドラッグで箱・直線・文字を動かす */
+let bgDrag = null; // {obj, startW:[x,y], orig, snap, moved}
 cv.addEventListener("mousedown", (e) => {
-  if (bgMode !== "move" || e.button !== 0) return;
-  e.preventDefault();
+  if (bgMode !== null || !selectOn || e.button !== 0) return; // 選択ツールのとき: 物の上ならその物をつかむ（何も無ければ後ろのパン処理へ）
   const [px, py] = cvPixel(e);
   const [wx, wy] = s2w(px, py);
-  const hit = hitTestBgObject(wx, wy);
-  if (!hit) return;
-  const obj = hit.kind === "text" ? state.bgTexts[hit.index]
-            : hit.kind === "line" ? state.bgLines[hit.index]
-            : state.bgRects[hit.index];
-  bgDrag = { kind: hit.kind, obj, startW: [wx, wy], orig: { ...obj }, snap: snapState(), moved: false };
+  const hit = hitTestObject(wx, wy);
+  if (!hit || hit.locked) return;
+  e.preventDefault();
+  selectObject(hit.id, { keepTab: true });
+  bgDrag = { obj: hit, startW: [wx, wy], orig: { ...hit }, snap: snapState(), moved: false };
 });
 window.addEventListener("mousemove", (e) => {
   if (!bgDrag) return;
@@ -2439,18 +3247,17 @@ window.addEventListener("mousemove", (e) => {
   if (!dx && !dy && !bgDrag.moved) return;
   if (!bgDrag.moved) { pushUndo(bgDrag.snap); bgDrag.moved = true; } // 実際に動かした時だけ履歴を積む
   const o = bgDrag.obj, g = bgDrag.orig;
-  if (bgDrag.kind === "text") {
+  if (o.type === "line") {
+    // 基準点(x1,y1)をスナップし、形状は保ったまま平行移動
+    let nx1 = g.x1 + dx, ny1 = g.y1 + dy;
+    if (e.shiftKey) [nx1, ny1] = snapToGrid([nx1, ny1]);
+    o.x1 = nx1; o.y1 = ny1; o.x2 = g.x2 + (nx1 - g.x1); o.y2 = g.y2 + (ny1 - g.y1);
+  } else {
     let nx = g.x + dx, ny = g.y + dy;
     if (e.shiftKey) [nx, ny] = snapToGrid([nx, ny]); // Shift中は0.1mグリッドへスナップ
     o.x = nx; o.y = ny;
-  } else {
-    // 基準点(x1,y1)をスナップし、形状（サイズ・向き）は保ったまま平行移動
-    let nx1 = g.x1 + dx, ny1 = g.y1 + dy;
-    if (e.shiftKey) [nx1, ny1] = snapToGrid([nx1, ny1]);
-    o.x1 = nx1; o.y1 = ny1;
-    o.x2 = g.x2 + (nx1 - g.x1);
-    o.y2 = g.y2 + (ny1 - g.y1);
   }
+  if (objPropsId === o.id) renderObjProps(); // 設定欄の数値も追従
 });
 window.addEventListener("mouseup", () => { bgDrag = null; });
 
@@ -2464,7 +3271,7 @@ function initSplitter(splitId, colId, dir) { // dir: ドラッグ量を幅に足
     sp.classList.add("dragging");
     document.body.style.userSelect = "none";
     const move = (ev) => {
-      col.style.width = clamp(w0 + dir * (ev.clientX - x0), 150, 600) + "px";
+      col.style.width = clamp(w0 + dir * (ev.clientX - x0), 220, 1000) + "px";
       resizeCanvas(); // 中央キャンバスの実ピクセルサイズを追従させる
     };
     const up = () => {
@@ -2486,18 +3293,20 @@ document.getElementById("btnZoomOut").addEventListener("click", () => { view.sca
 
 /* ---------------- マウスで視点移動（パン）・ホイールでズーム ---------------- */
 let panDrag = null; // ドラッグ中の状態
+let lastPanMoved = 0; // 直前の左ドラッグの移動量 [px]（小さければクリック＝選択）
 function cvPixel(e) { // クライアント座標 → キャンバスのバッキングストア座標
   const r = cv.getBoundingClientRect();
   return [(e.clientX - r.left) * cv.width / r.width,
           (e.clientY - r.top) * cv.height / r.height];
 }
 cv.addEventListener("mousedown", (e) => {
-  // 中ボタンは常にパン。左ボタンはドローモードでない時だけパン（描画クリックと競合させない）
-  const canPanLeft = e.button === 0 && !bgMode;
+  // 中ボタンは常にパン。左ボタンは選択ツールで何もつかんでいない時だけパン
+  const canPanLeft = e.button === 0 && !bgMode && !bgDrag;
   if (e.button !== 1 && !canPanLeft) return;
   e.preventDefault();
   cv.focus();
   panDrag = { mx: e.clientX, my: e.clientY, cx: view.cx, cy: view.cy };
+  lastPanMoved = 0;
   cv.style.cursor = "grabbing";
 });
 window.addEventListener("mousemove", (e) => {
@@ -2505,6 +3314,7 @@ window.addEventListener("mousemove", (e) => {
   const r = cv.getBoundingClientRect();
   const dpx = (e.clientX - panDrag.mx) * cv.width / r.width;
   const dpy = (e.clientY - panDrag.my) * cv.height / r.height;
+  lastPanMoved = Math.max(lastPanMoved, Math.hypot(e.clientX - panDrag.mx, e.clientY - panDrag.my));
   view.cx = panDrag.cx - dpx / view.scale;   // 画面座標→ワールド座標（scale: px/mm）
   view.cy = panDrag.cy + dpy / view.scale;   // 画面y反転のため符号は＋
 });
@@ -2525,6 +3335,28 @@ cv.addEventListener("wheel", (e) => {
 }, { passive: false });
 
 /* ---------------- 保存・読込 ---------------- */
+/* 保存データ → objects。version 3 はそのまま（欠けた項目を補う）、それ以前は bgRects / bgLines / bgTexts から変換 */
+function objectsFromSave(data) {
+  const legacyImage = (data.bgImage && data.bgImage.src)
+    ? [Object.assign({ id: uid(), type: "image", name: "下絵（レイアウト図）", visible: true, locked: true, opacity: 0.6 }, data.bgImage, { id: uid(), type: "image" })]
+    : [];
+  if (Array.isArray(data.objects)) {
+    const objs = data.objects.map(o => Object.assign({ id: uid(), visible: true }, o, { h: Math.max(0, +o.h || 0), z0: Math.max(0, +o.z0 || 0), yaw: +o.yaw || 0 }))
+      .filter(o => ["box", "line", "text", "image"].includes(o.type));
+    return legacyImage.concat(objs); // 旧形式の 1 枚の下絵（rev.68 以前）は一番下に
+  }
+  const out = legacyImage.slice();
+  let rects = data.bgRects, lines = data.bgLines || [];
+  if (rects === undefined && data.bgLines) { rects = data.bgLines; lines = []; } // 最古の形式: bgLines が四角の対角2点
+  (rects || []).forEach((R, i) => {
+    const o = makeBox(R.x1, R.y1, R.x2, R.y2, R.h || 0, R.color || "#e68282");
+    o.name = R.name || o.name; out.push(o);
+  });
+  lines.forEach((L, i) => out.push({ id: uid(), type: "line", name: L.name || `直線${i + 1}`, visible: true, x1: L.x1, y1: L.y1, x2: L.x2, y2: L.y2, color: L.color || "#888" }));
+  (data.bgTexts || []).forEach((T) => out.push({ id: uid(), type: "text", name: T.name || T.text, visible: true, x: T.x, y: T.y, text: T.text, size: T.size || 500, color: T.color || "#888", vertical: !!T.vertical }));
+  return out;
+}
+
 // ファイル名用のローカル日時文字列（YYYYMMDD_HHMM）
 function timestampStr() {
   const d = new Date();
@@ -2538,19 +3370,20 @@ function currentRev() {
 
 document.getElementById("btnSave").addEventListener("click", () => {
   const data = {
-    version: 1,
+    version: 4,                  // 4: points（車体＋アームのセット）／ 3: objects（箱・区画・直線・文字を統合）／ 2: アーム姿勢が 6 関節角 q[6] ／ 1: q1, reach
     rev: currentRev(),           // どの版で作成したデータか記録
     savedAt: new Date().toISOString(),
-    bodyPoses: state.bodyPoses,
-    armPoses: state.armPoses,
+    armModel: ARM.name,
+    armMountYawDeg: Math.round(ARM_MOUNT_YAW * 180 / Math.PI), // 取付向き（J1 = 0° の向き。読込時に差があれば J1 を回して合わせる）
+    toolLen: state.toolLen,
+    points: state.points.map(p => ({ name: p.name, body: p.body, arm: p.arm ? { q: p.arm.q } : null })),
     initial: state.initial,
     program: state.program.map(s => ({
-      blocks: s.blocks.map(b => ({ type: b.type, pose: b.pose, name: b.name, wait: b.wait, reverse: b.reverse, mode: b.mode, vmax: b.vmax })),
+      blocks: s.blocks.map(b => b.type === "point"
+        ? { type: "point", point: b.point, move: b.move || "both", mode: b.mode, vmax: b.vmax }
+        : { type: b.type, name: b.name, wait: b.wait }),
     })),
-    bgRects: state.bgRects,
-    bgLines: state.bgLines,
-    bgTexts: state.bgTexts,
-    bgImage: state.bgImage,
+    objects: state.objects, // 下絵（image）も含む
     robot: state.robot,
     bodyVmax: SIM_PARAMS.body.vmax, // 走行速度（標準値から下げている場合に復元するため）
   };
@@ -2574,28 +3407,29 @@ document.getElementById("btnExportCsv").addEventListener("click", () => {
     const s = String(v == null ? "" : v);
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; // カンマ・改行・引用符を含むならクォート
   };
-  const rows = [["動作ブロック番号", "動作種別", "移動先", "動作名", "走行経路", "最大並進速度[m/s]", "所要時間[s]", "段開始[s]", "段終了[s]", "段の所要時間[s]"]];
+  const rows = [["動作ブロック番号", "動作種別", "動かす", "移動先", "動作名", "走行経路", "最大並進速度[m/s]", "所要時間[s]", "段開始[s]", "段終了[s]", "段の所要時間[s]"]];
   currentCompiled.stages.forEach((st, si) => {
     st.blocks.forEach(cb => {
       const b = cb.block;
-      const kind = b.type === "body" ? "Move Body" : b.type === "arm" ? "Move Arm" : "Other Action";
-      const target = b.type === "other" ? "" : (b.pose || "");  // Moveの移動先（姿勢名）
+      const kind = b.type === "point" ? "Move" : "Other Action";
+      const moveWhat = b.type === "point" ? MOVE_LABEL[b.move || "both"] : ""; // 車体＋アーム／車体だけ／アームだけ
+      const target = b.type === "point" ? (b.point || "") : "";  // 移動先（ポイント名）
       const actName = b.type === "other" ? (b.name || "") : ""; // Other Actionの名前
       let route = "", vmax = "";
-      if (b.type === "body") {
+      if (b.type === "point" && blockMoves(b).body) {
         const m = b.mode || (b.reverse ? "backward" : "forward");
         route = modeLabel[m] || m;
         vmax = blockVmax(b).toFixed(3);
       }
       rows.push([
-        si + 1, kind, target, actName, route, vmax,
+        si + 1, kind, moveWhat, target, actName, route, vmax,
         cb.err ? "位置未登録" : cb.dur.toFixed(2),
         st.t0.toFixed(2), (st.t0 + st.dur).toFixed(2), st.dur.toFixed(2),
       ]);
     });
   });
   rows.push([]); // 空行
-  rows.push(["合計", "", "", "", "", "", currentCompiled.total.toFixed(2), "", "", ""]);
+  rows.push(["合計", "", "", "", "", "", "", currentCompiled.total.toFixed(2), "", "", ""]);
   const csv = "﻿" + rows.map(r => r.map(csvCell).join(",")).join("\r\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const a = document.createElement("a");
@@ -2608,11 +3442,14 @@ document.getElementById("btnExportCsv").addEventListener("click", () => {
 /* ---------------- 使い方ツアー ---------------- */
 const TOUR_STEPS = [
   { target: null, title: "LexxMoMa 動作シミュレーターへようこそ", text: "このツールでは、モバイルマニピュレータ（走行台車＋アーム）の動作シーケンスを組み立て、サイクルタイムを見積もれます。基本の使い方を順番に案内します。" },
-  { target: "#paneRegister", title: "① まず位置を登録", text: "キーボードの矢印キーでロボットを動かし（車体は↑↓←→、アームはShift＋矢印）、「車体位置を登録」「アーム位置を登録」で名前を付けて登録します。ここが動作の目的地になります。" },
+  { target: "#btnSamples", title: "まずサンプルを見る", text: "「📂 サンプル」から、用意してあるレイアウトとシーケンスの例を開けます。どんな動きができるかを見るには、まずこれを再生してみてください。" },
+  { target: "#regBox", title: "① まず位置を登録", text: "車体をキーボードの矢印キーで、アームを左ペインの「アーム操作」タブで動かし、「＋ 今の位置を登録」で名前を付けて登録します。車体の位置とアームの姿勢が 1 件にまとまり、ここが動作の目的地になります（チェックを外せば車体だけ・アームだけも登録できます）。同じ場所で登録した位置は、一覧で場所の見出しの下にまとまります。" },
   { target: "#canvasWrap", title: "② 中央ビューの操作", text: "ロボットとレイアウトを表示します。ドラッグで画面移動、マウスホイールまたは左下の＋−で拡大縮小できます。" },
-  { target: "#paneBg", title: "③ 背景でレイアウトを作成", text: "顧客のレイアウト図（PNG）を取り込んだり（「📏 線を引いて縮尺を合わせる」で寸法が分かる箇所に線を引き、実寸を入力すると縮尺が自動で合います）、四角・直線・文字で棚や加工機などの目印を描けます。Shiftを押しながらだと0.1m刻みで配置できます。" },
-  { target: "#colRight", title: "④ 動作シーケンスを組む", text: "「＋段を追加」で工程を並べます。各段にMove Body（移動）・Move Arm（アーム）・Other Action（撮影など任意の待ち）を追加します。同じ段に並べたブロックは同時実行、段は上から順に実行されます。一番上で開始位置も指定できます。" },
-  { target: "#playbar", title: "⑤ 再生して確認", text: "「再生」で動きを確認できます。「録画して再生」を押すと、動きを動画（WebM）として保存できます。" },
+  { target: "#ctrl3d", before: () => showLeftTab("arm"), title: "②' 3D 表示とアームの手先操作", text: "「3D」に切り替えると自由な視点でロボットを見られます（左ドラッグで回転、右ドラッグで移動）。アームは FANUC CRX-20iA/L の 6 軸です。左ペインの「アーム操作」タブで、手先（X/Y/Z/W/P/R を指定。3D では手先に出る矢印をマウスでドラッグ）か関節（J1〜J6）かを選んで動かせます。手先で動かすと逆運動学で関節が決まり、関節で動かすと手先の位置が変わります。届く高さ・距離の確認に使ってください。" },
+  { target: "#toolbar", title: "③ レイアウトを描く", text: "キャンバス左のツールで「箱」（設備・机。高さを持ち 3D では箱）、「区画」（床の目印）、直線をドラッグして描き、文字はクリックで置きます。Shift を押しながらだと 0.1 m 刻みになります。「下絵」で顧客のレイアウト図（PNG）を床に敷けます。" },
+  { target: "#tabObj", before: () => showRightTab("obj"), title: "③' 一覧と設定", text: "描いた物は右ペインの「レイアウト」タブに並びます。選ぶと名前・位置・寸法・高さを数値で直せ、🔒 でロックすると画面上で誤って選ばれなくなります。下絵は選んで「📏 線を引いて縮尺を合わせる」で実寸に合わせます。" },
+  { target: "#colRight", title: "④ 動作シーケンスを組む", text: "「＋段を追加」で工程を並べます。各段に Move（登録した位置へ。車体＋アーム／車体だけ／アームだけを選べます）と Other Action（撮影など任意の待ち）を追加します。同じ段に並べたブロックは同時実行、段は上から順に実行されます。一番上で開始位置も指定できます。" },
+  { target: "#playbar", title: "⑤ 再生して確認", text: "「再生」で動きを確認できます（もう一度押すと一時停止、さらに押すと再開）。「録画して再生」を押すと、動きを動画（WebM）として保存できます。" },
   { target: "#statsDetails", title: "⑥ サイクルタイムの確認", text: "合計時間がここに出ます。開くと、アーム・車体・同時動作などの内訳も見られます。「シーケンスをCSV出力」で各工程の時間をExcel用に書き出せます。" },
   { target: "#btnSave", title: "⑦ 保存と読込", text: "「設定保存」で作った内容をファイルに保存、「設定読込」で復元できます。作業が消えないよう、こまめに保存してください。" },
   { target: null, title: "以上で完了です", text: "困ったら左ペイン下部の「操作方法」も参照してください。もう一度この案内を見たいときは、右上の「❔ 使い方」を押してください。" },
@@ -2626,6 +3463,7 @@ document.body.append(tourBackdrop, tourHi, tourBox);
 function showTourStep(i) {
   tourIdx = i;
   const step = TOUR_STEPS[i];
+  if (step.before) step.before(); // 対象を見えるようにする（タブ切替など）
   const el = step.target ? document.querySelector(step.target) : null;
   const isLast = i === TOUR_STEPS.length - 1;
   tourBox.innerHTML =
@@ -2694,29 +3532,7 @@ document.getElementById("fileLoad").addEventListener("change", (e) => {
   const rd = new FileReader();
   rd.onload = () => {
     try {
-      const data = JSON.parse(rd.result);
-      // data.params（旧形式）は読み捨てる：パラメータは SIM_PARAMS の固定値を使う
-      pushUndo();
-      state.bodyPoses = data.bodyPoses || [];
-      state.armPoses = data.armPoses || [];
-      state.initial = data.initial || { bodyPose: null, armPose: null };
-      state.program = (data.program || []).map(s => ({ blocks: s.blocks || [] }));
-      if (data.bgRects === undefined && data.bgLines) {
-        // 旧形式（bgRectsが無くbgLinesのみ＝線の始点終点）は対角2点の四角として引き継ぐ
-        state.bgRects = data.bgLines;
-        state.bgLines = [];
-      } else {
-        state.bgRects = data.bgRects || [];
-        state.bgLines = data.bgLines || [];
-      }
-      state.bgTexts = data.bgTexts || [];
-      setBgImage(data.bgImage || null);
-      if (data.robot) state.robot = data.robot;
-      // 走行速度：記録が無ければ標準値。標準値超えは setBodyVmax 内で標準値に戻る
-      setBodyVmax(data.bodyVmax !== undefined ? data.bodyVmax : SIM_PARAMS.body.vmaxStd);
-      renderSimParams();
-      stopPlayback(false);
-      renderPoseLists(); renderProgram(); recompute();
+      applyLoadedData(JSON.parse(rd.result));
     } catch (err) {
       alert("読込に失敗しました: " + err.message);
     }
@@ -2725,17 +3541,529 @@ document.getElementById("fileLoad").addEventListener("change", (e) => {
   rd.readAsText(f);
 });
 
+/* 保存データ（設定読込・サンプル）を状態に反映する。読込元に関わらずここを通す */
+function applyLoadedData(data) {
+      // data.params（旧形式）は読み捨てる：パラメータは SIM_PARAMS の固定値を使う
+      pushUndo();
+      state.toolLen = Math.max(0, parseFloat(data.toolLen) || 0);
+      // 取付向き: 保存した版と今の取付向きが違えば J1 を回して合わせる
+      const fixMount = saveMountFix(data);
+      // 登録した位置とシーケンス（version 3 以前の車体位置・アーム位置は、それぞれ車体だけ・アームだけのポイントにする）
+      const conv = pointsFromSave(data);
+      state.points = conv.points;
+      state.initial = conv.initial;
+      state.program = conv.program;
+      selPointName = null;
+      state.objects = objectsFromSave(data);
+      selectedId = null;
+      if (data.robot) state.robot = { body: data.robot.body || { x: 0, y: 0, th: 0 }, arm: fixMount(migrateArm(data.robot.arm)) };
+      // 走行速度：記録が無ければ標準値。標準値超えは setBodyVmax 内で標準値に戻る
+      setBodyVmax(data.bodyVmax !== undefined ? data.bodyVmax : SIM_PARAMS.body.vmaxStd);
+      renderSimParams();
+      stopPlayback(false);
+      renderPoseLists(); renderProgram(); recompute(); armCtrlRefresh(); renderObjectList();
+}
+
+/* 表示をレイアウト全体（登録した車体位置・オブジェクト・画像）に合わせる */
+function fitViewToContent() {
+  let xs = [], ys = [];
+  for (const p of state.points) if (p.body) { xs.push(p.body.x); ys.push(p.body.y); }
+  for (const o of state.objects) {
+    if (o.type === "line") { xs.push(o.x1, o.x2); ys.push(o.y1, o.y2); }
+    else if (o.type === "box") { xs.push(o.x - o.w / 2, o.x + o.w / 2); ys.push(o.y - o.d / 2, o.y + o.d / 2); }
+    else if (o.type === "image") { const sz = imageSizeMm(o); if (sz) { xs.push(o.x - sz.w / 2, o.x + sz.w / 2); ys.push(o.y - sz.d / 2, o.y + sz.d / 2); } }
+    else { xs.push(o.x); ys.push(o.y); }
+  }
+  xs.push(state.robot.body.x); ys.push(state.robot.body.y);
+  if (xs.length < 2) return;
+  const x0 = Math.min(...xs) - 800, x1 = Math.max(...xs) + 800, y0 = Math.min(...ys) - 800, y1 = Math.max(...ys) + 800;
+  view.cx = (x0 + x1) / 2; view.cy = (y0 + y1) / 2;
+  view.scale = clamp(Math.min(cv.width / (x1 - x0), cv.height / (y1 - y0)), 0.01, 0.5);
+}
+
+/* ---------------- 2D / 3D 表示の切替 ----------------
+ * 3D は sim3d.js（ES モジュール、Three.js 同梱）が window.LexxSim3D を用意する。
+ * 本体の状態は毎フレーム sync3D() で流し込み、ギズモ操作は onTcpTarget で受けて IK を解く */
+let viewMode = "2d";
+let gizmoMode = "translate";
+let ikStatus = null; // 直近の IK 結果（コントローラの表示用）
+let gizmoShown = null;
+function dims3d() { return { bodyLen: BODY_LEN, bodyWid: BODY_WID, mountZ: ARM_MOUNT_Z, mountYaw: ARM_MOUNT_YAW }; }
+
+function ensure3D() {
+  const s = window.LexxSim3D;
+  if (!s) return false;
+  if (!s.ready) {
+    s.setDims(dims3d());
+    s.init(document.getElementById("view3d"), {
+      onTcpDragStart: () => { if (!playing) pushUndo(); },
+      onTcpTarget: (T) => {
+        if (playing) return;
+        if (gizmoMode === "rotate") {
+          // マウスで回す時は姿勢（W/P/R）を 15° 刻みの絶対グリッド（0, 15, 30 …）に合わせる。位置は変えない
+          const Tw = CRX.toWbase(T);
+          const pos = CRX.posOf(Tw);
+          const wpr = CRX.rotToWPR(CRX.rotOf(Tw)).map(a => Math.round(a / 15) * 15);
+          T = CRX.targetFromXYZWPR(pos[0], pos[1], pos[2], wpr[0], wpr[1], wpr[2]);
+        }
+        const res = CRX.ik(T, state.robot.arm.q, state.toolLen, { iters: 60 });
+        state.robot.arm.q = res.q;
+        ikStatus = res;
+        recompute(); armCtrlRefresh();
+      },
+    });
+    s.setGizmoSpace(document.getElementById("gizmoLocal").checked ? "local" : "world");
+    s.setFollow(document.getElementById("chkFollow").checked);
+    s.setEnvelope(document.getElementById("chkEnvelope").checked);
+    s.setHideAux(document.getElementById("chkHideAux").checked);
+    s.setRobot(state.robot.body, state.robot.arm.q, state.toolLen);
+    s.setView("iso");
+    // 3D のクリック（ドラッグでない）でオブジェクトを選択
+    let dn = null;
+    s.canvas.addEventListener("pointerdown", (e) => { dn = [e.clientX, e.clientY]; });
+    s.canvas.addEventListener("pointerup", (e) => {
+      if (!dn || Math.hypot(e.clientX - dn[0], e.clientY - dn[1]) > 4 || e.button !== 0) { dn = null; return; }
+      dn = null;
+      if (s.dragging) return;
+      const id = s.pick(e.clientX, e.clientY);
+      selectObject(id, { keepTab: !id });
+    });
+  }
+  return true;
+}
+
+function setViewMode(m) {
+  if (m === "3d" && !ensure3D()) {
+    alert("3D 表示を読み込めませんでした。HTML と同じフォルダに vendor/three.bundle.js・meshes/crx20ia_l.js・sim3d.js があるか確認してください。");
+    return;
+  }
+  viewMode = m;
+  document.getElementById("canvasWrap").classList.toggle("mode3d", m === "3d");
+  document.getElementById("view3dPresets").style.display = m === "3d" ? "inline-flex" : "none";
+  document.getElementById("view3dHint").hidden = m !== "3d";
+  document.querySelectorAll("#viewSeg button").forEach(b => b.classList.toggle("on", b.dataset.mode === m));
+  // 背景の図形・文字の編集（クリック位置が要る）は 2D 表示でだけ行う
+  if (m === "3d" && bgMode) setBgMode(bgMode);
+  if (m === "3d") { window.LexxSim3D.resize(); sync3D(); }
+  else draw();
+}
+
+/* 予定パス（2D の破線と同じもの）を 3D 用の点列にする */
+function pathsForScene() {
+  if (!currentCompiled) return [];
+  const out = [];
+  let firstBodyPathSkipped = hasInitialBody();
+  for (const st of currentCompiled.stages) {
+    for (const cb of st.blocks) {
+      const hasDubins = cb.path && cb.path.length > 0;
+      if (!hasDubins && !cb.line) continue;
+      if (!firstBodyPathSkipped) { firstBodyPathSkipped = true; continue; }
+      const reverse = !!(cb.reverse || (cb.line && cb.line.back));
+      let pts;
+      if (cb.line) pts = [[Math.round(cb.line.x1), Math.round(cb.line.y1)], [Math.round(cb.line.x2), Math.round(cb.line.y2)]];
+      else {
+        const n = Math.max(2, Math.ceil(cb.path.length / 40));
+        pts = [];
+        for (let i = 0; i <= n; i++) { const q = dubinsSample(cb.path, cb.path.length * i / n); pts.push([Math.round(q.x), Math.round(q.y)]); }
+      }
+      out.push({ pts, reverse });
+    }
+  }
+  return out;
+}
+
+function sync3D() {
+  const s = window.LexxSim3D;
+  if (!s || !s.ready) return;
+  const gz = playing ? null : gizmoMode;
+  if (gz !== gizmoShown) { gizmoShown = gz; s.setGizmoMode(gz); }
+  s.setRobot(state.robot.body, state.robot.arm.q, state.toolLen);
+  // 一覧の位置・右ペインのブロックにマウスを乗せているときは、その姿勢を影のロボットで重ねる（2D の影と同じ）
+  const hp = playing ? null : (hoverBlockGhost || (hoverPointName ? findPoint(hoverPointName) : null));
+  if (s.setShadow) s.setShadow(hp ? { body: hp.body || state.robot.body, q: (hp.arm || state.robot.arm).q, showBody: !!hp.body } : null);
+  s.syncScene({
+    objects: state.objects, selectedId,
+    bodyPoses: bodyLocations().map(L => ({ x: L.body.x, y: L.body.y, th: L.body.th, name: L.points.map(q => q.name).join("・") })),
+    paths: pathsForScene(), dims: dims3d(),
+  });
+  s.render();
+}
+
+document.querySelectorAll("#viewSeg button").forEach(b => b.addEventListener("click", () => setViewMode(b.dataset.mode)));
+document.querySelectorAll("#view3dPresets button[data-view]").forEach(b => b.addEventListener("click", () => { if (ensure3D()) window.LexxSim3D.setView(b.dataset.view); }));
+document.getElementById("chkFollow").addEventListener("change", (e) => { if (window.LexxSim3D) window.LexxSim3D.setFollow(e.target.checked); });
+document.getElementById("chkEnvelope").addEventListener("change", (e) => { if (window.LexxSim3D) window.LexxSim3D.setEnvelope(e.target.checked); });
+document.getElementById("chkHideAux").addEventListener("change", (e) => { if (window.LexxSim3D) window.LexxSim3D.setHideAux(e.target.checked); });
+let gizmoChoice = "translate"; // 手先モードで選んでいるギズモ（関節モード中は gizmoMode を null にする）
+function applyGizmoChoice() { gizmoMode = (armMode === "tcp") ? gizmoChoice : null; }
+document.querySelectorAll("#gizmoSeg button").forEach(b => b.addEventListener("click", () => {
+  gizmoChoice = b.dataset.gz || null;
+  document.querySelectorAll("#gizmoSeg button").forEach(x => x.classList.toggle("on", x === b));
+  applyGizmoChoice();
+}));
+document.querySelector('#gizmoSeg button[data-gz="translate"]').classList.add("on");
+
+/* 操作モード: 手先（TCP）か関節か。表示を切り替えるだけで、どちらで動かしても両方の値は連動する */
+let armMode = "tcp";
+function setArmMode(m) {
+  armMode = m;
+  document.getElementById("armModeTcp").hidden = m !== "tcp";
+  document.getElementById("armModeJoint").hidden = m !== "joint";
+  document.querySelectorAll("#armModeSeg button").forEach(x => x.classList.toggle("on", x.dataset.am === m));
+  applyGizmoChoice();
+  armCtrlRefresh(true);
+}
+document.querySelectorAll("#armModeSeg button").forEach(b => b.addEventListener("click", () => setArmMode(b.dataset.am)));
+document.getElementById("gizmoLocal").addEventListener("change", (e) => { if (window.LexxSim3D) window.LexxSim3D.setGizmoSpace(e.target.checked ? "local" : "world"); });
+
+/* ---------------- アーム手先コントローラ ----------------
+ * 左ペイン: TCP の X/Y/Z/W/P/R（アーム基準・FANUC 表記）と J1〜J6 のスライダ。
+ * どちらを動かしてももう一方を追従させる。TCP 入力は IK、スライダは直接関節角 */
+const tcpIds = ["tcpX", "tcpY", "tcpZ", "tcpW", "tcpP", "tcpR"];
+let armCtrlBusy = false;
+
+function setArmQ(q) {
+  state.robot.arm.q = q.map((v, i) => clamp(v, ARM.limits[i][0], ARM.limits[i][1]));
+  recompute(); armCtrlRefresh();
+}
+
+/* 現在のアーム状態をコントローラの表示に反映する */
+function armCtrlRefresh(force) { // force: 入力中の欄も上書きする（TCP 入力の確定後など）
+  if (armCtrlBusy) return;
+  armCtrlBusy = true;
+  try {
+    const q = state.robot.arm.q;
+    const info = tcpInfoVeh(q, state.toolLen); // 車体基準（x 前・y 左）
+    const vals = [info.x, info.y, info.z, info.w, info.p, info.r];
+    const skip = (el) => (force !== true) && document.activeElement === el; // 入力中の欄は上書きしない（force=true なら全部）
+    tcpIds.forEach((id, i) => {
+      const val = (i < 3 ? Math.round(vals[i]) : Math.round(vals[i] * 10) / 10);
+      const el = document.getElementById(id), sl = document.getElementById(id + "Sl");
+      if (el && !skip(el)) el.value = val;
+      if (sl && !skip(sl)) sl.value = val;
+    });
+    q.forEach((v, i) => {
+      const deg = Math.round(v * 180 / Math.PI * 10) / 10;
+      const sl = document.getElementById(`jSl${i}`), num = document.getElementById(`jNum${i}`);
+      if (sl && !skip(sl)) sl.value = deg;
+      if (num && !skip(num)) num.value = deg;
+    });
+    const tl = document.getElementById("toolLen");
+    if (document.activeElement !== tl) tl.value = state.toolLen;
+    const floorH = info.z + ARM.L.base + ARM_MOUNT_Z;
+    let txt = `床からの高さ <b>${(floorH / 1000).toFixed(3)} m</b> ／ J1 軸からの水平距離 <b>${(info.horizontal / 1000).toFixed(3)} m</b>`;
+    if (ikStatus && !ikStatus.ok) txt += `<br><span class="ikng">⚠ 目標に届きません（最も近い姿勢を表示。位置誤差 ${ikStatus.posErr.toFixed(0)} mm）</span>`;
+    document.getElementById("tcpInfo").innerHTML = txt;
+  } finally { armCtrlBusy = false; }
+}
+
+/* TCP 入力欄の値から IK を解いて適用 */
+/* 手先の 6 値から IK を解いて適用。fromRow=true は行（スライダ・数値欄）からの呼び出しで、Undo は bindUndoOnEdit 側で積んである */
+function applyTcpInputs(fromRow) {
+  if (playing) return;
+  const v = tcpIds.map(id => parseFloat(document.getElementById(id).value));
+  if (v.some(x => !isFinite(x))) return;
+  const target = vehTargetToArm(v[0], v[1], v[2], v[3], v[4], v[5]);
+  const res = CRX.ik(target, state.robot.arm.q, state.toolLen, { iters: fromRow ? 60 : 200 });
+  ikStatus = res;
+  if (!fromRow) pushUndo();
+  state.robot.arm.q = res.q;
+  recompute(); armCtrlRefresh(fromRow ? "keepActive" : true);
+}
+
+/* 共通の行を作る: ラベル｜スライダ｜数値｜単位。スライダと数値は互いに追従し、どちらを動かしても onInput(値) を呼ぶ。
+ * スライダはドラッグ中ずっと、数値は確定（change / Enter）で反映する。Undo は欄にフォーカスした最初の編集で 1 回だけ */
+function makeCtrlRow(grid, { label, idNum, idSl, min, max, step, slStep, unit, title, onInput }) {
+  const lb = document.createElement("span"); lb.textContent = label; if (title) lb.title = title;
+  // スライダ（マウス）は粗い刻み（slStep）、数値欄は細かい刻み（step）。マウスで細かすぎる値にならないようにする
+  const sl = document.createElement("input"); sl.type = "range"; sl.id = idSl; sl.min = min; sl.max = max; sl.step = slStep || step; sl.value = 0;
+  const num = document.createElement("input"); num.type = "number"; num.id = idNum; num.step = step; num.min = min; num.max = max;
+  const un = document.createElement("span"); un.className = "unit"; un.textContent = unit;
+  bindUndoOnEdit(sl); bindUndoOnEdit(num);
+  sl.addEventListener("input", () => { if (playing) return; num.value = sl.value; onInput(parseFloat(sl.value)); });
+  const commit = () => { if (playing) return; const v = parseFloat(num.value); if (!isFinite(v)) return; const c = clamp(v, min, max); num.value = c; sl.value = c; onInput(c); };
+  num.addEventListener("change", commit);
+  num.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); commit(); num.blur(); } });
+  grid.append(lb, sl, num, un);
+  return { sl, num };
+}
+{ // 関節 J1〜J6: スライダ＋数値 [°]
+  const grid = document.getElementById("jointSliders");
+  ARM.limitsDeg.forEach(([lo, hi], i) => {
+    makeCtrlRow(grid, { label: `J${i + 1}`, idNum: `jNum${i}`, idSl: `jSl${i}`, min: lo, max: hi, step: 0.5, slStep: 5, unit: "°", title: `J${i + 1}: ${lo}° 〜 ${hi}°（スライダは 5° 刻み、数値は自由）`,
+      onInput: (deg) => { const q = state.robot.arm.q.slice(); q[i] = deg2rad(deg); ikStatus = null; setArmQ(q); } });
+  });
+}
+{ // 手先 X/Y/Z [mm]・W/P/R [°]: スライダ＋数値。動かすと IK
+  const grid = document.getElementById("tcpRows");
+  const R = ARM.reach + 300;
+  [["X", "tcpX", -R, R, 10, "mm"], ["Y", "tcpY", -R, R, 10, "mm"], ["Z", "tcpZ", -ARM.L.base - 600, R, 10, "mm"],
+   ["W", "tcpW", -180, 180, 1, "°", 15], ["P", "tcpP", -180, 180, 1, "°", 15], ["R", "tcpR", -180, 180, 1, "°", 15]].forEach(([label, id, min, max, step, unit, slStep]) => {
+    makeCtrlRow(grid, { label, idNum: id, idSl: id + "Sl", min, max, step, slStep: slStep || step, unit,
+      title: slStep ? "スライダは 15° 刻み（0, 15, 30 …）、数値は自由" : undefined, onInput: () => applyTcpInputs(true) });
+  });
+}
+document.getElementById("btnArmHome").addEventListener("click", () => { if (playing) return; pushUndo(); ikStatus = null; setArmQ([0, 0, 0, 0, 0, 0]); });
+document.getElementById("btnArmReady").addEventListener("click", () => { if (playing) return; pushUndo(); ikStatus = null; setArmQ(ARM_READY_Q.slice()); });
+{
+  const tl = document.getElementById("toolLen");
+  bindUndoOnEdit(tl);
+  tl.addEventListener("change", () => {
+    state.toolLen = Math.max(0, parseFloat(tl.value) || 0);
+    renderPoseLists(); recompute(); armCtrlRefresh();
+  });
+}
+
+/* ---------------- 右ペインのタブ ---------------- */
+function showLeftTab(t) {
+  document.getElementById("ltabPts").hidden = t !== "pts";
+  document.getElementById("ltabArm").hidden = t !== "arm";
+  document.querySelectorAll("#leftTabs .tab").forEach(b => b.classList.toggle("on", b.dataset.ltab === t));
+}
+document.querySelectorAll("#leftTabs .tab").forEach(b => b.addEventListener("click", () => showLeftTab(b.dataset.ltab)));
+function showRightTab(t) {
+  document.getElementById("tabSeq").hidden = t !== "seq";
+  document.getElementById("tabObj").hidden = t !== "obj";
+  document.querySelectorAll("#rightTabs .tab").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
+}
+document.querySelectorAll("#rightTabs .tab").forEach(b => b.addEventListener("click", () => showRightTab(b.dataset.tab)));
+
+/* ---------------- オブジェクトの一覧と設定 ----------------
+ * 一覧で選ぶ → selectedId。2D/3D のハイライトと設定欄が追従する */
+let objPropsId = null; // 設定欄に出しているオブジェクト
+const OBJ_TYPE_LABEL = (o) => o.type === "box" ? (o.h > 0 ? "設備" : "区画") : o.type === "line" ? "直線" : o.type === "image" ? "下絵" : "文字";
+function objKind(o) { return o.type === "box" ? (o.h > 0 ? "box" : "zone") : o.type; }
+
+function renderObjectList() {
+  const list = document.getElementById("objList");
+  const filter = document.getElementById("objFilter").value;
+  list.innerHTML = "";
+  const objs = state.objects.filter(o => filter === "all" || objKind(o) === filter);
+  if (!objs.length) {
+    const d = document.createElement("div"); d.className = "hint"; d.style.padding = "8px";
+    d.textContent = state.objects.length ? "この種類のオブジェクトはありません。" : "まだオブジェクトがありません。キャンバス左のツール（箱・区画・直線・文字・下絵）で描いてください。";
+    list.appendChild(d);
+  }
+  // 1 行: 色 ｜ 種類 ｜ 名前 ｜ 🔒
+  const makeRow = (o) => {
+    const row = document.createElement("div");
+    row.className = "obj-item" + (o.id === selectedId ? " sel" : "") + (o.visible === false ? " hidden-obj" : "");
+    const sw = document.createElement("span"); sw.className = "sw" + (o.type === "image" ? " img" : ""); if (o.color) sw.style.background = o.color;
+    const ty = document.createElement("span"); ty.className = "ty"; ty.textContent = OBJ_TYPE_LABEL(o);
+    const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = o.name || "（名前なし）"; nm.title = o.name || "";
+    const lk = document.createElement("button"); lk.className = "lock" + (o.locked ? " on" : ""); lk.textContent = o.locked ? "🔒" : "🔓";
+    lk.title = o.locked ? "ロック中: キャンバスで選べず、動きません（クリックで解除）" : "ロックしていません（クリックでロック）";
+    lk.addEventListener("click", (e) => { e.stopPropagation(); pushUndo(); o.locked = !o.locked; renderObjectList(); });
+    row.append(sw, ty, nm, lk);
+    row.addEventListener("click", () => selectObject(o.id, { keepTab: true }));
+    row.addEventListener("dblclick", () => focusObject(o));
+    return row;
+  };
+  for (const o of objs) list.appendChild(makeRow(o));
+  const sel = selectedObject();
+  const row = list.querySelector(".obj-item.sel");
+  if (row) row.scrollIntoView({ block: "nearest" });
+  for (const id of ["btnObjVis", "btnObjDel", "btnObjFocus", "btnObjDup"]) document.getElementById(id).disabled = !sel;
+  renderObjProps();
+}
+document.getElementById("objFilter").addEventListener("change", renderObjectList);
+
+/* 2D の表示をオブジェクトの位置に合わせる */
+function focusObject(o) {
+  if (viewMode === "3d") setViewMode("2d");
+  if (o.type === "image") { fitViewToImage(o); return; }
+  if (o.type === "line") { view.cx = (o.x1 + o.x2) / 2; view.cy = (o.y1 + o.y2) / 2; }
+  else { view.cx = o.x; view.cy = o.y; }
+}
+
+function selectedObject() { return state.objects.find(o => o.id === selectedId) || null; }
+function deleteSelectedObject() {
+  const o = selectedObject(); if (!o) return;
+  pushUndo();
+  state.objects = state.objects.filter(q => q !== o);
+  selectedId = null;
+  renderObjectList();
+}
+document.getElementById("btnObjDel").addEventListener("click", deleteSelectedObject);
+document.getElementById("btnObjDup").addEventListener("click", () => {
+  const o = selectedObject(); if (!o) return;
+  pushUndo();
+  const c = structuredClone(o); c.id = uid(); c.name = (o.name || "") + " のコピー";
+  const off = 300; // 少しずらして置く
+  if (c.type === "line") { c.x1 += off; c.x2 += off; c.y1 -= off; c.y2 -= off; } else { c.x += off; c.y -= off; }
+  state.objects.splice(state.objects.indexOf(o) + 1, 0, c);
+  selectObject(c.id, { keepTab: true });
+});
+document.getElementById("btnObjVis").addEventListener("click", () => {
+  const o = selectedObject(); if (!o) return;
+  pushUndo(); o.visible = o.visible === false; renderObjectList();
+});
+document.getElementById("btnObjFocus").addEventListener("click", () => { const o = selectedObject(); if (o) focusObject(o); });
+
+/* 設定欄: 選択中のオブジェクトの種類に応じた入力欄を作る。値を変えるとその場で反映（Undo 対象） */
+function renderObjProps() {
+  const box = document.getElementById("objProps");
+  const o = selectedObject();
+  objPropsId = o ? o.id : null;
+  if (!o) { box.innerHTML = '<div class="hint">一覧から選ぶと、ここに設定が出ます。2D・3D 上のクリックでも選べます。</div>'; return; }
+  // 入力中の欄があれば作り直さず値だけ更新する（ドラッグ移動中の追従）
+  if (box.dataset.id === o.id && box.contains(document.activeElement)) { syncObjPropValues(o); return; }
+  box.dataset.id = o.id;
+  box.innerHTML = "";
+  const title = document.createElement("div"); title.className = "ptitle";
+  const ty = document.createElement("span"); ty.className = "ty"; ty.textContent = OBJ_TYPE_LABEL(o);
+  const tt = document.createElement("span"); tt.textContent = "設定";
+  title.append(ty, tt);
+  box.appendChild(title);
+  const grid = document.createElement("div"); grid.className = "pgrid";
+  box.appendChild(grid);
+  // 行の追加ヘルパ。conv: 表示値→内部値、disp: 内部値→表示値
+  // 入力欄を 1 つ作る（行には追加しない）
+  const mkInput = (key, opts) => {
+    opts = opts || {};
+    let el;
+    if (opts.type === "color") { el = document.createElement("input"); el.type = "color"; }
+    else if (opts.type === "checkbox") { el = document.createElement("input"); el.type = "checkbox"; }
+    else if (opts.type === "text") { el = document.createElement("input"); el.type = "text"; }
+    else if (opts.type === "range") { el = document.createElement("input"); el.type = "range"; el.min = opts.min; el.max = opts.max; el.step = opts.step || "any"; }
+    else { el = document.createElement("input"); el.type = "number"; el.step = opts.step || "any"; if (opts.min !== undefined) el.min = opts.min; }
+    el.dataset.key = key; el.dataset.scale = opts.scale || 1; el.dataset.kind = opts.type || "number";
+    if (opts.digits !== undefined) el.dataset.digits = opts.digits; // 表示する小数の桁
+    if (opts.full) el.classList.add("full");
+    const apply = () => {
+      const cur = selectedObject(); if (!cur || cur.id !== o.id) return;
+      let v;
+      if (el.type === "checkbox") v = el.checked;
+      else if (el.type === "color" || el.type === "text") v = el.value;
+      else { v = parseFloat(el.value); if (!isFinite(v)) return; v = v * (opts.scale || 1); if (opts.min !== undefined && v < opts.min * (opts.scale || 1)) v = opts.min * (opts.scale || 1); }
+      if (opts.set) { pushUndo(); opts.set(cur, v); } else { if (cur[key] === v) return; pushUndo(); cur[key] = v; }
+      if (opts.rebuild) renderObjProps(); else syncObjPropValues(cur);
+      renderObjectList();
+    };
+    el.addEventListener("change", apply);
+    if (el.type === "range") el.addEventListener("input", apply); // スライダはドラッグ中も反映
+    if (el.type === "text") el.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); apply(); el.blur(); } });
+    return el;
+  };
+  // 1 項目: ラベルが上の入力欄（単位は欄の中）。色・スライダは枠なしでそのまま
+  const field = (label, key, opts) => {
+    opts = opts || {};
+    const el = mkInput(key, opts);
+    const ctl = (opts.type === "color" || opts.type === "range") ? el : inBox(el, opts.unit);
+    grid.appendChild(fieldBox(label, ctl, opts.half ? "half" : ""));
+    return el;
+  };
+  // 2 値をまとめた項目: ラベルの下に入力欄を 2 つ（中心 X:Y、幅×奥行 など）
+  const pair = (label, keyA, keyB, opts) => {
+    opts = opts || {};
+    const a = mkInput(keyA, opts), bEl = mkInput(keyB, opts);
+    const wrap = document.createElement("div"); wrap.className = "in2";
+    wrap.append(inBox(a, opts.unit), inBox(bEl, opts.unit));
+    grid.appendChild(fieldBox(label, wrap));
+    return [a, bEl];
+  };
+  // スイッチの項目（表示・床に接地・縦書き）
+  const switchRow = (label, input) => {
+    input.classList.add("sw");
+    const r = document.createElement("label"); r.className = "swrow";
+    r.append(input, label);
+    grid.appendChild(r);
+  };
+  field("名前", "name", { type: "text" });
+  const vis = document.createElement("input"); vis.type = "checkbox"; vis.dataset.key = "visible"; vis.dataset.kind = "checkbox";
+  vis.addEventListener("change", () => { const cur = selectedObject(); if (!cur) return; pushUndo(); cur.visible = vis.checked; renderObjectList(); });
+  switchRow("表示", vis);
+  if (o.type !== "image") field("色", "color", { type: "color", half: true });
+  if (o.type === "box") {
+    pair("中心 X : Y", "x", "y", { scale: 1000, step: 0.01, digits: 2, unit: "m" });
+    pair("幅 × 奥行（x × y）", "w", "d", { step: 50, min: 10, unit: "mm" });
+    field("向き", "yaw", { scale: Math.PI / 180, step: 1, digits: 0, unit: "°", half: true });
+    field("高さ", "h", { step: 50, min: 0, unit: "mm", rebuild: true, half: true });
+    const grounded = document.createElement("input"); grounded.type = "checkbox"; grounded.checked = !(o.z0 > 0);
+    grounded.dataset.key = "grounded"; grounded.dataset.kind = "checkbox";
+    switchRow("床に接地", grounded);
+    const z0 = field("底面の高さ", "z0", { step: 50, min: 0, unit: "mm", half: true });
+    z0.disabled = !(o.z0 > 0);
+    grounded.addEventListener("change", () => {
+      const cur = selectedObject(); if (!cur) return;
+      pushUndo();
+      if (grounded.checked) { cur.z0 = 0; z0.disabled = true; z0.value = 0; }
+      else { cur.z0 = Math.max(cur.z0 || 0, 100); z0.disabled = false; z0.value = cur.z0; } // 浮かせる: まず 100 mm
+      renderObjectList();
+    });
+    const hint = document.createElement("div"); hint.className = "hint"; hint.style.gridColumn = "1 / -1"; // 列数が変わっても全幅
+    hint.textContent = "高さ 0 は床の区画（3D では床の塗り）。底面の高さは棚の上の物や吊り下げ設備に使います。2D でドラッグしても動かせます。";
+    grid.appendChild(hint);
+  } else if (o.type === "line") {
+    pair("始点 X : Y", "x1", "y1", { scale: 1000, step: 0.01, digits: 2, unit: "m" });
+    pair("終点 X : Y", "x2", "y2", { scale: 1000, step: 0.01, digits: 2, unit: "m" });
+  } else if (o.type === "image") {
+    const sz = imageSizeMm(o), el = imageReady(o);
+    pair("中心 X : Y", "x", "y", { scale: 1000, step: 0.01, digits: 2, unit: "m" });
+    field("縮尺", "pxPerM", { step: "any", min: 0.001, unit: "px/m", half: true });
+    field("透明度", "opacity", { type: "range", min: 0.05, max: 1, step: 0.05, half: true });
+    const info = document.createElement("div"); info.className = "hint"; info.style.gridColumn = "1 / -1";
+    info.textContent = el ? `画像 ${el.naturalWidth}×${el.naturalHeight}px → 実寸 ${(sz.w / 1000).toFixed(1)}×${(sz.d / 1000).toFixed(1)} m` : "画像を読み込み中…";
+    grid.appendChild(info);
+    const row = document.createElement("div"); row.style.cssText = "grid-column: 1 / -1; display:flex; gap:4px; flex-wrap:wrap;";
+    const bCal = document.createElement("button"); bCal.className = "small primary"; bCal.textContent = "📏 線を引いて縮尺を合わせる";
+    bCal.title = "この下絵の、長さが分かっている箇所に線を引いて実寸を入力すると、縮尺が合います";
+    bCal.addEventListener("click", () => { calibTarget = o; if (viewMode === "3d") setViewMode("2d"); if (bgMode !== "calib") setBgMode("calib"); });
+    const bRep = document.createElement("button"); bRep.className = "small"; bRep.textContent = "画像を差し替え";
+    bRep.addEventListener("click", () => { imgReplaceTarget = o; document.getElementById("fileBgImg").click(); });
+    row.append(bCal, bRep);
+    grid.appendChild(row);
+    const hint = document.createElement("div"); hint.className = "hint"; hint.style.gridColumn = "1 / -1";
+    hint.textContent = "床に敷いたレイアウト図です。縮尺を合わせてから、その上に箱や区画を描きます。ドラッグで動かすときは一覧の 🔒 を外してください。";
+    grid.appendChild(hint);
+  } else if (o.type === "text") {
+    field("文字", "text", { type: "text" });
+    pair("中心 X : Y", "x", "y", { scale: 1000, step: 0.01, digits: 2, unit: "m" });
+    field("文字の高さ", "size", { scale: 1000, step: 0.01, digits: 2, min: 0.05, unit: "m", half: true });
+    const vv = document.createElement("input"); vv.type = "checkbox"; vv.dataset.key = "vertical"; vv.dataset.kind = "checkbox";
+    vv.addEventListener("change", () => { const cur = selectedObject(); if (!cur) return; pushUndo(); cur.vertical = vv.checked; });
+    switchRow("縦書き", vv);
+  }
+  syncObjPropValues(o);
+}
+/* 設定欄の値を内部値から更新（フォーカス中の欄は触らない） */
+function syncObjPropValues(o) {
+  document.querySelectorAll("#objProps [data-key]").forEach(el => {
+    if (el === document.activeElement) return;
+    const k = el.dataset.key;
+    if (k === "grounded") { el.checked = !(o.z0 > 0); return; }
+    if (el.dataset.kind === "checkbox") { el.checked = k === "visible" ? o.visible !== false : !!o[k]; return; }
+    if (el.dataset.kind === "color" || el.dataset.kind === "text") { el.value = o[k] || (el.dataset.kind === "color" ? "#888888" : ""); return; }
+    const sc = parseFloat(el.dataset.scale) || 1;
+    const v = (o[k] || 0) / sc;
+    const dg = el.dataset.digits !== undefined ? +el.dataset.digits : (sc === 1 ? 0 : 3);
+    el.value = +v.toFixed(dg);
+  });
+}
+
 /* ---------------- 起動 ---------------- */
 renderSimParams();
 renderPoseLists();
 renderProgram();
 resizeCanvas();
 recompute();
+armCtrlRefresh();
+renderObjectList();
 requestAnimationFrame(loop);
 
 /* テスト用フック（自動検証で使用） */
-window.__sim = { state, SIM_PARAMS, setBodyVmax, renderSimParams, dubinsShortest, dubinsSample, trapDur, trapPos, compileProgram, stateAtTime, recompute, renderPoseLists, renderProgram, mod2pi, angDiff, setBgImage, pushUndo, doUndo, doRedo, undoStack, redoStack };
+/* 操作方法と前提値のダイアログ */
+const infoDlg = document.getElementById("infoDlg");
+document.getElementById("btnInfo").addEventListener("click", () => { infoDlg.hidden = false; });
+document.getElementById("btnInfoClose").addEventListener("click", () => { infoDlg.hidden = true; });
+infoDlg.addEventListener("click", (e) => { if (e.target === infoDlg) infoDlg.hidden = true; });
+window.addEventListener("keydown", (e) => { if (e.key === "Escape" && !infoDlg.hidden) infoDlg.hidden = true; });
+
+window.__sim = { state, pointsFromSave, findPoint, blockMoves, bodyLocations, SIM_PARAMS, ARM, setBodyVmax, renderSimParams, dubinsShortest, dubinsSample, trapDur, trapPos, compileProgram, stateAtTime, recompute, renderPoseLists, renderProgram, mod2pi, angDiff, pushUndo, doUndo, doRedo, undoStack, redoStack, setViewMode, setArmQ, armCtrlRefresh, jogTcp, migrateArm, selectObject, renderObjectList, objectsFromSave, get viewMode() { return viewMode; }, get selectedId() { return selectedId; }, applyLoadedData, fitViewToContent, stopPlayback, get playing() { return playing; } };
 </script>
+<!-- サンプルの読込（samples/index.json の一覧を出して、選んだ JSON を applyLoadedData に渡す） -->
+<script src="samples/embedded.js"></script><!-- サンプルの一覧と中身（build.py が埋め込む。file:// では fetch できないため） -->
+<script src="samples.js"></script>
 <script src="../assets/track.js" data-tool="sim2d"></script>
 </body>
 </html>
