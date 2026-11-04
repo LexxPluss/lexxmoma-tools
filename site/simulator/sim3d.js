@@ -503,6 +503,30 @@ class Sim3D {
         this.bgGroup.add(ed);
       }
     }
+    // 手先の目標: 赤い球（設備や車体に隠れても見えるよう手前に描く）、ツールの向きの矢印、床からの点線、「順番. 名前」
+    const targets = (objects || []).filter(o => o.type === "target");
+    for (const o of objs) {
+      if (o.type !== "target") continue;
+      const col = new THREE.Color(o.id === selectedId ? SEL : (o.color || "#c0392b"));
+      const z = o.z || 0;
+      const top = (mat) => { mat.depthTest = false; return mat; };
+      const ball = new THREE.Mesh(new THREE.SphereGeometry(30, 16, 12), top(new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.85 })));
+      ball.position.set(o.x, o.y, z); ball.renderOrder = 10;
+      ball.userData.id = o.id;
+      this.bgGroup.add(ball); this.pickables.push(ball);
+      // ツールの向き（ツール座標の +z = 手先が向かう方向）。W/P/R は床の座標（R = Rz(r)·Ry(p)·Rx(w)）
+      const d2r = Math.PI / 180;
+      const dir = new THREE.Vector3(0, 0, 1).applyEuler(new THREE.Euler((o.w || 0) * d2r, (o.p || 0) * d2r, (o.r || 0) * d2r, "ZYX"));
+      const arrow = new THREE.ArrowHelper(dir, new THREE.Vector3(o.x, o.y, z).addScaledVector(dir, -250), 250, col.getHex(), 70, 40);
+      arrow.traverse(c => { if (c.material) top(c.material); c.renderOrder = 10; });
+      this.bgGroup.add(arrow);
+      const pole = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(o.x, o.y, 0), new THREE.Vector3(o.x, o.y, z)]),
+        new THREE.LineDashedMaterial({ color: col, dashSize: 40, gapSize: 30 }));
+      pole.computeLineDistances();
+      this.bgGroup.add(pole);
+      const lb = this.makeLabel(`${targets.indexOf(o) + 1}. ${o.name || ""}`, o.x, o.y, z + 120, col.getStyle());
+      lb.userData.aux = true; this.bgGroup.add(lb);
+    }
     this.applyAuxVisibility();
     // 下絵: 床に貼る（何枚でも。配列の順に少しずつ浮かせて重なり順を保つ）
     let zi = 0;
