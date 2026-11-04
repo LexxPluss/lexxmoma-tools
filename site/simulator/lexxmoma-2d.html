@@ -603,7 +603,7 @@
        一度開いたら、隣へマウスを動かすだけで切り替わる。Esc で閉じる -->
   <div id="titleCol">
     <h1 class="lx-tool">LexxMoMa 動作シミュレーター</h1>
-    <div id="revDisp">rev.99</div>
+    <div id="revDisp">rev.100</div>
     <nav id="menubar" role="menubar">
       <div class="hdr-menu">
         <button class="mb" id="btnFile" aria-haspopup="menu" aria-expanded="false">ファイル</button>
@@ -771,6 +771,7 @@
           <option value="zone">区画</option>
           <option value="line">直線</option>
           <option value="text">文字</option>
+          <option value="target">手先</option>
           <option value="image">下絵</option>
         </select>
         <span style="flex:1"></span>
@@ -806,6 +807,7 @@
         <button id="btnBgZone" title="区画 (Z)&#10;床の区画・目印（高さ 0）。ドラッグで描く">▦<small>区画</small></button>
         <button id="btnBgLine" title="直線 (L)&#10;ドラッグで引く">╱<small>直線</small></button>
         <button id="btnBgText" title="文字 (T)&#10;置きたい所をクリック">Ｔ<small>文字</small></button>
+        <button id="btnBgTarget" title="手先 (H)&#10;アームの手先を持っていきたい所をクリック。置いた順に回るシーケンスを、タイムラインの「自動作成」で作れます">⊕<small>手先</small></button>
         <div class="sep"></div>
         <button id="btnBgImgTool" title="下絵 (I)&#10;レイアウト図（PNG）を床に敷く。何枚でも。最初はロック">🖼<small>下絵</small></button>
       </div>
@@ -859,6 +861,7 @@
         <div style="flex:1"></div>
         <button id="btnAddMove" title="選んでいる段の後ろに、新しい段として Move を足します（何も選んでいなければ最後に）">＋ Move</button>
         <button id="btnAddOther" title="選んでいる段の後ろに、新しい段として「その他の動作」（撮像・把持など、時間だけかかる動作）を足します">＋ その他</button>
+        <button id="btnAuto" title="置いた手先の目標を順に回るシーケンスを自動で作ります（登録した姿勢とシーケンスは置き換わります。Ctrl+Z で戻せます）">自動作成</button>
         <select id="tlScale" title="横幅の決め方&#10;時間比例: 棒の長さが時間に比例&#10;等幅: どの段も同じ幅（名前が読みやすい）">
           <option value="time" selected>時間比例</option>
           <option value="even">等幅</option>
@@ -1354,6 +1357,163 @@ function dropState(name, target) {
   showRightTab("seq");
   renderPoseLists(); renderProgram(); recompute();
 }
+/* ---------------- シーケンスの自動作成 ----------------
+ * ユーザーが置くのは手先の目標（レイアウトの「手先」）だけ。手先ごとに、車体の位置・アームの姿勢・寄り付きを決めて段を作る。
+ *  - 車体: 走ってよいエリア（「走行可」の区画。無ければ床全体）に収まり、設備（高さのある箱）に重ならない位置から、時間が最短のもの
+ *  - 走行中: 手先は車体中心から水平 AUTO_R 以内（寄り付きの姿勢）。走りながらアームを寄り付きの姿勢へ動かす
+ *  - 寄り付き: 目標の姿勢から、腕をたたんだ姿勢へ関節を直線で戻していき、初めて AUTO_R 以内に入る所（目標に一番近い所） */
+const AUTO_R = 600;      // 走行中の手先の制約: 車体中心からの水平距離 [mm]
+const AUTO_MARGIN = 50;  // 車体の周りに空ける隙間 [mm]
+const AUTO_STOW = [0, -30, 60, 0, -60, 0].map(deg2rad); // 腕をたたんだ姿勢（J1・J4・J6 は寄り付き元の値を使う）
+function tcpR(q) { return tcpInfoVeh(q, state.toolLen).horizontal; }
+function approachOf(qT) {
+  let S = AUTO_STOW.slice(); S[0] = qT[0]; S[3] = qT[3]; S[5] = qT[5];
+  if (tcpR(S) > AUTO_R - 20) { S = AUTO_STOW.slice(); S[0] = qT[0]; }
+  const at = (a) => qT.map((v, i) => v + a * (S[i] - v));
+  let a = 1;
+  for (let k = 49; k >= 0; k--) { // S から目標へ向かって、AUTO_R を超える手前まで
+    if (tcpR(at(k / 50)) > AUTO_R - 10) break;
+    a = k / 50;
+  }
+  return at(a);
+}
+function armPathOk(qs, qg, P) { // アームが動くあいだ、手先が AUTO_R 以内か
+  const m = armMotion(qs, qg, P);
+  for (let k = 0; k <= 20; k++) if (tcpR(m.anim(m.dur * k / 20).arm.q) > AUTO_R + 1) return false;
+  return true;
+}
+function ptInBox(o, x, y) {
+  const c = Math.cos(-(o.yaw || 0)), s = Math.sin(-(o.yaw || 0));
+  const lx = (x - o.x) * c - (y - o.y) * s, ly = (x - o.x) * s + (y - o.y) * c;
+  return Math.abs(lx) <= o.w / 2 && Math.abs(ly) <= o.d / 2;
+}
+function autoZones() { return state.objects.filter(o => o.type === "box" && !(o.h > 0) && o.drive); }
+function autoObstacles() { return state.objects.filter(o => o.type === "box" && o.h > 0 && o.visible !== false); }
+/* 車体（周りに AUTO_MARGIN）が、走ってよいエリアに収まり、設備に重ならないか */
+function bodyFits(b, zones, obs) {
+  const c = Math.cos(b.th), s = Math.sin(b.th), L = BODY_LEN / 2 + AUTO_MARGIN, W = BODY_WID / 2 + AUTO_MARGIN;
+  for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) {
+    const lx = L * i / 2, ly = W * j / 2, x = b.x + lx * c - ly * s, y = b.y + lx * s + ly * c;
+    if (zones.length && !zones.some(z => ptInBox(z, x, y))) return false;
+    if (obs.some(o => ptInBox(o, x, y))) return false;
+  }
+  for (const o of obs) { // 車体より小さい設備（角が車体の中に入る）
+    const oc = Math.cos(o.yaw || 0), os = Math.sin(o.yaw || 0);
+    for (const [u, v] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+      const x = o.x + u * o.w / 2 * oc - v * o.d / 2 * os - b.x, y = o.y + u * o.w / 2 * os + v * o.d / 2 * oc - b.y;
+      if (Math.abs(x * c + y * s) <= L && Math.abs(-x * s + y * c) <= W) return false;
+    }
+  }
+  return true;
+}
+/* 走る経路がずっとエリアの中か。出発点がもともと外なら確かめない */
+function drivePath(from, to, mode, zones, obs, P) {
+  const m = bodyMotion(from, to, { type: "point", mode }, P);
+  if (!bodyFits(from, zones, obs)) return m;
+  const n = Math.max(2, Math.ceil(m.dur / 0.05));
+  for (let k = 1; k <= n; k++) if (!bodyFits(m.anim(m.dur * k / n).body, zones, obs)) return null;
+  return m;
+}
+/* 手先の目標 t（床基準）に、車体の位置 b から届くアームの姿勢。届かなければ null */
+function targetIK(t, b, seedQ) {
+  const c = Math.cos(-b.th), s = Math.sin(-b.th), dx = t.x - b.x, dy = t.y - b.y;
+  const vx = dx * c - dy * s, vy = dx * s + dy * c;
+  const T = vehTargetToArm(vx, vy, t.z - ARM_MOUNT_Z - ARM.L.base, t.w || 0, t.p || 0, (t.r || 0) - b.th * 180 / Math.PI);
+  const phi = wrapPi(Math.atan2(vy, vx) - ARM_MOUNT_YAW);
+  const seeds = [[phi, 50, 10, 0, -50, 0], [phi, 20, -20, 0, -60, 0]].map(q => q.map((v, i) => i ? deg2rad(v) : v));
+  if (seedQ) seeds.unshift(seedQ);
+  for (const sd of seeds) {
+    const r = CRX.ik(T, sd, state.toolLen, { iters: 80 });
+    if (r.ok && CRX.withinLimits(r.q)) return r.q;
+  }
+  return null;
+}
+/* 手先の目標 t へ行く車体の位置を決める。今の車体の位置 body0・アームの姿勢 q0 から、時間が最短のもの */
+function autoPlace(t, body0, q0, P, zones, obs) {
+  const R0 = tcpR(q0) > AUTO_R ? approachOf(q0) : q0; // 走る前に寄り付きの姿勢へ
+  const retreat = armMotion(q0, R0, P).dur;
+  let best = null;
+  const qs = targetIK(t, body0, q0); // 今の車体の位置のまま届くなら、走らない
+  if (qs) best = { same: true, body: body0, qT: qs, cost: armMotion(q0, qs, P).dur };
+  const pre = [];
+  for (let it = 0; it < 24; it++) {
+    const th = it * TAU / 24, c = Math.cos(th), s = Math.sin(th);
+    for (let ip = 0; ip < 24; ip++) {
+      const ps = ip * TAU / 24;
+      for (let d = 350; d <= 1250; d += 100) {
+        const vx = d * Math.cos(ps), vy = d * Math.sin(ps);
+        const b = { x: t.x - (vx * c - vy * s), y: t.y - (vx * s + vy * c), th };
+        if (!bodyFits(b, zones, obs)) continue;
+        pre.push({ b, drive: bodyMotion(body0, b, { type: "point", mode: "auto" }, P).dur });
+      }
+    }
+  }
+  pre.sort((a, c) => a.drive - c.drive);
+  const cands = [];
+  for (const p of pre.slice(0, 400)) {
+    if (best && p.drive + retreat >= best.cost) break; // 走る時間だけで負けている
+    const qT = targetIK(t, p.b);
+    if (!qT) continue;
+    const qA = approachOf(qT), up = armMotion(qA, qT, P).dur;
+    cands.push({ body: p.b, qT, qA, cost: retreat + Math.max(p.drive, armMotion(R0, qA, P).dur) + up * 2 });
+  }
+  cands.sort((a, c) => a.cost - c.cost);
+  for (const cd of cands) {
+    if (best && cd.cost >= best.cost) break;
+    for (const mode of ["auto", "forward", "backward", "shortest"]) {
+      if (!drivePath(body0, cd.body, mode, zones, obs, P)) continue;
+      return Object.assign(cd, { mode, armDuringDrive: armPathOk(R0, cd.qA, P) });
+    }
+  }
+  return best;
+}
+function autoGenerate() {
+  const tg = state.objects.filter(o => o.type === "target");
+  if (!tg.length) { alert("先に、キャンバス左の「手先」ツールで、アームの手先を持っていきたい所を置いてください。置いた順に回ります。"); return; }
+  if ((state.points.length || state.program.length) && !confirm("登録した姿勢とシーケンスを、自動で作ったものに置き換えます（Ctrl+Z で戻せます）。")) return;
+  const P = params(), zones = autoZones(), obs = autoObstacles();
+  let body = initialBody(), q = initialArm().q.slice();
+  const pts = [], steps = [];
+  const uniq = (n) => { let m = n, i = 2; while (pts.some(p => p.name === m)) m = n + " " + i++; return m; };
+  const addPt = (name, b, qq) => { const n = uniq(name); pts.push({ name: n, body: b ? { x: b.x, y: b.y, th: mod2pi(b.th) } : null, arm: qq ? { q: qq.slice() } : null }); return n; };
+  const start = addPt("開始", body, q);
+  let lastA = null, prevName = "開始"; // 前の手先の寄り付きの姿勢の名前（走る前に戻る先）と、前の手先の名前
+  for (const t of tg) {
+    const r = autoPlace(t, body, q, P, zones, obs);
+    if (!r) {
+      alert(`「${t.name}」に届く車体の位置が見つかりませんでした。手先の高さ・向き、走行可の区画、設備の位置を見直してください。`);
+      return;
+    }
+    if (r.same) { // 同じ車体の位置のまま、アームだけ動かす
+      steps.push({ arm: addPt(t.name, body, r.qT) });
+      q = r.qT; lastA = null; prevName = t.name;
+      continue;
+    }
+    if (tcpR(q) > AUTO_R) { // 走る前に、手先を車体の近くへ
+      const qa = approachOf(q);
+      steps.push({ arm: lastA || addPt(prevName + " 寄り", body, qa) });
+      q = qa;
+    }
+    const nT = addPt(t.name, r.body, r.qT), nA = addPt(t.name + " 寄り", r.body, r.qA);
+    if (r.armDuringDrive) steps.push({ body: nT, arm: nA, mode: r.mode });
+    else { steps.push({ body: nT, mode: r.mode }); steps.push({ arm: nA }); }
+    steps.push({ arm: nT });
+    body = r.body; q = r.qT; lastA = nA; prevName = t.name;
+  }
+  pushUndo();
+  state.points = pts;
+  state.initial = { body: start, arm: start };
+  state.program = steps.map(st => {
+    const stage = { blocks: [] };
+    setStageSlots(stage, { body: st.body || null, arm: st.arm || null });
+    const bb = slotBlock(stage, "body");
+    if (bb && st.mode) { bb.mode = st.mode; bb.reverse = st.mode === "backward"; }
+    return stage;
+  });
+  selStage = null; selStart = false;
+  renderPoseLists(); renderProgram(); recompute();
+}
+document.getElementById("btnAuto").addEventListener("click", autoGenerate);
 /* 同じ車体の位置か（1 mm・0.1° 未満の差は同じ場所とみなす） */
 function sameBody(a, c) {
   return !!(a && c) && Math.abs(a.x - c.x) < 1 && Math.abs(a.y - c.y) < 1 && Math.abs(angDiff(a.th, c.th)) < 0.002;
@@ -1797,6 +1957,7 @@ function drawObjects() {
     ctx.fillStyle = o.color; ctx.font = "11px sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "top";
     let label = o.name || "";
     if (o.h > 0) label += (label ? "  " : "") + `h ${(o.h / 1000).toFixed(2)}m` + (o.z0 > 0 ? ` ↑${(o.z0 / 1000).toFixed(2)}m` : "");
+    else if (o.drive) label += (label ? "  " : "") + "走行可";
     if (label && W > 30 && D > 14) ctx.fillText(label, -W / 2 + 4, -D / 2 + 3);
     ctx.restore();
   }
@@ -1809,6 +1970,17 @@ function drawObjects() {
     }
     ctx.strokeStyle = o.color; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2); ctx.stroke();
+  }
+  // 手先の目標: ⊕ と、回る順番・名前・高さ
+  const tgAll = state.objects.filter(o => o.type === "target");
+  for (const o of objs) {
+    if (o.type !== "target") continue;
+    const [sx, sy] = w2s(o.x, o.y);
+    ctx.strokeStyle = o.color || "#c0392b"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(sx, sy, 7, 0, TAU); ctx.moveTo(sx - 11, sy); ctx.lineTo(sx + 11, sy); ctx.moveTo(sx, sy - 11); ctx.lineTo(sx, sy + 11); ctx.stroke();
+    if (o.id === selectedId) drawSelectionRect(sx - 12, sy - 12, 24, 24);
+    ctx.fillStyle = o.color || "#c0392b"; ctx.font = "bold 11px sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "bottom";
+    ctx.fillText(`${tgAll.indexOf(o) + 1}. ${o.name || ""}  h ${((o.z || 0) / 1000).toFixed(2)}m`, sx + 10, sy - 6);
   }
   ctx.save();
   ctx.textAlign = "center"; ctx.textBaseline = "middle";
@@ -4049,6 +4221,7 @@ const btnBgZone = document.getElementById("btnBgZone");
 const btnBgLine = document.getElementById("btnBgLine");
 const btnBgText = document.getElementById("btnBgText");
 const btnBgSelect = document.getElementById("btnBgSelect");
+const btnBgTarget = document.getElementById("btnBgTarget");
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 function bgRectHeightMm() { // 箱の高さ入力 [mm]（空欄・不正は 0 = 床の区画）
@@ -4059,7 +4232,7 @@ function bgTextSizeMm() { // 文字サイズ入力 [m] → 文字高さ [mm]
 }
 /* 種類ごとの連番の名前（箱1、区画2 …） */
 function autoObjName(type, h) {
-  const base = type === "box" ? (h > 0 ? "箱" : "区画") : type === "line" ? "直線" : type === "image" ? "下絵" : "文字";
+  const base = type === "box" ? (h > 0 ? "箱" : "区画") : type === "line" ? "直線" : type === "image" ? "下絵" : type === "target" ? "手先" : "文字";
   let i = 1;
   while (state.objects.some(o => o.name === base + i)) i++;
   return base + i;
@@ -4087,6 +4260,7 @@ function setBgMode(m) {
   btnBgZone.classList.toggle("on", bgMode === "zone");
   btnBgLine.classList.toggle("on", bgMode === "line");
   btnBgText.classList.toggle("on", bgMode === "text");
+  btnBgTarget.classList.toggle("on", bgMode === "target");
   cv.classList.toggle("drawmode", bgMode !== null);
   document.getElementById("bgHint").textContent =
     bgMode === "calib" ? "下絵の長さが分かっている箇所（柱間・通路幅など）で、始点 → 終点をクリック。Shift で水平・垂直。Esc で中止" :
@@ -4094,6 +4268,7 @@ function setBgMode(m) {
     bgMode === "zone" ? "ドラッグして床の区画を描きます。Shift で 0.1 m 刻み" :
     bgMode === "line" ? "ドラッグして直線を引きます。Shift で 0.1 m 刻み" :
     bgMode === "text" ? "置きたい所をクリック。Shift で 0.1 m 刻み" :
+    bgMode === "target" ? "アームの手先を持っていきたい所をクリック（高さ・向きは右の設定で直します）。Shift で 0.1 m 刻み" :
     "";
   if (bgMode === "text") setTimeout(() => document.getElementById("bgText").focus(), 0);
 }
@@ -4115,13 +4290,14 @@ btnBgBox.addEventListener("click", () => setBgMode("box"));
 btnBgZone.addEventListener("click", () => setBgMode("zone"));
 btnBgLine.addEventListener("click", () => setBgMode("line"));
 btnBgText.addEventListener("click", () => setBgMode("text"));
+btnBgTarget.addEventListener("click", () => setBgMode("target"));
 // ショートカット: V 選択 / B 箱 / Z 区画 / L 直線 / T 文字 / I 下絵（入力欄にいる時は無効）
 window.addEventListener("keydown", (e) => {
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   if (["INPUT", "SELECT", "TEXTAREA"].includes(e.target.tagName)) return;
   if (playing) return; // 再生中はツールバーを隠しているので、ショートカットも効かせない
   const k = e.key.toLowerCase();
-  const map = { v: null, b: "box", z: "zone", l: "line", t: "text" };
+  const map = { v: null, b: "box", z: "zone", l: "line", t: "text", h: "target" };
   if (k === "i") { e.preventDefault(); document.getElementById("btnBgImgTool").click(); return; }
   if (!(k in map)) return;
   e.preventDefault();
@@ -4158,7 +4334,17 @@ cv.addEventListener("click", (e) => {
   }
   if (bgMode === "calib") { calibClick([wx, wy], e.shiftKey); return; }
   // 配置系モードでShift押下中は 0.1m グリッドにスナップ
-  if (e.shiftKey && ["box", "zone", "line", "text"].includes(bgMode)) [wx, wy] = snapToGrid([wx, wy]);
+  if (e.shiftKey && ["box", "zone", "line", "text", "target"].includes(bgMode)) [wx, wy] = snapToGrid([wx, wy]);
+  if (bgMode === "target") { // 高さは、下に設備があればその上面、無ければ 0.8 m。向きは真下
+    const under = state.objects.filter(q => q.type === "box" && q.h > 0 && ptInBox(q, wx, wy)).map(q => (q.z0 || 0) + q.h);
+    pushUndo();
+    const o = { id: uid(), type: "target", name: autoObjName("target"), visible: true, x: wx, y: wy,
+                z: under.length ? Math.max(...under) : 800, w: 180, p: 0, r: 0, color: "#c0392b" };
+    state.objects.push(o);
+    exitDrawMode();
+    selectObject(o.id, { keepTab: true });
+    return;
+  }
   if (bgMode === "text") {
     const txt = document.getElementById("bgText").value.trim();
     if (!txt) { document.getElementById("bgHint").textContent = "先に上の欄へ文字を入力してください。"; document.getElementById("bgText").focus(); return; }
@@ -4207,6 +4393,9 @@ function hitTestObject(wx, wy) {
   const tolMm = 8 / view.scale;
   const objs = state.objects.filter(o => o.visible !== false && !o.locked); // ロック中の物はキャンバスから選べない
   let best = null, bestA = Infinity;
+  for (const o of objs) { // 手先の目標（印の半径 10 px）
+    if (o.type === "target" && Math.hypot(wx - o.x, wy - o.y) <= 10 / view.scale) return o;
+  }
   for (const o of objs) {
     if (o.type !== "text") continue;
     const b = textBoundsMm(o);
@@ -4992,7 +5181,7 @@ function updateInspVisible() {
 /* ---------------- オブジェクトの一覧と設定 ----------------
  * 一覧で選ぶ → selectedId。2D/3D のハイライトと設定欄が追従する */
 let objPropsId = null; // 設定欄に出しているオブジェクト
-const OBJ_TYPE_LABEL = (o) => o.type === "box" ? (o.h > 0 ? "設備" : "区画") : o.type === "line" ? "直線" : o.type === "image" ? "下絵" : "文字";
+const OBJ_TYPE_LABEL = (o) => o.type === "box" ? (o.h > 0 ? "設備" : "区画") : o.type === "line" ? "直線" : o.type === "image" ? "下絵" : o.type === "target" ? "手先" : "文字";
 function objKind(o) { return o.type === "box" ? (o.h > 0 ? "box" : "zone") : o.type; }
 
 function renderObjectList() {
@@ -5153,8 +5342,13 @@ function renderObjProps() {
       else { cur.z0 = Math.max(cur.z0 || 0, 100); z0.disabled = false; z0.value = cur.z0; } // 浮かせる: まず 100 mm
       renderObjectList();
     });
+    if (!(o.h > 0)) { // 区画: 自動作成で車体が走ってよい所
+      const dv = document.createElement("input"); dv.type = "checkbox"; dv.dataset.key = "drive"; dv.dataset.kind = "checkbox";
+      dv.addEventListener("change", () => { const cur = selectedObject(); if (!cur) return; pushUndo(); cur.drive = dv.checked; renderObjectList(); });
+      switchRow("走行してよいエリア（自動作成）", dv);
+    }
     const hint = document.createElement("div"); hint.className = "hint"; hint.style.gridColumn = "1 / -1"; // 列数が変わっても全幅
-    hint.textContent = "高さ 0 は床の区画（3D では床の塗り）。底面の高さは棚の上の物や吊り下げ設備に使います。2D でドラッグしても動かせます。";
+    hint.textContent = "高さ 0 は床の区画（3D では床の塗り）。「走行してよいエリア」にした区画があると、自動作成の車体はその中だけを走ります。底面の高さは棚の上の物や吊り下げ設備に使います。2D でドラッグしても動かせます。";
     grid.appendChild(hint);
   } else if (o.type === "line") {
     pair("始点 X : Y", "x1", "y1", { scale: 1000, step: 0.01, digits: 2, unit: "m" });
@@ -5177,6 +5371,30 @@ function renderObjProps() {
     grid.appendChild(row);
     const hint = document.createElement("div"); hint.className = "hint"; hint.style.gridColumn = "1 / -1";
     hint.textContent = "床に敷いたレイアウト図です。縮尺を合わせてから、その上に箱や区画を描きます。ドラッグで動かすときは一覧の 🔒 を外してください。";
+    grid.appendChild(hint);
+  } else if (o.type === "target") {
+    pair("位置 X : Y", "x", "y", { scale: 1000, step: 0.01, digits: 2, unit: "m" });
+    field("高さ（床から）", "z", { step: 10, unit: "mm", half: true });
+    field("W", "w", { step: 5, unit: "°", half: true });
+    field("P", "p", { step: 5, unit: "°", half: true });
+    field("R", "r", { step: 5, unit: "°", half: true });
+    const tg = state.objects.filter(q => q.type === "target"), k = tg.indexOf(o);
+    const row = document.createElement("div"); row.style.cssText = "grid-column: 1 / -1; display:flex; gap:4px; align-items:center;";
+    const lb = document.createElement("span"); lb.textContent = `回る順番 ${k + 1} / ${tg.length}`; lb.style.flex = "1";
+    const swap = (d) => { // 手先どうしの並び（state.objects の中の順）を入れ替える
+      const other = tg[k + d]; if (!other) return;
+      pushUndo();
+      const i = state.objects.indexOf(o), j = state.objects.indexOf(other);
+      state.objects[i] = other; state.objects[j] = o;
+      document.getElementById("objProps").dataset.id = ""; // 順番の表示を作り直す
+      renderObjectList();
+    };
+    const bPrev = document.createElement("button"); bPrev.className = "small"; bPrev.textContent = "◀ 前へ"; bPrev.disabled = k === 0; bPrev.addEventListener("click", () => swap(-1));
+    const bNext = document.createElement("button"); bNext.className = "small"; bNext.textContent = "後へ ▶"; bNext.disabled = k === tg.length - 1; bNext.addEventListener("click", () => swap(1));
+    row.append(lb, bPrev, bNext);
+    grid.appendChild(row);
+    const hint = document.createElement("div"); hint.className = "hint"; hint.style.gridColumn = "1 / -1";
+    hint.textContent = "アームの手先（ツールの先）を持っていきたい位置と向きです。W・P・R は床の座標で、W 180・P 0 で真下を向きます。タイムラインの「自動作成」で、この順番に回るシーケンスを作ります。";
     grid.appendChild(hint);
   } else if (o.type === "text") {
     field("文字", "text", { type: "text" });
