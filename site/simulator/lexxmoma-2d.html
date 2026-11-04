@@ -396,6 +396,8 @@
   .route-row { display: flex; align-items: center; gap: 4px; padding: 3px 4px; border-radius: 4px; cursor: pointer; }
   .route-row:hover { background: rgba(127, 127, 127, .12); }
   .route-row.sel { background: rgba(36, 113, 163, .18); }
+  #routePane.drop-into { box-shadow: inset 0 0 0 2px var(--accent); }
+  .route-row.pose .rno { color: #2471a3; }
   .route-row .rno { flex: 0 0 1.8em; text-align: right; font-weight: 600; color: #c0392b; font-variant-numeric: tabular-nums; }
   .route-row .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .addrow { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
@@ -609,7 +611,7 @@
        一度開いたら、隣へマウスを動かすだけで切り替わる。Esc で閉じる -->
   <div id="titleCol">
     <h1 class="lx-tool">LexxMoMa 動作シミュレーター</h1>
-    <div id="revDisp">rev.103</div>
+    <div id="revDisp">rev.104</div>
     <nav id="menubar" role="menubar">
       <div class="hdr-menu">
         <button class="mb" id="btnFile" aria-haspopup="menu" aria-expanded="false">ファイル</button>
@@ -771,7 +773,7 @@
       <legend>回る順番（自動作成）</legend>
       <div id="routeList"></div>
       <div id="routeAdd"></div>
-      <div class="addrow"><button id="btnAutoRoute" class="primary" title="この順番で、登録した姿勢とシーケンスを自動で作ります（Ctrl+Z で戻せます）">この順番で自動作成</button></div>
+      <div class="addrow"><button id="btnAutoRoute" class="primary" title="この順番で、姿勢とシーケンスを自動で作ります。自分で登録した姿勢は残ります（Ctrl+Z で戻せます）">この順番で自動作成</button></div>
     </fieldset>
     </div>
     <!-- レイアウトの物（設備・区画・直線・文字・下絵）の一覧。選んだ物の設定は右ペインに出る -->
@@ -1504,119 +1506,171 @@ function autoPlace(t, body0, q0, P, zones, obs) {
   }
   return best;
 }
-/* 回る順番（手先の目標の並び）。一覧が空なら置いた順に 1 回ずつ */
-function routeTargets() {
+/* 回る順番: 手先の目標（自動で車体の位置・姿勢を決める）と、自分で登録した姿勢（そのまま使う）の並び。
+ * state.route の 1 つは、手先の目標の id（文字）か {pose: 姿勢の名前}。一覧が空なら手先の目標を置いた順に 1 回ずつ */
+function routeEntries() {
   const tg = state.objects.filter(o => o.type === "target");
-  if (!state.route.length) return tg;
-  return state.route.map(id => tg.find(o => o.id === id)).filter(Boolean);
+  if (!state.route.length) return tg.map(o => ({ o }));
+  return state.route.map(e => typeof e === "string" ? { o: tg.find(o => o.id === e) } : { p: findPoint(e.pose) }).filter(e => e.o || e.p);
 }
-/* 手先の目標ごとの、回る順番の番号（「1」「1, 3」。入っていなければ ""） */
+/* 手先の目標ごとの、回る順番の番号（「1」「1, 3」。入っていなければ無し） */
 function targetNums() {
   const m = {};
-  routeTargets().forEach((o, i) => { m[o.id] = m[o.id] ? m[o.id] + ", " + (i + 1) : String(i + 1); });
+  routeEntries().forEach((e, i) => { if (e.o) m[e.o.id] = m[e.o.id] ? m[e.o.id] + ", " + (i + 1) : String(i + 1); });
   return m;
 }
 /* 回る順番を変える。一覧が空（置いた順）のときは、まず今の順番を一覧にしてから変える */
 function editRoute(fn) {
   pushUndo();
-  if (!state.route.length) state.route = routeTargets().map(o => o.id);
+  if (!state.route.length) state.route = routeEntries().map(e => e.o.id);
   fn(state.route);
   renderRoute();
+}
+/* 回る順番に足せる姿勢か（自動で作った姿勢は、作り直すと置き換わるので足さない） */
+function routablePose(name) {
+  const p = findPoint(name);
+  if (!p) return false;
+  if (p.auto) { alert(`「${p.name}」は自動で作った姿勢なので、回る順番には入れられません（作り直すと置き換わります）。自分で登録した姿勢を使ってください。`); return false; }
+  return true;
 }
 function renderRoute() {
   const el = document.getElementById("routeList"), addEl = document.getElementById("routeAdd");
   const tg = state.objects.filter(o => o.type === "target");
-  state.route = state.route.filter(id => tg.some(o => o.id === id)); // 消した手先は外す
+  const own = state.points.filter(p => !p.auto);
+  state.route = state.route.filter(e => typeof e === "string" ? tg.some(o => o.id === e) : !!(e && findPoint(e.pose))); // 消した手先・姿勢は外す
   el.innerHTML = ""; addEl.innerHTML = "";
   const hint = (t) => { const h = document.createElement("div"); h.className = "hint"; h.style.margin = "6px 2px"; h.textContent = t; return h; };
-  if (!tg.length) { el.appendChild(hint("まだ手先の目標がありません。キャンバス左の「⊕ 手先」で、アームの手先を持っていきたい所を置いてください。")); return; }
-  const list = routeTargets();
-  list.forEach((o, i) => {
+  const list = routeEntries();
+  if (!list.length) el.appendChild(hint("まだ何もありません。キャンバス左の「⊕ 手先」で手先の目標を置くか、下で登録した姿勢を足してください（左ペインの「登録した姿勢」からここへドラッグしても足せます）。"));
+  list.forEach((e, i) => {
     const row = document.createElement("div");
-    row.className = "route-row" + (o.id === selectedId ? " sel" : "");
+    row.className = "route-row " + (e.o ? "tg" : "pose") + ((e.o ? e.o.id === selectedId : e.p.name === selPointName) ? " sel" : "");
     const no = document.createElement("span"); no.className = "rno"; no.textContent = i + 1;
-    const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = o.name || "（名前なし）";
+    const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = e.o ? "⊕ " + (e.o.name || "（名前なし）") : e.p.name;
+    nm.title = e.o ? "手先の目標: 車体の位置とアームの姿勢を自動で決めます" : "登録した姿勢: 車体の位置・アームの姿勢をそのまま使います";
     row.append(no, nm);
+    if (e.p) { const t = document.createElement("span"); t.className = "pt-tag"; t.textContent = "姿勢"; row.appendChild(t); }
     const btn = (txt, title, dis, fn) => {
-      const b = document.createElement("button"); b.className = "small"; b.textContent = txt; b.title = title; b.disabled = dis;
-      b.addEventListener("click", (e) => { e.stopPropagation(); editRoute(fn); });
-      row.appendChild(b);
+      const bt = document.createElement("button"); bt.className = "small"; bt.textContent = txt; bt.title = title; bt.disabled = dis;
+      bt.addEventListener("click", (ev) => { ev.stopPropagation(); editRoute(fn); });
+      row.appendChild(bt);
     };
     btn("▲", "1 つ前へ", i === 0, r => r.splice(i - 1, 0, r.splice(i, 1)[0]));
     btn("▼", "1 つ後ろへ", i === list.length - 1, r => r.splice(i + 1, 0, r.splice(i, 1)[0]));
-    btn("✕", "この回を外します（手先の目標は消えません）", false, r => r.splice(i, 1));
-    row.addEventListener("click", () => { selectedId = o.id; renderObjectList(); showRightTab("obj"); }); // 右に手先の設定を出す
+    btn("✕", "この回を外します（手先の目標・姿勢は消えません）", false, r => r.splice(i, 1));
+    row.addEventListener("click", () => {
+      if (e.o) { selectedId = e.o.id; renderObjectList(); showRightTab("obj"); } // 右に手先の設定を出す
+      else openPointEdit(e.p.name); // 右に姿勢の編集を出す
+    });
     el.appendChild(row);
   });
-  if (!state.route.length) el.appendChild(hint("今は置いた順に 1 回ずつ回ります。並べ替えたり、下で足したりすると、その順番になります。"));
-  // 足す: 手先を選んで最後に足す（同じ手先を何度でも）
+  if (list.length && !state.route.length) el.appendChild(hint("今は手先の目標を置いた順に 1 回ずつ回ります。並べ替えたり、下で足したりすると、その順番になります。"));
+  // 足す: 手先の目標か登録した姿勢を選んで最後に足す（同じものを何度でも）
   const row = document.createElement("div"); row.className = "addrow";
-  const sel = document.createElement("select"); sel.style.flex = "1";
-  for (const o of tg) { const op = document.createElement("option"); op.value = o.id; op.textContent = o.name || "（名前なし）"; sel.appendChild(op); }
+  const sel = document.createElement("select"); sel.style.flex = "1"; sel.style.minWidth = "0";
+  const group = (label, items) => {
+    if (!items.length) return;
+    const g = document.createElement("optgroup"); g.label = label;
+    for (const [v, t] of items) { const op = document.createElement("option"); op.value = v; op.textContent = t; g.appendChild(op); }
+    sel.appendChild(g);
+  };
+  group("手先の目標（自動で決める）", tg.map(o => ["t:" + o.id, "⊕ " + (o.name || "（名前なし）")]));
+  group("登録した姿勢（そのまま使う）", own.map(p => ["p:" + p.name, p.name]));
   const add = document.createElement("button"); add.className = "small"; add.textContent = "＋ 最後に足す";
-  add.addEventListener("click", () => { editRoute(r => r.push(sel.value)); });
+  add.disabled = !sel.options.length;
+  add.addEventListener("click", () => {
+    const v = sel.value;
+    editRoute(r => r.push(v.startsWith("t:") ? v.slice(2) : { pose: v.slice(2) }));
+  });
   row.append(sel, add);
   addEl.appendChild(row);
-  const out = tg.filter(o => !list.includes(o));
+  const out = tg.filter(o => !list.some(e => e.o === o));
   if (out.length) addEl.appendChild(hint("回る順番に入っていない手先: " + out.map(o => o.name).join("、")));
 }
 document.getElementById("btnAutoRoute").addEventListener("click", () => autoGenerate());
+// 左ペインの「登録した姿勢」から、回る順番へドラッグして足す
+{
+  const pane = document.getElementById("routePane");
+  pane.addEventListener("dragover", (e) => { if (!dragStateName) return; e.preventDefault(); e.dataTransfer.dropEffect = "copy"; pane.classList.add("drop-into"); });
+  pane.addEventListener("dragleave", (e) => { if (!pane.contains(e.relatedTarget)) pane.classList.remove("drop-into"); });
+  pane.addEventListener("drop", (e) => {
+    if (!dragStateName) return;
+    e.preventDefault(); pane.classList.remove("drop-into");
+    const n = dragStateName;
+    if (routablePose(n)) editRoute(r => r.push({ pose: n }));
+  });
+}
+/* 回る順番に沿って、姿勢とシーケンスを作る。
+ * 手先の目標は車体の位置・姿勢を自動で決め、登録した姿勢はそのまま使う（どちらも走る前後の寄り付きは自動）。
+ * 自動で作った姿勢（auto）とシーケンスは作り直し、自分で登録した姿勢はそのまま残す */
 function autoGenerate() {
-  const tg = routeTargets();
-  if (!tg.length) { alert("先に、キャンバス左の「手先」ツールで、アームの手先を持っていきたい所を置いてください。置いた順に回ります。"); return; }
-  if ((state.points.length || state.program.length) && !confirm("登録した姿勢とシーケンスを、自動で作ったものに置き換えます（Ctrl+Z で戻せます）。")) return;
+  const ents = routeEntries();
+  if (!ents.length) { alert("先に、キャンバス左の「⊕ 手先」で手先の目標を置くか、左ペインの「回る順番」に登録した姿勢を足してください。"); return; }
+  if ((state.points.some(p => p.auto) || state.program.length) && !confirm("自動で作った姿勢とシーケンスを、作り直したものに置き換えます。自分で登録した姿勢はそのまま残ります（Ctrl+Z で戻せます）。")) return;
   const P = params(), zones = autoZones(), obs = autoObstacles();
   let body = initialBody(), q = initialArm().q.slice();
-  const pts = [], steps = [];
+  const pts = state.points.filter(p => !p.auto).map(p => structuredClone(p)), steps = [];
   const uniq = (n) => { let m = n, i = 2; while (pts.some(p => p.name === m)) m = n + " " + i++; return m; };
-  const addPt = (name, b, qq) => { const n = uniq(name); pts.push({ name: n, body: b ? { x: b.x, y: b.y, th: mod2pi(b.th) } : null, arm: qq ? { q: qq.slice() } : null }); return n; };
+  const addPt = (name, b, qq) => { const n = uniq(name); pts.push({ name: n, body: b ? { x: b.x, y: b.y, th: mod2pi(b.th) } : null, arm: qq ? { q: qq.slice() } : null, auto: true }); return n; };
   const start = addPt("開始", body, q);
-  let lastA = null, prevName = "開始"; // 前の手先の寄り付きの姿勢の名前（走る前に戻る先）と、前の手先の名前
-  const seen = new Map(); // 手先の id → 1 回目に決めた {body, qT, nT, qA, nA}。2 回目からは同じ車体の位置・姿勢へ戻る
-  for (const t of tg) {
-    const c = seen.get(t.id);
-    if (c) {
-      if (sameBody(c.body, body)) { steps.push({ arm: c.nT }); q = c.qT; lastA = c.nA; prevName = t.name; continue; }
-      const mode = ["auto", "forward", "backward", "shortest"].find(m => drivePath(body, c.body, m, zones, obs, P));
-      if (!mode) { alert(`「${t.name}」へ戻る経路が、走ってよいエリアの中に見つかりませんでした。`); return; }
-      if (!driveOk(q)) {
-        const qa = approachOf(q);
-        if (!qa) { alert(`「${prevName}」から走る前の寄り付きの姿勢（手先の高さ ${AUTO_Z} mm・半径 ${AUTO_R} mm 以内）が見つかりませんでした。`); return; }
-        steps.push({ arm: lastA || addPt(prevName + " 寄り", body, qa) }); q = qa;
-      }
+  let lastA = null, prevName = "開始"; // 今の姿勢の寄り付きの姿勢の名前（走る前に戻る先）と、前に行った所の名前
+  const fail = (m) => { alert(m); return false; };
+  const noApproach = (n) => `「${n}」の寄り付きの姿勢（手先の高さ ${AUTO_Z} mm・半径 ${AUTO_R} mm 以内）が見つかりませんでした。`;
+  // 走る前に、手先を走行中の高さ・車体の近くへ
+  const retreat = () => {
+    if (driveOk(q)) return true;
+    const qa = approachOf(q);
+    if (!qa) return fail(noApproach(prevName));
+    steps.push({ arm: lastA || addPt(prevName + " 寄り", body, qa) });
+    q = qa;
+    return true;
+  };
+  // 決まっている所へ行く。c: {name, body|null, qT|null, nT（姿勢の名前）, qA, nA}。車体が要るなら走る（寄り付きは自動）
+  const goKnown = (c) => {
+    if (!c.body || sameBody(c.body, body)) { // 走らない: アームだけ
+      if (c.qT) { steps.push({ arm: c.nT }); q = c.qT; lastA = c.body ? c.nA : null; }
+      prevName = c.name;
+      return true;
+    }
+    const mode = ["auto", "forward", "backward", "shortest"].find(m => drivePath(body, c.body, m, zones, obs, P));
+    if (!mode) return fail(`「${c.name}」へ行く経路が、走ってよいエリアの中に見つかりませんでした。`);
+    if (!retreat()) return false;
+    if (c.qT) {
       if (!c.nA) {
         c.qA = approachOf(c.qT);
-        if (!c.qA) { alert(`「${t.name}」の寄り付きの姿勢（手先の高さ ${AUTO_Z} mm・半径 ${AUTO_R} mm 以内）が見つかりませんでした。`); return; }
-        c.nA = addPt(t.name + " 寄り", c.body, c.qA);
+        if (!c.qA) return fail(noApproach(c.name));
+        c.nA = addPt(c.name + " 寄り", c.body, c.qA);
       }
       if (armPathOk(q, c.qA, P)) steps.push({ body: c.nT, arm: c.nA, mode });
       else { steps.push({ body: c.nT, mode }); steps.push({ arm: c.nA }); }
       steps.push({ arm: c.nT });
-      body = c.body; q = c.qT; lastA = c.nA; prevName = t.name;
-      continue;
-    }
+      q = c.qT; lastA = c.nA;
+    } else { steps.push({ body: c.nT, mode }); lastA = null; } // 車体だけの姿勢: アームは走行中の姿勢のまま
+    body = c.body; prevName = c.name;
+    return true;
+  };
+  const seen = new Map(); // "t:id"・"p:名前" → 1 回目に決めた行き先。2 回目からは同じ車体の位置・姿勢へ戻る
+  for (const e of ents) {
+    const key = e.o ? "t:" + e.o.id : "p:" + e.p.name;
+    let c = seen.get(key);
+    if (!c && e.p) c = { name: e.p.name, body: e.p.body ? { ...e.p.body } : null, qT: e.p.arm ? e.p.arm.q.slice() : null, nT: e.p.name, qA: null, nA: null };
+    if (c) { if (!goKnown(c)) return; seen.set(key, c); continue; }
+    const t = e.o;
     const r = autoPlace(t, body, q, P, zones, obs);
-    if (!r) {
-      alert(`「${t.name}」に届く車体の位置（と、走行中の手先の高さ ${AUTO_Z} mm・半径 ${AUTO_R} mm 以内に戻れる寄り付き）が見つかりませんでした。手先の高さ・向き、走行可の区画、設備の位置を見直してください。`);
-      return;
-    }
+    if (!r) { alert(`「${t.name}」に届く車体の位置（と、走行中の手先の高さ ${AUTO_Z} mm・半径 ${AUTO_R} mm 以内に戻れる寄り付き）が見つかりませんでした。手先の高さ・向き、走行可の区画、設備の位置を見直してください。`); return; }
     if (r.same) { // 同じ車体の位置のまま、アームだけ動かす
       const nT = addPt(t.name, body, r.qT);
       steps.push({ arm: nT });
-      seen.set(t.id, { body: { ...body }, qT: r.qT, nT, qA: null, nA: null });
+      seen.set(key, { name: t.name, body: { ...body }, qT: r.qT, nT, qA: null, nA: null });
       q = r.qT; lastA = null; prevName = t.name;
       continue;
     }
-    if (!driveOk(q)) { // 走る前に、手先を走行中の高さ・車体の近くへ
-      const qa = approachOf(q);
-      steps.push({ arm: lastA || addPt(prevName + " 寄り", body, qa) });
-      q = qa;
-    }
+    if (!retreat()) return;
     const nT = addPt(t.name, r.body, r.qT), nA = addPt(t.name + " 寄り", r.body, r.qA);
     if (r.armDuringDrive) steps.push({ body: nT, arm: nA, mode: r.mode });
     else { steps.push({ body: nT, mode: r.mode }); steps.push({ arm: nA }); }
     steps.push({ arm: nT });
-    seen.set(t.id, { body: r.body, qT: r.qT, nT, qA: r.qA, nA });
+    seen.set(key, { name: t.name, body: r.body, qT: r.qT, nT, qA: r.qA, nA });
     body = r.body; q = r.qT; lastA = nA; prevName = t.name;
   }
   pushUndo();
@@ -1630,7 +1684,7 @@ function autoGenerate() {
     return stage;
   });
   selStage = null; selStart = false;
-  renderPoseLists(); renderProgram(); recompute();
+  renderPoseLists(); renderProgram(); recompute(); renderRoute();
 }
 document.getElementById("btnAuto").addEventListener("click", autoGenerate);
 /* 同じ車体の位置か（1 mm・0.1° 未満の差は同じ場所とみなす） */
@@ -1678,6 +1732,7 @@ function pointsFromSave(data) {
       name: String(p.name),
       body: p.body ? { x: +p.body.x || 0, y: +p.body.y || 0, th: +p.body.th || 0 } : null,
       arm: p.arm ? armOf(p.arm) : null,
+      ...(p.auto ? { auto: true } : {}),
     })).filter(p => p.body || p.arm);
     const program = (data.program || []).map(s => ({ blocks: (s.blocks || []).map(o => Object.assign({}, o)) }));
     const ini = data.initial || {};
@@ -2727,6 +2782,7 @@ function renamePointRefs(oldN, newN) {
   if (state.initial.body === oldN) state.initial.body = newN;
   if (state.initial.arm === oldN) state.initial.arm = newN;
   if (selPointName === oldN) selPointName = newN;
+  for (const e of state.route) if (e && e.pose === oldN) e.pose = newN;
 }
 function moveRobotTo(body, arm) {
   if (playing) stopPlayback(false);
@@ -2777,6 +2833,7 @@ function pointRow(p, use) {
   makeNameEditable(nm, p, state.points, renamePointRefs);
   // 車体だけの位置は印を付ける（アームだけの位置は「アームだけ」の見出しの下にまとまる）
   if (p.body && !p.arm) { const t = document.createElement("span"); t.className = "pt-tag"; t.textContent = "車体だけ"; div.appendChild(t); }
+  if (p.auto) { const t = document.createElement("span"); t.className = "pt-tag"; t.textContent = "自動"; t.title = "自動作成で作った姿勢です。作り直すと置き換わります"; div.appendChild(t); }
   // 行をクリックすると右ペインに編集欄が開く（「動かす」「アームだけ」もそこ）
   div.addEventListener("click", () => openPointEdit(p.name));
   // 段（右ペインの車体・アームの枠、下のタイムライン）へドラッグして入れられる
@@ -4706,7 +4763,7 @@ document.getElementById("btnSave").addEventListener("click", () => {
     armModel: ARM.name,
     armMountYawDeg: Math.round(ARM_MOUNT_YAW * 180 / Math.PI), // 取付向き（J1 = 0° の向き。読込時に差があれば J1 を回して合わせる）
     toolLen: state.toolLen,
-    points: state.points.map(p => ({ name: p.name, body: p.body, arm: p.arm ? { q: p.arm.q } : null })),
+    points: state.points.map(p => Object.assign({ name: p.name, body: p.body, arm: p.arm ? { q: p.arm.q } : null }, p.auto ? { auto: true } : {})), // auto: 自動作成で作った姿勢（rev.104〜）
     initial: state.initial,
     places: state.places, // ユーザーが付けた車体位置の名前（rev.97〜）
     route: state.route,   // 自動作成で手先の目標を回る順番（rev.102〜）
@@ -4984,7 +5041,7 @@ function applyLoadedData(data) {
       const conv = pointsFromSave(data);
       state.points = conv.points;
       state.places = Array.isArray(data.places) ? data.places.filter(q => q && isFinite(q.x) && isFinite(q.y) && q.name) : [];
-      state.route = Array.isArray(data.route) ? data.route.filter(id => typeof id === "string") : [];
+      state.route = Array.isArray(data.route) ? data.route.filter(e => typeof e === "string" || (e && typeof e.pose === "string")) : [];
       state.initial = conv.initial;
       state.program = conv.program;
       selPointName = null;
