@@ -609,7 +609,7 @@
        一度開いたら、隣へマウスを動かすだけで切り替わる。Esc で閉じる -->
   <div id="titleCol">
     <h1 class="lx-tool">LexxMoMa 動作シミュレーター</h1>
-    <div id="revDisp">rev.102</div>
+    <div id="revDisp">rev.103</div>
     <nav id="menubar" role="menubar">
       <div class="hdr-menu">
         <button class="mb" id="btnFile" aria-haspopup="menu" aria-expanded="false">ファイル</button>
@@ -1379,26 +1379,41 @@ function dropState(name, target) {
 /* ---------------- シーケンスの自動作成 ----------------
  * ユーザーが置くのは手先の目標（レイアウトの「手先」）だけ。手先ごとに、車体の位置・アームの姿勢・寄り付きを決めて段を作る。
  *  - 車体: 走ってよいエリア（「走行可」の区画。無ければ床全体）に収まり、設備（高さのある箱）に重ならない位置から、時間が最短のもの
- *  - 走行中: 手先は車体中心から水平 AUTO_R 以内（寄り付きの姿勢）。走りながらアームを寄り付きの姿勢へ動かす
- *  - 寄り付き: 目標の姿勢から、腕をたたんだ姿勢へ関節を直線で戻していき、初めて AUTO_R 以内に入る所（目標に一番近い所） */
+ *  - 走行中: 手先は車体中心から水平 AUTO_R 以内、高さ AUTO_Z（床から）に固定（寄り付きの姿勢）。
+ *    走りながらアームを寄り付きの姿勢へ動かすのは、その途中も高さが AUTO_ZTOL 以内に収まるときだけ
+ *  - 寄り付き: 走行中の制約を満たす姿勢のうち、目標の姿勢へ一番早く動けるもの（手先の向きは目標と同じ、方位は目標の方） */
 const AUTO_R = 600;      // 走行中の手先の制約: 車体中心からの水平距離 [mm]
+const AUTO_Z = 800;      // 走行中の手先の高さ（床から）[mm]
+const AUTO_ZTOL = 10;    // 走行中の手先の高さの許容差 [mm]
 const AUTO_MARGIN = 50;  // 車体の周りに空ける隙間 [mm]
-const AUTO_STOW = [0, -30, 60, 0, -60, 0].map(deg2rad); // 腕をたたんだ姿勢（J1・J4・J6 は寄り付き元の値を使う）
 function tcpR(q) { return tcpInfoVeh(q, state.toolLen).horizontal; }
+function tcpFloorZ(q) { return tcpInfoVeh(q, state.toolLen).z + ARM.L.base + ARM_MOUNT_Z; }
+/* 走ってよいアームの姿勢か（手先が半径 AUTO_R 以内・高さ AUTO_Z） */
+function driveOk(q) { return tcpR(q) <= AUTO_R + 1 && Math.abs(tcpFloorZ(q) - AUTO_Z) <= AUTO_ZTOL; }
+/* 寄り付きの姿勢: 手先を高さ AUTO_Z・半径 AUTO_R 以内に置き、qT へ一番早く動けるもの。見つからなければ null */
 function approachOf(qT) {
-  let S = AUTO_STOW.slice(); S[0] = qT[0]; S[3] = qT[3]; S[5] = qT[5];
-  if (tcpR(S) > AUTO_R - 20) { S = AUTO_STOW.slice(); S[0] = qT[0]; }
-  const at = (a) => qT.map((v, i) => v + a * (S[i] - v));
-  let a = 1;
-  for (let k = 49; k >= 0; k--) { // S から目標へ向かって、AUTO_R を超える手前まで
-    if (tcpR(at(k / 50)) > AUTO_R - 10) break;
-    a = k / 50;
-  }
-  return at(a);
+  const P = params(), i = tcpInfoVeh(qT, state.toolLen);
+  const az0 = i.horizontal > 1 ? Math.atan2(i.y, i.x) : ARM_MOUNT_YAW + qT[0];
+  const vz = AUTO_Z - ARM_MOUNT_Z - ARM.L.base;
+  const search = (azs, wpr) => {
+    let best = null;
+    for (const da of azs) for (let r = AUTO_R - 20; r >= 100; r -= 120) {
+      const az = az0 + da * Math.PI / 180;
+      const T = vehTargetToArm(r * Math.cos(az), r * Math.sin(az), vz, wpr[0], wpr[1], wpr[2]);
+      const res = CRX.ik(T, best ? best.q : qT, state.toolLen, { iters: 80 });
+      if (!res.ok || !CRX.withinLimits(res.q)) continue;
+      const d = armMotion(res.q, qT, P).dur;
+      if (!best || d < best.d) best = { q: res.q, d };
+    }
+    return best;
+  };
+  // まず手先の向きは目標のまま。届かなければ方位をずらし、それでも無ければ真下向き
+  const best = search([0], [i.w, i.p, i.r]) || search([-30, 30, -60, 60], [i.w, i.p, i.r]) || search([0, -30, 30], [180, 0, i.r]);
+  return best ? best.q : null;
 }
-function armPathOk(qs, qg, P) { // アームが動くあいだ、手先が AUTO_R 以内か
+function armPathOk(qs, qg, P) { // アームが動くあいだ、手先が半径 AUTO_R 以内・高さ AUTO_Z のままか
   const m = armMotion(qs, qg, P);
-  for (let k = 0; k <= 20; k++) if (tcpR(m.anim(m.dur * k / 20).arm.q) > AUTO_R + 1) return false;
+  for (let k = 0; k <= 20; k++) if (!driveOk(m.anim(m.dur * k / 20).arm.q)) return false;
   return true;
 }
 function ptInBox(o, x, y) {
@@ -1449,7 +1464,8 @@ function targetIK(t, b, seedQ) {
 }
 /* 手先の目標 t へ行く車体の位置を決める。今の車体の位置 body0・アームの姿勢 q0 から、時間が最短のもの */
 function autoPlace(t, body0, q0, P, zones, obs) {
-  const R0 = tcpR(q0) > AUTO_R ? approachOf(q0) : q0; // 走る前に寄り付きの姿勢へ
+  const R0 = driveOk(q0) ? q0 : approachOf(q0); // 走る前に寄り付きの姿勢へ
+  if (!R0) return null;
   const retreat = armMotion(q0, R0, P).dur;
   let best = null;
   const qs = targetIK(t, body0, q0); // 今の車体の位置のまま届くなら、走らない
@@ -1473,7 +1489,9 @@ function autoPlace(t, body0, q0, P, zones, obs) {
     if (best && p.drive + retreat >= best.cost) break; // 走る時間だけで負けている
     const qT = targetIK(t, p.b);
     if (!qT) continue;
-    const qA = approachOf(qT), up = armMotion(qA, qT, P).dur;
+    const qA = approachOf(qT);
+    if (!qA) continue;
+    const up = armMotion(qA, qT, P).dur;
     cands.push({ body: p.b, qT, qA, cost: retreat + Math.max(p.drive, armMotion(R0, qA, P).dur) + up * 2 });
   }
   cands.sort((a, c) => a.cost - c.cost);
@@ -1561,8 +1579,16 @@ function autoGenerate() {
       if (sameBody(c.body, body)) { steps.push({ arm: c.nT }); q = c.qT; lastA = c.nA; prevName = t.name; continue; }
       const mode = ["auto", "forward", "backward", "shortest"].find(m => drivePath(body, c.body, m, zones, obs, P));
       if (!mode) { alert(`「${t.name}」へ戻る経路が、走ってよいエリアの中に見つかりませんでした。`); return; }
-      if (tcpR(q) > AUTO_R) { const qa = approachOf(q); steps.push({ arm: lastA || addPt(prevName + " 寄り", body, qa) }); q = qa; }
-      if (!c.nA) { c.qA = approachOf(c.qT); c.nA = addPt(t.name + " 寄り", c.body, c.qA); }
+      if (!driveOk(q)) {
+        const qa = approachOf(q);
+        if (!qa) { alert(`「${prevName}」から走る前の寄り付きの姿勢（手先の高さ ${AUTO_Z} mm・半径 ${AUTO_R} mm 以内）が見つかりませんでした。`); return; }
+        steps.push({ arm: lastA || addPt(prevName + " 寄り", body, qa) }); q = qa;
+      }
+      if (!c.nA) {
+        c.qA = approachOf(c.qT);
+        if (!c.qA) { alert(`「${t.name}」の寄り付きの姿勢（手先の高さ ${AUTO_Z} mm・半径 ${AUTO_R} mm 以内）が見つかりませんでした。`); return; }
+        c.nA = addPt(t.name + " 寄り", c.body, c.qA);
+      }
       if (armPathOk(q, c.qA, P)) steps.push({ body: c.nT, arm: c.nA, mode });
       else { steps.push({ body: c.nT, mode }); steps.push({ arm: c.nA }); }
       steps.push({ arm: c.nT });
@@ -1571,7 +1597,7 @@ function autoGenerate() {
     }
     const r = autoPlace(t, body, q, P, zones, obs);
     if (!r) {
-      alert(`「${t.name}」に届く車体の位置が見つかりませんでした。手先の高さ・向き、走行可の区画、設備の位置を見直してください。`);
+      alert(`「${t.name}」に届く車体の位置（と、走行中の手先の高さ ${AUTO_Z} mm・半径 ${AUTO_R} mm 以内に戻れる寄り付き）が見つかりませんでした。手先の高さ・向き、走行可の区画、設備の位置を見直してください。`);
       return;
     }
     if (r.same) { // 同じ車体の位置のまま、アームだけ動かす
@@ -1581,7 +1607,7 @@ function autoGenerate() {
       q = r.qT; lastA = null; prevName = t.name;
       continue;
     }
-    if (tcpR(q) > AUTO_R) { // 走る前に、手先を車体の近くへ
+    if (!driveOk(q)) { // 走る前に、手先を走行中の高さ・車体の近くへ
       const qa = approachOf(q);
       steps.push({ arm: lastA || addPt(prevName + " 寄り", body, qa) });
       q = qa;
