@@ -404,11 +404,11 @@ class Sim3D {
 
   /* 背景（四角・直線・文字・画像）、登録済み車体位置（ゴースト）、予定パスを同期。
    * 変化の検出はキー文字列の比較で行う（本体側のあちこちから呼ばれるため）。 */
-  syncScene({ objects, selectedId, bodyPoses, paths, dims }) {
+  syncScene({ objects, selectedId, targetNums, bodyPoses, paths, dims }) {
     if (!this.ready) return;
     // 変化検出のキー。下絵の dataURL は長いので長さだけ見る
-    const bgKey = JSON.stringify([objects.map(o => o.type === "image" ? Object.assign({}, o, { src: o.src ? o.src.length : 0 }) : o), selectedId]);
-    if (bgKey !== this.bgKey) { this.bgKey = bgKey; this.rebuildBackground(objects, selectedId); }
+    const bgKey = JSON.stringify([objects.map(o => o.type === "image" ? Object.assign({}, o, { src: o.src ? o.src.length : 0 }) : o), selectedId, targetNums]);
+    if (bgKey !== this.bgKey) { this.bgKey = bgKey; this.rebuildBackground(objects, selectedId, targetNums || {}); }
     const gKey = JSON.stringify(bodyPoses.map(p => [p.x, p.y, p.th, p.name]));
     if (gKey !== this.ghostKey) { this.ghostKey = gKey; this.rebuildGhosts(bodyPoses, dims); }
     const pKey = JSON.stringify(paths);
@@ -423,7 +423,7 @@ class Sim3D {
   }
 
   /* objects: 本体の state.objects（box / line / text）。selectedId の物は青い縁取りで強調 */
-  rebuildBackground(objects, selectedId) {
+  rebuildBackground(objects, selectedId, targetNums) {
     this.clearGroup(this.bgGroup);
     this.pickables = [];
     this.texCache = this.texCache || new Map(); // 下絵の src → テクスチャ
@@ -503,8 +503,7 @@ class Sim3D {
         this.bgGroup.add(ed);
       }
     }
-    // 手先の目標: 赤い球（設備や車体に隠れても見えるよう手前に描く）、ツールの向きの矢印、床からの点線、「順番. 名前」
-    const targets = (objects || []).filter(o => o.type === "target");
+    // 手先の目標: 赤い球（設備や車体に隠れても見えるよう手前に描く）、ツールの向きの矢印、床からの点線、「回る順番. 名前」
     for (const o of objs) {
       if (o.type !== "target") continue;
       const col = new THREE.Color(o.id === selectedId ? SEL : (o.color || "#c0392b"));
@@ -524,7 +523,8 @@ class Sim3D {
         new THREE.LineDashedMaterial({ color: col, dashSize: 40, gapSize: 30 }));
       pole.computeLineDistances();
       this.bgGroup.add(pole);
-      const lb = this.makeLabel(`${targets.indexOf(o) + 1}. ${o.name || ""}`, o.x, o.y, z + 120, col.getStyle());
+      const no = targetNums && targetNums[o.id];
+      const lb = this.makeLabel(`${no ? no + ". " : ""}${o.name || ""}`, o.x, o.y, z + 120, col.getStyle());
       lb.userData.aux = true; this.bgGroup.add(lb);
     }
     this.applyAuxVisibility();

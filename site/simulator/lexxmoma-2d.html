@@ -393,6 +393,11 @@
   .slot.drop-ng { background: rgba(192, 57, 43, .15); box-shadow: inset 0 0 0 2px var(--danger); }
   .tl-lanehi { position: absolute; left: 0; right: 0; pointer-events: none; background: rgba(36, 113, 163, .22); }
   .tl-lanehi.arm { background: rgba(30, 132, 73, .22); }
+  .route-row { display: flex; align-items: center; gap: 4px; padding: 3px 4px; border-radius: 4px; cursor: pointer; }
+  .route-row:hover { background: rgba(127, 127, 127, .12); }
+  .route-row.sel { background: rgba(36, 113, 163, .18); }
+  .route-row .rno { flex: 0 0 1.8em; text-align: right; font-weight: 600; color: #c0392b; font-variant-numeric: tabular-nums; }
+  .route-row .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .addrow { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
   .hint { color: #4a5b69; font-size: 11.5px; line-height: 1.6; }
   table.keyhelp { border-collapse: collapse; width: 100%; font-size: 11px; }
@@ -557,7 +562,8 @@
   #ltabObj button { white-space: nowrap; }
   #inspSeq[hidden], #inspObj[hidden], #editPane[hidden], #locPane[hidden] { display: none !important; }
   #locPane { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-  #leftTabs .tab { padding-left: 11px; padding-right: 11px; white-space: nowrap; }
+  #leftTabs .tab { padding-left: 11px; padding-right: 11px; white-space: nowrap; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; } /* 左ペインが狭いときは、タブを縮めて 4 つとも見せる */
+  #leftTabs .tab:not(.on) { padding-left: 7px; padding-right: 7px; }
   #inspector > legend { font-size: 13px; }
   /* 右ペインの閉じるボタン: 見出しと同じく枠の線の上、右端に置く */
   #inspector { position: relative; }
@@ -603,7 +609,7 @@
        一度開いたら、隣へマウスを動かすだけで切り替わる。Esc で閉じる -->
   <div id="titleCol">
     <h1 class="lx-tool">LexxMoMa 動作シミュレーター</h1>
-    <div id="revDisp">rev.101</div>
+    <div id="revDisp">rev.102</div>
     <nav id="menubar" role="menubar">
       <div class="hdr-menu">
         <button class="mb" id="btnFile" aria-haspopup="menu" aria-expanded="false">ファイル</button>
@@ -715,6 +721,7 @@
       <button class="tab on" role="tab" data-ltab="pts">登録した姿勢</button>
       <button class="tab" role="tab" data-ltab="arm" title="アーム操作（手先・関節）">アーム</button>
       <button class="tab" role="tab" data-ltab="obj">レイアウト</button>
+      <button class="tab" role="tab" data-ltab="route" title="自動作成で手先の目標を回る順番">回る順番</button>
     </div>
     <div class="rtab" id="ltabPts">
     <fieldset id="paneRegister">
@@ -757,6 +764,15 @@
             <label style="font-size:11px; margin-left:auto;">ツール長 <input type="number" id="toolLen" step="10" min="0" style="width:60px"> mm</label>
           </div>
       </fieldset>
+    </div>
+    <!-- 自動作成で手先の目標を回る順番。同じ手先を何度でも並べられる -->
+    <div class="rtab" id="ltabRoute" hidden>
+    <fieldset id="routePane">
+      <legend>回る順番（自動作成）</legend>
+      <div id="routeList"></div>
+      <div id="routeAdd"></div>
+      <div class="addrow"><button id="btnAutoRoute" class="primary" title="この順番で、登録した姿勢とシーケンスを自動で作ります（Ctrl+Z で戻せます）">この順番で自動作成</button></div>
+    </fieldset>
     </div>
     <!-- レイアウトの物（設備・区画・直線・文字・下絵）の一覧。選んだ物の設定は右ペインに出る -->
     <div class="rtab" id="ltabObj" hidden>
@@ -1092,6 +1108,7 @@ const state = {
   },
   // 登録した位置（ポイント）。車体の位置とアームの姿勢のセット。どちらか一方だけでもよい（使わない方は null）
   points: [],      // {name, body: {x, y, th}|null, arm: {q:[6]}|null}
+  route: [],       // 自動作成で回る手先の目標の id の並び（同じ id を何度でも）。空なら置いた順に 1 回ずつ
   places: [],      // ユーザーが名前を付けた車体位置 {x, y, th, name}。名前の無い車体位置は座標で出す（自動で名前は付けない）
   toolLen: 0,      // ツール長 [mm]（FANUC フランジの z 方向。TCP の位置に効く）
   initial: { body: null, arm: null }, // サイクル開始状態（車体・アームそれぞれ、ポイント名。null=現在位置）
@@ -1121,6 +1138,7 @@ function snapState() {
     robot: state.robot,
     points: state.points,
     places: state.places,
+    route: state.route,
     toolLen: state.toolLen,
     initial: state.initial,
     program: state.program,
@@ -1137,6 +1155,7 @@ function applySnap(s) {
   state.robot = c.robot;
   state.points = c.points || [];
   state.places = c.places || [];
+  state.route = c.route || [];
   state.toolLen = c.toolLen || 0;
   state.initial = c.initial || { body: null, arm: null };
   state.program = c.program;
@@ -1467,8 +1486,65 @@ function autoPlace(t, body0, q0, P, zones, obs) {
   }
   return best;
 }
-function autoGenerate() {
+/* 回る順番（手先の目標の並び）。一覧が空なら置いた順に 1 回ずつ */
+function routeTargets() {
   const tg = state.objects.filter(o => o.type === "target");
+  if (!state.route.length) return tg;
+  return state.route.map(id => tg.find(o => o.id === id)).filter(Boolean);
+}
+/* 手先の目標ごとの、回る順番の番号（「1」「1, 3」。入っていなければ ""） */
+function targetNums() {
+  const m = {};
+  routeTargets().forEach((o, i) => { m[o.id] = m[o.id] ? m[o.id] + ", " + (i + 1) : String(i + 1); });
+  return m;
+}
+/* 回る順番を変える。一覧が空（置いた順）のときは、まず今の順番を一覧にしてから変える */
+function editRoute(fn) {
+  pushUndo();
+  if (!state.route.length) state.route = routeTargets().map(o => o.id);
+  fn(state.route);
+  renderRoute();
+}
+function renderRoute() {
+  const el = document.getElementById("routeList"), addEl = document.getElementById("routeAdd");
+  const tg = state.objects.filter(o => o.type === "target");
+  state.route = state.route.filter(id => tg.some(o => o.id === id)); // 消した手先は外す
+  el.innerHTML = ""; addEl.innerHTML = "";
+  const hint = (t) => { const h = document.createElement("div"); h.className = "hint"; h.style.margin = "6px 2px"; h.textContent = t; return h; };
+  if (!tg.length) { el.appendChild(hint("まだ手先の目標がありません。キャンバス左の「⊕ 手先」で、アームの手先を持っていきたい所を置いてください。")); return; }
+  const list = routeTargets();
+  list.forEach((o, i) => {
+    const row = document.createElement("div");
+    row.className = "route-row" + (o.id === selectedId ? " sel" : "");
+    const no = document.createElement("span"); no.className = "rno"; no.textContent = i + 1;
+    const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = o.name || "（名前なし）";
+    row.append(no, nm);
+    const btn = (txt, title, dis, fn) => {
+      const b = document.createElement("button"); b.className = "small"; b.textContent = txt; b.title = title; b.disabled = dis;
+      b.addEventListener("click", (e) => { e.stopPropagation(); editRoute(fn); });
+      row.appendChild(b);
+    };
+    btn("▲", "1 つ前へ", i === 0, r => r.splice(i - 1, 0, r.splice(i, 1)[0]));
+    btn("▼", "1 つ後ろへ", i === list.length - 1, r => r.splice(i + 1, 0, r.splice(i, 1)[0]));
+    btn("✕", "この回を外します（手先の目標は消えません）", false, r => r.splice(i, 1));
+    row.addEventListener("click", () => { selectedId = o.id; renderObjectList(); showRightTab("obj"); }); // 右に手先の設定を出す
+    el.appendChild(row);
+  });
+  if (!state.route.length) el.appendChild(hint("今は置いた順に 1 回ずつ回ります。並べ替えたり、下で足したりすると、その順番になります。"));
+  // 足す: 手先を選んで最後に足す（同じ手先を何度でも）
+  const row = document.createElement("div"); row.className = "addrow";
+  const sel = document.createElement("select"); sel.style.flex = "1";
+  for (const o of tg) { const op = document.createElement("option"); op.value = o.id; op.textContent = o.name || "（名前なし）"; sel.appendChild(op); }
+  const add = document.createElement("button"); add.className = "small"; add.textContent = "＋ 最後に足す";
+  add.addEventListener("click", () => { editRoute(r => r.push(sel.value)); });
+  row.append(sel, add);
+  addEl.appendChild(row);
+  const out = tg.filter(o => !list.includes(o));
+  if (out.length) addEl.appendChild(hint("回る順番に入っていない手先: " + out.map(o => o.name).join("、")));
+}
+document.getElementById("btnAutoRoute").addEventListener("click", () => autoGenerate());
+function autoGenerate() {
+  const tg = routeTargets();
   if (!tg.length) { alert("先に、キャンバス左の「手先」ツールで、アームの手先を持っていきたい所を置いてください。置いた順に回ります。"); return; }
   if ((state.points.length || state.program.length) && !confirm("登録した姿勢とシーケンスを、自動で作ったものに置き換えます（Ctrl+Z で戻せます）。")) return;
   const P = params(), zones = autoZones(), obs = autoObstacles();
@@ -1478,14 +1554,30 @@ function autoGenerate() {
   const addPt = (name, b, qq) => { const n = uniq(name); pts.push({ name: n, body: b ? { x: b.x, y: b.y, th: mod2pi(b.th) } : null, arm: qq ? { q: qq.slice() } : null }); return n; };
   const start = addPt("開始", body, q);
   let lastA = null, prevName = "開始"; // 前の手先の寄り付きの姿勢の名前（走る前に戻る先）と、前の手先の名前
+  const seen = new Map(); // 手先の id → 1 回目に決めた {body, qT, nT, qA, nA}。2 回目からは同じ車体の位置・姿勢へ戻る
   for (const t of tg) {
+    const c = seen.get(t.id);
+    if (c) {
+      if (sameBody(c.body, body)) { steps.push({ arm: c.nT }); q = c.qT; lastA = c.nA; prevName = t.name; continue; }
+      const mode = ["auto", "forward", "backward", "shortest"].find(m => drivePath(body, c.body, m, zones, obs, P));
+      if (!mode) { alert(`「${t.name}」へ戻る経路が、走ってよいエリアの中に見つかりませんでした。`); return; }
+      if (tcpR(q) > AUTO_R) { const qa = approachOf(q); steps.push({ arm: lastA || addPt(prevName + " 寄り", body, qa) }); q = qa; }
+      if (!c.nA) { c.qA = approachOf(c.qT); c.nA = addPt(t.name + " 寄り", c.body, c.qA); }
+      if (armPathOk(q, c.qA, P)) steps.push({ body: c.nT, arm: c.nA, mode });
+      else { steps.push({ body: c.nT, mode }); steps.push({ arm: c.nA }); }
+      steps.push({ arm: c.nT });
+      body = c.body; q = c.qT; lastA = c.nA; prevName = t.name;
+      continue;
+    }
     const r = autoPlace(t, body, q, P, zones, obs);
     if (!r) {
       alert(`「${t.name}」に届く車体の位置が見つかりませんでした。手先の高さ・向き、走行可の区画、設備の位置を見直してください。`);
       return;
     }
     if (r.same) { // 同じ車体の位置のまま、アームだけ動かす
-      steps.push({ arm: addPt(t.name, body, r.qT) });
+      const nT = addPt(t.name, body, r.qT);
+      steps.push({ arm: nT });
+      seen.set(t.id, { body: { ...body }, qT: r.qT, nT, qA: null, nA: null });
       q = r.qT; lastA = null; prevName = t.name;
       continue;
     }
@@ -1498,6 +1590,7 @@ function autoGenerate() {
     if (r.armDuringDrive) steps.push({ body: nT, arm: nA, mode: r.mode });
     else { steps.push({ body: nT, mode: r.mode }); steps.push({ arm: nA }); }
     steps.push({ arm: nT });
+    seen.set(t.id, { body: r.body, qT: r.qT, nT, qA: r.qA, nA });
     body = r.body; q = r.qT; lastA = nA; prevName = t.name;
   }
   pushUndo();
@@ -1972,7 +2065,7 @@ function drawObjects() {
     ctx.beginPath(); ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2); ctx.stroke();
   }
   // 手先の目標: ⊕ と、回る順番・名前・高さ
-  const tgAll = state.objects.filter(o => o.type === "target");
+  const tgNums = targetNums();
   for (const o of objs) {
     if (o.type !== "target") continue;
     const [sx, sy] = w2s(o.x, o.y);
@@ -1980,7 +2073,7 @@ function drawObjects() {
     ctx.beginPath(); ctx.arc(sx, sy, 7, 0, TAU); ctx.moveTo(sx - 11, sy); ctx.lineTo(sx + 11, sy); ctx.moveTo(sx, sy - 11); ctx.lineTo(sx, sy + 11); ctx.stroke();
     if (o.id === selectedId) drawSelectionRect(sx - 12, sy - 12, 24, 24);
     ctx.fillStyle = o.color || "#c0392b"; ctx.font = "bold 11px sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "bottom";
-    ctx.fillText(`${tgAll.indexOf(o) + 1}. ${o.name || ""}  h ${((o.z || 0) / 1000).toFixed(2)}m`, sx + 10, sy - 6);
+    ctx.fillText(`${tgNums[o.id] ? tgNums[o.id] + ". " : ""}${o.name || ""}  h ${((o.z || 0) / 1000).toFixed(2)}m`, sx + 10, sy - 6);
   }
   ctx.save();
   ctx.textAlign = "center"; ctx.textBaseline = "middle";
@@ -4590,6 +4683,7 @@ document.getElementById("btnSave").addEventListener("click", () => {
     points: state.points.map(p => ({ name: p.name, body: p.body, arm: p.arm ? { q: p.arm.q } : null })),
     initial: state.initial,
     places: state.places, // ユーザーが付けた車体位置の名前（rev.97〜）
+    route: state.route,   // 自動作成で手先の目標を回る順番（rev.102〜）
     program: state.program.map(s => ({
       blocks: s.blocks.map(b => b.type === "point"
         ? { type: "point", point: b.point, move: b.move || "both", mode: b.mode, vmax: b.vmax }
@@ -4864,6 +4958,7 @@ function applyLoadedData(data) {
       const conv = pointsFromSave(data);
       state.points = conv.points;
       state.places = Array.isArray(data.places) ? data.places.filter(q => q && isFinite(q.x) && isFinite(q.y) && q.name) : [];
+      state.route = Array.isArray(data.route) ? data.route.filter(id => typeof id === "string") : [];
       state.initial = conv.initial;
       state.program = conv.program;
       selPointName = null;
@@ -4998,7 +5093,7 @@ function sync3D() {
   const hp = (playing && !paused) ? null : (hoverBlockGhost || (hoverPointName ? findPoint(hoverPointName) : null));
   if (s.setShadow) s.setShadow(hp ? { body: hp.body || state.robot.body, q: (hp.arm || state.robot.arm).q, showBody: !!hp.body } : null);
   s.syncScene({
-    objects: state.objects, selectedId,
+    objects: state.objects, selectedId, targetNums: targetNums(),
     bodyPoses: bodyLocations().map(L => ({ x: L.body.x, y: L.body.y, th: L.body.th, name: L.points.map(q => q.name).join("・") })),
     paths: pathsForScene(), dims: dims3d(),
   });
@@ -5135,7 +5230,8 @@ function showLeftTab(t) {
   document.getElementById("ltabPts").hidden = t !== "pts";
   document.getElementById("ltabArm").hidden = t !== "arm";
   document.getElementById("ltabObj").hidden = t !== "obj";
-  document.getElementById("regBox").hidden = t === "obj"; // レイアウトのタブでは「姿勢の登録」は使わないので隠す
+  document.getElementById("ltabRoute").hidden = t !== "route";
+  document.getElementById("regBox").hidden = t === "obj" || t === "route"; // レイアウト・回る順番のタブでは「姿勢の登録」は使わないので隠す
   document.querySelectorAll("#leftTabs .tab").forEach(b => b.classList.toggle("on", b.dataset.ltab === t));
 }
 document.querySelectorAll("#leftTabs .tab").forEach(b => b.addEventListener("click", () => {
@@ -5215,6 +5311,7 @@ function renderObjectList() {
   if (row) row.scrollIntoView({ block: "nearest" });
   for (const id of ["btnObjVis", "btnObjDel", "btnObjFocus", "btnObjDup"]) document.getElementById(id).disabled = !sel;
   renderObjProps();
+  renderRoute(); // 手先の目標が増えた・消えた・名前が変わった
 }
 document.getElementById("objFilter").addEventListener("change", renderObjectList);
 
@@ -5378,23 +5475,16 @@ function renderObjProps() {
     field("W", "w", { step: 5, unit: "°", half: true });
     field("P", "p", { step: 5, unit: "°", half: true });
     field("R", "r", { step: 5, unit: "°", half: true });
-    const tg = state.objects.filter(q => q.type === "target"), k = tg.indexOf(o);
     const row = document.createElement("div"); row.style.cssText = "grid-column: 1 / -1; display:flex; gap:4px; align-items:center;";
-    const lb = document.createElement("span"); lb.textContent = `回る順番 ${k + 1} / ${tg.length}`; lb.style.flex = "1";
-    const swap = (d) => { // 手先どうしの並び（state.objects の中の順）を入れ替える
-      const other = tg[k + d]; if (!other) return;
-      pushUndo();
-      const i = state.objects.indexOf(o), j = state.objects.indexOf(other);
-      state.objects[i] = other; state.objects[j] = o;
-      document.getElementById("objProps").dataset.id = ""; // 順番の表示を作り直す
-      renderObjectList();
-    };
-    const bPrev = document.createElement("button"); bPrev.className = "small"; bPrev.textContent = "◀ 前へ"; bPrev.disabled = k === 0; bPrev.addEventListener("click", () => swap(-1));
-    const bNext = document.createElement("button"); bNext.className = "small"; bNext.textContent = "後へ ▶"; bNext.disabled = k === tg.length - 1; bNext.addEventListener("click", () => swap(1));
-    row.append(lb, bPrev, bNext);
+    const lb = document.createElement("span"); lb.textContent = "回る順番: " + (targetNums()[o.id] ? targetNums()[o.id] + " 番目" : "入っていません"); lb.style.flex = "1";
+    const bAdd = document.createElement("button"); bAdd.className = "small"; bAdd.textContent = "＋ 最後に足す"; bAdd.title = "回る順番の最後に、この手先を足します（同じ手先を何度でも）";
+    bAdd.addEventListener("click", () => { editRoute(r => r.push(o.id)); document.getElementById("objProps").dataset.id = ""; renderObjProps(); });
+    const bOpen = document.createElement("button"); bOpen.className = "small"; bOpen.textContent = "一覧を開く";
+    bOpen.addEventListener("click", () => showLeftTab("route"));
+    row.append(lb, bAdd, bOpen);
     grid.appendChild(row);
     const hint = document.createElement("div"); hint.className = "hint"; hint.style.gridColumn = "1 / -1";
-    hint.textContent = "アームの手先（ツールの先）を持っていきたい位置と向きです。W・P・R は床の座標で、W 180・P 0 で真下を向きます。タイムラインの「自動作成」で、この順番に回るシーケンスを作ります。";
+    hint.textContent = "アームの手先（ツールの先）を持っていきたい位置と向きです。W・P・R は床の座標で、W 180・P 0 で真下を向きます。左ペインの「回る順番」の順に、「自動作成」がシーケンスを作ります。";
     grid.appendChild(hint);
   } else if (o.type === "text") {
     field("文字", "text", { type: "text" });
