@@ -611,7 +611,7 @@
        一度開いたら、隣へマウスを動かすだけで切り替わる。Esc で閉じる -->
   <div id="titleCol">
     <h1 class="lx-tool">LexxMoMa 動作シミュレーター</h1>
-    <div id="revDisp">rev.104</div>
+    <div id="revDisp">rev.105</div>
     <nav id="menubar" role="menubar">
       <div class="hdr-menu">
         <button class="mb" id="btnFile" aria-haspopup="menu" aria-expanded="false">ファイル</button>
@@ -1575,7 +1575,7 @@ function renderRoute() {
     sel.appendChild(g);
   };
   group("手先の目標（自動で決める）", tg.map(o => ["t:" + o.id, "⊕ " + (o.name || "（名前なし）")]));
-  group("登録した姿勢（そのまま使う）", own.map(p => ["p:" + p.name, p.name]));
+  group("登録した姿勢（そのまま使う）", pointsByName(own).map(p => ["p:" + p.name, p.name]));
   const add = document.createElement("button"); add.className = "small"; add.textContent = "＋ 最後に足す";
   add.disabled = !sel.options.length;
   add.addEventListener("click", () => {
@@ -1691,6 +1691,9 @@ document.getElementById("btnAuto").addEventListener("click", autoGenerate);
 function sameBody(a, c) {
   return !!(a && c) && Math.abs(a.x - c.x) < 1 && Math.abs(a.y - c.y) < 1 && Math.abs(angDiff(a.th, c.th)) < 0.002;
 }
+/* プルダウンに出す姿勢の並び: 名前順（50 音・アルファベット順。数字は数として比べるので P2 が P10 より前） */
+const nameCollator = new Intl.Collator("ja", { numeric: true, sensitivity: "base" });
+function pointsByName(list) { return (list || state.points).slice().sort((a, b) => nameCollator.compare(a.name, b.name)); }
 /* 車体の位置が同じポイントを、1 つの場所にまとめる（一覧の見出しと、地図の枠に使う） */
 function bodyLocations() {
   const locs = [];
@@ -3340,7 +3343,7 @@ function renderStartSettings() {
     const op0 = document.createElement("option");
     op0.value = ""; op0.textContent = "（今の位置）";
     sel.appendChild(op0);
-    for (const p of list) {
+    for (const p of pointsByName(list)) {
       const op = document.createElement("option");
       op.value = p.name; op.textContent = p.name;
       sel.appendChild(op);
@@ -4106,7 +4109,7 @@ function makeSlotEl(stage, si, key, label) {
   const sel = document.createElement("select");
   const opt = (v, t) => { const op = document.createElement("option"); op.value = v; op.textContent = t; sel.appendChild(op); };
   opt("", "（前のまま）");
-  for (const p of state.points) if (p[key]) opt(p.name, p.name);
+  for (const p of pointsByName()) if (p[key]) opt(p.name, p.name);
   if (b && !findPoint(b.point)) opt(b.point, (b.point || "?") + "（未登録）");
   sel.value = b ? b.point : "";
   sel.title = `この段で${label}を動かす先（登録した姿勢）。「前のまま」なら前の段の${label}のまま動きません`;
@@ -4180,7 +4183,7 @@ function makeBlockEl(stage, b, si, bi) {
   if (b.type === "point") {
     // 行き先（登録した位置）
     const sel = document.createElement("select");
-    for (const p of state.points) {
+    for (const p of pointsByName()) {
       const op = document.createElement("option");
       op.value = p.name; op.textContent = p.name + (p.body && p.arm ? "" : p.body ? "（車体）" : "（アーム）");
       sel.appendChild(op);
