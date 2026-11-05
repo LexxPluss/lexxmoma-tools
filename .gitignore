@@ -39,3 +39,8 @@ eoat/data/
 eoat/logs/
 # 顔検出の分類器(opencv の GitHub から取る。setup の行を参照)
 eoat/crawler/models/*.xml
+
+# 工場マップ 韓国・台湾拡張(factory/): 取得原本・平文データ・実行ログはコミットしない
+factory/raw/
+factory/data/
+factory/logs/
