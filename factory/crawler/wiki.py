@@ -96,7 +96,7 @@ def main():
                 if "404" in str(e):
                     continue
                 res = {"error": str(e)[:120]}; break
-            if "mw-disambig" in html or 'class="disambigbox"' in html:
+            if 'id="disambigbox"' in html or "dmbox" in html or "ambox-disambig" in html:   # 曖昧さ回避ページ(他ページへのリンクの mw-disambig は無視)
                 continue
             res, text = parse(cc, html, url)
             # 会社の記事か(情報ボックスに会社らしい項目があるか)
