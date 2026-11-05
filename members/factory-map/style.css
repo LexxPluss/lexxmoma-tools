@@ -59,6 +59,11 @@ a.tag:hover{filter:brightness(1.1);box-shadow:0 0 0 2px color-mix(in srgb,var(--
 .chip span{color:var(--faint);font-size:11px}
 .chip.on{border-color:var(--text);background:var(--text);color:var(--panel)}
 .chip.on span{color:inherit;opacity:.7}
+/* 国(日本・韓国・台湾)のタグと絞り込み */
+.chip.ctry b{font-weight:400;font-size:13px;line-height:1}
+.cc{display:inline-block;font-style:normal;font-size:10px;font-weight:700;line-height:1;letter-spacing:.02em;padding:2px 4px;border-radius:4px;margin-right:5px;vertical-align:2px;color:#fff;background:var(--faint)}
+.cc.jp{background:#c0392b}.cc.kr{background:#1f4e9c}.cc.tw{background:#2e7d4f}
+.p-detail h2 small{font-size:12px;font-weight:500;margin-left:6px}
 .row{display:flex;gap:8px}
 .row select,#sort{flex:1;font:inherit;font-size:13px;padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--text);min-width:0}
 .tabs{display:flex;gap:6px;align-items:center}

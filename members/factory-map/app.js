@@ -7,6 +7,13 @@
   var $ = function (s) { return document.querySelector(s); };
   var KEY_STORE = 'lx_factory_key_v1';
   var DOME = 46755; // 東京ドームの建築面積 m²
+  // 国(タグ)。データ側の countries があればそれを使う(通貨・換算率つき)。無い旧データは全件 日本 とみなす
+  var CTRY_DEF = [
+    { code: 'JP', name: '日本', flag: '🇯🇵', unit: '億円', fx: 1, center: [36.2, 137.5], zoom: 5.5 },
+    { code: 'KR', name: '韓国', flag: '🇰🇷', unit: '億ウォン', fx: 0.11, center: [36.3, 127.8], zoom: 6.5 },
+    { code: 'TW', name: '台湾', flag: '🇹🇼', unit: '億台湾ドル', fx: 4.8, center: [23.7, 121], zoom: 7 }
+  ];
+  var CTRY = {}, CTRY_ORDER = [];
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function b64(s) { var b = atob(s), u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }
@@ -78,6 +85,22 @@
   // ---------------------------------------------------------------- 本体
   var D, COS = {}, FAS = [], GROUPS = {}, map, layer, markers = {};
   var COLORS = ['#0068B7', '#3EB370', '#E8A33D', '#D6496E', '#7B61C9', '#2BA6B8', '#8A6D3B', '#5C7A99', '#C45A2A', '#6FA83A', '#A3478F'];
+  var REGIONS_BY = {
+    KR: [
+      ['首都圏(ソウル・京畿・仁川)', ['서울특별시', '경기도', '인천광역시']],
+      ['江原', ['강원특별자치도', '강원도']],
+      ['忠清(大田・世宗)', ['충청북도', '충청남도', '대전광역시', '세종특별자치시']],
+      ['嶺南(釜山・大邱・蔚山・慶尚)', ['부산광역시', '대구광역시', '울산광역시', '경상북도', '경상남도']],
+      ['湖南(光州・全羅)', ['광주광역시', '전라북도', '전북특별자치도', '전라남도']],
+      ['済州', ['제주특별자치도']]
+    ],
+    TW: [
+      ['北部(台北・新北・基隆・桃園・新竹・宜蘭)', ['臺北市', '台北市', '新北市', '基隆市', '桃園市', '新竹市', '新竹縣', '宜蘭縣']],
+      ['中部(苗栗・台中・彰化・南投・雲林)', ['苗栗縣', '臺中市', '台中市', '彰化縣', '南投縣', '雲林縣']],
+      ['南部(嘉義・台南・高雄・屏東)', ['嘉義市', '嘉義縣', '臺南市', '台南市', '高雄市', '屏東縣']],
+      ['東部・離島', ['花蓮縣', '臺東縣', '台東縣', '澎湖縣', '金門縣', '連江縣']]
+    ]
+  };
   var REGIONS = [
     ['北海道・東北', ['北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県']],
     ['関東', ['茨城県', '栃木県', '群馬県', '埼玉県', '千葉県', '東京都', '神奈川県']],
@@ -87,16 +110,35 @@
     ['中国・四国', ['鳥取県', '島根県', '岡山県', '広島県', '山口県', '徳島県', '香川県', '愛媛県', '高知県']],
     ['九州・沖縄', ['福岡県', '佐賀県', '長崎県', '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県']]
   ];
-  var state = { q: '', inds: {}, grp: '', region: '', tab: 'co', sort: 'fac', focus: null, near: null, gmode: 'tree' };
+  REGIONS_BY.JP = REGIONS;
+  var REGION_IDX = {};  // 地域名 → [国コード, 都道府県等[]]
+  var state = { q: '', inds: {}, ctry: {}, grp: '', region: '', tab: 'co', sort: 'fac', focus: null, near: null, gmode: 'tree' };
   try { if (localStorage.getItem('lx_fm_gmode') === 'group') state.gmode = 'group'; } catch (e) { /* 既定のまま */ }
   var KIDS = {};  // 親会社id → 子会社id[]
 
   function indColor(ind) { var i = D.industries.indexOf(ind); return COLORS[i < 0 ? 0 : i % COLORS.length]; }
   function coOf(f) { return COS[f.oid || f.cid]; }
   function grpOf(c) { return c ? c.group : ''; }
+  function cc(x) { return (x && x.country) || 'JP'; }                 // 会社・工場の国コード(無ければ日本)
+  function ctryOf(x) { return CTRY[cc(x)] || CTRY_DEF[0]; }
+  function ctryIdx(x) { var i = CTRY_ORDER.indexOf(cc(x)); return i < 0 ? 99 : i; }
+  function ccTag(x) { var k = ctryOf(x); return '<em class="cc ' + k.code.toLowerCase() + '" title="' + esc(k.name) + '">' + k.code + '</em>'; }
+  function revJpy(c) { return c && c.rev ? c.rev * (ctryOf(c).fx || 1) : 0; }   // 並べ替え用(円換算)
+  function revText(c) { return c.rev ? '売上 ' + fmt(c.rev) + ctryOf(c).unit : ''; }
+  function coName(c) { return c.nameJa && c.nameJa !== c.name ? c.name + '(' + c.nameJa + ')' : c.nameEn && cc(c) !== 'JP' ? c.name + ' / ' + c.nameEn : c.name; }
+  function multiCountry() { return CTRY_ORDER.length > 1; }
 
   function start(data) {
     D = data;
+    (D.countries && D.countries.length ? D.countries : CTRY_DEF).forEach(function (k) {
+      var def = CTRY_DEF.filter(function (d) { return d.code === k.code; })[0] || {};
+      var m = {}; Object.keys(def).forEach(function (x) { m[x] = def[x]; }); Object.keys(k).forEach(function (x) { if (k[x] != null) m[x] = k[x]; });
+      CTRY[m.code] = m;
+    });
+    var seen = {};
+    D.companies.forEach(function (c) { seen[cc(c)] = 1; });
+    CTRY_ORDER = Object.keys(CTRY).filter(function (k) { return seen[k]; });
+    CTRY_ORDER.forEach(function (k) { (REGIONS_BY[k] || []).forEach(function (r) { REGION_IDX[r[0]] = [k, r[1]]; }); });
     D.companies.forEach(function (c) { COS[c.id] = c; c.facs = []; });
     FAS = D.factories.filter(function (f) { return f.lat != null; });
     D.factories.forEach(function (f) {
@@ -121,7 +163,7 @@
   // 親会社名で結ぶ(「〇〇ホールディングス」「〇〇グループ」は〇〇と同じとみなす)。
   // 親会社名が無くても、ある会社の記録に別会社が運営する工場が入っていれば、その会社を子会社とみなす
   function nk(n) {
-    return String(n || '').normalize('NFKC').replace(/株式会社|\(株\)|ホールディングス|グループ|HD$/g, '').replace(/[\s・()（）]/g, '').toLowerCase();
+    return String(n || '').normalize('NFKC').replace(/株式会社|\(株\)|ホールディングス|グループ|HD$|주식회사|\(주\)|㈜|홀딩스|그룹|股份有限公司|有限公司|控股|集團|公司$|Co\.?,? ?Ltd\.?|Corp(oration)?\.?|Inc\.?|Holdings?/gi, '').replace(/[\s・()（）,.]/g, '').toLowerCase();
   }
   function buildTree() {
     var byKey = {};
@@ -151,8 +193,23 @@
   }
 
   function buildControls() {
-    var cnt = {};
-    D.companies.forEach(function (c) { cnt[c.industry] = (cnt[c.industry] || 0) + 1; });
+    var cnt = {}, ccnt = {};
+    D.companies.forEach(function (c) { cnt[c.industry] = (cnt[c.industry] || 0) + 1; ccnt[cc(c)] = (ccnt[cc(c)] || 0) + 1; });
+    // 国(日本・韓国・台湾)で絞り込む。国が 1 つしか無いデータでは出さない
+    var cch = $('#ctryChips');
+    if (cch) {
+      cch.hidden = !multiCountry();
+      cch.innerHTML = CTRY_ORDER.map(function (k) {
+        var m = CTRY[k];
+        return '<button type="button" class="chip ctry" data-ctry="' + k + '"><b>' + m.flag + '</b>' + esc(m.name) + '<span>' + (ccnt[k] || 0) + '</span></button>';
+      }).join('');
+      cch.addEventListener('click', function (e) {
+        var b = e.target.closest('.chip'); if (!b) return;
+        var k = b.dataset.ctry; state.ctry[k] ? delete state.ctry[k] : (state.ctry[k] = 1);
+        b.classList.toggle('on', !!state.ctry[k]); state.focus = null; closeDetail(); render();
+        if (state.ctry[k]) { track('member/factory-map/country', k); var m = CTRY[k]; if (Object.keys(state.ctry).length === 1 && m.center) map.setView(m.center, m.zoom); }
+      });
+    }
     $('#indChips').innerHTML = D.industries.filter(function (i) { return cnt[i]; }).map(function (i) {
       return '<button type="button" class="chip" data-ind="' + esc(i) + '"><i style="background:' + indColor(i) + '"></i>' + esc(i) + '<span>' + cnt[i] + '</span></button>';
     }).join('');
@@ -165,7 +222,9 @@
     var gs = Object.keys(GROUPS).filter(function (g) { return GROUPS[g].length > 1; })
       .sort(function (a, b) { return GROUPS[b].length - GROUPS[a].length; });
     $('#grp').insertAdjacentHTML('beforeend', gs.map(function (g) { return '<option value="' + esc(g) + '">' + esc(g) + ' グループ(' + GROUPS[g].length + '社)</option>'; }).join(''));
-    $('#region').insertAdjacentHTML('beforeend', REGIONS.map(function (r) { return '<option value="' + esc(r[0]) + '">' + esc(r[0]) + '</option>'; }).join(''));
+    $('#region').insertAdjacentHTML('beforeend', multiCountry()
+      ? CTRY_ORDER.map(function (k) { return '<optgroup label="' + esc(CTRY[k].name) + '">' + (REGIONS_BY[k] || []).map(function (r) { return '<option value="' + esc(r[0]) + '">' + esc(r[0]) + '</option>'; }).join('') + '</optgroup>'; }).join('')
+      : REGIONS.map(function (r) { return '<option value="' + esc(r[0]) + '">' + esc(r[0]) + '</option>'; }).join(''));
     ['#grp', '#region'].forEach(function (s) { $(s).addEventListener('change', function () { state[s === '#grp' ? 'grp' : 'region'] = this.value; state.focus = null; render(); }); });
     var qt; $('#q').addEventListener('input', function () { var v = this.value; clearTimeout(qt); qt = setTimeout(function () { state.q = v.trim(); state.focus = null; render(); }, 150); });
     document.querySelectorAll('.tabs [data-tab]').forEach(function (b) {
@@ -178,38 +237,51 @@
     $('#locate').addEventListener('click', locate);
     $('#legend').innerHTML = '<b>業種</b>' + D.industries.filter(function (i) { return cnt[i]; }).map(function (i) {
       return '<span><i style="background:' + indColor(i) + '"></i>' + esc(i) + '</span>'; }).join('') + '<small>円の大きさ = 従業員数</small>';
-    $('#foot').innerHTML = '会社 ' + D.companies.length + '社・工場 ' + D.factories.length + '件(' + esc(D.builtAt) + ' 時点)。出所は各社の公式サイト・有価証券報告書。' +
-      '数値は掲載時点の公表値で、最新ではない場合があります。 <a href="../people-db/index.html">顧客人事データベース</a>';
+    var fcnt = {}; D.factories.forEach(function (f) { fcnt[cc(f)] = (fcnt[cc(f)] || 0) + 1; });
+    var byC = multiCountry() ? '(' + CTRY_ORDER.map(function (k) { return CTRY[k].flag + (ccnt[k] || 0) + '社・' + (fcnt[k] || 0) + '件'; }).join('、') + ')' : '';
+    $('#foot').innerHTML = '会社 ' + D.companies.length + '社・工場 ' + D.factories.length + '件' + byC + '(' + esc(D.builtAt) + ' 時点)。出所は各社の公式サイト・有価証券報告書(韓国・台湾は各社の公式サイトが中心。取れない会社はウィキペディアで補い、その旨を表示)。' +
+      '数値は掲載時点の公表値で、最新ではない場合があります。' + (multiCountry() ? '売上高の並べ替えは概算の為替換算(' + CTRY_ORDER.filter(function (k) { return k !== 'JP'; }).map(function (k) { return '1' + CTRY[k].unit + '≈' + CTRY[k].fx + '億円'; }).join('、') + ')。' : '') +
+      ' <a href="../people-db/index.html">顧客人事データベース</a>';
   }
   function setSort() {
     var opt = state.tab === 'co'
       ? [['fac', '工場数が多い順'], ['rev', '売上高が大きい順'], ['name', '会社名順']]
       : [['emp', '従業員数が多い順'], ['area', '敷地が広い順'], ['name', '工場名順']];
+    if (multiCountry()) opt.push(['ctry', '国別(日本 → 韓国 → 台湾)']);
     if (state.near) opt.unshift(['near', '現在地から近い順']);
     $('#sort').innerHTML = opt.map(function (o) { return '<option value="' + o[0] + '">' + o[1] + '</option>'; }).join('');
     state.sort = opt[0][0];
   }
 
   function buildMap() {
-    map = L.map('map', { zoomControl: false, minZoom: 4, maxZoom: 17, zoomSnap: 0.5, preferCanvas: true }).setView([36.2, 137.5], 5.5);
+    map = L.map('map', { zoomControl: false, minZoom: 3, maxZoom: 17, zoomSnap: 0.5, preferCanvas: true });
+    if (multiCountry()) map.setView([32, 126], 4.5); else map.setView([36.2, 137.5], 5.5);
     L.control.zoom({ position: 'bottomleft' }).addTo(map);
+    // 日本は国土地理院の淡色地図。国外(韓国・台湾)は地理院のタイルが無いので OpenStreetMap の標準タイルを下に敷く
+    if (multiCountry()) {
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors', maxZoom: 19 }).addTo(map);
+    }
     L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', {
-      attribution: '地図: <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院</a>', maxZoom: 18 }).addTo(map);
+      attribution: '地図: <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院</a>', maxZoom: 18,
+      bounds: multiCountry() ? L.latLngBounds([[20.2, 122.5], [45.8, 149.5]]) : undefined }).addTo(map);
     layer = L.layerGroup().addTo(map);
   }
 
   // ---------------------------------------------------------------- 絞り込み
   function inRegion(f) {
     if (!state.region) return true;
-    var r = REGIONS.filter(function (x) { return x[0] === state.region; })[0];
-    return r && r[1].indexOf(f.pref) >= 0;
+    var r = REGION_IDX[state.region];
+    return !!r && r[0] === cc(f) && r[1].indexOf(f.pref) >= 0;
   }
   function matchText(c, f) {
     if (!state.q) return true;
-    var hay = [c && c.name, c && c.legal, c && c.group, c && c.industry, f && f.name, f && f.op, f && f.addr, f && f.pref, f && f.city, f && f.prod, f && f.seg].join(' ').toLowerCase();
+    var k = c ? ctryOf(c) : null;
+    var hay = [c && c.name, c && c.legal, c && c.nameEn, c && c.nameJa, c && c.group, c && c.industry, k && k.name, k && k.code, f && f.name, f && f.nameEn, f && f.op, f && f.addr, f && f.pref, f && f.city, f && f.prod, f && f.seg].join(' ').toLowerCase();
     return state.q.toLowerCase().split(/[\s　]+/).every(function (t) { return !t || hay.indexOf(t) >= 0; });
   }
   function coPass(c) {
+    if (Object.keys(state.ctry).length && !state.ctry[cc(c)]) return false;
     if (Object.keys(state.inds).length && !state.inds[c.industry]) return false;
     if (state.grp && c.group !== state.grp) return false;
     return true;
@@ -272,15 +344,16 @@
     var html;
     if (state.tab === 'co') {
       cos.sort(function (a, b) {
-        if (state.sort === 'rev') return (b.rev || 0) - (a.rev || 0);
+        if (state.sort === 'rev') return revJpy(b) - revJpy(a);
         if (state.sort === 'name') return a.name.localeCompare(b.name, 'ja');
         if (state.sort === 'near') return dist(byCo[a.id]) - dist(byCo[b.id]);
-        return byCo[b.id].length - byCo[a.id].length || (b.rev || 0) - (a.rev || 0);
+        if (state.sort === 'ctry') return ctryIdx(a) - ctryIdx(b) || byCo[b.id].length - byCo[a.id].length || revJpy(b) - revJpy(a);
+        return byCo[b.id].length - byCo[a.id].length || revJpy(b) - revJpy(a);
       });
       html = cos.slice(0, 400).map(function (c) {
         var s = companyStats(byCo[c.id]);
         return '<button class="item co" data-co="' + c.id + '"><i class="dot" style="background:' + indColor(c.industry) + '"></i>' +
-          '<span class="t">' + esc(c.name) + '</span><span class="m">' + esc(c.industry) + (c.group && c.group !== c.name ? '・' + esc(c.group) + 'グループ' : '') + '</span>' +
+          '<span class="t">' + (multiCountry() ? ccTag(c) : '') + esc(coName(c)) + '</span><span class="m">' + esc(c.industry) + (c.group && c.group !== c.name ? '・' + esc(c.group) + 'グループ' : '') + '</span>' +
           '<span class="n">' + s.n + '<small>拠点</small></span></button>';
       }).join('');
     } else {
@@ -289,12 +362,13 @@
         if (state.sort === 'area') return (b.area || 0) - (a.area || 0);
         if (state.sort === 'name') return (a.name || '').localeCompare(b.name || '', 'ja');
         if (state.sort === 'near') return distF(a) - distF(b);
+        if (state.sort === 'ctry') return ctryIdx(a) - ctryIdx(b) || (b.emp || 0) - (a.emp || 0);
         return (b.emp || 0) - (a.emp || 0);
       });
       html = list.slice(0, 400).map(function (f) {
         var c = coOf(f);
         return '<button class="item fa" data-fa="' + f.id + '"><i class="dot" style="background:' + indColor(c.industry) + '"></i>' +
-          '<span class="t">' + esc(f.name) + '</span><span class="m">' + esc(f.op) + '・' + esc((f.pref || '') + (f.city || '')) +
+          '<span class="t">' + (multiCountry() ? ccTag(f) : '') + esc(f.name) + '</span><span class="m">' + esc(f.op) + '・' + esc((f.pref || '') + (f.city || '')) +
           (state.near ? '・約' + fmt(Math.round(distF(f))) + 'km' : '') + '</span>' +
           '<span class="n">' + (f.emp ? fmt(f.emp) + '<small>人</small>' : '<small>—</small>') + '</span></button>';
       }).join('');
@@ -335,7 +409,7 @@
       '<div class="seg" role="group" aria-label="表示範囲">' +
       '<button type="button" data-gmode="tree" class="' + (mode === 'tree' ? 'on' : '') + '">傘下のみ</button>' +
       '<button type="button" data-gmode="group" class="' + (mode === 'group' ? 'on' : '') + '"' + (groupSize > 1 ? '' : ' disabled title="同じグループの会社はありません"') + '>グループ全体' + (groupSize > 1 ? '(' + groupSize + '社)' : '') + '</button></div></div>' +
-      '<div class="g-stats"><b>' + members.length + '</b>社<b>' + st.n + '</b>拠点<b>' + st.prefs + '</b>都道府県' +
+      '<div class="g-stats"><b>' + members.length + '</b>社<b>' + st.n + '</b>拠点<b>' + st.prefs + '</b>' + (cc(c) === 'JP' ? '都道府県' : '地域') +
       (st.emp ? '<b>' + fmt(st.emp) + '</b>人' : '') + '</div>' +
       '<div class="g-nav">' + (par ? '<button class="link-btn" type="button" data-gco="' + par.id + '">▲ 親会社 ' + esc(par.name) + ' を表示</button>' : '') +
       '<button class="link-btn" id="gClear" type="button">× 表示を解除</button></div></div>';
@@ -345,8 +419,8 @@
       var outside = mode === 'group' && !set[m.id];
       return '<section class="g-co' + (m.id === c.id ? ' me' : '') + (outside ? ' outside' : '') + '" style="margin-left:' + Math.min(d, 3) * 14 + 'px">' +
         '<button class="g-title" data-gco="' + m.id + '"><i class="dot" style="background:' + indColor(m.industry) + '"></i>' +
-        '<span class="nm">' + (d ? '<span class="branch">└</span>' : '') + esc(m.name) + '</span>' +
-        '<span class="m">' + esc(m.industry) + (m.rev ? '・売上 ' + fmt(m.rev) + '億円' : '') + ((KIDS[m.id] || []).length && m.id !== c.id ? '・子会社 ' + KIDS[m.id].length + '社' : '') + '</span></button>' +
+        '<span class="nm">' + (d ? '<span class="branch">└</span>' : '') + (multiCountry() ? ccTag(m) : '') + esc(coName(m)) + '</span>' +
+        '<span class="m">' + esc(m.industry) + (m.rev ? '・' + revText(m) : '') + ((KIDS[m.id] || []).length && m.id !== c.id ? '・子会社 ' + KIDS[m.id].length + '社' : '') + '</span></button>' +
         coInfo(m) +
         (fs.length ? '<div class="g-facs">' + fs.map(function (f) {
           return '<button class="item fa" data-fa="' + f.id + '"><span class="t">' + esc(f.name) + '</span><span class="m">' +
@@ -374,7 +448,7 @@
     if (m.listed) bits.push(esc(m.listed));
     if (m.emp) bits.push('連結従業員 ' + fmt(m.emp) + '人');
     var links = [];
-    links.push('<a href="' + peopleUrl(m) + '" data-people="' + esc(m.name) + '">👥 役員・人事</a>');
+    if (cc(m) === 'JP') links.push('<a href="' + peopleUrl(m) + '" data-people="' + esc(m.name) + '">👥 役員・人事</a>');  // 人事 DB は日本の会社だけ
     if (m.web) links.push('<a href="' + esc(m.web) + '" target="_blank" rel="noopener">公式サイト ↗</a>');
     links.push('<a href="' + newsUrl(m.name) + '" target="_blank" rel="noopener" data-news="' + esc(m.name) + '">最新ニュース ↗</a>');
     if (m.revUrl) links.push('<a href="' + esc(m.revUrl) + '" target="_blank" rel="noopener">売上高の出所 ↗</a>');
@@ -384,7 +458,7 @@
   // 顧客人事データベースへ: 工場マップの会社 ID を渡す(氏名は URL に載せない)
   function peopleUrl(c) { return '../people-db/index.html#fm=' + encodeURIComponent(c.id); }
   document.addEventListener('click', function (e) { var a = e.target.closest('[data-people]'); if (a) track('member/factory-map/people', a.dataset.people); });
-  function newsUrl(q) { return 'https://www.google.com/search?tbm=nws&hl=ja&q=' + encodeURIComponent(q); }
+  function newsUrl(q) { return 'https://www.google.com/search?tbm=nws&hl=ja&q=' + encodeURIComponent(q); }  // 韓国・台湾の会社名もそのまま検索する
   document.addEventListener('click', function (e) { var a = e.target.closest('[data-news]'); if (a) track('member/factory-map/news', a.dataset.news); });
 
   function openFactory(f) {
@@ -405,18 +479,18 @@
     var q = (f.op + ' ' + (f.name || '')).trim();
     var gmap = f.lat != null ? 'https://www.google.com/maps/search/?api=1&query=' + f.lat + ',' + f.lng : 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(f.addr || q);
     $('#detailBody').innerHTML =
-      '<div class="f-kicker" style="color:' + indColor(c.industry) + '">' + esc(c.industry) + '</div>' +
-      '<h2>' + esc(f.name) + '</h2><div class="f-op">' + esc(f.op) + '</div>' +
+      '<div class="f-kicker" style="color:' + indColor(c.industry) + '">' + (multiCountry() ? ctryOf(f).flag + ' ' + esc(ctryOf(f).name) + '・' : '') + esc(c.industry) + '</div>' +
+      '<h2>' + esc(f.name) + (f.nameEn ? ' <small class="muted">' + esc(f.nameEn) + '</small>' : '') + '</h2><div class="f-op">' + esc(f.op) + (f.opEn ? ' <span class="muted">' + esc(f.opEn) + '</span>' : '') + '</div>' +
       '<div class="f-actions">' +
       '<a class="btn primary" href="' + newsUrl(q) + '" target="_blank" rel="noopener" data-news="' + esc(q) + '">📰 最新ニュースを検索</a>' +
       '<a class="btn" href="' + gmap + '" target="_blank" rel="noopener">🗺 Googleマップ</a>' +
       '<button class="btn" type="button" id="fGroup">🏭 ' + esc(c.name) + 'の拠点一覧</button>' +
-      '<a class="btn" href="' + peopleUrl(c) + '" data-people="' + esc(c.name) + '">👥 ' + esc(c.name) + 'の人事</a></div>' +
+      (cc(c) === 'JP' ? '<a class="btn" href="' + peopleUrl(c) + '" data-people="' + esc(c.name) + '">👥 ' + esc(c.name) + 'の人事</a>' : '') + '</div>' +
       '<dl class="kv">' + rows.join('') + '</dl>' +
       '<p class="src">出所: <a href="' + esc(f.src) + '" target="_blank" rel="noopener">' + esc(shortUrl(f.src)) + ' ↗</a>' +
-      (f.src2 && f.src2 !== f.src ? '<br>敷地面積・従業員数: <a href="' + esc(f.src2) + '" target="_blank" rel="noopener">有価証券報告書 ↗</a>' : '') +
-      (/\.pdf($|\?)/i.test(f.src) && !f.src2 ? '<span class="muted">(有価証券報告書「主要な設備の状況」)</span>' : '') +
-      (f.srcType === 'public' ? '<br><span class="muted">※ 出所は公的機関・業界団体のページです(会社の公式情報ではありません)</span>' : '') +
+      (f.src2 && f.src2 !== f.src ? '<br>敷地面積・従業員数: <a href="' + esc(f.src2) + '" target="_blank" rel="noopener">' + esc(f.src2Label || (cc(f) === 'KR' ? '事業報告書(DART)' : cc(f) === 'TW' ? '年報' : '有価証券報告書')) + ' ↗</a>' : '') +
+      (f.srcLabel ? '<span class="muted">(' + esc(f.srcLabel) + ')</span>' : /\.pdf($|\?)/i.test(f.src) && !f.src2 && cc(f) === 'JP' ? '<span class="muted">(有価証券報告書「主要な設備の状況」)</span>' : '') +
+      (f.srcType === 'public' && !f.srcLabel ? '<br><span class="muted">※ 出所は公的機関・業界団体のページです(会社の公式情報ではありません)</span>' : '') +
       (f.fix || []).map(function (x) {
         return '<br>確認・修正(' + esc(FIX_LABEL[x.field] || x.field) + '): ' + esc(x.reason) +
           (x.url ? ' <a href="' + esc(x.url) + '" target="_blank" rel="noopener">根拠 ↗</a>' : '') + (x.at ? '<span class="muted">(' + esc(x.at) + ')</span>' : '');
