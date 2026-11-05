@@ -257,14 +257,9 @@
     map = L.map('map', { zoomControl: false, minZoom: 3, maxZoom: 17, zoomSnap: 0.5, preferCanvas: true });
     if (multiCountry()) map.setView([32, 126], 4.5); else map.setView([36.2, 137.5], 5.5);
     L.control.zoom({ position: 'bottomleft' }).addTo(map);
-    // 日本は国土地理院の淡色地図。国外(韓国・台湾)は地理院のタイルが無いので OpenStreetMap の標準タイルを下に敷く
-    if (multiCountry()) {
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors', maxZoom: 19 }).addTo(map);
-    }
-    L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', {
-      attribution: '地図: <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院</a>', maxZoom: 18,
-      bounds: multiCountry() ? L.latLngBounds([[20.2, 122.5], [45.8, 149.5]]) : undefined }).addTo(map);
+    // 日本・韓国・台湾とも OpenStreetMap の標準タイル(国ごとに地図が変わらないよう 1 種類にそろえる)
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors', maxZoom: 19 }).addTo(map);
     layer = L.layerGroup().addTo(map);
   }
 
