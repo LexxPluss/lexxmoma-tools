@@ -490,6 +490,18 @@
   :root[data-theme="dark"] #toolbar button { background: transparent; color: #345; }
   :root[data-theme="dark"] #toolbar button.on { background: var(--accent); color: #fff; }
   :root[data-theme="dark"] #toolOpts { background: rgba(255,255,255,.95); color: #223; }
+  :root[data-theme="dark"] #toolbar, :root[data-theme="dark"] #toolOpts, :root[data-theme="dark"] #view3dPresets { color-scheme: light; }
+  /* 明るい青（ダークの --accent）の上の文字は、白だと読めないので暗くする */
+  :root[data-theme="dark"] .seg button.on, :root[data-theme="dark"] #viewSeg button.on, :root[data-theme="dark"] #toolbar button.on { color: #0f1519; }
+  /* ライト用の濃い灰色・濃い青緑の文字は、暗い背景では沈むので明るくする */
+  :root[data-theme="dark"] #regBox .regopts, :root[data-theme="dark"] #armCtrl .grid6 .unit, :root[data-theme="dark"] #armCtrl .tcpinfo,
+  :root[data-theme="dark"] .slot-time, :root[data-theme="dark"] #pointDetail .jgrid label, :root[data-theme="dark"] .hdr-pop kbd,
+  :root[data-theme="dark"] #tlMiniRow .tl-lb, :root[data-theme="dark"] #tlFoot .tl-lb, :root[data-theme="dark"] .tl-sno { color: #a3b1bd; }
+  :root[data-theme="dark"] .tl-stage.sel .tl-sno { color: #f0a050; }
+  :root[data-theme="dark"] .slot-lb, :root[data-theme="dark"] .route-row.pose .rno { color: #6cb4ee; }
+  :root[data-theme="dark"] .slot.arm .slot-lb { color: #5fcf8a; }
+  :root[data-theme="dark"] .route-row .rno { color: #ff7b6e; }
+  :root[data-theme="dark"] .pt-tag, :root[data-theme="dark"] .obj-item .ty { background: #1e2831; color: #a3b1bd; }
   /* ---- 2D / 3D 表示 ---- */
   /* 2D と 3D の描画領域は重ねて置き、見せない方は visibility:hidden にする。
    * display:none にすると領域の大きさが 0 になり、ドラッグ中（ポインタキャプチャ中）に届いたマウス移動を
@@ -611,7 +623,7 @@
        一度開いたら、隣へマウスを動かすだけで切り替わる。Esc で閉じる -->
   <div id="titleCol">
     <h1 class="lx-tool">LexxMoMa 動作シミュレーター</h1>
-    <div id="revDisp">rev.105</div>
+    <div id="revDisp">rev.106</div>
     <nav id="menubar" role="menubar">
       <div class="hdr-menu">
         <button class="mb" id="btnFile" aria-haspopup="menu" aria-expanded="false">ファイル</button>
