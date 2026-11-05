@@ -82,7 +82,7 @@ def build_registry(factory, edinet_rows, ir_urls, ir_auto=None):
     by_key = {}
     for e in edinet_rows:
         by_key.setdefault(name_key(e["name"]), e)
-    cos = factory["companies"]
+    cos = [c for c in factory["companies"] if (c.get("country") or "JP") == "JP"]   # 韓国・台湾は人事 DB の対象外
     by_id = {c["id"]: c for c in cos}
     by_name = {c["name"]: c for c in cos}
     out, todo = [], []

@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=8">
+<link rel="stylesheet" href="style.css?v=9">
 </head>
 <body>
 
@@ -46,11 +46,12 @@
     </header>
 
     <div class="p-filters">
-      <input type="search" id="q" placeholder="会社名・工場名・製品・地域で検索(例: デンソー 愛知 ブレーキ)">
+      <input type="search" id="q" placeholder="会社名・工場名・製品・地域で検索(例: デンソー 愛知 ブレーキ / 韓国 半導体)">
+      <div class="chips ctry-chips" id="ctryChips" role="group" aria-label="国で絞り込み" hidden></div>
       <div class="chips" id="indChips" role="group" aria-label="業種で絞り込み"></div>
       <div class="row">
         <select id="grp" aria-label="グループ"><option value="">すべてのグループ</option></select>
-        <select id="region" aria-label="地域"><option value="">全国</option></select>
+        <select id="region" aria-label="地域"><option value="">すべての地域</option></select>
       </div>
       <div class="tabs" role="tablist">
         <button role="tab" class="on" data-tab="co" id="tabCo">会社</button>
@@ -75,8 +76,8 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="../../assets/track.js" data-tool="factory-map"></script>
-<script src="data.enc.js?v=4"></script>
+<script src="data.enc.js?v=5"></script>
 <script src="../members-auth.js?v=3"></script>
-<script src="app.js?v=7"></script>
+<script src="app.js?v=9"></script>
 </body>
 </html>
