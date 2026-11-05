@@ -253,6 +253,19 @@
     state.sort = opt[0][0];
   }
 
+  // 韓国(対馬・九州は含まない大まかな外形)と台湾の範囲
+  var KOREA = [[38.8, 124.3], [38.8, 128.7], [37.5, 129.6], [35.6, 129.7], [35.1, 129.3], [34.75, 128.75], [34.2, 127.0], [33.0, 126.9], [33.0, 125.8], [34.3, 125.0], [37.7, 124.3]];
+  function inPoly(lat, lng, poly) {
+    var inside = false;
+    for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      var yi = poly[i][0], xi = poly[i][1], yj = poly[j][0], xj = poly[j][1];
+      if (((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi)) inside = !inside;
+    }
+    return inside;
+  }
+  function inKorea(lat, lng) { return inPoly(lat, lng, KOREA); }
+  function inTaiwan(lat, lng) { return lat > 21.7 && lat < 25.5 && lng > 119.2 && lng < 122.3; }
+
   function buildMap() {
     map = L.map('map', { zoomControl: false, minZoom: 3, maxZoom: 17, zoomSnap: 0.5, preferCanvas: true });
     if (multiCountry()) map.setView([32, 126], 4.5); else map.setView([36.2, 137.5], 5.5);
@@ -262,9 +275,18 @@
       L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors', maxZoom: 19 }).addTo(map);
     }
-    L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', {
-      attribution: '地図: <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院</a>', maxZoom: 18,
-      bounds: multiCountry() ? L.latLngBounds([[20.2, 122.5], [45.8, 149.5]]) : undefined }).addTo(map);
+    var gsi = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', {
+      attribution: '地図: <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院</a>', maxZoom: 18 }).addTo(map);
+    // 国土地理院の地図は日本の外を拡大すると空白(海の色)のタイルになり、下の OpenStreetMap を隠す。
+    // 地図の中心が韓国・台湾にあるときは国土地理院の地図を外す
+    if (multiCountry()) {
+      var syncBase = function () {
+        var c = map.getCenter(), abroad = inKorea(c.lat, c.lng) || inTaiwan(c.lat, c.lng);
+        if (abroad && map.hasLayer(gsi)) map.removeLayer(gsi);
+        else if (!abroad && !map.hasLayer(gsi)) gsi.addTo(map);
+      };
+      map.on('moveend', syncBase); syncBase();
+    }
     layer = L.layerGroup().addTo(map);
   }
 
