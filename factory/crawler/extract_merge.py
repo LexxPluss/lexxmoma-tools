@@ -70,6 +70,12 @@ def main():
         if comp.get("rev") and not c.get("rev") and norm_url(comp.get("revUrl")) in urls:
             c["rev"], c["revFy"], c["revUrl"] = comp["rev"], comp.get("revFy"), comp["revUrl"]
         w = jload(RAW / cc / "wiki" / c["id"] / "info.json") or {}
+        if not c.get("web"):                                    # 公式サイトの URL が会社マスタに無いときは、ウィキペディアの情報欄の値を使う
+            for k, v in (w.get("info") or {}).items():
+                if re.search(r"웹사이트|홈페이지|網址|网址|網站|网站|Website", k, re.I) and re.search(r"https?://|www\.", v):
+                    u = re.search(r"(https?://\S+|www\.\S+)", v).group(1)
+                    c["web"] = u if u.startswith("http") else "https://" + u
+                    break
         if w.get("emp") and not c.get("emp"):
             c["emp"] = w["emp"]; c["empSrc"] = w["url"]
         if w.get("rev") and not c.get("rev"):
