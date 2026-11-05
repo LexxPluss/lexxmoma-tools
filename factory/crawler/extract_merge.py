@@ -99,6 +99,14 @@ def main():
             facs.append(factory(CC, c["id"], f.get("op") or c["name"], f.get("name") or (c["name"] + " 工場" if CC == "TW" else c["name"] + " 공장"), f["addr"],
                                 prod=f.get("prod"), src=src, srcType=st, seg=f.get("seg"), area=f.get("area"), floor=f.get("floor"), emp=f.get("emp"),
                                 empAsof=f.get("empAsof"), est=f.get("est"), src2=f.get("src2"), srcLabel=label, nameEn=f.get("nameEn"), opEn=f.get("opEn")))
+    # 同じ工場を別の会社(親子・系列)が両方載せている場合は、先に出た方だけを残す
+    uniq, dup = {}, 0
+    for f in facs:
+        if f["id"] in uniq:
+            dup += 1; continue
+        uniq[f["id"]] = f
+    facs = list(uniq.values())
+    stats["duplicates_dropped"] = dup
     stats["factories"] = len(facs)
     # 既存の緯度経度を引き継ぐ(同じ id)
     old = {f["id"]: f for f in jload(DATA / cc / "factories.json", [])}
