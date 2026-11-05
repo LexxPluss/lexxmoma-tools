@@ -239,7 +239,7 @@
       return '<span><i style="background:' + indColor(i) + '"></i>' + esc(i) + '</span>'; }).join('') + '<small>円の大きさ = 従業員数</small>';
     var fcnt = {}; D.factories.forEach(function (f) { fcnt[cc(f)] = (fcnt[cc(f)] || 0) + 1; });
     var byC = multiCountry() ? '(' + CTRY_ORDER.map(function (k) { return CTRY[k].flag + (ccnt[k] || 0) + '社・' + (fcnt[k] || 0) + '件'; }).join('、') + ')' : '';
-    $('#foot').innerHTML = '会社 ' + D.companies.length + '社・工場 ' + D.factories.length + '件' + byC + '(' + esc(D.builtAt) + ' 時点)。出所は各社の公式サイト・有価証券報告書(韓国: 事業報告書 DART、台湾: 年報・公開資訊観測站・経済部の登記)。' +
+    $('#foot').innerHTML = '会社 ' + D.companies.length + '社・工場 ' + D.factories.length + '件' + byC + '(' + esc(D.builtAt) + ' 時点)。出所は各社の公式サイト・有価証券報告書(韓国・台湾は各社の公式サイトが中心。取れない会社はウィキペディアで補い、その旨を表示)。' +
       '数値は掲載時点の公表値で、最新ではない場合があります。' + (multiCountry() ? '売上高の並べ替えは概算の為替換算(' + CTRY_ORDER.filter(function (k) { return k !== 'JP'; }).map(function (k) { return '1' + CTRY[k].unit + '≈' + CTRY[k].fx + '億円'; }).join('、') + ')。' : '') +
       ' <a href="../people-db/index.html">顧客人事データベース</a>';
   }
@@ -490,7 +490,7 @@
       '<p class="src">出所: <a href="' + esc(f.src) + '" target="_blank" rel="noopener">' + esc(shortUrl(f.src)) + ' ↗</a>' +
       (f.src2 && f.src2 !== f.src ? '<br>敷地面積・従業員数: <a href="' + esc(f.src2) + '" target="_blank" rel="noopener">' + esc(f.src2Label || (cc(f) === 'KR' ? '事業報告書(DART)' : cc(f) === 'TW' ? '年報' : '有価証券報告書')) + ' ↗</a>' : '') +
       (f.srcLabel ? '<span class="muted">(' + esc(f.srcLabel) + ')</span>' : /\.pdf($|\?)/i.test(f.src) && !f.src2 && cc(f) === 'JP' ? '<span class="muted">(有価証券報告書「主要な設備の状況」)</span>' : '') +
-      (f.srcType === 'public' ? '<br><span class="muted">※ 出所は公的機関・業界団体のページです(会社の公式情報ではありません)</span>' : '') +
+      (f.srcType === 'public' && !f.srcLabel ? '<br><span class="muted">※ 出所は公的機関・業界団体のページです(会社の公式情報ではありません)</span>' : '') +
       (f.fix || []).map(function (x) {
         return '<br>確認・修正(' + esc(FIX_LABEL[x.field] || x.field) + '): ' + esc(x.reason) +
           (x.url ? ' <a href="' + esc(x.url) + '" target="_blank" rel="noopener">根拠 ↗</a>' : '') + (x.at ? '<span class="muted">(' + esc(x.at) + ')</span>' : '');
