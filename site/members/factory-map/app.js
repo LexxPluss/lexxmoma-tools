@@ -448,7 +448,7 @@
     if (m.listed) bits.push(esc(m.listed));
     if (m.emp) bits.push('連結従業員 ' + fmt(m.emp) + '人');
     var links = [];
-    links.push('<a href="' + peopleUrl(m) + '" data-people="' + esc(m.name) + '">👥 役員・人事</a>');
+    if (cc(m) === 'JP') links.push('<a href="' + peopleUrl(m) + '" data-people="' + esc(m.name) + '">👥 役員・人事</a>');  // 人事 DB は日本の会社だけ
     if (m.web) links.push('<a href="' + esc(m.web) + '" target="_blank" rel="noopener">公式サイト ↗</a>');
     links.push('<a href="' + newsUrl(m.name) + '" target="_blank" rel="noopener" data-news="' + esc(m.name) + '">最新ニュース ↗</a>');
     if (m.revUrl) links.push('<a href="' + esc(m.revUrl) + '" target="_blank" rel="noopener">売上高の出所 ↗</a>');
@@ -458,7 +458,7 @@
   // 顧客人事データベースへ: 工場マップの会社 ID を渡す(氏名は URL に載せない)
   function peopleUrl(c) { return '../people-db/index.html#fm=' + encodeURIComponent(c.id); }
   document.addEventListener('click', function (e) { var a = e.target.closest('[data-people]'); if (a) track('member/factory-map/people', a.dataset.people); });
-  function newsUrl(q) { return 'https://www.google.com/search?tbm=nws&hl=ja&q=' + encodeURIComponent(q); }
+  function newsUrl(q) { return 'https://www.google.com/search?tbm=nws&hl=ja&q=' + encodeURIComponent(q); }  // 韓国・台湾の会社名もそのまま検索する
   document.addEventListener('click', function (e) { var a = e.target.closest('[data-news]'); if (a) track('member/factory-map/news', a.dataset.news); });
 
   function openFactory(f) {
@@ -485,7 +485,7 @@
       '<a class="btn primary" href="' + newsUrl(q) + '" target="_blank" rel="noopener" data-news="' + esc(q) + '">📰 最新ニュースを検索</a>' +
       '<a class="btn" href="' + gmap + '" target="_blank" rel="noopener">🗺 Googleマップ</a>' +
       '<button class="btn" type="button" id="fGroup">🏭 ' + esc(c.name) + 'の拠点一覧</button>' +
-      '<a class="btn" href="' + peopleUrl(c) + '" data-people="' + esc(c.name) + '">👥 ' + esc(c.name) + 'の人事</a></div>' +
+      (cc(c) === 'JP' ? '<a class="btn" href="' + peopleUrl(c) + '" data-people="' + esc(c.name) + '">👥 ' + esc(c.name) + 'の人事</a>' : '') + '</div>' +
       '<dl class="kv">' + rows.join('') + '</dl>' +
       '<p class="src">出所: <a href="' + esc(f.src) + '" target="_blank" rel="noopener">' + esc(shortUrl(f.src)) + ' ↗</a>' +
       (f.src2 && f.src2 !== f.src ? '<br>敷地面積・従業員数: <a href="' + esc(f.src2) + '" target="_blank" rel="noopener">' + esc(f.src2Label || (cc(f) === 'KR' ? '事業報告書(DART)' : cc(f) === 'TW' ? '年報' : '有価証券報告書')) + ' ↗</a>' : '') +
