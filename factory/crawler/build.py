@@ -55,6 +55,12 @@ def main():
         if cc in a.skip.upper():
             continue
         cs, fs = load_cc(cc.lower())
+        have = {f["cid"] for f in fs} | {f.get("oid") for f in fs}
+        dropped = [c["name"] for c in cs if c["id"] not in have]
+        cs = [c for c in cs if c["id"] in have]                 # 日本と同じく、工場が 1 件以上ある会社だけを載せる
+        for c in cs:
+            for k in ("indLocal", "ksic", "dartKey", "masterSrc", "cap", "empSrc", "est"):
+                c.pop(k, None)
         errs = check(cs, fs)
         if errs:
             print(f"[{cc}] スキーマ検査で {len(errs)} 件:")
@@ -62,7 +68,7 @@ def main():
                 print("  ", e)
             raise SystemExit(1)
         companies += cs; factories += fs
-        stats[cc] = {"companies": len(cs), "factories": len(fs), "geocoded": sum(1 for f in fs if f.get("lat") is not None)}
+        stats[cc] = {"companies": len(cs), "factories": len(fs), "geocoded": sum(1 for f in fs if f.get("lat") is not None), "dropped_no_factory": len(dropped)}
     # ID 重複の最終確認(国をまたいでも一意)
     seen = set()
     for x in companies + factories:

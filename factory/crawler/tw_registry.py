@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from common import DATA, MANUAL, RAW, cached_fetch, jdump, jload, log_run, nfkc, squash, today
+from common import DATA, MANUAL, RAW, cached_fetch, company_id, jdump, jload, log_run, nfkc, squash, today
 from normalize import company
 
 TWSE = "https://openapi.twse.com.tw/v1/opendata/t187ap03_L"
@@ -74,13 +74,17 @@ def main():
         r["industry"] = ind
         cands.append(r)
     cands.sort(key=lambda r: -r["cap"])
-    picked, cnt = [], {}
-    for r in cands:
-        q = quota.get(r["industry"], 0)
-        if cnt.get(r["industry"], 0) >= q:
-            continue
+    from rounds import pick
+
+    def cid(r):
+        legal = squash(r["legal"])
+        name = re.sub(r"股份有限公司$", "", legal) if len(squash(r["name"])) <= 2 else squash(r["name"])
+        return company_id("TW", name)
+    picked, info = pick("tw", cands, quota, cid, lambda r: r["industry"])
+    cnt = {}
+    for r in picked:
         cnt[r["industry"]] = cnt.get(r["industry"], 0) + 1
-        picked.append(r)
+    print("回の入れ替え:", info)
     companies = []
     for r in picked:
         legal = squash(r["legal"])

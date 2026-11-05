@@ -12,7 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from bs4 import BeautifulSoup
-from common import DATA, MANUAL, RAW, fetch, jdump, jload, log_run, squash, today
+from common import DATA, MANUAL, RAW, company_id, fetch, jdump, jload, log_run, squash, today
 from normalize import company
 
 SEARCH = "https://dart.fss.or.kr/dsae001/search.ax"
@@ -43,9 +43,13 @@ def search(code):
         data = [("currentPage", page), ("maxResults", 100), ("maxLinks", 10), ("sort", ""), ("series", ""), ("gubun", ""), ("selectKey", ""), ("searchIndex", ""),
                 ("textCrpCik", ""), ("autoSearch", "true"), ("businessCode", code), ("bsnRgsNo", ""), ("corpTypeAll", ""), ("autoSearchCorp", "Y"), ("searchType", "1"),
                 ("textCrpNm", ""), ("crpRgsNo", ""), ("corpType", "P"), ("corpType", "A")]
-        body, _ = fetch(SEARCH, method="POST", data=data, respect_robots=True)
-        (RAW / "kr" / "dart_search").mkdir(parents=True, exist_ok=True)
-        (RAW / "kr" / "dart_search" / f"{code}_{page}.html").write_text(body, encoding="utf-8")
+        cp = RAW / "kr" / "dart_search" / f"{code}_{page}.html"
+        if cp.exists():
+            body = cp.read_text(encoding="utf-8")
+        else:
+            body, _ = fetch(SEARCH, method="POST", data=data, respect_robots=True)
+            cp.parent.mkdir(parents=True, exist_ok=True)
+            cp.write_text(body, encoding="utf-8")
         s = BeautifulSoup(body, "lxml")
         rows = 0
         for tr in s.select("#corpTable tbody tr"):
@@ -140,12 +144,12 @@ def main():
         rows.append(c)
     rows.sort(key=lambda c: c["prio"])
     jdump(rows, DATA / "kr" / "candidates.json", compact=True)
-    picked, cnt = [], {}
-    for c in rows:
-        if cnt.get(c["industry"], 0) >= quota.get(c["industry"], 0):
-            continue
+    from rounds import pick
+    picked, info = pick("kr", rows, quota, lambda c: company_id("KR", c["name"]), lambda c: c["industry"])
+    cnt = {}
+    for c in picked:
         cnt[c["industry"]] = cnt.get(c["industry"], 0) + 1
-        picked.append(c)
+    print("回の入れ替え:", info)
     print(f"候補 {len(rows)} 社 → 選定 {len(picked)} 社", cnt, flush=True)
     if a.no_overview:
         return

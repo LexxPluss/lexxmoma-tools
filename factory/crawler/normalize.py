@@ -41,6 +41,19 @@ KR_CITY = {"경기도": "수원 화성 평택 안산 안성 용인 이천 파주
            "전북특별자치도": "전주 익산 군산 완주 김제 정읍 남원 고창 부안 임실 순창 진안 무주 장수", "전라남도": "광양 여수 순천 나주 영암 목포 장성 화순 함평 무안 해남 담양 고흥 보성 장흥 강진 영광 곡성 구례 진도 완도 신안",
            "강원특별자치도": "원주 춘천 강릉 횡성 동해 삼척 속초 태백 홍천 평창 정선 철원 영월 양구 인제 고성 양양", "제주특별자치도": "제주 서귀포"}
 KR_CITY_IDX = {c: p for p, cs in KR_CITY.items() for c in cs.split()}
+# 英語住所(韓国): 広域の名前 → 시・도
+KR_EN = [("Seoul", "서울특별시"), ("Busan", "부산광역시"), ("Daegu", "대구광역시"), ("Incheon", "인천광역시"), ("Songdo", "인천광역시"), ("Gwangju-si", "경기도"),
+         ("Gwangju", "광주광역시"), ("Daejeon", "대전광역시"), ("Ulsan", "울산광역시"), ("Sejong", "세종특별자치시"),
+         ("Gyeonggi", "경기도"), ("Gangwon", "강원특별자치도"), ("Chungcheongbuk", "충청북도"), ("Chungbuk", "충청북도"), ("Chung-buk", "충청북도"),
+         ("Chungcheongnam", "충청남도"), ("Chungnam", "충청남도"), ("Chung-nam", "충청남도"), ("Jeollabuk", "전북특별자치도"), ("Jeonbuk", "전북특별자치도"),
+         ("Jeollanam", "전라남도"), ("Jeonnam", "전라남도"), ("Gyeongsangbuk", "경상북도"), ("Gyeongbuk", "경상북도"), ("Gyeongsangnam", "경상남도"),
+         ("Gyeongnam", "경상남도"), ("Jeju", "제주특별자치도"),
+         ("Suwon", "경기도"), ("Pyeongtaek", "경기도"), ("Hwaseong", "경기도"), ("Ansan", "경기도"), ("Siheung", "경기도"), ("Icheon", "경기도"), ("Yongin", "경기도"),
+         ("Paju", "경기도"), ("Gimpo", "경기도"), ("Osan", "경기도"), ("Anseong", "경기도"), ("Cheongju", "충청북도"), ("Chungju", "충청북도"), ("Eumseong", "충청북도"),
+         ("Jincheon", "충청북도"), ("Cheonan", "충청남도"), ("Asan", "충청남도"), ("Dangjin", "충청남도"), ("Seosan", "충청남도"), ("Gumi", "경상북도"),
+         ("Pohang", "경상북도"), ("Gyeongju", "경상북도"), ("Gyeongsan", "경상북도"), ("Yeongcheon", "경상북도"), ("Changwon", "경상남도"), ("Gimhae", "경상남도"),
+         ("Yangsan", "경상남도"), ("Geoje", "경상남도"), ("Jinju", "경상남도"), ("Yeosu", "전라남도"), ("Gwangyang", "전라남도"), ("Suncheon", "전라남도"),
+         ("Iksan", "전북특별자치도"), ("Gunsan", "전북특별자치도"), ("Jeonju", "전북특별자치도"), ("Wonju", "강원특별자치도")]
 
 
 def clean_addr(country, addr):
@@ -72,10 +85,22 @@ def split_admin(country, addr):
             if m:
                 pref = KR_SHORT[m.group(1)]; rest = a[m.end():].strip()
             else:
-                m = re.match(r"^(\S+?)(시|군)\b", a)
-                if m and m.group(1) in KR_CITY_IDX:
-                    pref = KR_CITY_IDX[m.group(1)]
                 rest = a
+                m = re.match(r"^(\S+?)(시|군)?(?=\s|$)", a)
+                tok = m.group(1) if m else ""
+                if tok in KR_CITY_IDX:                                   # 「평택시 …」「안성」
+                    pref = KR_CITY_IDX[tok]
+                elif tok in KR_SHORT:                                    # 「울산시 …」「부산」
+                    pref = KR_SHORT[tok]; rest = a[m.end():].strip()
+                elif re.search(r"[A-Za-z]{3}", a):                       # 英語住所
+                    for en, ko in KR_EN:
+                        if re.search(r"\b" + re.escape(en) + r"\b", a, re.I):
+                            pref = ko; break
+                    return pref, None
+                else:                                                    # 見慣れない広域名(改編など): 中の 시・군 名で判断
+                    for t in re.findall(r"(\S+?)(?:시|군)(?=\s|$)", a):
+                        if t in KR_CITY_IDX:
+                            pref = KR_CITY_IDX[t]; rest = a[a.find(t):]; break
         pref = KR_RENAME.get(pref, pref)
         m = re.match(r"^(\S+?(?:시|군|구))(?=\s|$)(?:\s+(\S+(?:구|군))(?=\s|$))?", rest)
         if m:
@@ -110,6 +135,23 @@ def split_admin(country, addr):
             city = m.group(1)
         return pref, city
     return None, None
+
+
+def locality_from_name(country, name):
+    """工場名に含まれる地名(「평택공장」「楊梅廠」)から、都道府県相当 + 市区町村相当の住所を作る。無ければ None。"""
+    n = nfkc(name)
+    if country == "KR":
+        for t in sorted(KR_CITY_IDX, key=len, reverse=True):
+            if t in n:
+                return KR_CITY_IDX[t] + " " + t + ("군" if t in ("음성", "진천", "괴산", "보은", "옥천", "영동", "단양", "칠곡", "성주", "고령", "청도", "예천", "봉화", "울진", "영덕", "군위", "의성", "함안", "창녕", "의령", "하동", "산청", "거창", "합천", "남해", "완주", "고창", "부안", "임실", "순창", "진안", "무주", "장수", "영암", "장성", "화순", "함평", "무안", "해남", "담양", "고흥", "보성", "장흥", "강진", "영광", "곡성", "구례", "진도", "완도", "신안", "횡성", "홍천", "평창", "정선", "철원", "영월", "양구", "인제", "양양", "연천", "가평", "양평", "예산", "홍성", "태안", "금산", "부여", "서천", "청양", "증평") else "시")
+        for t, p in KR_SHORT.items():
+            if t in n:
+                return p
+    if country == "TW":
+        for t in sorted(TW_TOWN_IDX, key=len, reverse=True):
+            if len(t) >= 2 and t in n:
+                return TW_TOWN_IDX[t] + t
+    return None
 
 
 # ---------------------------------------------------------------- 業種

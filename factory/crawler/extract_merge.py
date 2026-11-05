@@ -18,7 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from common import DATA, RAW, jdump, jload, log_run, squash, to_int
 from geocode import geocode_all
-from normalize import check, factory, split_admin
+from normalize import check, factory, locality_from_name, split_admin
 
 
 def allowed_urls(cc, cid):
@@ -79,8 +79,12 @@ def main():
             src = f.get("src")
             if norm_url(src) not in urls:
                 issues.append({"company": c["name"], "factory": f.get("name"), "why": f"出所 URL が取得済みページに無い: {src}"}); stats["rejected"] += 1; continue
+            from_name = False
             if not f.get("addr"):
-                issues.append({"company": c["name"], "factory": f.get("name"), "why": "住所なし"}); stats["rejected"] += 1; continue
+                loc = locality_from_name(CC, f.get("name") or "")
+                if not loc:
+                    issues.append({"company": c["name"], "factory": f.get("name"), "why": "住所なし"}); stats["rejected"] += 1; continue
+                f["addr"] = loc; from_name = True
             pref, city = split_admin(CC, f["addr"])
             if not pref:
                 issues.append({"company": c["name"], "factory": f.get("name"), "why": f"国内の住所と読めない: {f['addr']}"}); stats["rejected"] += 1; continue
@@ -90,6 +94,8 @@ def main():
             seen.add(key)
             st = f.get("srcType") or ("public" if "wikipedia.org" in (src or "") else "official")
             label = f.get("srcLabel") or ("ウィキペディア(公的情報ではありません)" if st == "public" else None)
+            if from_name:
+                label = ((label + "・") if label else "") + "所在地は工場名の地名から(市区町村の代表点)"
             facs.append(factory(CC, c["id"], f.get("op") or c["name"], f.get("name") or (c["name"] + " 工場" if CC == "TW" else c["name"] + " 공장"), f["addr"],
                                 prod=f.get("prod"), src=src, srcType=st, seg=f.get("seg"), area=f.get("area"), floor=f.get("floor"), emp=f.get("emp"),
                                 empAsof=f.get("empAsof"), est=f.get("est"), src2=f.get("src2"), srcLabel=label, nameEn=f.get("nameEn"), opEn=f.get("opEn")))
