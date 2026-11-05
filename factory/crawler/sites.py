@@ -126,6 +126,19 @@ def crawl(cc, co, manual_urls):
             jdump(idx, idx_p); return idx
         except Exception as e:
             idx["note"] = f"top fetch failed: {str(e)[:120]}"
+            if "403" not in str(e) and "robots" not in str(e).lower():     # 証明書や TLS の問題は Chromium で開き直す(403 はそのまま諦める)
+                try:
+                    html = render(base, cc); title, txt, soup = text_of(html); idx["rendered"] = True; idx["note"] = None
+                    out_dir.mkdir(parents=True, exist_ok=True)
+                    (out_dir / "0.txt").write_text(txt, encoding="utf-8")
+                    idx["pages"].append({"n": 0, "url": base, "title": title, "chars": len(txt), "addrs": len(addr.findall(txt)), "why": "top(rendered)"})
+                    seen.add(base)
+                    for u, label in links_of(soup, base):
+                        if u not in seen and same_site(u, base) and keys.search(label + " " + urllib.parse.unquote(u)):
+                            queue.append((u, label, 2 if re.search(r"사업장|공장|생산|廠|據點|基地|生產|plant|factory|location", label + u, re.I) else 1))
+                    queue.sort(key=lambda x: -x[2])
+                except Exception as e2:
+                    idx["note"] = f"top fetch failed: {str(e)[:80]} / render: {str(e2)[:60]}"
     n = 1
     for u, label, score in queue[:MAX_PAGES * 2]:
         if n > MAX_PAGES:
