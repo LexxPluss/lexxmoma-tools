@@ -665,7 +665,7 @@
        一度開いたら、隣へマウスを動かすだけで切り替わる。Esc で閉じる -->
   <div id="titleCol">
     <h1 class="lx-tool">LexxMoMa 動作シミュレーター</h1>
-    <div id="revDisp">rev.121</div>
+    <div id="revDisp">rev.122</div>
     <nav id="menubar" role="menubar">
       <div class="hdr-menu">
         <button class="mb" id="btnFile" aria-haspopup="menu" aria-expanded="false">ファイル</button>
@@ -2554,10 +2554,17 @@ function draw() {
   const locLabels = []; // 名前はロボットを描いた後に、重ならないよう並べて書く（drawLocLabels）
   for (const L of bodyLocations()) {
     const hot = hoverP && hoverP.body && sameBody(hoverP.body, L.body);
-    drawBodyShape(L.body, hot ? "rgba(230,126,34,0.16)" : "rgba(36,113,163,0.10)", hot ? "rgba(230,126,34,0.9)" : "rgba(36,113,163,0.45)", true);
+    // 自動で作るとき（rev.122〜）: 自動の姿勢だけの枠は薄く、名前の代わりに、その場所で回る回の番号（「回 2, 4」）を出す
+    const quiet = uiMode === "auto" && L.points.every(q => q.auto);
+    drawBodyShape(L.body, hot ? "rgba(230,126,34,0.16)" : quiet ? "rgba(36,113,163,0.05)" : "rgba(36,113,163,0.10)", hot ? "rgba(230,126,34,0.9)" : quiet ? "rgba(36,113,163,0.3)" : "rgba(36,113,163,0.45)", true);
     const [sx, sy] = w2s(L.body.x, L.body.y);
     const sel = (!!selPointName && L.points.some(q => q.name === selPointName)) || (inspKind === "loc" && sameBody(L.body, selLoc));
-    locLabels.push({ sx, sy, names: L.points.map(q => q.name), pri: hot ? 2 : sel ? 1 : 0 });
+    let names = L.points.map(q => q.name);
+    if (uiMode === "auto") {
+      const nums = [...new Set(L.points.filter(q => q.auto && q.rv).flatMap(q => q.rv.map(v => v + 1)))].sort((a, b) => a - b);
+      names = (L.points.some(q => q.auto && q.name === "開始") ? ["開始"] : []).concat(nums.length ? ["回 " + nums.join(", ")] : [], L.points.filter(q => !q.auto).map(q => q.name));
+    }
+    if (names.length) locLabels.push({ sx, sy, names, pri: hot ? 2 : sel ? 1 : 0 });
   }
 
   // 車体の走行の予定パス（前進=青、後進=オレンジ）
