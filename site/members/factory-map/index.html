@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=9">
+<link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
 
@@ -41,6 +41,7 @@
       </div>
       <span class="p-btns">
         <button type="button" class="lx-theme-btn" data-lx-theme-toggle aria-label="ライト / ダーク切替"></button>
+        <button class="icon-btn xl-btn" id="xlsx" type="button" title="都道府県を選んで Excel に書き出す">Excel</button>
         <button class="icon-btn" id="lock" type="button" title="ロックする(社内ツールすべてのパスワードを忘れさせる)">🔒</button>
       </span>
     </header>
@@ -74,10 +75,29 @@
   </aside>
 </div>
 
+<!-- Excel 書き出し(都道府県を選ぶ) -->
+<dialog class="xl" id="xlDlg" aria-labelledby="xlTitle">
+  <form method="dialog" class="xl-card">
+    <h2 id="xlTitle">Excel に書き出す</h2>
+    <p class="xl-note">書き出す都道府県を選んでください。地方名を押すとその地方をまとめて選べます。</p>
+    <div class="xl-presets" id="xlPresets"></div>
+    <div class="xl-prefs" id="xlPrefs"></div>
+    <label class="xl-opt"><input type="checkbox" id="xlFilt" checked> 業種・グループ・検索の絞り込みも反映する</label>
+    <p class="xl-count" id="xlCount" role="status"></p>
+    <p class="xl-warn">社外秘のデータです。社外に送ったり共有フォルダに置いたりしないでください。</p>
+    <div class="xl-btns">
+      <button type="button" class="link-btn" id="xlClear">選択を解除</button>
+      <span></span>
+      <button value="cancel" class="xl-cancel">閉じる</button>
+      <button type="button" class="xl-go" id="xlGo">ダウンロード</button>
+    </div>
+  </form>
+</dialog>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="../../assets/track.js" data-tool="factory-map"></script>
-<script src="data.enc.js?v=6"></script>
+<script src="data.enc.js?v=7"></script>
 <script src="../members-auth.js?v=3"></script>
-<script src="app.js?v=11"></script>
+<script src="app.js?v=13"></script>
 </body>
 </html>

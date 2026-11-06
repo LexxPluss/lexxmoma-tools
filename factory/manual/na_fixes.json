@@ -1,0 +1,31 @@
+[
+ {
+  "match": {
+   "op": "TD Automotive Compressor Georgia, LLC"
+  },
+  "field": "jv",
+  "value": null,
+  "reason": "合弁相手(豊田自動織機)は社名からの推定で、出所に記載が無い",
+  "checkedAt": "2026-11-06"
+ },
+ {
+  "match": {
+   "op": "Fukai Toyotetsu Indiana Corp."
+  },
+  "field": "jv",
+  "value": null,
+  "reason": "合弁相手(深井製作所)は社名からの推定で、出所に記載が無い",
+  "checkedAt": "2026-11-06"
+ },
+ {
+  "match": {
+   "op": "Akebono Brake Corporation",
+   "city": "Elizabethtown"
+  },
+  "field": "_exclude",
+  "value": true,
+  "reason": "閉鎖手続き中(2025年12月から人員削減、2026年末までに終了)",
+  "url": "https://www.wdrb.com/news/business/akebono-brake-plant-in-elizabethtown-to-close-leaving-450-people-without-jobs/article_228e6e33-e8e4-4ab2-ae3c-0e4d633a92bf.html",
+  "checkedAt": "2026-11-06"
+ }
+]
