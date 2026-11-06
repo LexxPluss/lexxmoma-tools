@@ -242,6 +242,13 @@
   .pose-item button.small { flex: 0 0 auto; width: 22px; padding: 1px 0; text-align: center; } /* →と×を同サイズに */
   /* ---- 登録した位置（ポイント）の一覧: 1 行 1 件、同じ場所のポイントは場所の見出しの下にまとめる ---- */
   #leftTabs { margin-top: -2px; }
+  /* 使い方の切り替え（rev.121〜）: 使わない方のタブ・ボタンを隠す */
+  #modeSeg { display: flex; margin: 0 0 2px; }
+  #modeSeg button { flex: 1; padding: 5px 6px; font-weight: 600; }
+  body.mode-auto #leftTabs .tab[data-ltab="pts"], body.mode-auto #leftTabs .tab[data-ltab="arm"], body.mode-auto #regBox,
+  body.mode-auto #btnAddMove, body.mode-auto #btnAddOther { display: none; }
+  body.mode-manual #leftTabs .tab[data-ltab="route"], body.mode-manual #btnAuto, body.mode-manual #autoStale { display: none; }
+  body.mode-auto #leftTabs .tab[data-ltab="route"] { order: -1; } /* 自動のときは回る順番を先に */
   #colLeft .rtab + .rtab, #leftTabs + .rtab { margin-top: -8px; } /* タブとパネルをつなげる（.col の gap を打ち消す） */
   #paneRegister { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
   #regBox .regrow { display: flex; gap: 4px; }
@@ -658,7 +665,7 @@
        一度開いたら、隣へマウスを動かすだけで切り替わる。Esc で閉じる -->
   <div id="titleCol">
     <h1 class="lx-tool">LexxMoMa 動作シミュレーター</h1>
-    <div id="revDisp">rev.120</div>
+    <div id="revDisp">rev.121</div>
     <nav id="menubar" role="menubar">
       <div class="hdr-menu">
         <button class="mb" id="btnFile" aria-haspopup="menu" aria-expanded="false">ファイル</button>
@@ -757,6 +764,11 @@
   <!-- ============ 左：パラメータ・登録 ============ -->
   <div class="col" id="colLeft">
   <div id="leftMain">
+    <!-- 使い方の切り替え（rev.121〜）: 自動で作る（回る順番から自動作成）／手で組む（姿勢を登録して段を組む） -->
+    <div id="modeSeg" class="seg" role="tablist" aria-label="使い方">
+      <button data-mode="auto" title="手先の目標を置いて回る順番を決め、シーケンスを自動で作ります">自動で作る</button>
+      <button data-mode="manual" title="姿勢を登録して、タイムラインに段を手で組みます">手で組む</button>
+    </div>
     <!-- 登録の欄は、どちらのタブを開いていても使えるよう上に固定する（アームを動かしてすぐ登録できる） -->
     <fieldset id="regBox">
       <legend>姿勢の登録</legend>
@@ -6040,6 +6052,20 @@ document.querySelectorAll("#leftTabs .tab").forEach(b => b.addEventListener("cli
   showLeftTab(b.dataset.ltab);
   if (b.dataset.ltab === "obj") showRightTab("obj"); // レイアウトの一覧を開いたら、右は選んだ物の設定
 }));
+/* 使い方の切り替え（rev.121〜）。どちらにしたかはブラウザに覚えさせる（保存ファイルには入れない） */
+let uiMode = null;
+function setUiMode(m) {
+  uiMode = m === "manual" ? "manual" : "auto";
+  document.body.classList.toggle("mode-auto", uiMode === "auto");
+  document.body.classList.toggle("mode-manual", uiMode === "manual");
+  document.querySelectorAll("#modeSeg button").forEach(b => b.classList.toggle("on", b.dataset.mode === uiMode));
+  try { localStorage.setItem("lexxsim.uiMode", uiMode); } catch (e) { /* 保存できなくても動く */ }
+  // 今のタブが隠れたら、その使い方の最初のタブへ
+  const cur = document.querySelector("#leftTabs .tab.on");
+  if (!cur || getComputedStyle(cur).display === "none") showLeftTab(uiMode === "auto" ? "route" : "pts");
+  requestAnimationFrame(resizeCanvas);
+}
+document.querySelectorAll("#modeSeg button").forEach(b => b.addEventListener("click", () => setUiMode(b.dataset.mode)));
 /* 右ペイン（選んだ物の設定）に何を出すか: "seq" 段・開始 ／ "obj" レイアウトの物 ／ "pt" 登録した位置の編集 */
 let inspKind = "seq";
 function showRightTab(t) {
@@ -6373,6 +6399,11 @@ function syncObjPropValues(o) {
 }
 
 /* ---------------- 起動 ---------------- */
+{
+  let m = null;
+  try { m = localStorage.getItem("lexxsim.uiMode"); } catch (e) { /* 覚えていない */ }
+  setUiMode(m || (state.route.length || state.objects.some(o => o.type === "target") ? "auto" : "manual"));
+}
 renderSimParams();
 renderPoseLists();
 renderProgram();
