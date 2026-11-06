@@ -81,7 +81,7 @@
   st.textContent = CSS;
   (document.head || root).appendChild(st);
 
-  // アプリとして追加(PWA)・再訪問の案内: サイト直下の manifest.webmanifest を付け、assets/keep.js を読む
+  // アプリとして追加(PWA): サイト直下の manifest.webmanifest を付ける
   // (theme.js を読む全ページが対象。theme.js の URL からサイトのルートを求めるので階層は問わない)
   var me = document.currentScript;
   if (me && me.src && location.protocol !== "file:") {
@@ -92,7 +92,6 @@
     };
     addLink("manifest", assets + "../manifest.webmanifest");
     addLink("apple-touch-icon", assets + "apple-touch-icon.png");
-    var ks = document.createElement("script"); ks.src = assets + "keep.js"; ks.defer = true; head.appendChild(ks);
   }
 
   document.addEventListener("click", function (e) {
