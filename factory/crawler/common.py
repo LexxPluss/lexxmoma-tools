@@ -42,6 +42,8 @@ COUNTRIES = [
     {"code": "JP", "name": "日本", "flag": "🇯🇵", "unit": "億円", "fx": 1},
     {"code": "KR", "name": "韓国", "flag": "🇰🇷", "unit": "億ウォン", "fx": 0.11, "fxNote": "1 KRW ≈ 0.11 JPY"},
     {"code": "TW", "name": "台湾", "flag": "🇹🇼", "unit": "億台湾ドル", "fx": 4.8, "fxNote": "1 TWD ≈ 4.8 JPY"},
+    {"code": "US", "name": "米国", "flag": "🇺🇸", "unit": "億ドル", "fx": 150, "fxNote": "1 USD ≈ 150 JPY"},
+    {"code": "CA", "name": "カナダ", "flag": "🇨🇦", "unit": "億カナダドル", "fx": 108, "fxNote": "1 CAD ≈ 108 JPY"},
 ]
 
 _last_hit = {}
