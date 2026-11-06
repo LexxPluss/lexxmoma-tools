@@ -176,6 +176,7 @@
     $('#back').addEventListener('click', function () { state.focus = null; closeDetail(); render(); });
     $('#lock').addEventListener('click', function () { forgetKey(); window.lxMembers.forget(); window.lxMembers.toEntry(); });
     $('#locate').addEventListener('click', locate);
+    initXlsx();
     $('#legend').innerHTML = '<b>業種</b>' + D.industries.filter(function (i) { return cnt[i]; }).map(function (i) {
       return '<span><i style="background:' + indColor(i) + '"></i>' + esc(i) + '</span>'; }).join('') + '<small>円の大きさ = 従業員数</small>';
     $('#foot').innerHTML = '会社 ' + D.companies.length + '社・工場 ' + D.factories.length + '件(' + esc(D.builtAt) + ' 時点)。出所は各社の公式サイト・有価証券報告書。' +
@@ -476,6 +477,138 @@
       track('member/factory-map/near', '現在地の近く');
     }, function () { $('#locate').textContent = '◎ 現在地の近く'; alert('現在地を取得できませんでした(位置情報の許可を確認してください)'); },
     { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 });
+  }
+
+  // ---------------------------------------------------------------- Excel 書き出し
+  // 都道府県を選んで、工場の一覧(+ 該当する会社・書き出し条件)を .xlsx にする。SheetJS は押したときだけ読み込む
+  var XLSX_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+  var XL_PRESETS = [['北陸3県＋滋賀', ['富山県', '石川県', '福井県', '滋賀県']], ['北陸3県', ['富山県', '石川県', '福井県']]];
+  var xlPick = {}, xlLib = null;
+  function prefOrder() { var o = {}, i = 0; REGIONS.forEach(function (r) { r[1].forEach(function (p) { o[p] = i++; }); }); return o; }
+  function loadXlsx() {
+    if (window.XLSX) return Promise.resolve(window.XLSX);
+    if (xlLib) return xlLib;
+    xlLib = new Promise(function (ok, ng) {
+      var s = document.createElement('script'); s.src = XLSX_SRC; s.crossOrigin = 'anonymous';
+      s.onload = function () { window.XLSX ? ok(window.XLSX) : ng(new Error('xlsx')); };
+      s.onerror = function () { xlLib = null; ng(new Error('xlsx')); };
+      document.head.appendChild(s);
+    });
+    return xlLib;
+  }
+  function xlRows() {
+    var useFilt = $('#xlFilt').checked;
+    return D.factories.filter(function (f) {
+      if (!xlPick[f.pref]) return false;
+      var c = coOf(f); if (!c) return false;
+      return !useFilt || (coPass(c) && matchText(c, f));
+    });
+  }
+  function xlCount() {
+    var n = Object.keys(xlPick).length, rows = n ? xlRows() : [], cos = {};
+    rows.forEach(function (f) { cos[coOf(f).id] = 1; });
+    $('#xlCount').textContent = n ? n + ' 都道府県・会社 ' + Object.keys(cos).length + '社・工場 ' + rows.length + '件' : '都道府県が選ばれていません';
+    $('#xlGo').disabled = !rows.length;
+    document.querySelectorAll('#xlPrefs input[data-pref]').forEach(function (b) { b.checked = !!xlPick[b.dataset.pref]; });
+  }
+  function openXlsx() {
+    var cnt = {};
+    D.factories.forEach(function (f) { if (f.pref) cnt[f.pref] = (cnt[f.pref] || 0) + 1; });
+    xlPick = {};
+    var r0 = REGIONS.filter(function (x) { return x[0] === state.region; })[0];
+    if (r0) r0[1].forEach(function (p) { xlPick[p] = 1; });
+    $('#xlPresets').innerHTML = XL_PRESETS.map(function (p, i) { return '<button type="button" class="chip" data-preset="' + i + '">' + esc(p[0]) + '</button>'; }).join('');
+    $('#xlPrefs').innerHTML = REGIONS.map(function (r) {
+      return '<fieldset><legend><button type="button" class="link-btn" data-region="' + esc(r[0]) + '">' + esc(r[0]) + '</button></legend>' +
+        r[1].map(function (p) {
+          return '<label' + (cnt[p] ? '' : ' class="none"') + '><input type="checkbox" data-pref="' + esc(p) + '">' + esc(p.replace(/[都府県]$/, '')) + '<small>' + (cnt[p] || 0) + '</small></label>';
+        }).join('') + '</fieldset>';
+    }).join('');
+    xlCount();
+    $('#xlDlg').showModal();
+    loadXlsx().catch(function () { /* ダウンロード時にもう一度試す */ });
+  }
+  function xlFileName(prefs) {
+    var d = new Date(), ymd = d.getFullYear() + ('0' + (d.getMonth() + 1)).slice(-2) + ('0' + d.getDate()).slice(-2);
+    var label = prefs.length <= 4 ? prefs.join('・') : prefs.length + '都道府県';
+    return '工場マップ_' + label + '_' + ymd + '.xlsx';
+  }
+  function downloadXlsx() {
+    var btn = $('#xlGo'), rows = xlRows(), ord = prefOrder();
+    var prefs = Object.keys(xlPick).sort(function (a, b) { return (ord[a] || 0) - (ord[b] || 0); });
+    btn.disabled = true; btn.textContent = '作成中…';
+    loadXlsx().then(function (X) {
+      rows.sort(function (a, b) {
+        return (ord[a.pref] || 0) - (ord[b.pref] || 0) || (a.city || '').localeCompare(b.city || '', 'ja') ||
+          (a.op || '').localeCompare(b.op || '', 'ja') || (a.name || '').localeCompare(b.name || '', 'ja');
+      });
+      var PREC = { prefecture: '県の中心(所在地不明)', city: '市区町村の代表点', town: '町域の代表点' };
+      var fHead = ['都道府県', '市区町村', '工場名', '運営会社', '会社名(地図上の分類)', 'グループ', '業種', '所在地', '生産品目', 'セグメント',
+        '敷地面積(m²)', '延床面積(m²)', '従業員数(人)', '従業員数の時点', '操業開始(年)', '緯度', '経度', '位置の精度', '出所', '出所2(有価証券報告書)'];
+      var fData = rows.map(function (f) {
+        var c = coOf(f);
+        return [f.pref || '', f.city || '', f.name || '', f.op || '', c.name, c.group || '', c.industry || '', f.addr || ((f.pref || '') + (f.city || '')),
+          f.prod || '', f.seg || '', f.area || null, f.floor || null, f.emp || null, f.empAsof || '', f.est || null,
+          f.lat == null ? null : f.lat, f.lng == null ? null : f.lng, f.lat == null ? '地図に無し' : (PREC[f.prec] || '番地'),
+          f.src || '', f.src2 && f.src2 !== f.src ? f.src2 : ''];
+      });
+      var byCo = {};
+      rows.forEach(function (f) { var c = coOf(f); (byCo[c.id] = byCo[c.id] || { c: c, n: 0, emp: 0, prefs: {} }); byCo[c.id].n++; byCo[c.id].emp += f.emp || 0; byCo[c.id].prefs[f.pref] = 1; });
+      var cHead = ['会社名', '正式名称', 'グループ', '親会社', '業種', '売上高(億円)', '対象地域の工場数', '対象地域の従業員数計(人)', '対象地域の都道府県'];
+      var cData = Object.keys(byCo).map(function (k) { return byCo[k]; })
+        .sort(function (a, b) { return b.n - a.n || (b.c.rev || 0) - (a.c.rev || 0); })
+        .map(function (x) {
+          var c = x.c;
+          return [c.name, c.legal || '', c.group || '', c.parent || '', c.industry || '', c.rev || null, x.n, x.emp || null,
+            Object.keys(x.prefs).sort(function (a, b) { return (ord[a] || 0) - (ord[b] || 0); }).join('・')];
+        });
+      var filt = [];
+      if ($('#xlFilt').checked) {
+        if (Object.keys(state.inds).length) filt.push('業種: ' + Object.keys(state.inds).join('・'));
+        if (state.grp) filt.push('グループ: ' + state.grp);
+        if (state.q) filt.push('検索: ' + state.q);
+      }
+      var info = [['工場マップ 書き出し(LexxPluss 社外秘)'], [], ['都道府県', prefs.join('・')], ['ほかの絞り込み', filt.join(' / ') || 'なし'],
+        ['件数', '会社 ' + cData.length + '社・工場 ' + rows.length + '件'], ['データの時点', D.builtAt || ''], ['書き出した日時', new Date().toLocaleString('ja-JP')], [],
+        ['注意', '出所は各社の公式サイト・有価証券報告書など。数値は掲載時点の公表値で、最新ではない場合があります。'],
+        ['', '「位置の精度」が「県の中心」「市区町村の代表点」の工場は、番地までは分かっていません。'],
+        ['', '社外に送ったり共有フォルダに置いたりしないでください。']];
+      function sheet(head, data, widths) {
+        var ws = X.utils.aoa_to_sheet([head].concat(data));
+        ws['!cols'] = widths.map(function (w) { return { wch: w }; });
+        if (data.length) ws['!autofilter'] = { ref: X.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: data.length, c: head.length - 1 } }) };
+        return ws;
+      }
+      var wb = X.utils.book_new();
+      X.utils.book_append_sheet(wb, sheet(fHead, fData, [8, 12, 26, 24, 22, 16, 12, 36, 30, 16, 12, 12, 11, 14, 10, 10, 11, 16, 40, 40]), '工場');
+      X.utils.book_append_sheet(wb, sheet(cHead, cData, [24, 28, 16, 20, 12, 12, 12, 14, 30]), '会社');
+      var wi = X.utils.aoa_to_sheet(info); wi['!cols'] = [{ wch: 16 }, { wch: 80 }];
+      X.utils.book_append_sheet(wb, wi, '条件');
+      X.writeFile(wb, xlFileName(prefs), { compression: true });
+      track('member/factory-map/xlsx', prefs.join('・') + '(' + rows.length + '件)');
+    }).catch(function () {
+      alert('Excel を作る部品を読み込めませんでした。ネットワークを確認して、もう一度押してください。');
+    }).then(function () { btn.textContent = 'ダウンロード'; xlCount(); });
+  }
+  function initXlsx() {
+    $('#xlsx').addEventListener('click', openXlsx);
+    $('#xlPrefs').addEventListener('change', function (e) {
+      var p = e.target.dataset && e.target.dataset.pref; if (!p) return;
+      e.target.checked ? (xlPick[p] = 1) : delete xlPick[p]; xlCount();
+    });
+    $('#xlPrefs').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-region]'); if (!b) return;
+      var r = REGIONS.filter(function (x) { return x[0] === b.dataset.region; })[0];
+      var all = r[1].every(function (p) { return xlPick[p]; });
+      r[1].forEach(function (p) { all ? delete xlPick[p] : (xlPick[p] = 1); }); xlCount();
+    });
+    $('#xlPresets').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-preset]'); if (!b) return;
+      xlPick = {}; XL_PRESETS[+b.dataset.preset][1].forEach(function (p) { xlPick[p] = 1; }); xlCount();
+    });
+    $('#xlFilt').addEventListener('change', xlCount);
+    $('#xlClear').addEventListener('click', function () { xlPick = {}; xlCount(); });
+    $('#xlGo').addEventListener('click', downloadXlsx);
   }
 
   // 検証用

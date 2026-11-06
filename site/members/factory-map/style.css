@@ -138,6 +138,30 @@ body.resizing{cursor:ew-resize;user-select:none}
 .leaflet-tooltip{font-family:inherit;font-size:12px}
 
 /* スマホ: 下からのシート */
+/* Excel 書き出し */
+.xl-btn{width:auto;padding:0 9px;font-size:12px;font-weight:700;color:var(--accent)}
+.xl{border:0;padding:0;background:transparent;color:var(--text);max-width:calc(100vw - 32px);width:560px}
+.xl::backdrop{background:rgba(10,20,30,.45)}
+.xl-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:18px 18px 14px;display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 48px);overflow:auto}
+.xl-card h2{margin:0;font-size:17px}
+.xl-note,.xl-warn{margin:0;font-size:12px;color:var(--muted)}
+.xl-warn{color:var(--warn)}
+.xl-presets{display:flex;flex-wrap:wrap;gap:6px}
+.xl-prefs{display:flex;flex-direction:column;gap:6px}
+.xl-prefs fieldset{border:1px solid var(--line);border-radius:9px;margin:0;padding:4px 10px 8px;display:flex;flex-wrap:wrap;gap:4px 12px}
+.xl-prefs legend{padding:0 4px}
+.xl-prefs legend .link-btn{font-size:12px;padding:0}
+.xl-prefs label{display:inline-flex;align-items:center;gap:4px;font-size:13px;cursor:pointer}
+.xl-prefs label small{color:var(--faint);font-size:11px}
+.xl-prefs label.none{color:var(--faint)}
+.xl-opt{font-size:13px;display:flex;align-items:center;gap:6px}
+.xl-count{margin:0;font-weight:700;font-size:14px}
+.xl-btns{display:flex;align-items:center;gap:8px}
+.xl-btns span{flex:1}
+.xl-cancel,.xl-go{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:7px 14px;cursor:pointer;font-weight:600;font-size:13px}
+.xl-go{background:var(--brand);border-color:var(--brand);color:#fff}
+.xl-go:disabled{opacity:.45;cursor:default}
+
 @media (max-width:760px){
   .p-resize{display:none}
   .panel{top:auto;left:0;right:0;bottom:0;width:auto;max-width:none;height:66vh;border-radius:16px 16px 0 0}
