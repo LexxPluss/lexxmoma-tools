@@ -645,7 +645,7 @@
        一度開いたら、隣へマウスを動かすだけで切り替わる。Esc で閉じる -->
   <div id="titleCol">
     <h1 class="lx-tool">LexxMoMa 動作シミュレーター</h1>
-    <div id="revDisp">rev.116</div>
+    <div id="revDisp">rev.117</div>
     <nav id="menubar" role="menubar">
       <div class="hdr-menu">
         <button class="mb" id="btnFile" aria-haspopup="menu" aria-expanded="false">ファイル</button>
@@ -2539,15 +2539,18 @@ function drawObjects() {
   }
   // 手先の目標: ⊕ と、回る順番・名前・高さ
   const tgNums = targetNums();
-  const fixedOf = objs.filter(o => o.type === "target").concat(routeEntries().filter(e => e.cons && e.o.visible !== false).map(visitTarget));
-  for (const o of fixedOf) { // 車体の位置を固定した手先（この回だけの拘束も）: その車体の形と、目標への線
-    const c = consOf(o);
-    if (c.pos !== "fixed" || !isFinite(c.bx) || !isFinite(c.by)) continue;
-    const th = c.ori === "fixed" ? (c.bth || 0) : faceTh(o, c.bx, c.by);
-    drawBodyShape({ x: c.bx, y: c.by, th }, "rgba(192,57,43,0.06)", "rgba(192,57,43,0.8)", true);
-    const [ax, ay] = w2s(c.bx, c.by), [bx, by] = w2s(o.x, o.y);
+  for (const g of fixedGhosts()) { // 車体の位置を固定した手先（この回だけの拘束も）: その車体の形と、目標への線、向きを変える丸
+    const hot = ghostDrag && ghostDrag.key === g.key;
+    drawBodyShape({ x: g.c.bx, y: g.c.by, th: g.th }, hot ? "rgba(192,57,43,0.16)" : "rgba(192,57,43,0.06)", "rgba(192,57,43,0.8)", true);
+    const [ax, ay] = w2s(g.c.bx, g.c.by), [bx, by] = w2s(g.t.x, g.t.y), [hx, hy] = w2s(...ghostHandle(g));
     ctx.strokeStyle = "rgba(192,57,43,0.6)"; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
     ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke(); ctx.setLineDash([]);
+    if (selectOn && !bgMode) { // 選択ツールのときだけ、向きを変える丸を出す
+      ctx.strokeStyle = "rgba(192,57,43,0.8)"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(hx, hy); ctx.stroke();
+      ctx.fillStyle = "#ffffff"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(hx, hy, 6, 0, TAU); ctx.fill(); ctx.stroke();
+    }
   }
   for (const o of objs) {
     if (o.type !== "target") continue;
@@ -5019,6 +5022,61 @@ function hitTestObject(wx, wy) {
 
 /* 選択／移動モード: ドラッグで箱・直線・文字を動かす */
 let bgDrag = null; // {obj, startW:[x,y], orig, snap, moved}
+/* 2D に描く「車体の位置を固定した手先」（rev.117〜 ドラッグで動かせる）。手先の目標の拘束と、回る順番の「この回だけ」の拘束。
+ * 戻り値 [{ key, t（拘束を付けた手先の目標）, visit（この回だけなら回る順番の番号）, c（拘束）, th（描く向き）}] */
+function fixedGhosts() {
+  const out = [];
+  for (const o of state.objects) if (o.type === "target" && o.visible !== false) out.push({ key: "t:" + o.id, t: o });
+  state.route.forEach((e, i) => {
+    if (!(e && e.t && e.cons)) return;
+    const o = state.objects.find(x => x.id === e.t);
+    if (o && o.visible !== false) out.push({ key: "v:" + i, t: Object.assign({}, o, { cons: e.cons }), visit: i });
+  });
+  return out.map(g => {
+    const c = consOf(g.t);
+    if (c.pos !== "fixed" || !isFinite(c.bx) || !isFinite(c.by)) return null;
+    return Object.assign(g, { c, th: c.ori === "fixed" ? (c.bth || 0) : faceTh(g.t, c.bx, c.by) });
+  }).filter(Boolean);
+}
+const GHOST_HANDLE = 550; // 向きを変える丸の、車体の中心から前への距離 [mm]
+function ghostHandle(g) { return [g.c.bx + GHOST_HANDLE * Math.cos(g.th), g.c.by + GHOST_HANDLE * Math.sin(g.th)]; }
+/* 固定した車体の拘束を変える（手先の目標の拘束か、この回だけの拘束） */
+function setGhostCons(g, patch) {
+  if (g.visit !== undefined) state.route[g.visit] = { t: g.t.id, cons: Object.assign(consOf(g.t), patch) };
+  else { const o = state.objects.find(x => x.id === g.t.id); if (o) o.cons = Object.assign(consOf(o), patch); }
+}
+let ghostDrag = null; // { key, g, mode: "move"|"rot", start, orig, snap, moved }
+cv.addEventListener("mousedown", (e) => {
+  if (bgMode !== null || !selectOn || e.button !== 0 || viewMode !== "2d") return;
+  const [px, py] = cvPixel(e), [wx, wy] = s2w(px, py), gs = fixedGhosts();
+  let grab = null;
+  for (const g of gs) { const [hx, hy] = w2s(...ghostHandle(g)); if (Math.hypot(px - hx, py - hy) <= 9) { grab = { g, mode: "rot" }; break; } }
+  if (!grab) for (const g of gs) if (ptInBox({ x: g.c.bx, y: g.c.by, yaw: g.th, w: BODY_LEN, d: BODY_WID }, wx, wy)) { grab = { g, mode: "move" }; break; }
+  if (!grab) return; // 何も無ければ、物をつかむ・画面を動かす処理へ
+  e.preventDefault(); e.stopImmediatePropagation();
+  ghostDrag = Object.assign(grab, { key: grab.g.key, start: [wx, wy], orig: { bx: grab.g.c.bx, by: grab.g.c.by }, snap: snapState(), moved: false });
+  if (grab.g.visit === undefined) selectObject(grab.g.t.id, { keepTab: true });
+  else { routeEditIdx = grab.g.visit; showLeftTab("route"); renderRoute(); }
+}, true);
+window.addEventListener("mousemove", (e) => {
+  if (!ghostDrag) return;
+  const [wx, wy] = s2w(...cvPixel(e)), d = ghostDrag;
+  if (!d.moved && Math.hypot(wx - d.start[0], wy - d.start[1]) < 1) return;
+  if (!d.moved) { pushUndo(d.snap); d.moved = true; } // 実際に動かした時だけ履歴を積む
+  if (d.mode === "move") {
+    let nx = d.orig.bx + wx - d.start[0], ny = d.orig.by + wy - d.start[1];
+    if (e.shiftKey) [nx, ny] = snapToGrid([nx, ny]); // Shift で 0.1 m 刻み
+    setGhostCons(d.g, { bx: nx, by: ny });
+  } else {
+    let th = Math.atan2(wy - d.orig.by, wx - d.orig.bx);
+    if (e.shiftKey) th = Math.round(th / (Math.PI / 12)) * Math.PI / 12; // Shift で 15° 刻み
+    setGhostCons(d.g, { ori: "fixed", bth: mod2pi(th) }); // 向きを変えたら、向きも固定にする
+  }
+  d.g = fixedGhosts().find(g => g.key === d.key) || d.g;
+  if (d.g.visit === undefined && objPropsId === d.g.t.id) { document.getElementById("objProps").dataset.id = ""; renderObjProps(); }
+  renderRoute();
+});
+window.addEventListener("mouseup", () => { ghostDrag = null; });
 cv.addEventListener("mousedown", (e) => {
   if (bgMode !== null || !selectOn || e.button !== 0) return; // 選択ツールのとき: 物の上ならその物をつかむ（何も無ければ後ろのパン処理へ）
   const [px, py] = cvPixel(e);
