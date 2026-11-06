@@ -423,6 +423,10 @@
   /* 回る順番の「この回だけの拘束」の欄（行の下に開く） */
   .visit-cons { margin: 2px 0 6px 2.2em; padding: 6px 8px; border: 1px solid var(--border); border-left: 3px solid #c0392b; border-radius: 4px; font-size: 12px; }
   .visit-cons .pgrid { grid-template-columns: 1fr; }
+  #visitPane .visit-cons { margin: 8px 0 0; }
+  #visitPane .visit-cons .pgrid { grid-template-columns: 1fr 1fr; }
+  .visit-res { margin: 6px 0; font-size: 12px; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+  .visit-res-bar { position: static; height: 12px; width: 100%; border-radius: 3px; overflow: hidden; }
   #routePane.drop-into { box-shadow: inset 0 0 0 2px var(--accent); }
   .route-row.pose .rno { color: #2471a3; }
   .route-row .rno { flex: 0 0 1.8em; text-align: right; font-weight: 600; color: #c0392b; font-variant-numeric: tabular-nums; }
@@ -654,7 +658,7 @@
        一度開いたら、隣へマウスを動かすだけで切り替わる。Esc で閉じる -->
   <div id="titleCol">
     <h1 class="lx-tool">LexxMoMa 動作シミュレーター</h1>
-    <div id="revDisp">rev.119</div>
+    <div id="revDisp">rev.120</div>
     <nav id="menubar" role="menubar">
       <div class="hdr-menu">
         <button class="mb" id="btnFile" aria-haspopup="menu" aria-expanded="false">ファイル</button>
@@ -961,6 +965,8 @@
       <div id="progScroll" style="overflow-y:auto; flex:1; display:flex; flex-direction:column;">
         <!-- 段・開始を選んだとき（タイムライン） -->
         <div id="inspSeq"><div id="program"></div></div>
+        <!-- 回る順番の回を選んだとき（rev.120〜）: その回での作業・この回だけの拘束・結果 -->
+        <div id="inspVisit" hidden><div id="visitPane"></div></div>
         <!-- レイアウトの物を選んだとき（左ペインの一覧・キャンバス） -->
         <div id="inspObj" hidden>
           <!-- 縮尺合わせ（下絵を選んで「線を引いて縮尺を合わせる」を押すと出る） -->
@@ -1761,7 +1767,8 @@ function renderRoute() {
   if (!list.length) el.appendChild(hint("まだ何もありません。キャンバス左の「⊕ 手先」で手先の目標を置くか、下で登録した姿勢を足してください（左ペインの「登録した姿勢」からここへドラッグしても足せます）。"));
   list.forEach((e, i) => {
     const row = document.createElement("div");
-    row.className = "route-row " + (e.o ? "tg" : "pose") + ((e.o ? e.o.id === selectedId : e.p.name === selPointName) ? " sel" : "");
+    row.className = "route-row " + (e.o ? "tg" : "pose") + (routeEditIdx === i ? " sel" : "");
+    row.title = "押すと、右にこの回の設定（作業・この回だけの拘束・結果）が出ます";
     const no = document.createElement("span"); no.className = "rno"; no.textContent = i + 1;
     const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = e.o ? "⊕ " + (e.o.name || "（名前なし）") : e.p.name;
     nm.title = e.o ? "手先の目標: 車体の位置とアームの姿勢を自動で決めます" : "登録した姿勢: 車体の位置・アームの姿勢をそのまま使います";
@@ -1775,12 +1782,6 @@ function renderRoute() {
       const wt = document.createElement("span"); wt.className = "pt-tag"; wt.textContent = "⏱" + workText(e.work); wt.title = "この回での作業: " + workText(e.work);
       row.appendChild(wt);
     }
-    { // この回だけの拘束・作業を開く・閉じる
-      const bt = document.createElement("button"); bt.className = "small" + (routeEditIdx === i ? " on" : ""); bt.textContent = "⚙";
-      bt.title = e.o ? "この回での作業と、この回だけの拘束を決めます" : "この回での作業を決めます";
-      bt.addEventListener("click", (ev) => { ev.stopPropagation(); routeEditIdx = routeEditIdx === i ? null : i; renderRoute(); });
-      row.appendChild(bt);
-    }
     const btn = (txt, title, dis, fn) => {
       const bt = document.createElement("button"); bt.className = "small"; bt.textContent = txt; bt.title = title; bt.disabled = dis;
       bt.addEventListener("click", (ev) => { ev.stopPropagation(); editRoute(fn); });
@@ -1789,13 +1790,10 @@ function renderRoute() {
     btn("▲", "1 つ前へ", i === 0, r => r.splice(i - 1, 0, r.splice(i, 1)[0]));
     btn("▼", "1 つ後ろへ", i === list.length - 1, r => r.splice(i + 1, 0, r.splice(i, 1)[0]));
     btn("✕", "この回を外します（手先の目標・姿勢は消えません）", false, r => { r.splice(i, 1); routeEditIdx = null; });
-    row.addEventListener("click", () => {
-      if (e.o) { selectedId = e.o.id; renderObjectList(); showRightTab("obj"); } // 右に手先の設定を出す
-      else openPointEdit(e.p.name); // 右に姿勢の編集を出す
-    });
+    row.addEventListener("click", () => openVisit(i));
     el.appendChild(row);
-    if (routeEditIdx === i) { el.appendChild(visitWorkBox(e, i)); if (e.o) el.appendChild(visitConsBox(e, i)); }
   });
+  if (inspKind === "visit") renderVisitPane();
   if (list.length && !state.route.length) el.appendChild(hint("今は手先の目標を置いた順に 1 回ずつ回ります。並べ替えたり、下で足したりすると、その順番になります。"));
   // 足す: 手先の目標か登録した姿勢を選んで最後に足す（同じものを何度でも）
   const row = document.createElement("div"); row.className = "addrow";
@@ -1819,13 +1817,58 @@ function renderRoute() {
   const out = tg.filter(o => !list.some(e => e.o === o));
   if (out.length) addEl.appendChild(hint("回る順番に入っていない手先: " + out.map(o => o.name).join("、")));
 }
-let routeEditIdx = null; // 回る順番で「この回だけの拘束」を開いている行
+let routeEditIdx = null; // 回る順番で選んでいる回（右ペインに設定が出る。rev.120〜）
+/* 回を選んで、右ペインにその回の設定を出す */
+function openVisit(i) {
+  routeEditIdx = i;
+  renderRoute();
+  showRightTab("visit");
+  renderVisitPane();
+  renderTimeline();
+}
+/* 右ペインの回の設定: その回での作業、この回だけの拘束（手先の目標のとき）、今の結果 */
+function renderVisitPane() {
+  const box = document.getElementById("visitPane"), i = routeEditIdx, e = i === null ? null : routeEntries()[i];
+  if (!e) { box.innerHTML = ""; updateInspVisible(); return; }
+  if (box.contains(document.activeElement) && box.dataset.i === String(i)) return; // 入力中は作り直さない
+  box.dataset.i = String(i);
+  box.innerHTML = "";
+  const title = document.createElement("div"); title.className = "ptitle";
+  const ty = document.createElement("span"); ty.className = "ty"; ty.textContent = e.o ? "手先" : "姿勢";
+  const tt = document.createElement("span"); tt.textContent = `${i + 1} 回目: ${e.o ? e.o.name : e.p.name}`;
+  title.append(ty, tt);
+  box.appendChild(title);
+  // 今の結果（自動作成のあと）: 時間と内訳、その時刻へ飛ぶ
+  const g = visitGroups(currentCompiled).find(x => x.v === i);
+  const res = document.createElement("div"); res.className = "visit-res";
+  if (g) {
+    const segs = document.createElement("div"); segs.className = "tl-visit-segs visit-res-bar";
+    for (const [k] of VISIT_PARTS) if (g.parts[k] > 1e-6) segs.appendChild(tlDiv("tl-visit-seg " + k, `flex:${g.parts[k]} 1 0;`));
+    const txt = document.createElement("div");
+    txt.textContent = `この回の時間 ${(g.t1 - g.t0).toFixed(2)} s（` + VISIT_PARTS.filter(([k]) => g.parts[k] > 0.005).map(([k, n]) => `${n} ${g.parts[k].toFixed(2)}`).join("・") + "）";
+    const go = document.createElement("button"); go.className = "small"; go.textContent = "この回へ飛ぶ";
+    go.addEventListener("click", () => seekTo(g.t0 + 1e-6));
+    res.append(txt, segs, go);
+  } else {
+    res.className += " hint";
+    res.textContent = "自動作成のあとに、この回の時間と内訳が出ます。";
+  }
+  box.appendChild(res);
+  box.appendChild(visitWorkBox(e, i));
+  if (e.o) box.appendChild(visitConsBox(e, i));
+  const links = document.createElement("div"); links.style.cssText = "display:flex; gap:4px; flex-wrap:wrap; margin-top:6px;";
+  const lk = (txt, fn) => { const b = document.createElement("button"); b.className = "small"; b.textContent = txt; b.addEventListener("click", fn); links.appendChild(b); };
+  if (e.o) lk("手先の目標の設定を開く", () => { selectObject(e.o.id); showRightTab("obj"); renderObjProps(); });
+  else lk("姿勢の編集を開く", () => openPointEdit(e.p.name));
+  box.appendChild(links);
+  updateInspVisible();
+}
 /* この回だけの拘束の欄。変えると、その回は手先の目標の拘束の代わりにこれを使う */
 function visitConsBox(e, i) {
   const wrap = document.createElement("div"); wrap.className = "visit-cons";
   const head = document.createElement("div"); head.style.cssText = "display:flex; gap:4px; align-items:center; font-weight:600; margin-bottom:4px;";
   const ht = document.createElement("span"); ht.style.flex = "1";
-  ht.textContent = `${i + 1} 回目（${e.o.name}）だけの拘束`;
+  ht.textContent = "この回だけの拘束";
   head.appendChild(ht);
   if (e.cons) {
     const back = document.createElement("button"); back.className = "small"; back.textContent = "手先の拘束に戻す";
@@ -1850,7 +1893,7 @@ function visitConsBox(e, i) {
 function visitWorkBox(e, i) {
   const wrap = document.createElement("div"); wrap.className = "visit-cons visit-work";
   const head = document.createElement("div"); head.style.cssText = "font-weight:600; margin-bottom:4px;";
-  head.textContent = `${i + 1} 回目（${e.o ? e.o.name : e.p.name}）での作業`;
+  head.textContent = "この回での作業";
   wrap.appendChild(head);
   const row = document.createElement("div"); row.style.cssText = "display:flex; gap:4px; align-items:center; flex-wrap:wrap;";
   const nm = document.createElement("input"); nm.type = "text"; nm.placeholder = "つかむ・離す・待つ など"; nm.style.cssText = "flex:1; min-width:6em;";
@@ -4088,11 +4131,9 @@ function visitBar(g, x, w, top, h, big) {
 }
 /* 回を選ぶ: 回る順番でその回を開き、その回の始めの時刻へ */
 function selectVisit(g) {
-  routeEditIdx = g.v;
   showLeftTab("route");
-  renderRoute();
+  openVisit(g.v);
   seekTo(g.t0 + 1e-6);
-  renderTimeline();
 }
 /* 「回ごと」の表示: 回の帯だけを大きく出す（段のレーンは出さない） */
 function renderTimelineVisits(c, groups) {
@@ -5247,7 +5288,7 @@ cv.addEventListener("mousedown", (e) => {
   e.preventDefault(); e.stopImmediatePropagation();
   ghostDrag = Object.assign(grab, { key: grab.g.key, start: [wx, wy], orig: { bx: grab.g.c.bx, by: grab.g.c.by }, snap: snapState(), moved: false });
   if (grab.g.visit === undefined) selectObject(grab.g.t.id, { keepTab: true });
-  else { routeEditIdx = grab.g.visit; showLeftTab("route"); renderRoute(); }
+  else { showLeftTab("route"); openVisit(grab.g.visit); }
 }, true);
 window.addEventListener("mousemove", (e) => {
   if (!ghostDrag) return;
@@ -6006,9 +6047,11 @@ function showRightTab(t) {
   inspKind = t;
   document.getElementById("inspSeq").hidden = t !== "seq";
   document.getElementById("inspObj").hidden = t !== "obj";
+  document.getElementById("inspVisit").hidden = t !== "visit";
   document.getElementById("editPane").hidden = t !== "pt";
   document.getElementById("locPane").hidden = t !== "loc";
-  document.getElementById("inspTitle").textContent = { obj: "レイアウトの設定", pt: "姿勢の編集", loc: "車体位置の編集" }[t] || "シーケンス";
+  document.getElementById("inspTitle").textContent = { obj: "レイアウトの設定", pt: "姿勢の編集", loc: "車体位置の編集", visit: "回の設定" }[t] || "シーケンス";
+  if (t !== "visit" && routeEditIdx !== null) { routeEditIdx = null; renderRoute(); } // ほかを出したら、回の選択は外す
   const was = editOpen;
   editOpen = t === "pt";
   if (wasLoc && t !== "loc") selLoc = null;
@@ -6024,12 +6067,14 @@ document.getElementById("btnInspClose").addEventListener("click", () => {
   if (inspKind === "pt") closePointEdit();
   else if (inspKind === "loc") closeLocEdit();
   else if (inspKind === "obj") { selectObject(null); renderObjProps(); }
+  else if (inspKind === "visit") { routeEditIdx = null; renderRoute(); updateInspVisible(); renderTimeline(); }
   else selectStage(null);
 });
 /* 右ペインは、出す設定があるときだけ開く（段・開始・レイアウトの物を選んでいる、または位置の編集中）。
  * 何も選んでいないときは閉じて、2D/3D とタイムラインを広く使う */
 function updateInspVisible() {
-  const has = inspKind === "pt" ? !!findPoint(selPointName) : inspKind === "loc" ? !!findSelLoc() : (inspKind === "obj" ? !!selectedObject() : (selStage !== null || selStart));
+  const has = inspKind === "pt" ? !!findPoint(selPointName) : inspKind === "loc" ? !!findSelLoc() : inspKind === "obj" ? !!selectedObject()
+    : inspKind === "visit" ? routeEditIdx !== null && !!routeEntries()[routeEditIdx] : (selStage !== null || selStart);
   if (document.body.classList.contains("insp-off") !== has) return;
   document.body.classList.toggle("insp-off", !has);
   requestAnimationFrame(() => { resizeCanvas(); renderTimeline(); });
