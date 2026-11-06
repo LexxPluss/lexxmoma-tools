@@ -27,7 +27,7 @@
 
 ## 確かめる
 
-- テスト: `node --test site/simulator/test/kinematics.test.cjs site/simulator/test/motion.test.cjs site/simulator/test/collide.test.cjs`
+- テスト: `node --test site/simulator/test/kinematics.test.cjs site/simulator/test/motion.test.cjs site/simulator/test/collide.test.cjs site/simulator/test/save-load.test.cjs`
 - サーバー経由: リポジトリの一番上で `python3 scripts/serve.py 8743` → `http://localhost:8743/simulator/lexxmoma-2d.html`
 - ダブルクリック: `lexxmoma-2d.html` を直接開き、3D の切替と「📂 サンプル」が動くこと
 

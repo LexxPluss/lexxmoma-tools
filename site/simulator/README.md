@@ -18,6 +18,7 @@
 | `meshes/crx20ia_l/` | FANUC 公式 ROS 2 記述（fanuc_description）の衝突判定用 STL（Apache-2.0）。見た目は簡略だが関節ごとに分かれていて正確に動く |
 | `test/kinematics.test.cjs` | 運動学のテスト（`node --test`）。CI でも走る |
 | `test/collide.test.cjs` | 当たり判定のテスト（点と箱の距離、腕が台に当たる・当たらない、触れてよい所、近道の結果が全部調べたときと同じ）。CI でも走る |
+| `test/save-load.test.cjs` | 保存ファイルの読み込みのテスト（HTML の中の読み込み関数を取り出して動かす）。CI でも走る |
 | `test/motion.test.cjs` | アームの関節動作のテスト（全関節が同時に止まる・上限を超えない）。CI でも走る |
 | `LexxMoMa_Simulator_Spec_v1.0.md` | 最初のヒアリングで確定した仕様（2D） |
 
@@ -206,7 +207,7 @@
 - `python3 site/simulator/build.py`: ダブルクリックで動かすための生成物を作る。STL・サンプル・vendor を変えたら実行して生成物もコミットする
   （CI で作り直した結果と比べる）。生成物は `vendor/three.bundle.js`（Three.js とアドオンを普通のスクリプト 1 本に）、
   `meshes/crx20ia_l.js`（STL を base64 で埋め込み）、`samples/embedded.js`（サンプルの一覧と中身）。file:// では ES モジュールと fetch が止められるため
-- テスト: `node --test site/simulator/test/kinematics.test.cjs site/simulator/test/motion.test.cjs site/simulator/test/collide.test.cjs`
+- テスト: `node --test site/simulator/test/kinematics.test.cjs site/simulator/test/motion.test.cjs site/simulator/test/collide.test.cjs site/simulator/test/save-load.test.cjs`
 - 変更のたびにヘッダーの `rev.N` を上げる。保存 JSON にも rev が記録される
 - 行末は CRLF（`lexxmoma-2d.html`）
 

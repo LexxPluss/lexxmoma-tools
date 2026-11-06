@@ -625,7 +625,7 @@
        一度開いたら、隣へマウスを動かすだけで切り替わる。Esc で閉じる -->
   <div id="titleCol">
     <h1 class="lx-tool">LexxMoMa 動作シミュレーター</h1>
-    <div id="revDisp">rev.108</div>
+    <div id="revDisp">rev.109</div>
     <nav id="menubar" role="menubar">
       <div class="hdr-menu">
         <button class="mb" id="btnFile" aria-haspopup="menu" aria-expanded="false">ファイル</button>
@@ -4875,8 +4875,9 @@ function objectsFromSave(data) {
     ? [Object.assign({ id: uid(), type: "image", name: "下絵（レイアウト図）", visible: true, locked: true, opacity: 0.6 }, data.bgImage, { id: uid(), type: "image" })]
     : [];
   if (Array.isArray(data.objects)) {
-    const objs = data.objects.map(o => Object.assign({ id: uid(), visible: true }, o, { h: Math.max(0, +o.h || 0), z0: Math.max(0, +o.z0 || 0), yaw: +o.yaw || 0 }))
-      .filter(o => ["box", "line", "text", "image"].includes(o.type));
+    const objs = data.objects.filter(o => o && ["box", "line", "text", "image", "target"].includes(o.type)).map(o => o.type === "target"
+      ? Object.assign({ id: uid(), visible: true }, o, { x: +o.x || 0, y: +o.y || 0, z: +o.z || 0, w: +o.w || 0, p: +o.p || 0, r: +o.r || 0 }) // 手先の目標（rev.100〜）
+      : Object.assign({ id: uid(), visible: true }, o, { h: Math.max(0, +o.h || 0), z0: Math.max(0, +o.z0 || 0), yaw: +o.yaw || 0 }));
     return legacyImage.concat(objs); // 旧形式の 1 枚の下絵（rev.68 以前）は一番下に
   }
   const out = legacyImage.slice();

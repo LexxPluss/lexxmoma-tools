@@ -52,7 +52,7 @@ do not copy in packages (zip) from elsewhere.
   `site/lexxmoma-roi/` or `site/process-sketch/` and commit both `src/` and `dist/`.
   CI fails if `dist/` does not match `src/`.
 - Tests: `node site/lexxmoma-roi/test/calc.test.js`, `node site/process-sketch/test/continuity.test.cjs`,
-  `node --test site/simulator/test/kinematics.test.cjs site/simulator/test/motion.test.cjs site/simulator/test/collide.test.cjs`.
+  `node --test site/simulator/test/kinematics.test.cjs site/simulator/test/motion.test.cjs site/simulator/test/collide.test.cjs site/simulator/test/save-load.test.cjs`.
 - **Motion Simulator** is a single page (`simulator/lexxmoma-2d.html`) plus two scripts: `crx-kinematics.js`
   (FANUC CRX-20iA/L forward/inverse kinematics, no dependencies, shared with the Node test) and `sim3d.js`
   (3D view, ES module). Three.js is vendored under `simulator/vendor/` (MIT, pinned version in
