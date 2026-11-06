@@ -396,10 +396,14 @@
   .route-row { display: flex; align-items: center; gap: 4px; padding: 3px 4px; border-radius: 4px; cursor: pointer; }
   .route-row:hover { background: rgba(127, 127, 127, .12); }
   .route-row.sel { background: rgba(36, 113, 163, .18); }
+  /* 回る順番の「この回だけの拘束」の欄（行の下に開く） */
+  .visit-cons { margin: 2px 0 6px 2.2em; padding: 6px 8px; border: 1px solid var(--border); border-left: 3px solid #c0392b; border-radius: 4px; font-size: 12px; }
+  .visit-cons .pgrid { grid-template-columns: 1fr; }
   #routePane.drop-into { box-shadow: inset 0 0 0 2px var(--accent); }
   .route-row.pose .rno { color: #2471a3; }
   .route-row .rno { flex: 0 0 1.8em; text-align: right; font-weight: 600; color: #c0392b; font-variant-numeric: tabular-nums; }
-  .route-row .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .route-row .nm { flex: 1 0 3.5em; min-width: 3.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .route-row .pt-tag { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } /* 狭いときは名前を優先して、拘束の説明を縮める */
   .addrow { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
   .hint { color: #4a5b69; font-size: 11.5px; line-height: 1.6; }
   table.keyhelp { border-collapse: collapse; width: 100%; font-size: 11px; }
@@ -626,7 +630,7 @@
        一度開いたら、隣へマウスを動かすだけで切り替わる。Esc で閉じる -->
   <div id="titleCol">
     <h1 class="lx-tool">LexxMoMa 動作シミュレーター</h1>
-    <div id="revDisp">rev.110</div>
+    <div id="revDisp">rev.111</div>
     <nav id="menubar" role="menubar">
       <div class="hdr-menu">
         <button class="mb" id="btnFile" aria-haspopup="menu" aria-expanded="false">ファイル</button>
@@ -1660,12 +1664,18 @@ function targetCands(t, zones, obs, P, al) {
   return out;
 }
 /* 回る順番: 手先の目標（自動で車体の位置・姿勢を決める）と、自分で登録した姿勢（そのまま使う）の並び。
- * state.route の 1 つは、手先の目標の id（文字）か {pose: 姿勢の名前}。一覧が空なら手先の目標を置いた順に 1 回ずつ */
+ * state.route の 1 つは、手先の目標の id（文字）、{t: id, cons: この回だけの拘束}（rev.111〜）か {pose: 姿勢の名前}。
+ * 一覧が空なら手先の目標を置いた順に 1 回ずつ */
 function routeEntries() {
   const tg = state.objects.filter(o => o.type === "target");
   if (!state.route.length) return tg.map(o => ({ o }));
-  return state.route.map(e => typeof e === "string" ? { o: tg.find(o => o.id === e) } : { p: findPoint(e.pose) }).filter(e => e.o || e.p);
+  return state.route.map(e => typeof e === "string" ? { o: tg.find(o => o.id === e) }
+    : e && e.t ? { o: tg.find(o => o.id === e.t), cons: e.cons } : { p: findPoint(e.pose) }).filter(e => e.o || e.p);
 }
+/* 回る順番の 1 つが指す手先の目標の id（姿勢なら undefined） */
+function routeTid(e) { return typeof e === "string" ? e : e && e.t; }
+/* 回 e（routeEntries の 1 つ）で使う手先の目標: この回だけの拘束があれば、それを付けた写し */
+function visitTarget(e) { return e.cons ? Object.assign({}, e.o, { cons: e.cons }) : e.o; }
 /* 手先の目標ごとの、回る順番の番号（「1」「1, 3」。入っていなければ無し） */
 function targetNums() {
   const m = {};
@@ -1690,7 +1700,7 @@ function renderRoute() {
   const el = document.getElementById("routeList"), addEl = document.getElementById("routeAdd");
   const tg = state.objects.filter(o => o.type === "target");
   const own = state.points.filter(p => !p.auto);
-  state.route = state.route.filter(e => typeof e === "string" ? tg.some(o => o.id === e) : !!(e && findPoint(e.pose))); // 消した手先・姿勢は外す
+  state.route = state.route.filter(e => routeTid(e) ? tg.some(o => o.id === routeTid(e)) : !!(e && findPoint(e.pose))); // 消した手先・姿勢は外す
   el.innerHTML = ""; addEl.innerHTML = "";
   const hint = (t) => { const h = document.createElement("div"); h.className = "hint"; h.style.margin = "6px 2px"; h.textContent = t; return h; };
   const list = routeEntries();
@@ -1702,7 +1712,17 @@ function renderRoute() {
     const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = e.o ? "⊕ " + (e.o.name || "（名前なし）") : e.p.name;
     nm.title = e.o ? "手先の目標: 車体の位置とアームの姿勢を自動で決めます" : "登録した姿勢: 車体の位置・アームの姿勢をそのまま使います";
     row.append(no, nm);
-    const tag = document.createElement("span"); tag.className = "pt-tag"; tag.textContent = e.p ? "姿勢" : consText(e.o); row.appendChild(tag);
+    const tag = document.createElement("span"); tag.className = "pt-tag";
+    tag.textContent = e.p ? "姿勢" : e.cons ? consText(visitTarget(e)) + "（この回）" : consText(e.o);
+    tag.title = e.cons ? "この回だけ、手先の目標とは別の拘束を使います: " + tag.textContent : "拘束: " + tag.textContent;
+    if (e.cons) tag.style.background = "rgba(192,57,43,0.15)";
+    row.appendChild(tag);
+    if (e.o) { // この回だけの拘束を開く・閉じる
+      const bt = document.createElement("button"); bt.className = "small" + (routeEditIdx === i ? " on" : ""); bt.textContent = "⚙";
+      bt.title = "この回だけ、手先の目標とは別の拘束にします";
+      bt.addEventListener("click", (ev) => { ev.stopPropagation(); routeEditIdx = routeEditIdx === i ? null : i; renderRoute(); });
+      row.appendChild(bt);
+    }
     const btn = (txt, title, dis, fn) => {
       const bt = document.createElement("button"); bt.className = "small"; bt.textContent = txt; bt.title = title; bt.disabled = dis;
       bt.addEventListener("click", (ev) => { ev.stopPropagation(); editRoute(fn); });
@@ -1710,12 +1730,13 @@ function renderRoute() {
     };
     btn("▲", "1 つ前へ", i === 0, r => r.splice(i - 1, 0, r.splice(i, 1)[0]));
     btn("▼", "1 つ後ろへ", i === list.length - 1, r => r.splice(i + 1, 0, r.splice(i, 1)[0]));
-    btn("✕", "この回を外します（手先の目標・姿勢は消えません）", false, r => r.splice(i, 1));
+    btn("✕", "この回を外します（手先の目標・姿勢は消えません）", false, r => { r.splice(i, 1); routeEditIdx = null; });
     row.addEventListener("click", () => {
       if (e.o) { selectedId = e.o.id; renderObjectList(); showRightTab("obj"); } // 右に手先の設定を出す
       else openPointEdit(e.p.name); // 右に姿勢の編集を出す
     });
     el.appendChild(row);
+    if (e.o && routeEditIdx === i) el.appendChild(visitConsBox(e, i));
   });
   if (list.length && !state.route.length) el.appendChild(hint("今は手先の目標を置いた順に 1 回ずつ回ります。並べ替えたり、下で足したりすると、その順番になります。"));
   // 足す: 手先の目標か登録した姿勢を選んで最後に足す（同じものを何度でも）
@@ -1739,6 +1760,33 @@ function renderRoute() {
   addEl.appendChild(row);
   const out = tg.filter(o => !list.some(e => e.o === o));
   if (out.length) addEl.appendChild(hint("回る順番に入っていない手先: " + out.map(o => o.name).join("、")));
+}
+let routeEditIdx = null; // 回る順番で「この回だけの拘束」を開いている行
+/* この回だけの拘束の欄。変えると、その回は手先の目標の拘束の代わりにこれを使う */
+function visitConsBox(e, i) {
+  const wrap = document.createElement("div"); wrap.className = "visit-cons";
+  const head = document.createElement("div"); head.style.cssText = "display:flex; gap:4px; align-items:center; font-weight:600; margin-bottom:4px;";
+  const ht = document.createElement("span"); ht.style.flex = "1";
+  ht.textContent = `${i + 1} 回目（${e.o.name}）だけの拘束`;
+  head.appendChild(ht);
+  if (e.cons) {
+    const back = document.createElement("button"); back.className = "small"; back.textContent = "手先の拘束に戻す";
+    back.title = "この回だけの拘束をやめて、手先の目標の拘束を使います";
+    back.addEventListener("click", () => editRoute(r => { r[i] = routeTid(r[i]); }));
+    head.appendChild(back);
+  }
+  wrap.appendChild(head);
+  if (!e.cons) {
+    const h = document.createElement("div"); h.className = "hint";
+    h.textContent = "今は手先の目標の拘束（" + consText(e.o) + "）を使っています。下で変えると、この回だけ別の拘束になります。";
+    wrap.appendChild(h);
+  }
+  const grid = document.createElement("div"); grid.className = "pgrid"; wrap.appendChild(grid);
+  const result = state.points.find(p => p.auto && p.tg === e.o.id && (p.rv || []).includes(i) && p.body) || null; // この回の今の結果
+  buildConsEditor(grid, visitTarget(e), result, (patch) => editRoute(r => {
+    r[i] = { t: routeTid(r[i]), cons: Object.assign(consOf(visitTarget(e)), patch) };
+  }));
+  return wrap;
 }
 document.getElementById("btnAutoRoute").addEventListener("click", () => autoGenerate());
 // 左ペインの「登録した姿勢」から、回る順番へドラッグして足す
@@ -1782,8 +1830,13 @@ function autoGenerateRun(ents) {
     if (!ap) { alert(noApproach("開始")); return; }
     Object.assign(startC, { qA: ap.q, qH: ap.qH, outDur: approachDur(ap, q0, P) });
   }
-  // 手先の目標ごとの候補（同じ目標の回は同じ候補から選ぶ。どの回でどれを選ぶかは別々）
-  const targets = [...new Set(ents.filter(e => e.o).map(e => e.o))];
+  // 候補は「手先の目標 × 拘束」ごと（同じ手先・同じ拘束の回は同じ候補から選ぶ。どの回でどれを選ぶかは別々）。
+  // この回だけの拘束（rev.111〜）がある回は、その拘束を付けた手先の目標の写し（visitTarget）で候補を作る
+  const vkey = (e) => e.o.id + "|" + JSON.stringify(consOf(visitTarget(e)));
+  const vts = new Map(); // 拘束ごとのキー → 手先の目標（写し）
+  for (const e of ents) if (e.o && !vts.has(vkey(e))) vts.set(vkey(e), visitTarget(e));
+  const targets = [...vts.values()];
+  const tOf = (e) => vts.get(vkey(e));
   const cands = new Map();
   for (const t of targets) {
     const cs = targetCands(t, zones, obs, P, al);
@@ -1794,7 +1847,7 @@ function autoGenerateRun(ents) {
   const pairDist = (a, b) => Math.hypot((a.x - b.x) / 300, (a.y - b.y) / 300, angDiff(a.th, b.th) / (Math.PI / 6));
   const pairs = new Set();
   for (let i = 0; i + 1 < ents.length; i++) {
-    const x = ents[i].o, y = ents[i + 1].o;
+    const x = ents[i].o && tOf(ents[i]), y = ents[i + 1].o && tOf(ents[i + 1]);
     if (!x || !y || x === y || Math.hypot(x.x - y.x, x.y - y.y) > 2 * 1200) continue;
     const key = [x.id, y.id].sort().join("|");
     if (pairs.has(key)) continue;
@@ -1816,7 +1869,7 @@ function autoGenerateRun(ents) {
     for (const e of ents) {
       if (!e.o) { if (e.p.body) cur = { body: e.p.body, qA: e.p.arm ? e.p.arm.q : cur.qA }; continue; }
       // 走る時間の短い順に調べ、「戻る＋max(走る, アームを寄り付きへ)＋寄り付き → 目標」が一番短いもの（走る時間だけで負けたら打ち切る）
-      const t = e.o, from = cur.body, back = cur.outDur || 0;
+      const t = tOf(e), from = cur.body, back = cur.outDur || 0;
       const order = bodyCands(t, zones, obs).map(b => ({ b, d: bodyMotion(from, b, { type: "point", mode: "auto" }, P).dur })).sort((a, b) => a.d - b.d);
       let best = null;
       for (const { b, d } of order.slice(0, GREEDY_TRY)) {
@@ -1857,7 +1910,7 @@ function autoGenerateRun(ents) {
   };
   const V = [[startC]]; // 回ごとの候補（0 番目は開始）
   for (const e of ents) {
-    if (e.o) { V.push(cands.get(e.o)); continue; }
+    if (e.o) { V.push(cands.get(tOf(e))); continue; }
     if (e.p.body) {
       const c = poseCand(e.p);
       if (!c) { alert(noApproach(e.p.name)); return; }
@@ -1910,10 +1963,14 @@ function autoGenerateRun(ents) {
   let stowN = null; // たたんだ姿勢は 1 つだけ作って使い回す
   const stowName = (qS) => stowN || (stowN = addPt("走行", null, qS));
   const names = new Map(), used = new Map(); // 候補 → 姿勢の名前 {nT, nA, via}／目標 → 使った候補の数（2 つ目からは「名前(2)」）
+  const sameQ = (a, b) => !!(a && b) && a.every((v, i) => Math.abs(v - b[i]) < 1e-6);
   const namesOf = (c) => {
     if (names.has(c)) return names.get(c);
+    if (c.kind === "target") { // 拘束の違う回の候補でも、同じ手先・同じ位置・同じ姿勢なら同じ名前を使う
+      for (const [c2, n2] of names) if (c2.kind === "target" && c2.t.id === c.t.id && sameBody(c2.body, c.body) && sameQ(c2.qT, c.qT) && sameQ(c2.qA, c.qA) && sameQ(c2.qU, c.qU) && (!!c2.qH === !!c.qH) && (!c.qH || sameQ(c2.qH, c.qH))) { names.set(c, n2); return n2; }
+    }
     let base = c.name, n;
-    if (c.kind === "target") { const k = (used.get(c.t) || 0) + 1; used.set(c.t, k); base = k === 1 ? c.t.name : `${c.t.name}(${k})`; }
+    if (c.kind === "target") { const k = (used.get(c.t.id) || 0) + 1; used.set(c.t.id, k); base = k === 1 ? c.t.name : `${c.t.name}(${k})`; }
     if (c.kind === "start") n = { nT: addPt("開始", c.body, c.qT) };
     else if (c.kind === "target") n = { nT: addPt(base, c.body, c.qT, { tg: c.t.id }) }; // tg: どの手先の目標のための姿勢か（📌 で使う）
     else n = { nT: c.name };
@@ -1937,6 +1994,7 @@ function autoGenerateRun(ents) {
   const start = namesOf(startC).nT;
   for (let k = 0; k + 1 < V.length; k++) {
     const a = V[k][sol.path[k]], b = V[k + 1][sol.path[k + 1]], h = how.get(a.id + ">" + b.id), nb = namesOf(b);
+    if (b.kind === "target") { const pt = pts.find(p => p.name === nb.nT); pt.rv = (pt.rv || []).concat(k); }
     if (h.kind === "direct") { if (b.qT) steps.push({ arm: nb.nT }); }
     else if (h.kind === "via") { retreat(a); steps.push({ arm: nb.nA }); enter(b, nb); }
     else { retreat(a); pushDrive(steps, h.w, nb.nT, nb.nA, stowName); enter(b, nb); }
@@ -2008,6 +2066,7 @@ function pointsFromSave(data) {
       arm: p.arm ? armOf(p.arm) : null,
       ...(p.auto ? { auto: true } : {}),
       ...(p.tg ? { tg: String(p.tg) } : {}),
+      ...(Array.isArray(p.rv) ? { rv: p.rv.filter(Number.isInteger) } : {}),
     })).filter(p => p.body || p.arm);
     const program = (data.program || []).map(s => ({ blocks: (s.blocks || []).map(o => Object.assign({}, o)) }));
     const ini = data.initial || {};
@@ -2417,8 +2476,8 @@ function drawObjects() {
   }
   // 手先の目標: ⊕ と、回る順番・名前・高さ
   const tgNums = targetNums();
-  for (const o of objs) { // 車体の位置を固定した手先: その車体の形と、目標への線
-    if (o.type !== "target") continue;
+  const fixedOf = objs.filter(o => o.type === "target").concat(routeEntries().filter(e => e.cons && e.o.visible !== false).map(visitTarget));
+  for (const o of fixedOf) { // 車体の位置を固定した手先（この回だけの拘束も）: その車体の形と、目標への線
     const c = consOf(o);
     if (c.pos !== "fixed" || !isFinite(c.bx) || !isFinite(c.by)) continue;
     const th = c.ori === "fixed" ? (c.bth || 0) : faceTh(o, c.bx, c.by);
@@ -5003,6 +5062,12 @@ cv.addEventListener("wheel", (e) => {
 
 /* ---------------- 保存・読込 ---------------- */
 /* 保存データ → objects。version 3 はそのまま（欠けた項目を補う）、それ以前は bgRects / bgLines / bgTexts から変換 */
+/* 保存ファイルの回る順番: 手先の目標の id（文字）、{t, cons}（この回だけの拘束。rev.111〜）、{pose}。ほかは読み捨てる */
+function routeFromSave(data) {
+  if (!Array.isArray(data.route)) return [];
+  return data.route.filter(e => typeof e === "string" || (e && (typeof e.pose === "string" || typeof e.t === "string")))
+    .map(e => typeof e === "string" ? e : typeof e.t === "string" ? (e.cons && typeof e.cons === "object" ? { t: e.t, cons: Object.assign({}, e.cons) } : e.t) : { pose: e.pose });
+}
 function objectsFromSave(data) {
   const legacyImage = (data.bgImage && data.bgImage.src)
     ? [Object.assign({ id: uid(), type: "image", name: "下絵（レイアウト図）", visible: true, locked: true, opacity: 0.6 }, data.bgImage, { id: uid(), type: "image" })]
@@ -5044,7 +5109,7 @@ document.getElementById("btnSave").addEventListener("click", () => {
     armModel: ARM.name,
     armMountYawDeg: Math.round(ARM_MOUNT_YAW * 180 / Math.PI), // 取付向き（J1 = 0° の向き。読込時に差があれば J1 を回して合わせる）
     toolLen: state.toolLen,
-    points: state.points.map(p => Object.assign({ name: p.name, body: p.body, arm: p.arm ? { q: p.arm.q } : null }, p.auto ? { auto: true } : {}, p.tg ? { tg: p.tg } : {})), // auto: 自動作成で作った姿勢（rev.104〜）、tg: どの手先の目標のためか（rev.110〜）
+    points: state.points.map(p => Object.assign({ name: p.name, body: p.body, arm: p.arm ? { q: p.arm.q } : null }, p.auto ? { auto: true } : {}, p.tg ? { tg: p.tg } : {}, p.rv ? { rv: p.rv } : {})), // auto: 自動作成で作った姿勢（rev.104〜）、tg: どの手先の目標のためか（rev.110〜）、rv: 何回目の回で使ったか（rev.111〜）
     initial: state.initial,
     places: state.places, // ユーザーが付けた車体位置の名前（rev.97〜）
     route: state.route,   // 自動作成で手先の目標を回る順番（rev.102〜）
@@ -5322,7 +5387,7 @@ function applyLoadedData(data) {
       const conv = pointsFromSave(data);
       state.points = conv.points;
       state.places = Array.isArray(data.places) ? data.places.filter(q => q && isFinite(q.x) && isFinite(q.y) && q.name) : [];
-      state.route = Array.isArray(data.route) ? data.route.filter(e => typeof e === "string" || (e && typeof e.pose === "string")) : [];
+      state.route = routeFromSave(data);
       state.initial = conv.initial;
       state.program = conv.program;
       selPointName = null;
@@ -5768,7 +5833,7 @@ function renderObjProps() {
   // 2 値をまとめた項目: ラベルの下に入力欄を 2 つ（中心 X:Y、幅×奥行 など）
   const pair = (label, keyA, keyB, opts) => {
     opts = opts || {};
-    const a = mkInput(keyA, opts.setA ? Object.assign({}, opts, { set: opts.setA }) : opts), bEl = mkInput(keyB, opts.setB ? Object.assign({}, opts, { set: opts.setB }) : opts);
+    const a = mkInput(keyA, opts), bEl = mkInput(keyB, opts);
     const wrap = document.createElement("div"); wrap.className = "in2";
     wrap.append(inBox(a, opts.unit), inBox(bEl, opts.unit));
     grid.appendChild(fieldBox(label, wrap));
@@ -5840,45 +5905,15 @@ function renderObjProps() {
     field("P", "p", { step: 5, unit: "°", half: true });
     field("R", "r", { step: 5, unit: "°", half: true });
     // 拘束（rev.110〜）: この手先へ行くときの車体の位置・向き、手先の向き
-    const cons = consOf(o);
-    const setCons = (patch) => {
-      const cur = selectedObject(); if (!cur) return;
-      pushUndo(); cur.cons = Object.assign(consOf(cur), patch);
-      box.dataset.id = ""; renderObjProps(); renderRoute();
-    };
-    const result = state.points.find(p => p.auto && p.tg === o.id && p.body); // 今の自動作成の結果（1 つ目の回）
     const title2 = document.createElement("div"); title2.style.cssText = "grid-column: 1 / -1; font-weight: 600; margin-top: 8px;";
     title2.textContent = "この手先へ行くときの拘束";
     grid.appendChild(title2);
-    const presets = document.createElement("div"); presets.style.cssText = "grid-column: 1 / -1; display:flex; gap:4px; flex-wrap:wrap;";
-    const pbtn = (txt, title, dis, fn) => { const b = document.createElement("button"); b.className = "small"; b.textContent = txt; b.title = title; b.disabled = dis; b.addEventListener("click", fn); presets.appendChild(b); };
-    pbtn("最短", "車体の位置・向きは自動（順番全体の時間が最短になる所）", false, () => setCons({ pos: "free", ori: "free" }));
-    pbtn("正面に立つ", "目標が車体の真正面に来る向きで立つ（位置は自動）", false, () => setCons({ pos: "free", ori: "face" }));
-    pbtn("📌 今の結果で車体を固定", result ? "今の自動作成で決まった車体の位置・向きに固定します" : "まだ自動作成の結果がありません", !result,
-      () => setCons({ pos: "fixed", ori: "fixed", bx: result.body.x, by: result.body.y, bth: result.body.th }));
-    grid.appendChild(presets);
-    const seg = (label, cur, opts, pick) => {
-      const sg = document.createElement("div"); sg.className = "seg";
-      for (const [v, txt] of opts) {
-        const b = document.createElement("button"); b.className = "small" + (v === cur ? " on" : ""); b.textContent = txt;
-        b.addEventListener("click", () => { if (v !== cur) pick(v); });
-        sg.appendChild(b);
-      }
-      grid.appendChild(fieldBox(label, sg));
-    };
-    // 固定にしたときの値: 今の結果があればそれ、無ければ空（自分で入れる）
-    const fromResult = (keys) => result ? { bx: result.body.x, by: result.body.y, bth: result.body.th } : {};
-    seg("手先の向き", cons.hand, [["fixed", "W・P・R のまま"], ["spin", "軸まわりは回してよい"]], v => setCons({ hand: v }));
-    seg("車体の位置", cons.pos, [["free", "自動"], ["fixed", "固定"]], v => setCons(v === "fixed" ? Object.assign({ pos: "fixed" }, isFinite(cons.bx) ? {} : fromResult()) : { pos: "free" }));
-    const consSet = (k) => (cur, v) => { cur.cons = Object.assign(consOf(cur), { [k]: v }); renderRoute(); };
-    if (cons.pos === "fixed") pair("車体の中心 X : Y", "cons.bx", "cons.by", { scale: 1000, step: 0.01, digits: 2, unit: "m", set: null, setA: consSet("bx"), setB: consSet("by") });
-    seg("車体の向き", cons.ori, [["free", "自動"], ["face", "目標を向く"], ["fixed", "固定"]], v => setCons(v === "fixed" ? Object.assign({ ori: "fixed" }, isFinite(cons.bth) ? {} : (result ? { bth: result.body.th } : {})) : { ori: v }));
-    if (cons.ori === "fixed") field("車体の向き θ", "cons.bth", { scale: Math.PI / 180, step: 5, digits: 0, unit: "°", half: true, set: consSet("bth") });
-    if ((cons.pos === "fixed" && !(isFinite(cons.bx) && isFinite(cons.by))) || (cons.ori === "fixed" && !isFinite(cons.bth))) {
-      const w = document.createElement("div"); w.className = "hint"; w.style.cssText = "grid-column: 1 / -1; color: var(--danger);";
-      w.textContent = "固定する値を入れてください（自動作成のあとなら「📌 今の結果で車体を固定」でも入ります）。";
-      grid.appendChild(w);
-    }
+    const result = state.points.find(p => p.auto && p.tg === o.id && p.body) || null; // 今の自動作成の結果（1 つ目の回）
+    buildConsEditor(grid, o, result, (patch) => {
+      const cur = selectedObject(); if (!cur) return;
+      pushUndo(); cur.cons = Object.assign(consOf(cur), patch);
+      box.dataset.id = ""; renderObjProps(); renderRoute();
+    });
     const row = document.createElement("div"); row.style.cssText = "grid-column: 1 / -1; display:flex; gap:4px; align-items:center;";
     const lb = document.createElement("span"); lb.textContent = "回る順番: " + (targetNums()[o.id] ? targetNums()[o.id] + " 番目" : "入っていません"); lb.style.flex = "1";
     const bAdd = document.createElement("button"); bAdd.className = "small"; bAdd.textContent = "＋ 最後に足す"; bAdd.title = "回る順番の最後に、この手先を足します（同じ手先を何度でも）";
@@ -5900,6 +5935,51 @@ function renderObjProps() {
   }
   syncObjPropValues(o);
 }
+/* 拘束の編集欄（手先の目標の設定と、回る順番の「この回だけ」で共用）。
+ * grid: 入れる先（.pgrid）、t: 拘束を持つ手先の目標、result: 今の自動作成の結果の姿勢（📌 用。無ければ null）、set(patch): 変えたとき */
+function buildConsEditor(grid, t, result, set) {
+  const cons = consOf(t);
+  const presets = document.createElement("div"); presets.style.cssText = "grid-column: 1 / -1; display:flex; gap:4px; flex-wrap:wrap;";
+  const pbtn = (txt, title, dis, fn) => { const b = document.createElement("button"); b.className = "small"; b.textContent = txt; b.title = title; b.disabled = dis; b.addEventListener("click", fn); presets.appendChild(b); };
+  pbtn("最短", "車体の位置・向きは自動（順番全体の時間が最短になる所）", false, () => set({ pos: "free", ori: "free" }));
+  pbtn("正面に立つ", "目標が車体の真正面に来る向きで立つ（位置は自動）", false, () => set({ pos: "free", ori: "face" }));
+  pbtn("📌 今の結果で車体を固定", result ? "今の自動作成で決まった車体の位置・向きに固定します" : "まだ自動作成の結果がありません", !result,
+    () => set({ pos: "fixed", ori: "fixed", bx: result.body.x, by: result.body.y, bth: result.body.th }));
+  grid.appendChild(presets);
+  const seg = (label, cur, opts, pick) => {
+    const sg = document.createElement("div"); sg.className = "seg"; sg.style.flexWrap = "wrap";
+    for (const [v, txt] of opts) {
+      const b = document.createElement("button"); b.className = "small" + (v === cur ? " on" : ""); b.textContent = txt;
+      b.addEventListener("click", () => { if (v !== cur) pick(v); });
+      sg.appendChild(b);
+    }
+    grid.appendChild(fieldBox(label, sg));
+  };
+  // 数の欄（表示は scale で割った値。空なら未入力）
+  const num = (key, scale, digits, unit, step) => {
+    const el = document.createElement("input"); el.type = "number"; el.step = step;
+    el.value = isFinite(cons[key]) ? +(cons[key] / scale).toFixed(digits) : "";
+    el.addEventListener("change", () => { const v = parseFloat(el.value); if (isFinite(v)) set({ [key]: v * scale }); });
+    return inBox(el, unit);
+  };
+  // 固定にしたときの値: 今の結果があればそれ、無ければ空（自分で入れる）
+  seg("手先の向き", cons.hand, [["fixed", "W・P・R のまま"], ["spin", "軸まわりは回してよい"]], v => set({ hand: v }));
+  seg("車体の位置", cons.pos, [["free", "自動"], ["fixed", "固定"]],
+    v => set(v === "fixed" ? Object.assign({ pos: "fixed" }, isFinite(cons.bx) || !result ? {} : { bx: result.body.x, by: result.body.y }) : { pos: "free" }));
+  if (cons.pos === "fixed") {
+    const w2 = document.createElement("div"); w2.className = "in2";
+    w2.append(num("bx", 1000, 2, "m", 0.01), num("by", 1000, 2, "m", 0.01));
+    grid.appendChild(fieldBox("車体の中心 X : Y", w2));
+  }
+  seg("車体の向き", cons.ori, [["free", "自動"], ["face", "目標を向く"], ["fixed", "固定"]],
+    v => set(v === "fixed" ? Object.assign({ ori: "fixed" }, isFinite(cons.bth) || !result ? {} : { bth: result.body.th }) : { ori: v }));
+  if (cons.ori === "fixed") grid.appendChild(fieldBox("車体の向き θ", num("bth", Math.PI / 180, 0, "°", 5), "half"));
+  if ((cons.pos === "fixed" && !(isFinite(cons.bx) && isFinite(cons.by))) || (cons.ori === "fixed" && !isFinite(cons.bth))) {
+    const w = document.createElement("div"); w.className = "hint"; w.style.cssText = "grid-column: 1 / -1; color: var(--danger);";
+    w.textContent = "固定する値を入れてください（自動作成のあとなら「📌 今の結果で車体を固定」でも入ります）。";
+    grid.appendChild(w);
+  }
+}
 /* 設定欄の値を内部値から更新（フォーカス中の欄は触らない） */
 function syncObjPropValues(o) {
   document.querySelectorAll("#objProps [data-key]").forEach(el => {
@@ -5909,7 +5989,6 @@ function syncObjPropValues(o) {
     if (el.dataset.kind === "checkbox") { el.checked = k === "visible" ? o.visible !== false : !!o[k]; return; }
     if (el.dataset.kind === "color" || el.dataset.kind === "text") { el.value = o[k] || (el.dataset.kind === "color" ? "#888888" : ""); return; }
     const sc = parseFloat(el.dataset.scale) || 1;
-    if (k.startsWith("cons.")) { const cv = consOf(o)[k.slice(5)]; el.value = isFinite(cv) ? +(cv / sc).toFixed(el.dataset.digits !== undefined ? +el.dataset.digits : 3) : ""; return; }
     const v = (o[k] || 0) / sc;
     const dg = el.dataset.digits !== undefined ? +el.dataset.digits : (sc === 1 ? 0 : 3);
     el.value = +v.toFixed(dg);

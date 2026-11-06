@@ -44,3 +44,12 @@ test("知らない種類の物は読み捨て、手先の数値がおかしけ�
   assert.equal(objs.length, 1);
   assert.deepEqual([objs[0].x, objs[0].y, objs[0].z, objs[0].w], [12, 0, 0, 0]);
 });
+
+const routeFromSave = new Function(grab("routeFromSave") + "\nreturn routeFromSave;")();
+test("回る順番の「この回だけの拘束」（rev.111〜）は読み込んでも残る", () => {
+  const cons = { hand: "fixed", pos: "free", ori: "face" };
+  const r = routeFromSave({ route: ["t1", { t: "t2", cons }, { pose: "P1" }, { t: "t3" }, 5, null, { foo: 1 }] });
+  assert.deepEqual(r, ["t1", { t: "t2", cons }, { pose: "P1" }, "t3"]);
+  assert.notEqual(r[1].cons, cons, "拘束は写しにする（読み込んだデータと共有しない）");
+  assert.deepEqual(routeFromSave({}), []);
+});
