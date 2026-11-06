@@ -3,8 +3,6 @@
  * 工作機械の払い出し台から箱を取り、台車へ積む。台車が満載になると出荷されて入れ替わる。
  * シーン内時計(1秒≒8分)で昼夜が巡り、夜は作業者が帰ってもロボットは働き続ける。
  * クリックでジャンプ+ハート。prefers-reduced-motion では停止状態で表示し、▶で再生できる。
- * 外から: window.lxStage = { say(text, 秒), cheer(text), setName(名前), setBase(これまでの累計箱数) }
- *   準備ができたら document に "lx-stage-ready"、箱を 1 つ積むたびに "lx-stage-box" {detail:{total}} を出す(assets/keep.js の常連パスが使う)
  * 依存なし。座標は viewBox 640×280、床 y=240。
  */
 (function () {
@@ -144,10 +142,6 @@
   el("line", { x1: 0, y1: -66, x2: 0, y2: -38, stroke: "#c9d1d9", "stroke-width": 1 }, body);
   el("circle", { cx: -5, cy: -52, r: 1.5, fill: "#a9b4bf" }, body);
   el("circle", { cx: 5, cy: -52, r: 1.5, fill: "#a9b4bf" }, body);
-  // 名札(常連パスで名前を付けたときだけ出す)
-  var plate = el("g", { opacity: 0 }, body);
-  el("rect", { x: -33, y: -71, width: 66, height: 15, rx: 3, fill: "#fff", stroke: "#0068B7", "stroke-width": 1.2 }, plate);
-  var plateText = el("text", { x: 0, y: -63.5, "font-size": 9, "font-weight": 700, fill: "#0068B7", "text-anchor": "middle", "dominant-baseline": "central" }, plate);
   // 顔(側面ディスプレイ)
   el("rect", { x: -27, y: -104, width: 54, height: 30, rx: 8, fill: "#1f2933" }, body);
   var eyesN = el("g", {}, body);
@@ -198,7 +192,7 @@
     arm: { x: 20, y: -36 }, grip: 0, held: false, moving: false,
     supply: { state: "rest", y: TABLE_TOP - BOX_H, vy: 0, wait: 0 },
     cart: { x: CART_X0, n: 0, state: "ready", t: 0, wheelA: 0 },
-    minutes: 9 * 60, count: 0, base: 0, lastHour: 9,
+    minutes: 9 * 60, count: 0, lastHour: 9,
     bub: { t: 0, text: "", who: "robot" },
     workerA: 1, sipT: 0, hearts: []
   };
@@ -261,7 +255,6 @@
       S.held = false;
       var b = boxShape(cartBoxes); set(b, { transform: "translate(" + slot[0] + "," + slotTop() + ")" });
       S.cart.n++; S.count++; showCount();
-      emit("lx-stage-box", { total: S.base + S.count });
       if (S.cart.n >= SLOTS.length) { S.cart.state = "leaving"; S.cart.t = 0; say("満載です！出荷〜", 1.8); }
       else if (S.bub.t <= 0 && Math.random() < 0.3) say(pick(["お届け！", "ぴったり！", "まだまだ！", "つぎ行きます"]));
     });
@@ -436,13 +429,7 @@
   }
 
   var clockEl = document.getElementById("stClock"), clockIcon, countEl = document.getElementById("stCount");
-  function showCount() { countEl.textContent = (S.base + S.count).toLocaleString("ja-JP"); }
-  function emit(name, detail) {
-    var ev;
-    try { ev = new CustomEvent(name, { detail: detail }); }
-    catch (e) { ev = document.createEvent("CustomEvent"); ev.initCustomEvent(name, false, false, detail); }
-    document.dispatchEvent(ev);
-  }
+  function showCount() { countEl.textContent = S.count.toLocaleString("ja-JP"); }
   // 時計アイコンをテキストノードから差し替え可能な span にする
   (function () {
     var p = clockEl.parentNode, span = document.createElement("span");
@@ -491,18 +478,4 @@
   requestAnimationFrame(loop);
   // 検証用フック
   window.__lxStage = { S: S, step: function (sec) { for (var t = 0; t < sec; t += 1 / 60) update(1 / 60); draw(); }, pet: pet, say: say };
-  // 常連パス(assets/keep.js)から使う口
-  window.lxStage = {
-    say: function (text, secs) { say(text, secs || 2.4); },
-    cheer: function (text, secs) { S.jumpT = -1; hop(text, secs || 2.6, 9); },
-    setName: function (name) {
-      plateText.textContent = name || "";
-      plateText.removeAttribute("textLength"); plateText.removeAttribute("lengthAdjust");
-      if (name && plateText.getComputedTextLength && plateText.getComputedTextLength() > 58) set(plateText, { textLength: 58, lengthAdjust: "spacingAndGlyphs" });
-      set(plate, { opacity: name ? 1 : 0 });
-      robot.setAttribute("aria-label", (name || "LexxMoMa") + "をなでる");
-    },
-    setBase: function (n) { S.base = Math.max(0, n | 0) - S.count; showCount(); }
-  };
-  emit("lx-stage-ready");
 })();

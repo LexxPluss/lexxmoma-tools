@@ -11,7 +11,6 @@ site/                      ← published root (https://<org>.github.io/<repo>/)
 ├ 404.html
 ├ manifest.webmanifest     ← PWA manifest ("install as app"); linked from every page by theme.js
 ├ assets/                  ← logo, favicon, PWA icons, analytics (track.js), shared theme + header (theme.js),
-│                            常連パス: bookmark + install stamps → name your LexxMoMa (keep.js, loaded by theme.js),
 │                            landing-page diorama (lexxmoma-stage.js)
 ├ library/                 ← LexxMoMa Tour
 ├ simulator/               ← Motion Simulator (2D)
