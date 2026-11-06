@@ -6,7 +6,6 @@
 <title>LexxMoMa Tools</title>
 <meta name="description" content="LexxMoMa(自走マニピュレータ)の導入検討を支えるツール集。検討フェーズや悩みから必要なツールを選んでブラウザで実行できます。">
 <meta name="theme-color" content="#0068B7">
-<meta name="lx-keep" content="show"><!-- 3 日目以降の利用者に保存の案内を出す (assets/keep.js)。出すのはこのページだけ -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="LexxMoMa Tools">
 <meta property="og:title" content="LexxMoMa Tools — 導入検討をひとつの場所で">
@@ -581,7 +580,6 @@ render();
 // 導線: トップを開いて 1.5 秒後に左下(スマホは下)に出す。画面は塞がない
 //   「使ってみる」→ ツールを新しいタブで / 「一覧で見る」→ カードまでスクロールして光らせる / × ・「あとで」・Esc → 閉じる
 //   どれを押してもこのお知らせは二度と出さない(localStorage lx_news_seen に id)。NEW の印はカードとメニューに until まで残る
-//   同じ訪問で常連パスのカード(assets/keep.js)が自動で開く予定でも、お知らせを出したときはパスを次の訪問に回す
 // 確認用: ?lx_news=1 で必ず出す、?lx_news=reset で見た記録を消す
 (function(){
   const KEY = "lx_news_seen";
@@ -594,7 +592,6 @@ render();
   const n = active.find(x => q === "1" || !load().includes(x.id));
   if (!n) return;
   const t = TOOLS.find(x => x.id === n.tool);
-  window.__lxNewsOpen = true;   // keep.js: 常連パスの自動表示をこの訪問では見送る
   setTimeout(() => {
     const el = document.createElement("aside");
     el.className = "lx-news"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "新しいツールのお知らせ");
