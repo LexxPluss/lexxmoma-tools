@@ -11,10 +11,12 @@
 |---|---|
 | `lexxmoma-2d.html` | 本体（UI、2D 描画、シーケンスの時間計算、再生、保存・読込、録画）。古典スクリプト |
 | `crx-kinematics.js` | FANUC CRX-20iA/L の運動学。順運動学・逆運動学（減衰最小二乗）・WPR 変換・旧形式の変換。依存なし。ブラウザでは `window.CRX`、Node ではモジュール |
+| `motion.js` | 動きの時間の計算（台形速度、アームの関節動作）。依存なし。ブラウザでは `window.MOTION`、Node ではモジュール |
 | `sim3d.js` | 3D ビュー（Three.js。普通のスクリプトで、`window.THREE` を使う）。`window.LexxSim3D` を本体に提供。手先ギズモ（TransformControls）、視点操作（OrbitControls）、公式メッシュの読込 |
 | `vendor/` | Three.js と使用アドオン（同梱。`vendor/README.md` に版と取得元） |
 | `meshes/crx20ia_l/` | FANUC 公式 ROS 2 記述（fanuc_description）の衝突判定用 STL（Apache-2.0）。見た目は簡略だが関節ごとに分かれていて正確に動く |
 | `test/kinematics.test.cjs` | 運動学のテスト（`node --test`）。CI でも走る |
+| `test/motion.test.cjs` | アームの関節動作のテスト（全関節が同時に止まる・上限を超えない）。CI でも走る |
 | `LexxMoMa_Simulator_Spec_v1.0.md` | 最初のヒアリングで確定した仕様（2D） |
 
 `*.md`・`test/` は GitHub Pages には公開されない（`.github/workflows/pages.yml`）。
@@ -25,6 +27,9 @@
   `fanuc_crx_description/urdf/crx20ia_l_urdf_macro.xacro` の値（`crx-kinematics.js` の `MODEL`）。
   取付面→J2 245 mm、上腕 710 mm、前腕 540 mm、手首オフセット 150 mm、フランジ 160 mm、最大リーチ 1,418 mm。
 - 角加速度は非公開のため「最大速度に 0.4 s で到達」の推定値（2D 版からの前提を踏襲）。
+- アームの動きは実機の関節動作（J 動作）と同じく、全関節が同時に動き始めて同時に止まる（rev.107〜。`motion.js` の `jointMove`）。
+  どの時刻でも全関節が同じ割合だけ進み、速さは一番きつい関節に合わせる。rev.106 までは関節ごとに最大速度で動き、終わる時刻がばらばらだった。
+  全関節の「最大速度に届くまでの時間」が同じ（0.4 s）なので、動きの時間は一番遅い関節を単独で動かしたときと変わらない。
 - アーム基準座標は URDF の `wbase`（J1 回転中心・取付面の 245 mm 上、x 前・y 左・z 上）。
   手先の姿勢は FANUC 表記の W/P/R（固定軸 XYZ）。ツール長は FANUC フランジの z 方向。
 - アーム取付: 車体中心、床から 750 mm（`ARM_MOUNT_Z`。Output/02 の案、要確認）。車体は 750×600 mm（従来どおり）。
@@ -188,7 +193,7 @@
 - `python3 site/simulator/build.py`: ダブルクリックで動かすための生成物を作る。STL・サンプル・vendor を変えたら実行して生成物もコミットする
   （CI で作り直した結果と比べる）。生成物は `vendor/three.bundle.js`（Three.js とアドオンを普通のスクリプト 1 本に）、
   `meshes/crx20ia_l.js`（STL を base64 で埋め込み）、`samples/embedded.js`（サンプルの一覧と中身）。file:// では ES モジュールと fetch が止められるため
-- テスト: `node --test site/simulator/test/kinematics.test.cjs`
+- テスト: `node --test site/simulator/test/kinematics.test.cjs site/simulator/test/motion.test.cjs`
 - 変更のたびにヘッダーの `rev.N` を上げる。保存 JSON にも rev が記録される
 - 行末は CRLF（`lexxmoma-2d.html`）
 

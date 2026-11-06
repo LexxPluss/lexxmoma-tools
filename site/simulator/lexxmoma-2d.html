@@ -608,6 +608,7 @@
 </style>
 <!-- CRX-20iA/L 運動学（依存なし・古典スクリプト。本体と Node のテストで共用） -->
 <script src="crx-kinematics.js"></script>
+<script src="motion.js"></script>
 <!-- Three.js（vendor/ の ES モジュールを build.py で普通のスクリプト 1 本にまとめたもの）・アームの形（埋め込み）・3D ビュー。
      HTML をダブルクリック（file://）で開いても動くよう、ES モジュールや fetch は使わない -->
 <script src="vendor/three.bundle.js"></script>
@@ -623,7 +624,7 @@
        一度開いたら、隣へマウスを動かすだけで切り替わる。Esc で閉じる -->
   <div id="titleCol">
     <h1 class="lx-tool">LexxMoMa 動作シミュレーター</h1>
-    <div id="revDisp">rev.106</div>
+    <div id="revDisp">rev.107</div>
     <nav id="menubar" role="menubar">
       <div class="hdr-menu">
         <button class="mb" id="btnFile" aria-haspopup="menu" aria-expanded="false">ファイル</button>
@@ -990,30 +991,8 @@ function angDiff(a, b) { // b-a を [-π, π] に正規化
 function clamp(x, lo, hi) { return Math.min(hi, Math.max(lo, x)); }
 function deg2rad(d) { return d * Math.PI / 180; }
 
-/* ---------------- 台形速度プロファイル ----------------
- * 距離 d、加速度 a（＝減速度）、最大速度 vmax */
-function trapDur(d, a, vmax) {
-  d = Math.abs(d);
-  if (d < 1e-9) return 0;
-  const da = vmax * vmax / a;          // 加減速で進む距離の合計
-  if (d < da) return 2 * Math.sqrt(d / a);   // 三角プロファイル
-  return d / vmax + vmax / a;
-}
-function trapPos(t, d, a, vmax) {
-  d = Math.abs(d);
-  if (d < 1e-9) return 0;
-  const T = trapDur(d, a, vmax);
-  t = clamp(t, 0, T);
-  const da = vmax * vmax / a;
-  if (d < da) { // 三角
-    const tp = T / 2;
-    return (t <= tp) ? 0.5 * a * t * t : d - 0.5 * a * (T - t) * (T - t);
-  }
-  const ta = vmax / a;
-  if (t <= ta) return 0.5 * a * t * t;
-  if (t <= T - ta) return 0.5 * a * ta * ta + vmax * (t - ta);
-  return d - 0.5 * a * (T - t) * (T - t);
-}
+/* 台形速度プロファイル（距離 d、加速度 a、最大速度 vmax）は motion.js（Node のテストと共有） */
+const { trapDur, trapPos } = MOTION;
 
 /* ---------------- Dubins path ----------------
  * 6 語 (LSL, RSR, LSR, RSL, RLR, LRL) から最短を選ぶ。 */
@@ -1860,15 +1839,10 @@ function bodyMotion(s, goal, b, P) {
   return cand;
 }
 /* アームの関節移動（qs → qg）。6 軸が同時に動き、各軸は台形速度プロファイル。所要時間は各軸の最大値 */
+/* アームの動き: 実機の関節動作（J 動作）と同じく、全関節が同時に動き始めて同時に止まる（motion.js） */
 function armMotion(qs, qg, P) {
-  const dq = qg.map((v, i) => v - qs[i]);
-  const durs = dq.map((d, i) => trapDur(Math.abs(d), P.j[i].a, P.j[i].w));
-  return {
-    dur: Math.max(...durs),
-    anim: (tl) => ({
-      arm: { q: qs.map((v, i) => (tl >= durs[i]) ? qg[i] : v + Math.sign(dq[i]) * trapPos(tl, Math.abs(dq[i]), P.j[i].a, P.j[i].w)) },
-    }),
-  };
+  const m = MOTION.jointMove(qs, qg, P.j);
+  return { dur: m.dur, anim: (tl) => ({ arm: { q: m.at(tl) } }) };
 }
 
 function compileProgram() {
