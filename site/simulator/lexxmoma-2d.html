@@ -609,6 +609,7 @@
 <!-- CRX-20iA/L 運動学（依存なし・古典スクリプト。本体と Node のテストで共用） -->
 <script src="crx-kinematics.js"></script>
 <script src="motion.js"></script>
+<script src="collide.js"></script>
 <!-- Three.js（vendor/ の ES モジュールを build.py で普通のスクリプト 1 本にまとめたもの）・アームの形（埋め込み）・3D ビュー。
      HTML をダブルクリック（file://）で開いても動くよう、ES モジュールや fetch は使わない -->
 <script src="vendor/three.bundle.js"></script>
@@ -624,7 +625,7 @@
        一度開いたら、隣へマウスを動かすだけで切り替わる。Esc で閉じる -->
   <div id="titleCol">
     <h1 class="lx-tool">LexxMoMa 動作シミュレーター</h1>
-    <div id="revDisp">rev.107</div>
+    <div id="revDisp">rev.108</div>
     <nav id="menubar" role="menubar">
       <div class="hdr-menu">
         <button class="mb" id="btnFile" aria-haspopup="menu" aria-expanded="false">ファイル</button>
@@ -1379,35 +1380,155 @@ const AUTO_R = 600;      // 走行中の手先の制約: 車体中心からの�
 const AUTO_Z = 800;      // 走行中の手先の高さ（床から）[mm]
 const AUTO_ZTOL = 10;    // 走行中の手先の高さの許容差 [mm]
 const AUTO_MARGIN = 50;  // 車体の周りに空ける隙間 [mm]
+const AUTO_LIFT = 150;   // 目標の手前の姿勢: 目標からツールの向きと逆へ離す距離 [mm]（下向きなら真上）
 function tcpR(q) { return tcpInfoVeh(q, state.toolLen).horizontal; }
 function tcpFloorZ(q) { return tcpInfoVeh(q, state.toolLen).z + ARM.L.base + ARM_MOUNT_Z; }
 /* 走ってよいアームの姿勢か（手先が半径 AUTO_R 以内・高さ AUTO_Z） */
 function driveOk(q) { return tcpR(q) <= AUTO_R + 1 && Math.abs(tcpFloorZ(q) - AUTO_Z) <= AUTO_ZTOL; }
-/* 寄り付きの姿勢: 手先を高さ AUTO_Z・半径 AUTO_R 以内に置き、qT へ一番早く動けるもの。見つからなければ null */
-function approachOf(qT) {
+/* 寄り付きの真上: 手先を寄り付き qA と同じ所・同じ向きのまま、床から z [mm] まで上げた姿勢。届かなければ null */
+function riseOf(qA, z) {
+  const i = tcpInfoVeh(qA, state.toolLen);
+  const r = CRX.ik(vehTargetToArm(i.x, i.y, z - ARM_MOUNT_Z - ARM.L.base, i.w, i.p, i.r), qA, state.toolLen, { iters: 80 });
+  return r.ok && CRX.withinLimits(r.q) ? r.q : null;
+}
+/* 寄り付きの姿勢: 手先を高さ AUTO_Z・半径 AUTO_R 以内に置き、qT へ一番早く動けるもの。戻り値 { q, qH } か、見つからなければ null。
+ * 車体の位置 b と設備 obs を渡すと、設備に当たる姿勢と、qT へ動くあいだに設備に当たる姿勢は選ばない（allows: 手先が触れてよい球）。
+ * どの寄り付きからも qT へまっすぐ動くと当たるときは、寄り付きの真上（qT の手先の高さ）qH を経由する（まず上げてから横へ） */
+function approachOf(qT, b, obs, allows) {
   const P = params(), i = tcpInfoVeh(qT, state.toolLen);
   const az0 = i.horizontal > 1 ? Math.atan2(i.y, i.x) : ARM_MOUNT_YAW + qT[0];
   const vz = AUTO_Z - ARM_MOUNT_Z - ARM.L.base;
   const search = (azs, wpr) => {
-    let best = null;
-    for (const da of azs) for (let r = AUTO_R - 20; r >= 100; r -= 120) {
+    const cs = [];
+    for (const da of azs) for (let r = AUTO_R - 20; r >= 100; r -= 60) {
       const az = az0 + da * Math.PI / 180;
       const T = vehTargetToArm(r * Math.cos(az), r * Math.sin(az), vz, wpr[0], wpr[1], wpr[2]);
-      const res = CRX.ik(T, best ? best.q : qT, state.toolLen, { iters: 80 });
+      const res = CRX.ik(T, cs.length ? cs[cs.length - 1].q : qT, state.toolLen, { iters: 80 });
       if (!res.ok || !CRX.withinLimits(res.q)) continue;
-      const d = armMotion(res.q, qT, P).dur;
-      if (!best || d < best.d) best = { q: res.q, d };
+      if (b && COLLIDE.armHit(armWorldPts(res.q, b), obs)) continue;
+      cs.push({ q: res.q, d: armMotion(res.q, qT, P).dur });
     }
-    return best;
+    cs.sort((x, y) => x.d - y.d); // 早い順に、qT までの通り道が当たらない最初のもの
+    const c = cs.find(c => !b || armMoveClear(c.q, qT, b, obs, P, allows));
+    if (c) return { q: c.q, qH: null };
+    if (!b) return null;
+    const zT = armWorldPts(qT, b).tcp[2]; // まっすぐでは当たる: 真上へ上げてから横へ
+    if (zT <= AUTO_Z + 1) return null;
+    for (const c of cs) {
+      const qH = riseOf(c.q, zT);
+      if (qH && armMoveClear(c.q, qH, b, obs, P, allows) && armMoveClear(qH, qT, b, obs, P, allows)) return { q: c.q, qH };
+    }
+    return null;
   };
   // まず手先の向きは目標のまま。届かなければ方位をずらし、それでも無ければ真下向き
-  const best = search([0], [i.w, i.p, i.r]) || search([-30, 30, -60, 60], [i.w, i.p, i.r]) || search([0, -30, 30], [180, 0, i.r]);
-  return best ? best.q : null;
+  return search([0], [i.w, i.p, i.r]) || search([-30, 30, -60, 60], [i.w, i.p, i.r]) || search([0, -30, 30], [180, 0, i.r]);
 }
+/* 寄り付き ap（approachOf の戻り値）から qT までの時間 */
+function approachDur(ap, qT, P) { return ap.qH ? armMotion(ap.q, ap.qH, P).dur + armMotion(ap.qH, qT, P).dur : armMotion(ap.q, qT, P).dur; }
 function armPathOk(qs, qg, P) { // アームが動くあいだ、手先が半径 AUTO_R 以内・高さ AUTO_Z のままか
   const m = armMotion(qs, qg, P);
   for (let k = 0; k <= 20; k++) if (!driveOk(m.anim(m.dur * k / 20).arm.q)) return false;
   return true;
+}
+/* アームの点（床基準のワールド座標 [mm]）。車体の位置 b・姿勢 q から（collide.js の当たり判定に渡す） */
+function armWorldPts(q, b) {
+  const f = CRX.fk(q, state.toolLen).points, yaw = ARM_MOUNT_YAW + b.th, c = Math.cos(yaw), s = Math.sin(yaw), out = {};
+  for (const [k, p] of Object.entries(Object.assign({ mount: [0, 0, 0] }, f))) out[k] = [b.x + p[0] * c - p[1] * s, b.y + p[0] * s + p[1] * c, p[2] + ARM_MOUNT_Z];
+  return out;
+}
+/* 手先が触れてよい球: 手先の目標の所と、自分で登録した姿勢の手先の所（物を置く・取る所）。
+ * 自動で作る寄り付き・手前の姿勢は宙にあるので含めない */
+function touchAt(q, b) { return { p: armWorldPts(q, b).tcp, r: COLLIDE.ALLOW_R }; }
+function touchTarget(t) { return { p: [t.x, t.y, t.z], r: COLLIDE.ALLOW_R }; }
+function touchSpots() {
+  const tg = state.objects.filter(o => o.type === "target").map(touchTarget);
+  const own = state.points.filter(p => !p.auto && p.body && p.arm).map(p => touchAt(p.arm.q, p.body));
+  return tg.concat(own);
+}
+/* 車体を b に止めたまま、アームが qs → qg と動くあいだ設備に当たらないか（allows: 手先が触れてよい球） */
+const HIT_DT = 0.05; // 当たりを調べる時間の間隔 [s]（作ったあとの全体の確かめと同じ）
+function armMoveClear(qs, qg, b, obs, P, allows) {
+  const m = armMotion(qs, qg, P), n = Math.max(2, Math.ceil(m.dur / HIT_DT));
+  for (let k = 0; k <= n; k++) if (COLLIDE.armHit(armWorldPts(m.anim(m.dur * k / n).arm.q, b), obs, allows)) return false;
+  return true;
+}
+/* 姿勢（車体の位置 b・アームの姿勢 q）の手先を、手先の目標と同じ形（床基準の位置 [mm]・W/P/R [deg]）で */
+function poseTarget(q, b) {
+  const i = tcpInfoVeh(q, state.toolLen), p = armWorldPts(q, b).tcp;
+  return { x: p[0], y: p[1], z: p[2], w: i.w, p: i.p, r: i.r + b.th * 180 / Math.PI };
+}
+/* 目標の手前の姿勢: 手先を、目標からツールの向きと逆へ AUTO_LIFT 離した所へ（向きは目標と同じ）。届かなければ null */
+function liftOf(t, b, qT) {
+  const R = CRX.wprToRot(t.w || 0, t.p || 0, t.r || 0); // 床基準。ツールの向き = 3 列目
+  return targetIK({ x: t.x - AUTO_LIFT * R[2], y: t.y - AUTO_LIFT * R[5], z: t.z - AUTO_LIFT * R[8], w: t.w, p: t.p, r: t.r }, b, qT);
+}
+/* 走るあいだ（drive）アームが qs → qg と動いても（同じなら止まったまま）設備に当たらないか */
+function driveClear(drive, qs, qg, obs, P) {
+  const am = armMotion(qs, qg, P), T = Math.max(drive.dur, am.dur), n = Math.max(2, Math.ceil(T / HIT_DT));
+  for (let k = 0; k <= n; k++) {
+    const t = T * k / n, b = drive.anim(Math.min(t, drive.dur)).body;
+    if (COLLIDE.armHit(armWorldPts(am.anim(Math.min(t, am.dur)).arm.q, b), obs)) return false;
+  }
+  return true;
+}
+/* たたんだ姿勢: 手先を車体の中心の少し前・高さ AUTO_Z に引き寄せ、真下に向ける（走るあいだ、アームが車体の外へ出にくい） */
+let stowCache = null;
+function stowPose() {
+  if (stowCache && stowCache.toolLen === state.toolLen) return stowCache.q;
+  let q = null;
+  for (const x of [150, 0, 250]) {
+    const r = CRX.ik(vehTargetToArm(x, 0, AUTO_Z - ARM_MOUNT_Z - ARM.L.base, 180, 0, 0), ARM_READY_Q, state.toolLen, { iters: 120 });
+    if (r.ok && CRX.withinLimits(r.q) && driveOk(r.q)) { q = r.q; break; }
+  }
+  stowCache = { toolLen: state.toolLen, q };
+  return q;
+}
+/* 車体を b0 → b1 へ走らせ、アームを寄り付き qR → 行き先の寄り付き qA へ動かす走り方。設備に当たらず、時間が短いもの。
+ *   with:   走りながら動かす（途中も手先の高さ・半径を保てるときだけ）
+ *   after:  qR のまま走り、着いてから動かす
+ *   before: 走る前に動かし、qA のまま走る
+ *   stow:   ほかが全部当たるときだけ。たたんだ姿勢にしてから走り、着いてから qA へ
+ * 戻り値 { mode（走行経路）, way, dur, qS（stow のとき）} か、無ければ null */
+function driveWay(b0, b1, qR, qA, zones, obs, P) {
+  const am = armMotion(qR, qA, P);
+  let best = null;
+  for (const mode of ["auto", "forward", "backward", "shortest"]) {
+    const dp = drivePath(b0, b1, mode, zones, obs, P);
+    if (!dp) continue;
+    const ways = [];
+    if (armPathOk(qR, qA, P) && driveClear(dp, qR, qA, obs, P)) ways.push({ way: "with", dur: Math.max(dp.dur, am.dur) });
+    if (driveClear(dp, qR, qR, obs, P) && armMoveClear(qR, qA, b1, obs, P, [])) ways.push({ way: "after", dur: dp.dur + am.dur });
+    if (armMoveClear(qR, qA, b0, obs, P, []) && driveClear(dp, qA, qA, obs, P)) ways.push({ way: "before", dur: dp.dur + am.dur });
+    for (const w of ways) if (!best || w.dur < best.dur) best = Object.assign({ mode }, w);
+    if (best && best.way === "with") break; // 走りながら動かせれば、それより速い走り方は無い
+  }
+  const qS = best ? null : stowPose();
+  if (qS) for (const mode of ["auto", "forward", "backward", "shortest"]) {
+    const dp = drivePath(b0, b1, mode, zones, obs, P);
+    if (!dp || !armMoveClear(qR, qS, b0, obs, P, []) || !driveClear(dp, qS, qS, obs, P) || !armMoveClear(qS, qA, b1, obs, P, [])) continue;
+    const dur = armMotion(qR, qS, P).dur + dp.dur + armMotion(qS, qA, P).dur;
+    if (!best || dur < best.dur) best = { mode, way: "stow", dur, qS };
+  }
+  return best;
+}
+/* 走り方 w の段を steps に足す（nT: 行き先の姿勢の名前、nA: 行き先の寄り付きの名前、addStow: たたんだ姿勢を足して名前を返す） */
+function pushDrive(steps, w, nT, nA, addStow) {
+  if (w.way === "with") steps.push({ body: nT, arm: nA, mode: w.mode });
+  else if (w.way === "stow") { steps.push({ arm: addStow(w.qS) }); steps.push({ body: nT, mode: w.mode }); steps.push({ arm: nA }); }
+  else if (w.way === "before") { steps.push({ arm: nA }); steps.push({ body: nT, mode: w.mode }); }
+  else { steps.push({ body: nT, mode: w.mode }); steps.push({ arm: nA }); }
+}
+/* シーケンスの中で、アームが設備に当たる段（0.05 s ごとに調べる）。手先は目標・登録した姿勢の所だけ触れてよい */
+function programHits(c) {
+  const obs = autoObstacles(), out = [], al = touchSpots();
+  c.stages.forEach((sg, i) => {
+    const n = Math.max(2, Math.ceil(sg.dur / HIT_DT));
+    for (let k = 0; k <= n; k++) {
+      const st = stateAtTime(c, sg.t0 + sg.dur * k / n), h = COLLIDE.armHit(armWorldPts(st.arm.q, st.body), obs, al);
+      if (h) { out.push({ stage: i, box: h.box }); break; }
+    }
+  });
+  return out;
 }
 function ptInBox(o, x, y) {
   const c = Math.cos(-(o.yaw || 0)), s = Math.sin(-(o.yaw || 0));
@@ -1455,14 +1576,16 @@ function targetIK(t, b, seedQ) {
   }
   return null;
 }
-/* 手先の目標 t へ行く車体の位置を決める。今の車体の位置 body0・アームの姿勢 q0 から、時間が最短のもの */
-function autoPlace(t, body0, q0, P, zones, obs) {
-  const R0 = driveOk(q0) ? q0 : approachOf(q0); // 走る前に寄り付きの姿勢へ
+/* 手先の目標 t へ行く車体の位置を決める。今の車体の位置 body0・アームの姿勢 q0 から、時間が最短のもの。
+ * qR: 走る前に戻る寄り付きの姿勢（呼ぶ側が決めたもの。無ければここで探す） */
+function autoPlace(t, body0, q0, P, zones, obs, qR) {
+  const al = touchSpots(); // 手先が触れてよい所（今いる所・この目標の所など）
+  const R0 = qR || (driveOk(q0) ? q0 : (approachOf(q0, body0, obs, al) || {}).q); // 走る前に寄り付きの姿勢へ
   if (!R0) return null;
   const retreat = armMotion(q0, R0, P).dur;
   let best = null;
   const qs = targetIK(t, body0, q0); // 今の車体の位置のまま届くなら、走らない
-  if (qs) best = { same: true, body: body0, qT: qs, cost: armMotion(q0, qs, P).dur };
+  if (qs && armMoveClear(q0, qs, body0, obs, P, al)) best = { same: true, body: body0, qT: qs, cost: armMotion(q0, qs, P).dur };
   const pre = [];
   for (let it = 0; it < 24; it++) {
     const th = it * TAU / 24, c = Math.cos(th), s = Math.sin(th);
@@ -1477,23 +1600,28 @@ function autoPlace(t, body0, q0, P, zones, obs) {
     }
   }
   pre.sort((a, c) => a.drive - c.drive);
+  // まず目標・手前の姿勢だけ解き、時間の下限（戻る＋走る＋手前 ⇄ 目標）の短い順に並べる。
+  // 寄り付きの探索と走るあいだの当たりは重いので、下限が今の最良より短い候補だけ調べる
   const cands = [];
   for (const p of pre.slice(0, 400)) {
     if (best && p.drive + retreat >= best.cost) break; // 走る時間だけで負けている
     const qT = targetIK(t, p.b);
     if (!qT) continue;
-    const qA = approachOf(qT);
-    if (!qA) continue;
-    const up = armMotion(qA, qT, P).dur;
-    cands.push({ body: p.b, qT, qA, cost: retreat + Math.max(p.drive, armMotion(R0, qA, P).dur) + up * 2 });
+    const qU = liftOf(t, p.b, qT);
+    if (!qU || !armMoveClear(qU, qT, p.b, obs, P, al)) continue; // 手前 → 目標で設備に当たる
+    const down = armMotion(qU, qT, P).dur;
+    cands.push({ body: p.b, qT, qU, drive: p.drive, down, low: retreat + p.drive + down * 2 });
   }
-  cands.sort((a, c) => a.cost - c.cost);
+  cands.sort((a, c) => a.low - c.low);
   for (const cd of cands) {
-    if (best && cd.cost >= best.cost) break;
-    for (const mode of ["auto", "forward", "backward", "shortest"]) {
-      if (!drivePath(body0, cd.body, mode, zones, obs, P)) continue;
-      return Object.assign(cd, { mode, armDuringDrive: armPathOk(R0, cd.qA, P) });
-    }
+    if (best && cd.low >= best.cost) break;
+    const ap = approachOf(cd.qU, cd.body, obs, al); // 寄り付き → 手前も当たらないもの
+    if (!ap) continue;
+    const qA = ap.q, rest = retreat + (approachDur(ap, cd.qU, P) + cd.down) * 2;
+    if (best && rest + Math.max(cd.drive, armMotion(R0, qA, P).dur) >= best.cost) continue;
+    const w = driveWay(body0, cd.body, R0, qA, zones, obs, P); // 走るあいだも設備に当たらない走り方
+    if (!w || (best && rest + w.dur >= best.cost)) continue;
+    best = { body: cd.body, qT: cd.qT, qU: cd.qU, qA, qH: ap.qH, cost: rest + w.dur, way: w };
   }
   return best;
 }
@@ -1598,28 +1726,56 @@ function autoGenerate() {
   const ents = routeEntries();
   if (!ents.length) { alert("先に、キャンバス左の「⊕ 手先」で手先の目標を置くか、左ペインの「回る順番」に登録した姿勢を足してください。"); return; }
   if ((state.points.some(p => p.auto) || state.program.length) && !confirm("自動で作った姿勢とシーケンスを、作り直したものに置き換えます。自分で登録した姿勢はそのまま残ります（Ctrl+Z で戻せます）。")) return;
-  const P = params(), zones = autoZones(), obs = autoObstacles();
+  const P = params(), zones = autoZones(), obs = autoObstacles(), al = touchSpots();
   let body = initialBody(), q = initialArm().q.slice();
   const pts = state.points.filter(p => !p.auto).map(p => structuredClone(p)), steps = [];
   const uniq = (n) => { let m = n, i = 2; while (pts.some(p => p.name === m)) m = n + " " + i++; return m; };
+  const findPt = (n) => pts.find(p => p.name === n);
+  let stowN = null; // たたんだ姿勢は 1 つだけ作って使い回す
+  const stowName = (qS) => stowN || (stowN = addPt("走行", null, qS));
   const addPt = (name, b, qq) => { const n = uniq(name); pts.push({ name: n, body: b ? { x: b.x, y: b.y, th: mod2pi(b.th) } : null, arm: qq ? { q: qq.slice() } : null, auto: true }); return n; };
   const start = addPt("開始", body, q);
-  let lastA = null, prevName = "開始"; // 今の姿勢の寄り付きの姿勢の名前（走る前に戻る先）と、前に行った所の名前
+  // 今の姿勢の寄り付き（走る前に戻る先）と、そのあいだの姿勢（上げ・手前。寄り付き側からの順）の名前、前に行った所の名前
+  let lastA = null, lastVia = [], prevName = "開始";
   const fail = (m) => { alert(m); return false; };
   const noApproach = (n) => `「${n}」の寄り付きの姿勢（手先の高さ ${AUTO_Z} mm・半径 ${AUTO_R} mm 以内）が見つかりませんでした。`;
   // 走る前に、手先を走行中の高さ・車体の近くへ
   const retreat = () => {
     if (driveOk(q)) return true;
-    const qa = approachOf(q);
-    if (!qa) return fail(noApproach(prevName));
+    for (const n of lastVia.slice().reverse()) steps.push({ arm: n }); // 目標からは、来た道（手前・上げ）を戻る
+    let qa;
+    if (lastA) qa = findPt(lastA).arm.q; // 寄り付きが決まっていればそこへ
+    else {
+      const ap = approachOf(q, body, obs, al);
+      if (!ap) return fail(noApproach(prevName));
+      if (ap.qH) steps.push({ arm: addPt(prevName + " 上げ", body, ap.qH) });
+      qa = ap.q;
+    }
     steps.push({ arm: lastA || addPt(prevName + " 寄り", body, qa) });
-    q = qa;
+    q = qa; lastVia = [];
     return true;
   };
   // 決まっている所へ行く。c: {name, body|null, qT|null, nT（姿勢の名前）, qA, nA}。車体が要るなら走る（寄り付きは自動）
+  // 登録した姿勢へ入る寄り付き・あいだの姿勢を決める（1 回目だけ）。寄り付き → 手前 → 姿勢（手前へ届かないか、手前 → 姿勢で当たるなら手前なし）
+  const prepApproach = (c) => {
+    if (c.nA) return true;
+    const qU = liftOf(poseTarget(c.qT, c.body), c.body, c.qT), useU = qU && armMoveClear(qU, c.qT, c.body, obs, P, al);
+    const ap = approachOf(useU ? qU : c.qT, c.body, obs, al);
+    if (!ap) return fail(noApproach(c.name));
+    c.qA = ap.q; c.nA = addPt(c.name + " 寄り", c.body, c.qA);
+    c.via = [];
+    if (ap.qH) c.via.push(addPt(c.name + " 上げ", c.body, ap.qH));
+    if (useU) c.via.push(addPt(c.name + " 手前", c.body, qU));
+    return true;
+  };
   const goKnown = (c) => {
     if (!c.body || sameBody(c.body, body)) { // 走らない: アームだけ
-      if (c.qT) { steps.push({ arm: c.nT }); q = c.qT; lastA = c.body ? c.nA : null; }
+      if (c.qT && c.body && !armMoveClear(q, c.qT, body, obs, P, al)) { // まっすぐでは当たる: 寄り付きへ戻ってから入り直す
+        if (!retreat() || !prepApproach(c)) return false;
+        steps.push({ arm: c.nA });
+        for (const n of c.via) steps.push({ arm: n });
+        steps.push({ arm: c.nT }); q = c.qT; lastA = c.nA; lastVia = c.via;
+      } else if (c.qT) { steps.push({ arm: c.nT }); q = c.qT; lastA = c.body ? c.nA : null; lastVia = c.body ? c.via : []; }
       prevName = c.name;
       return true;
     }
@@ -1627,16 +1783,13 @@ function autoGenerate() {
     if (!mode) return fail(`「${c.name}」へ行く経路が、走ってよいエリアの中に見つかりませんでした。`);
     if (!retreat()) return false;
     if (c.qT) {
-      if (!c.nA) {
-        c.qA = approachOf(c.qT);
-        if (!c.qA) return fail(noApproach(c.name));
-        c.nA = addPt(c.name + " 寄り", c.body, c.qA);
-      }
-      if (armPathOk(q, c.qA, P)) steps.push({ body: c.nT, arm: c.nA, mode });
-      else { steps.push({ body: c.nT, mode }); steps.push({ arm: c.nA }); }
+      if (!prepApproach(c)) return false;
+      // 走るあいだに設備に当たらない走り方（無ければ、着いてから動かす走り方のまま。作ったあとに知らせる）
+      pushDrive(steps, driveWay(body, c.body, q, c.qA, zones, obs, P) || { mode, way: "after" }, c.nT, c.nA, stowName);
+      for (const n of c.via) steps.push({ arm: n });
       steps.push({ arm: c.nT });
-      q = c.qT; lastA = c.nA;
-    } else { steps.push({ body: c.nT, mode }); lastA = null; } // 車体だけの姿勢: アームは走行中の姿勢のまま
+      q = c.qT; lastA = c.nA; lastVia = c.via;
+    } else { steps.push({ body: c.nT, mode }); lastA = null; lastVia = []; } // 車体だけの姿勢: アームは走行中の姿勢のまま
     body = c.body; prevName = c.name;
     return true;
   };
@@ -1644,25 +1797,27 @@ function autoGenerate() {
   for (const e of ents) {
     const key = e.o ? "t:" + e.o.id : "p:" + e.p.name;
     let c = seen.get(key);
-    if (!c && e.p) c = { name: e.p.name, body: e.p.body ? { ...e.p.body } : null, qT: e.p.arm ? e.p.arm.q.slice() : null, nT: e.p.name, qA: null, nA: null };
+    if (!c && e.p) c = { name: e.p.name, body: e.p.body ? { ...e.p.body } : null, qT: e.p.arm ? e.p.arm.q.slice() : null, nT: e.p.name, qA: null, nA: null, via: [] };
     if (c) { if (!goKnown(c)) return; seen.set(key, c); continue; }
     const t = e.o;
-    const r = autoPlace(t, body, q, P, zones, obs);
-    if (!r) { alert(`「${t.name}」に届く車体の位置（と、走行中の手先の高さ ${AUTO_Z} mm・半径 ${AUTO_R} mm 以内に戻れる寄り付き）が見つかりませんでした。手先の高さ・向き、走行可の区画、設備の位置を見直してください。`); return; }
+    const qR = driveOk(q) ? q : lastA ? findPt(lastA).arm.q : null; // 走る前に戻る寄り付き（決まっていれば）
+    const r = autoPlace(t, body, q, P, zones, obs, qR);
+    if (!r) { alert(`「${t.name}」に、アームが設備に当たらずに届く車体の位置（と、走行中の手先の高さ ${AUTO_Z} mm・半径 ${AUTO_R} mm 以内に戻れる寄り付き）が見つかりませんでした。手先の高さ・向き、走行可の区画、設備の位置を見直してください。`); return; }
     if (r.same) { // 同じ車体の位置のまま、アームだけ動かす
       const nT = addPt(t.name, body, r.qT);
       steps.push({ arm: nT });
-      seen.set(key, { name: t.name, body: { ...body }, qT: r.qT, nT, qA: null, nA: null });
-      q = r.qT; lastA = null; prevName = t.name;
+      seen.set(key, { name: t.name, body: { ...body }, qT: r.qT, nT, qA: null, nA: null, via: [] });
+      q = r.qT; lastA = null; lastVia = []; prevName = t.name;
       continue;
     }
     if (!retreat()) return;
     const nT = addPt(t.name, r.body, r.qT), nA = addPt(t.name + " 寄り", r.body, r.qA);
-    if (r.armDuringDrive) steps.push({ body: nT, arm: nA, mode: r.mode });
-    else { steps.push({ body: nT, mode: r.mode }); steps.push({ arm: nA }); }
+    const via = (r.qH ? [addPt(t.name + " 上げ", r.body, r.qH)] : []).concat([addPt(t.name + " 手前", r.body, r.qU)]);
+    pushDrive(steps, r.way, nT, nA, stowName);
+    for (const n of via) steps.push({ arm: n });
     steps.push({ arm: nT });
-    seen.set(key, { name: t.name, body: r.body, qT: r.qT, nT, qA: r.qA, nA });
-    body = r.body; q = r.qT; lastA = nA; prevName = t.name;
+    seen.set(key, { name: t.name, body: r.body, qT: r.qT, nT, qA: r.qA, nA, via });
+    body = r.body; q = r.qT; lastA = nA; lastVia = via; prevName = t.name;
   }
   pushUndo();
   state.points = pts;
@@ -1676,6 +1831,9 @@ function autoGenerate() {
   });
   selStage = null; selStart = false;
   renderPoseLists(); renderProgram(); recompute(); renderRoute();
+  const hits = programHits(compileProgram());
+  if (hits.length) alert("シーケンスを作りましたが、アームが設備に当たる段があります（登録した姿勢へ行く動きや、寄り付きへ戻る動きは自動では選び直せません）。\n" +
+    hits.map(h => `・段 ${h.stage + 1}: ${h.box.name || "（名前なし）"}`).join("\n"));
 }
 document.getElementById("btnAuto").addEventListener("click", autoGenerate);
 /* 同じ車体の位置か（1 mm・0.1° 未満の差は同じ場所とみなす） */

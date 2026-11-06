@@ -52,7 +52,7 @@ jobs:
           node site/lexxmoma-roi/test/calc.test.js
           node site/process-sketch/test/continuity.test.cjs
           node --test site/eoat-db/test/ui.test.cjs
-          node --test site/simulator/test/kinematics.test.cjs site/simulator/test/motion.test.cjs
+          node --test site/simulator/test/kinematics.test.cjs site/simulator/test/motion.test.cjs site/simulator/test/collide.test.cjs
 
       # Publish only what the pages need: sources, build scripts, tests and dev notes stay in the repo
       - name: Package site
