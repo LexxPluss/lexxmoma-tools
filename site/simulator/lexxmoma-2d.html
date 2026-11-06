@@ -406,6 +406,11 @@
   .route-row { display: flex; align-items: center; gap: 4px; padding: 3px 4px; border-radius: 4px; cursor: pointer; }
   .route-row:hover { background: rgba(127, 127, 127, .12); }
   .route-row.sel { background: rgba(36, 113, 163, .18); }
+  /* 自動作成の結果が古いとき（rev.114〜） */
+  .stale { color: #b9770e; font-weight: 700; font-size: 12px; white-space: nowrap; align-self: center; }
+  .stale-hint { color: #b9770e; margin: 6px 2px; }
+  button.stale-btn { border-color: #b9770e; box-shadow: 0 0 0 2px rgba(185, 119, 14, .35); }
+  :root[data-theme="dark"] .stale, :root[data-theme="dark"] .stale-hint { color: #f0b840; }
   /* 回る順番の「この回だけの拘束」の欄（行の下に開く） */
   .visit-cons { margin: 2px 0 6px 2.2em; padding: 6px 8px; border: 1px solid var(--border); border-left: 3px solid #c0392b; border-radius: 4px; font-size: 12px; }
   .visit-cons .pgrid { grid-template-columns: 1fr; }
@@ -640,7 +645,7 @@
        一度開いたら、隣へマウスを動かすだけで切り替わる。Esc で閉じる -->
   <div id="titleCol">
     <h1 class="lx-tool">LexxMoMa 動作シミュレーター</h1>
-    <div id="revDisp">rev.113</div>
+    <div id="revDisp">rev.114</div>
     <nav id="menubar" role="menubar">
       <div class="hdr-menu">
         <button class="mb" id="btnFile" aria-haspopup="menu" aria-expanded="false">ファイル</button>
@@ -805,6 +810,7 @@
       <legend>回る順番（自動作成）</legend>
       <div id="routeList"></div>
       <div id="routeAdd"></div>
+      <div id="routeStale" class="hint stale-hint" hidden>⚠ 自動作成のあとに、回る順番・拘束・設備などが変わりました。タイムラインは古い結果のままです。下のボタンで作り直してください。</div>
       <div class="addrow"><button id="btnAutoRoute" class="primary" title="この順番で、姿勢とシーケンスを自動で作ります。自分で登録した姿勢は残ります（Ctrl+Z で戻せます）">この順番で自動作成</button></div>
     </fieldset>
     </div>
@@ -911,6 +917,7 @@
         <div style="flex:1"></div>
         <button id="btnAddMove" title="選んでいる段の後ろに、新しい段として Move を足します（何も選んでいなければ最後に）">＋ Move</button>
         <button id="btnAddOther" title="選んでいる段の後ろに、新しい段として「その他の動作」（撮像・把持など、時間だけかかる動作）を足します">＋ その他</button>
+        <span id="autoStale" class="stale" hidden title="自動作成のあとに、回る順番・手先の目標・拘束・設備などが変わりました">⚠ 結果が古い</span>
         <button id="btnAuto" title="置いた手先の目標を順に回るシーケンスを自動で作ります（登録した姿勢とシーケンスは置き換わります。Ctrl+Z で戻せます）">自動作成</button>
         <select id="tlScale" title="横幅の決め方&#10;時間比例: 棒の長さが時間に比例&#10;等幅: どの段も同じ幅（名前が読みやすい）">
           <option value="time" selected>時間比例</option>
@@ -1155,6 +1162,7 @@ function snapState() {
     initial: state.initial,
     program: state.program,
     objects: state.objects,
+    autoSig: state.autoSig || null,
   });
 }
 function pushUndo(snap) { // snap 省略時は現在状態。新しい編集なので redo 履歴は破棄
@@ -1172,6 +1180,7 @@ function applySnap(s) {
   state.initial = c.initial || { body: null, arm: null };
   state.program = c.program;
   state.objects = c.objects || [];
+  state.autoSig = c.autoSig || null;
   if (selectedId && !state.objects.some(o => o.id === selectedId)) selectedId = null;
   stopPlayback(false);
   renderPoseLists(); renderProgram(); recompute(); armCtrlRefresh(); renderObjectList();
@@ -1796,6 +1805,24 @@ document.getElementById("btnAutoRoute").addEventListener("click", () => autoGene
     if (routablePose(n)) editRoute(r => r.push({ pose: n }));
   });
 }
+/* 自動作成の入力の要約（rev.114〜）。作ったときの要約（state.autoSig）と違えば、結果が古い。
+ * 回る順番（この回だけの拘束も）、手先の目標（位置・向き・拘束）、設備・区画、回る順番に入れた登録した姿勢、開始の位置、ツール長 */
+function autoInputs() {
+  const r = (v) => Math.round(v * 1000) / 1000;
+  const ents = routeEntries().map(e => e.o ? { t: e.o.id, c: e.cons || null } : { p: e.p.name, b: e.p.body, a: e.p.arm && e.p.arm.q.map(r) });
+  const tg = state.objects.filter(o => o.type === "target" && o.visible !== false).map(o => [o.id, r(o.x), r(o.y), r(o.z), r(o.w || 0), r(o.p || 0), r(o.r || 0), o.cons || null]);
+  const bx = state.objects.filter(o => o.type === "box" && o.visible !== false).map(o => [r(o.x), r(o.y), r(o.yaw || 0), r(o.w), r(o.d), r(o.h || 0), r(o.z0 || 0), !!o.drive]);
+  const b0 = initialBody(), q0 = initialArm().q.map(r);
+  return JSON.stringify({ ents, tg, bx, b0: [r(b0.x), r(b0.y), r(b0.th)], q0, tool: state.toolLen });
+}
+/* 結果が古いかを表示に出す（0.7 s ごとに見る） */
+function updateAutoStale() {
+  const stale = !!state.autoSig && state.autoSig !== autoInputs();
+  document.getElementById("autoStale").hidden = !stale;
+  document.getElementById("routeStale").hidden = !stale;
+  for (const id of ["btnAuto", "btnAutoRoute"]) document.getElementById(id).classList.toggle("stale-btn", stale);
+}
+setInterval(updateAutoStale, 700);
 /* 回る順番に沿って、姿勢とシーケンスを作る（rev.110〜 順番全体で時間が最短になるように）。
  * 手先の目標は、拘束に合う車体の位置の候補（目標ごとに数十）から、回ごとに 1 つ選ぶ。同じ目標でも回ごとに別の位置を選んでよい。
  * 隣り合う回の移動時間（寄り付きへ戻る＋走る＋寄り付き → 目標）の合計が最小の並びを、動的計画法で選ぶ（route-opt.js）。
@@ -1827,6 +1854,7 @@ async function busyStep(text, frac) {
 /* 自動作成の本体。step(text, frac) は計算中の表示の更新（無ければ何もしない） */
 async function autoGenerateRun(ents, step) {
   step = step || (async () => {});
+  const sig = autoInputs(); // 作る前の入力（作ったあとの開始は「開始」の姿勢になるが、値は同じ）
   busyLast = 0;
   await step("準備しています", 0);
   const P = params(), zones = autoZones(), obs = autoObstacles(), al = touchSpots();
@@ -2017,6 +2045,7 @@ async function autoGenerateRun(ents, step) {
   pushUndo();
   state.points = pts;
   state.initial = { body: start, arm: start };
+  state.autoSig = sig;
   state.program = steps.map(st => {
     const stage = { blocks: [] };
     setStageSlots(stage, { body: st.body || null, arm: st.arm || null });
@@ -2194,7 +2223,6 @@ function bodyMotion(s, goal, b, P) {
   }
   return cand;
 }
-/* アームの関節移動（qs → qg）。6 軸が同時に動き、各軸は台形速度プロファイル。所要時間は各軸の最大値 */
 /* アームの動き: 実機の関節動作（J 動作）と同じく、全関節が同時に動き始めて同時に止まる（motion.js） */
 function armMotion(qs, qg, P) {
   const m = MOTION.jointMove(qs, qg, P.j);
@@ -5130,6 +5158,7 @@ document.getElementById("btnSave").addEventListener("click", () => {
     initial: state.initial,
     places: state.places, // ユーザーが付けた車体位置の名前（rev.97〜）
     route: state.route,   // 自動作成で手先の目標を回る順番（rev.102〜）
+    autoSig: state.autoSig || null, // 自動作成したときの入力の要約（rev.114〜。違えば結果が古い）
     program: state.program.map(s => ({
       blocks: s.blocks.map(b => b.type === "point"
         ? { type: "point", point: b.point, move: b.move || "both", mode: b.mode, vmax: b.vmax }
@@ -5405,6 +5434,7 @@ function applyLoadedData(data) {
       state.points = conv.points;
       state.places = Array.isArray(data.places) ? data.places.filter(q => q && isFinite(q.x) && isFinite(q.y) && q.name) : [];
       state.route = routeFromSave(data);
+      state.autoSig = typeof data.autoSig === "string" ? data.autoSig : null;
       state.initial = conv.initial;
       state.program = conv.program;
       selPointName = null;
