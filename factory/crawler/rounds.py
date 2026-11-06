@@ -32,7 +32,7 @@ def pick(cc, cands, quota, idf, indf):
     target = TARGET[cc]
     kept = [c for c in cands if idf(c) in keep]
     need = max(0, target - len(kept))
-    budget = need * 2 if keep else target
+    budget = (need * 2 if need >= 20 else need * 4) if keep else target   # 残りが少ないときは歩留まりのぶれを見込んで多めに
     fresh = [c for c in cands if idf(c) not in keep and idf(c) not in tried]
     cnt = {}
     for c in kept:
