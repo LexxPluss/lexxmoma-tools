@@ -19,7 +19,7 @@ site/                      ← published root (https://<org>.github.io/<repo>/)
 ├ lexxmoma-roi/            ← ROI Calculator
 ├ robot-sier-map/          ← Robot SIer Database
 ├ members/                 ← 社内ツールの入口(index.html)。共通パスワードはここだけで入れ、全ツールで使う(members-auth.js。未入力のツールは入口へ移動)
-├ members/factory-map/     ← Factory Map (internal, encrypted data)
+├ members/factory-map/     ← Factory Map (internal, encrypted data; Japan + Korea + Taiwan, built by factory/)
 └ members/people-db/       ← 顧客人事データベース (internal, encrypted data; built from people/)
 people/                    ← 顧客人事データベースのクローラ・ビルド・手動投入 (see people/README.md; not published)
 .github/workflows/pages.yml ← deploys site/ on push to main
@@ -52,8 +52,9 @@ do not copy in packages (zip) from elsewhere.
   `site/lexxmoma-roi/` or `site/process-sketch/` and commit both `src/` and `dist/`.
   CI fails if `dist/` does not match `src/`.
 - Tests: `node site/lexxmoma-roi/test/calc.test.js`, `node site/process-sketch/test/continuity.test.cjs`.
-- **Factory Map** data (`members/factory-map/data.enc.*`) is encrypted by the tools team's internal build;
-  only replace those two files, never commit plaintext data.
+- **Factory Map** data (`members/factory-map/data.enc.*`) is encrypted. Japan comes from the tools team's internal build;
+  Korea and Taiwan are crawled and merged in by `factory/` (see factory/README.md), which decrypts the Japanese data,
+  adds the other countries with a `country` tag and re-encrypts. Only replace those two files, never commit plaintext data.
 - Keep each file's line endings (several tool files use CRLF).
 - Never commit internal-only content (`internal/`, `safety-navi/`, `crx-eoat-tool/`, SIer `scripts/` and `data/raw/`).
   `.gitignore` blocks them and CI refuses to deploy if they appear.
