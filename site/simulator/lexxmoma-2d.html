@@ -645,7 +645,7 @@
        一度開いたら、隣へマウスを動かすだけで切り替わる。Esc で閉じる -->
   <div id="titleCol">
     <h1 class="lx-tool">LexxMoMa 動作シミュレーター</h1>
-    <div id="revDisp">rev.115</div>
+    <div id="revDisp">rev.116</div>
     <nav id="menubar" role="menubar">
       <div class="hdr-menu">
         <button class="mb" id="btnFile" aria-haspopup="menu" aria-expanded="false">ファイル</button>
@@ -1640,20 +1640,30 @@ function spunTarget(t, deg) {
  * 寄り付き → 目標 で設備に当たらないもの。soft なら、当たらないものが無いときに当たるもの（hit、重み pen）も返す。届かなければ null */
 function placeAt(t, b, P, obs, al, soft) {
   const spins = consOf(t).hand === "spin" ? [0, 30, -30, 60, -60, 90, -90, 120, -120, 150, -150, 180] : [0];
-  let loose = null;
+  const strict = [], loose = [];
   for (const dg of spins) {
     const tt = dg ? spunTarget(t, dg) : t;
-    const qT = targetIK(tt, b);
-    if (!qT) continue;
-    const ap = approachOf(qT, b, obs, al) || (soft && !loose ? approachOf(qT, b, IGNORE_HITS, []) : null);
-    if (!ap) continue;
-    const io = armMotion(ap.q, qT, P).dur; // 寄り付き → 目標（戻りも同じ時間）
-    const c = { kind: "target", t, body: b, qT, qA: ap.q, inDur: io, outDur: io, pen: 0 };
-    if (armMoveClear(ap.q, qT, b, obs, P, al)) return c;
-    if (!loose) loose = Object.assign(c, { hit: true, pen: HIT_PEN });
+    const q0 = targetIK(tt, b);
+    for (const qT of q0 ? [q0] : []) {
+      const ap = approachOf(qT, b, obs, al) || (soft && !loose.length && !strict.length ? approachOf(qT, b, IGNORE_HITS, []) : null);
+      if (!ap) continue;
+      const io = armMotion(ap.q, qT, P).dur; // 寄り付き → 目標（戻りも同じ時間）
+      const c = { kind: "target", t, body: b, qT, qA: ap.q, inDur: io, outDur: io, pen: 0 };
+      if (!armMoveClear(ap.q, qT, b, obs, P, al)) { if (!loose.length) loose.push(Object.assign(c, { hit: true, pen: HIT_PEN })); continue; }
+      strict.push(c);
+      // 逆運動学の解の種類（rev.116〜）: J6 を 1 回転ずらした解も候補にする。手先・腕の形は同じ（当たりも同じ）で、関節の動きだけ違う。
+      // 寄り付きも同じだけずらす。手首を反転した解も試したが、計算が 2 倍以上になるのに縮むのは 1% ほどで、J6 だけの方が短くなったので入れていない
+      for (const d of [TAU, -TAU]) {
+        const qT2 = qT.slice(), qA2 = ap.q.slice();
+        qT2[5] += d; qA2[5] += d;
+        if (CRX.withinLimits(qT2) && CRX.withinLimits(qA2)) strict.push(Object.assign({}, c, { qT: qT2, qA: qA2 }));
+      }
+    }
+    if (strict.length) return strict; // 手先を回してよいときは、届く最初の向き
   }
   return loose;
 }
+
 const PLACE_K = 24;   // 目標 1 つあたりの候補の数（12 → 24 で 1 秒以内のまま約 1 割短く。48 では 6 秒かかって 2% しか縮まない）
 const PLACE_TRY = 80; // そのために調べる車体の位置の数（互いに離れた順）
 const PAIR_K = 8;     // 続けて回る 2 つの目標の、両方に届く車体の位置の候補の数
@@ -1666,10 +1676,11 @@ function targetCands(t, zones, obs, P, al) {
   const bodies = ROUTEOPT.spread(bodyCands(t, zones, obs), PLACE_TRY, dist);
   for (const soft of [false, true]) {
     const out = [];
+    let nb = 0;
     for (const b of bodies) {
-      const r = placeAt(t, b, P, obs, al, soft);
-      if (r) out.push(r);
-      if (out.length >= PLACE_K) break;
+      const rs = placeAt(t, b, P, obs, al, soft);
+      if (rs.length) { out.push(...rs); nb++; }
+      if (nb >= PLACE_K) break;
     }
     if (out.length) return out;
   }
@@ -1903,10 +1914,10 @@ async function autoGenerateRun(ents, step) {
     const both = bodyCands(x, zones, obs).filter(b => { const d = Math.hypot(b.x - y.x, b.y - y.y); return d >= 400 && d <= 1200 && consAllows(y, b); });
     let found = 0;
     for (const b of ROUTEOPT.spread(both, PAIR_TRY, pairDist)) {
-      const rx = placeAt(x, b, P, obs, al, softOf(x)), ry = rx && placeAt(y, b, P, obs, al, softOf(y));
-      if (!ry) continue;
-      if (!cands.get(x).some(c => sameBody(c.body, b))) cands.get(x).push(rx);
-      if (!cands.get(y).some(c => sameBody(c.body, b))) cands.get(y).push(ry);
+      const rx = placeAt(x, b, P, obs, al, softOf(x)), ry = rx.length ? placeAt(y, b, P, obs, al, softOf(y)) : [];
+      if (!ry.length) continue;
+      if (!cands.get(x).some(c => sameBody(c.body, b))) cands.get(x).push(...rx);
+      if (!cands.get(y).some(c => sameBody(c.body, b))) cands.get(y).push(...ry);
       if (++found >= PAIR_K) break;
     }
   }
@@ -1923,15 +1934,16 @@ async function autoGenerateRun(ents, step) {
       let best = null;
       for (const { b, d } of order.slice(0, GREEDY_TRY)) {
         if (best && back + d >= best.cost) break;
-        const r = placeAt(t, b, P, obs, al, softOf(t));
-        if (!r) continue;
-        const cost = back + Math.max(d, cur.qA ? armMotion(cur.qA, r.qA, P).dur : 0) + r.inDur + r.pen;
-        if (!best || cost < best.cost) best = { r, cost };
+        const rs = placeAt(t, b, P, obs, al, softOf(t));
+        for (const r of rs) {
+          const cost = back + Math.max(d, cur.qA ? armMotion(cur.qA, r.qA, P).dur : 0) + r.inDur + r.pen;
+          if (!best || cost < best.cost) best = { r, rs, cost };
+        }
       }
       if (best) {
-        const cs = cands.get(t), same = cs.find(c => sameBody(c.body, best.r.body));
-        if (!same) cs.push(best.r);
-        cur = same || best.r;
+        const cs = cands.get(t);
+        if (!cs.some(c => sameBody(c.body, best.r.body))) cs.push(...best.rs);
+        cur = best.r;
       }
     }
   }
@@ -1942,8 +1954,7 @@ async function autoGenerateRun(ents, step) {
     const cs = cands.get(t);
     for (const b of shared) {
       if (Math.hypot(b.x - t.x, b.y - t.y) > 1300 || cs.some(c => sameBody(c.body, b)) || !consAllows(t, b)) continue;
-      const r = placeAt(t, b, P, obs, al, softOf(t));
-      if (r) cs.push(r);
+      cs.push(...placeAt(t, b, P, obs, al, softOf(t)));
     }
   }
   // 登録した姿勢: 車体の位置・アームの姿勢はそのまま
