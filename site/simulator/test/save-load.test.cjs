@@ -21,16 +21,22 @@ const objectsFromSave = new Function("makeBox", grab("uid") + "\n" + grab("objec
 test("手先の目標は読み込んでも消えない（位置・高さ・向き・名前・id をそのまま）", () => {
   const data = { objects: [
     { id: "b1", type: "box", name: "台", x: 0, y: 0, w: 1000, d: 600, h: 800 },
-    { id: "t1", type: "target", name: "A", visible: true, x: -4940.2, y: 328.5, z: 800, w: 180, p: 0, r: 30, color: "#c0392b" },
+    { id: "t1", type: "target", name: "A", visible: true, x: -1234.5, y: 678.9, z: 800, w: 180, p: 0, r: 30, color: "#c0392b" },
   ] };
   const objs = objectsFromSave(data);
   const t = objs.find(o => o.type === "target");
   assert.ok(t, "手先の目標が残る");
   assert.equal(t.id, "t1"); // 回る順番は id で手先を指すので、id が変わると順番も消える
   assert.equal(t.name, "A");
-  assert.deepEqual([t.x, t.y, t.z, t.w, t.p, t.r], [-4940.2, 328.5, 800, 180, 0, 30]);
+  assert.deepEqual([t.x, t.y, t.z, t.w, t.p, t.r], [-1234.5, 678.9, 800, 180, 0, 30]);
   assert.equal(t.h, undefined, "箱の項目（高さ h）は足さない");
   assert.equal(objs.find(o => o.type === "box").h, 800);
+});
+
+test("手先の目標の拘束（rev.110〜）も読み込んでも残る", () => {
+  const cons = { hand: "spin", pos: "fixed", ori: "fixed", bx: -1500, by: 2000, bth: 1.5708 };
+  const t = objectsFromSave({ objects: [{ id: "t1", type: "target", name: "D", x: 0, y: 0, z: 800, cons }] })[0];
+  assert.deepEqual(t.cons, cons);
 });
 
 test("知らない種類の物は読み捨て、手先の数値がおかしければ 0 にする", () => {
