@@ -317,6 +317,16 @@
   #editPane #pointDetail .pgrid .pair input, #locPane .pgrid .pair input { flex: 1 1 0; min-width: 0; }
   #editPane #pointDetail .jgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px 6px; }
   /* ---- 操作方法と前提値（ヘッダーの ⓘ で開く） ---- */
+  /* 自動作成の計算中の表示（画面全体を覆い、計算が終わるまで操作できない） */
+  #busyDlg { position: fixed; inset: 0; z-index: 80; background: rgba(20,30,40,.35); display: flex; align-items: center; justify-content: center; cursor: progress; }
+  #busyDlg[hidden] { display: none; }
+  #busyDlg .box { background: var(--panel); color: var(--text); border-radius: 10px; padding: 18px 24px; min-width: 280px; box-shadow: 0 8px 30px rgba(0,0,0,.3); text-align: center; }
+  #busyDlg .ttl { font-weight: 700; font-size: 15px; margin-top: 10px; }
+  #busyDlg .step { font-size: 12px; opacity: .8; margin-top: 4px; min-height: 1.4em; }
+  #busyDlg .bar { height: 6px; border-radius: 3px; background: var(--border); margin-top: 10px; overflow: hidden; }
+  #busyDlg .bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .15s; }
+  #busyDlg .spin { width: 28px; height: 28px; margin: 0 auto; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: busySpin .8s linear infinite; }
+  @keyframes busySpin { to { transform: rotate(360deg); } }
   #infoDlg { position: fixed; inset: 0; z-index: 60; background: rgba(20,30,40,.35); display: flex; align-items: center; justify-content: center; }
   #infoDlg[hidden] { display: none; }
   #infoDlg .box { background: #fff; border-radius: 10px; width: min(860px, 94vw); max-height: 88vh; overflow: auto; padding: 12px 16px 16px; box-shadow: 0 8px 30px rgba(0,0,0,.25); }
@@ -630,7 +640,7 @@
        一度開いたら、隣へマウスを動かすだけで切り替わる。Esc で閉じる -->
   <div id="titleCol">
     <h1 class="lx-tool">LexxMoMa 動作シミュレーター</h1>
-    <div id="revDisp">rev.111</div>
+    <div id="revDisp">rev.112</div>
     <nav id="menubar" role="menubar">
       <div class="hdr-menu">
         <button class="mb" id="btnFile" aria-haspopup="menu" aria-expanded="false">ファイル</button>
@@ -679,6 +689,9 @@
 </header>
 
 <!-- 操作方法と前提値（ヘッダーの「ⓘ 操作と前提」で開く） -->
+<div id="busyDlg" hidden><div class="box" role="status" aria-live="polite">
+  <div class="spin"></div><div class="ttl">自動作成中…</div><div class="step" id="busyStep"></div><div class="bar"><i id="busyBar"></i></div>
+</div></div>
 <div id="infoDlg" hidden>
   <div class="box" role="dialog" aria-label="操作方法と前提値">
     <div class="dlg-head"><b>操作方法と前提値</b><button id="btnInfoClose">✕ 閉じる</button></div>
@@ -1810,16 +1823,30 @@ function autoGenerate() {
   const ents = routeEntries();
   if (!ents.length) { alert("先に、キャンバス左の「⊕ 手先」で手先の目標を置くか、左ペインの「回る順番」に登録した姿勢を足してください。"); return; }
   if ((state.points.some(p => p.auto) || state.program.length) && !confirm("自動で作った姿勢とシーケンスを、作り直したものに置き換えます。自分で登録した姿勢はそのまま残ります（Ctrl+Z で戻せます）。")) return;
-  // 数秒かかることがあるので、ボタンに「計算中…」を出してから計算する（出した文字が画面に描かれるよう、少し待ってから）
-  const btns = ["btnAuto", "btnAutoRoute"].map(id => document.getElementById(id)).filter(Boolean);
-  const labels = btns.map(b => b.textContent);
-  btns.forEach(b => { b.textContent = "計算中…"; b.disabled = true; });
-  setTimeout(() => {
-    try { autoGenerateRun(ents); }
-    finally { btns.forEach((b, i) => { b.textContent = labels[i]; b.disabled = false; }); }
-  }, 30);
+  // 数秒かかることがあるので、画面全体を覆って「自動作成中…」と今の段階を出す（終わるまで操作できない）
+  const dlg = document.getElementById("busyDlg");
+  dlg.hidden = false;
+  autoGenerateRun(ents, busyStep).finally(() => { dlg.hidden = true; });
 }
-function autoGenerateRun(ents) {
+/* 計算中の表示を更新する（text: 今の段階、frac: 進み具合 0〜1）。前に画面へ返してから 0.1 秒以上たっていれば、
+ * いったん画面に返して描かせる（返す回数は少なくする）。画面が裏に回っていると描画の合図が来ないので、30 ms で先へ進む */
+let busyLast = 0;
+async function busyStep(text, frac) {
+  document.getElementById("busyStep").textContent = text;
+  document.getElementById("busyBar").style.width = Math.round(Math.max(0, Math.min(1, frac)) * 100) + "%";
+  if (performance.now() - busyLast < 100) return;
+  await new Promise(r => {
+    let done = false;
+    const go = () => { if (!done) { done = true; setTimeout(r, 0); } };
+    requestAnimationFrame(go); setTimeout(go, 30);
+  });
+  busyLast = performance.now();
+}
+/* 自動作成の本体。step(text, frac) は計算中の表示の更新（無ければ何もしない） */
+async function autoGenerateRun(ents, step) {
+  step = step || (async () => {});
+  busyLast = 0;
+  await step("準備しています", 0);
   const P = params(), zones = autoZones(), obs = autoObstacles(), al = touchSpots();
   const body0 = initialBody(), q0 = initialArm().q.slice();
   const noApproach = (n) => `「${n}」の寄り付きの姿勢（手先の高さ ${AUTO_Z} mm・半径 ${AUTO_R} mm 以内）が見つかりませんでした。`;
@@ -1838,7 +1865,8 @@ function autoGenerateRun(ents) {
   const targets = [...vts.values()];
   const tOf = (e) => vts.get(vkey(e));
   const cands = new Map();
-  for (const t of targets) {
+  for (const [ti, t] of targets.entries()) {
+    await step(`車体の位置の候補を作っています（手先 ${ti + 1} / ${targets.length}: ${t.name}）`, 0.05 + 0.45 * ti / targets.length);
     const cs = targetCands(t, zones, obs, P, al);
     if (!cs.length) { alert(`「${t.name}」に、アームが設備に当たらずに届く車体の位置（拘束: ${consText(t)}。走行中の手先の高さ ${AUTO_Z} mm・半径 ${AUTO_R} mm 以内に戻れる寄り付きも要る）が見つかりませんでした。手先の高さ・向き、拘束、走行可の区画、設備の位置を見直してください。`); return; }
     cands.set(t, cs);
@@ -1847,6 +1875,7 @@ function autoGenerateRun(ents) {
   const pairDist = (a, b) => Math.hypot((a.x - b.x) / 300, (a.y - b.y) / 300, angDiff(a.th, b.th) / (Math.PI / 6));
   const pairs = new Set();
   for (let i = 0; i + 1 < ents.length; i++) {
+    await step("続けて回る 2 つの手先に届く位置を探しています", 0.5 + 0.15 * i / ents.length);
     const x = ents[i].o && tOf(ents[i]), y = ents[i + 1].o && tOf(ents[i + 1]);
     if (!x || !y || x === y || Math.hypot(x.x - y.x, x.y - y.y) > 2 * 1200) continue;
     const key = [x.id, y.id].sort().join("|");
@@ -1866,7 +1895,8 @@ function autoGenerateRun(ents) {
   // 互いに離れた候補だけでは拾えない、前の位置に近い所も候補に入る）
   {
     let cur = startC;
-    for (const e of ents) {
+    for (const [ei, e] of ents.entries()) {
+      await step("1 か所ずつ近い順にたどっています", 0.65 + 0.15 * ei / ents.length);
       if (!e.o) { if (e.p.body) cur = { body: e.p.body, qA: e.p.arm ? e.p.arm.q : cur.qA }; continue; }
       // 走る時間の短い順に調べ、「戻る＋max(走る, アームを寄り付きへ)＋寄り付き → 目標」が一番短いもの（走る時間だけで負けたら打ち切る）
       const t = tOf(e), from = cur.body, back = cur.outDur || 0;
@@ -1888,7 +1918,8 @@ function autoGenerateRun(ents) {
   }
   // 開始やほかの目標の候補の車体の位置からも届くなら、その位置も候補に足す（続けて動かずに済む並びを選べるように）
   const shared = [body0].concat(...targets.map(t => cands.get(t).map(c => c.body)));
-  for (const t of targets) {
+  for (const [ti, t] of targets.entries()) {
+    await step("ほかの手先の候補からも届くか調べています", 0.8 + 0.1 * ti / targets.length);
     const cs = cands.get(t);
     for (const b of shared) {
       if (Math.hypot(b.x - t.x, b.y - t.y) > 1300 || cs.some(c => sameBody(c.body, b)) || !consAllows(t, b)) continue;
@@ -1954,8 +1985,10 @@ function autoGenerateRun(ents) {
     if (!how.has(key)) how.set(key, transition(a, b));
     return how.get(key).dur;
   };
+  await step("順番全体で一番早い並びを選んでいます", 0.9);
   const sol = ROUTEOPT.bestPath(V.map(r => r.length), est, real);
   if (!sol) { alert("全部の回を、設備に当たらず・走ってよいエリアの中で回る並びが見つかりませんでした。拘束（車体の位置・向き）、走行可の区画、設備の位置を見直してください。"); return; }
+  await step("シーケンスを作っています", 0.97);
   // 選んだ並びから、姿勢とシーケンスを作る
   const pts = state.points.filter(p => !p.auto).map(p => structuredClone(p)), steps = [];
   const uniq = (n) => { let m = n, i = 2; while (pts.some(p => p.name === m)) m = n + " " + i++; return m; };
@@ -2011,6 +2044,7 @@ function autoGenerateRun(ents) {
   });
   selStage = null; selStart = false;
   renderPoseLists(); renderProgram(); recompute(); renderRoute();
+  await step("設備に当たらないか確かめています", 1);
   const hits = programHits(compileProgram());
   if (hits.length) alert("シーケンスを作りましたが、アームが設備に当たる段があります（アームだけの姿勢へ行く動きなど、自動では選び直せないもの）。\n" +
     hits.map(h => `・段 ${h.stage + 1}: ${h.box.name || "（名前なし）"}`).join("\n"));
