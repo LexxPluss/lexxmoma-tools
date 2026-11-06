@@ -645,7 +645,7 @@
        一度開いたら、隣へマウスを動かすだけで切り替わる。Esc で閉じる -->
   <div id="titleCol">
     <h1 class="lx-tool">LexxMoMa 動作シミュレーター</h1>
-    <div id="revDisp">rev.114</div>
+    <div id="revDisp">rev.115</div>
     <nav id="menubar" role="menubar">
       <div class="hdr-menu">
         <button class="mb" id="btnFile" aria-haspopup="menu" aria-expanded="false">ファイル</button>
@@ -1415,7 +1415,7 @@ function tcpFloorZ(q) { return tcpInfoVeh(q, state.toolLen).z + ARM.L.base + ARM
 function driveOk(q) { return tcpR(q) <= AUTO_R + 1 && Math.abs(tcpFloorZ(q) - AUTO_Z) <= AUTO_ZTOL; }
 /* 寄り付きの姿勢: 手先を高さ AUTO_Z・半径 AUTO_R 以内に置き、qT へ一番早く動けるもの。戻り値 { q } か、見つからなければ null。
  * 車体の位置 b と設備 obs を渡すと、設備に当たる姿勢と、qT へ動くあいだに設備に当たる姿勢は選ばない（allows: 手先が触れてよい球）。
- * 当たりを気にしないときは obs に [] を渡す */
+ * 当たりを気にしないときは obs に IGNORE_HITS を渡す */
 function approachOf(qT, b, obs, allows) {
   const P = params(), i = tcpInfoVeh(qT, state.toolLen);
   const az0 = i.horizontal > 1 ? Math.atan2(i.y, i.x) : ARM_MOUNT_YAW + qT[0];
@@ -1427,11 +1427,11 @@ function approachOf(qT, b, obs, allows) {
       const T = vehTargetToArm(r * Math.cos(az), r * Math.sin(az), vz, wpr[0], wpr[1], wpr[2]);
       const res = CRX.ik(T, cs.length ? cs[cs.length - 1].q : qT, state.toolLen, { iters: 80 });
       if (!res.ok || !CRX.withinLimits(res.q)) continue;
-      if (b && obs.length && COLLIDE.armHit(armWorldPts(res.q, b), obs)) continue;
+      if (b && armHitAt(res.q, b, obs)) continue;
       cs.push({ q: res.q, d: armMotion(res.q, qT, P).dur });
     }
     cs.sort((x, y) => x.d - y.d); // 早い順に、qT までの通り道が当たらない最初のもの
-    const c = cs.find(c => !b || !obs.length || armMoveClear(c.q, qT, b, obs, P, allows));
+    const c = cs.find(c => !b || obs === IGNORE_HITS || armMoveClear(c.q, qT, b, obs, P, allows));
     return c ? { q: c.q } : null;
   };
   // まず手先の向きは目標のまま。届かなければ方位をずらし、それでも無ければ真下向き
@@ -1448,6 +1448,14 @@ function armWorldPts(q, b) {
   for (const [k, p] of Object.entries(Object.assign({ mount: [0, 0, 0] }, f))) out[k] = [b.x + p[0] * c - p[1] * s, b.y + p[0] * s + p[1] * c, p[2] + ARM_MOUNT_Z];
   return out;
 }
+/* アームを載せた車体の箱（rev.115〜）: 750×600 mm、床から取付面（ARM_MOUNT_Z）まで。車体の上に立つ台座の棒（0 番）は見ない */
+function bodyBox(b) { return { name: "車体", x: b.x, y: b.y, yaw: b.th, w: BODY_LEN, d: BODY_WID, h: ARM_MOUNT_Z, z0: 0, skip: [0] }; }
+/* 車体の位置 b・アームの姿勢 q で、アームが設備 obs か自分の車体に当たるか（当たれば { box, link }）。
+ * obs が IGNORE_HITS（当たりを気にしない）なら何も見ない。設備が 1 つも無くても、車体は見る */
+const IGNORE_HITS = Object.freeze([]);
+function armHitAt(q, b, obs, allows) {
+  return obs === IGNORE_HITS ? null : COLLIDE.armHit(armWorldPts(q, b), obs.concat([bodyBox(b)]), allows);
+}
 /* 手先が触れてよい球: 手先の目標の所と、自分で登録した姿勢の手先の所（物を置く・取る所）。
  * 自動で作る寄り付きの姿勢は宙にあるので含めない */
 function touchAt(q, b) { return { p: armWorldPts(q, b).tcp, r: COLLIDE.ALLOW_R }; }
@@ -1461,7 +1469,7 @@ function touchSpots() {
 const HIT_DT = 0.05; // 当たりを調べる時間の間隔 [s]（作ったあとの全体の確かめと同じ）
 function armMoveClear(qs, qg, b, obs, P, allows) {
   const m = armMotion(qs, qg, P), n = Math.max(2, Math.ceil(m.dur / HIT_DT));
-  for (let k = 0; k <= n; k++) if (COLLIDE.armHit(armWorldPts(m.anim(m.dur * k / n).arm.q, b), obs, allows)) return false;
+  for (let k = 0; k <= n; k++) if (armHitAt(m.anim(m.dur * k / n).arm.q, b, obs, allows)) return false;
   return true;
 }
 /* 走るあいだ（drive）アームが qs → qg と動いても（同じなら止まったまま）設備に当たらないか */
@@ -1469,7 +1477,7 @@ function driveClear(drive, qs, qg, obs, P) {
   const am = armMotion(qs, qg, P), T = Math.max(drive.dur, am.dur), n = Math.max(2, Math.ceil(T / HIT_DT));
   for (let k = 0; k <= n; k++) {
     const t = T * k / n, b = drive.anim(Math.min(t, drive.dur)).body;
-    if (COLLIDE.armHit(armWorldPts(am.anim(Math.min(t, am.dur)).arm.q, b), obs)) return false;
+    if (armHitAt(am.anim(Math.min(t, am.dur)).arm.q, b, obs)) return false;
   }
   return true;
 }
@@ -1492,7 +1500,7 @@ function stowPose() {
  *   stow:   ほかが全部当たるときだけ。たたんだ姿勢にしてから走り、着いてから qA へ
  * 戻り値 { mode（走行経路）, way, dur, qS（stow のとき）} か、無ければ null */
 function driveWay(b0, b1, qR, qA, zones, obs, P, armObs) {
-  armObs = armObs || obs; // アームの当たりを見る設備（無視するときは []。車体は obs で必ず見る）
+  armObs = armObs || obs; // アームの当たりを見る設備（無視するときは IGNORE_HITS。車体が設備に重ならないかは obs で必ず見る）
   const am = armMotion(qR, qA, P);
   let best = null;
   for (const mode of ["auto", "forward", "backward", "shortest"]) {
@@ -1527,7 +1535,7 @@ function programHits(c) {
   c.stages.forEach((sg, i) => {
     const n = Math.max(2, Math.ceil(sg.dur / HIT_DT));
     for (let k = 0; k <= n; k++) {
-      const st = stateAtTime(c, sg.t0 + sg.dur * k / n), h = COLLIDE.armHit(armWorldPts(st.arm.q, st.body), obs, al);
+      const st = stateAtTime(c, sg.t0 + sg.dur * k / n), h = armHitAt(st.arm.q, st.body, obs, al);
       if (h) { out.push({ stage: i, box: h.box }); break; }
     }
   });
@@ -1637,7 +1645,7 @@ function placeAt(t, b, P, obs, al, soft) {
     const tt = dg ? spunTarget(t, dg) : t;
     const qT = targetIK(tt, b);
     if (!qT) continue;
-    const ap = approachOf(qT, b, obs, al) || (soft && !loose ? approachOf(qT, b, [], []) : null);
+    const ap = approachOf(qT, b, obs, al) || (soft && !loose ? approachOf(qT, b, IGNORE_HITS, []) : null);
     if (!ap) continue;
     const io = armMotion(ap.q, qT, P).dur; // 寄り付き → 目標（戻りも同じ時間）
     const c = { kind: "target", t, body: b, qT, qA: ap.q, inDur: io, outDur: io, pen: 0 };
@@ -1863,7 +1871,7 @@ async function autoGenerateRun(ents, step) {
   // 開始: 走る前に寄り付きへ
   const startC = { kind: "start", name: "開始", body: body0, qT: q0, qA: q0, inDur: 0, outDur: 0, pen: 0 };
   if (!driveOk(q0)) {
-    const ap = approachOf(q0, body0, obs, al), loose = ap ? null : approachOf(q0, body0, [], []);
+    const ap = approachOf(q0, body0, obs, al), loose = ap ? null : approachOf(q0, body0, IGNORE_HITS, []);
     if (!ap && !loose) { alert(noApproach("開始")); return; }
     Object.assign(startC, { qA: (ap || loose).q, outDur: armMotion((ap || loose).q, q0, P).dur }, loose ? { hit: true, pen: HIT_PEN } : {});
   }
@@ -1942,7 +1950,7 @@ async function autoGenerateRun(ents, step) {
   const poseCand = (p, body) => {
     const c = { kind: "pose", name: p.name, body: body || (p.body ? { ...p.body } : null), qT: p.arm ? p.arm.q.slice() : null, inDur: 0, outDur: 0, pen: 0 };
     if (c.qT && !driveOk(c.qT)) { // 寄り付き → 姿勢（当たらない寄り付きが無ければ、当たるものを使う）
-      const ap = approachOf(c.qT, c.body, obs, al), loose = ap ? null : approachOf(c.qT, c.body, [], []);
+      const ap = approachOf(c.qT, c.body, obs, al), loose = ap ? null : approachOf(c.qT, c.body, IGNORE_HITS, []);
       if (!ap && !loose) return null;
       c.qA = (ap || loose).q;
       c.inDur = c.outDur = armMotion(c.qA, c.qT, P).dur;
@@ -1990,7 +1998,7 @@ async function autoGenerateRun(ents, step) {
       if (armMoveClear(a.qA, b.qA, a.body, obs, P, [])) return { kind: "via", dur: a.outDur + armMotion(a.qA, b.qA, P).dur + b.inDur };
       return { kind: "direct", dur: direct, hit: true };
     }
-    const w = driveWay(a.body, b.body, a.qA, b.qA, zones, obs, P), loose = w ? null : driveWay(a.body, b.body, a.qA, b.qA, zones, obs, P, []);
+    const w = driveWay(a.body, b.body, a.qA, b.qA, zones, obs, P), loose = w ? null : driveWay(a.body, b.body, a.qA, b.qA, zones, obs, P, IGNORE_HITS);
     return w ? { kind: "drive", w, dur: a.outDur + w.dur + b.inDur }
       : loose ? { kind: "drive", w: loose, dur: a.outDur + loose.dur + b.inDur, hit: true } : { dur: Infinity };
   };

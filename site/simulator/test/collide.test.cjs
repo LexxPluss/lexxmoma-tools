@@ -75,3 +75,13 @@ test("遠い設備を外す近道をしても、全部の点を調べたとき�
   }
   assert.ok(hits > 30 && hits < 270, `当たる例と当たらない例の両方がある（当たる ${hits}/300）`);
 });
+
+test("skip に入れた棒は、その箱とは見ない（車体の上の台座）", () => {
+  const pts = armPts([0, 0, 0, 0, 0, 0]); // 台座は取付面（床から 750 mm）から J2 まで
+  const body = box(0, 0, 750, 600, 750); // 車体: 上面が取付面
+  assert.ok(COLLIDE.armHit(pts, [body]), "台座の棒は車体の上面に触れている");
+  const hit = COLLIDE.armHit(pts, [Object.assign({ skip: [0] }, body)]);
+  assert.equal(hit, null, "台座の棒（0 番）を外せば当たらない");
+  const low = armPts([0, 90 * D2R, 0, 0, 0, 0]); // 上腕を前に倒すと、前腕の先が車体の高さまで下がる
+  assert.ok(COLLIDE.armHit(low, [Object.assign({ skip: [0] }, box(500, 0, 750, 600, 750))]), "台座以外の棒は見る");
+});

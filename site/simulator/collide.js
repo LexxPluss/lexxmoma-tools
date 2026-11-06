@@ -1,7 +1,8 @@
 /* =====================================================================
  * アームと設備（箱）の当たり判定
  *  - アームは、関節の点を結ぶ太さのある棒（カプセル）の並びとみなす。太さは実機の外形のおおよそ＋隙間
- *  - 設備は、向き yaw の直方体（中心 x,y・幅 w・奥行 d・底面 z0・高さ h [mm]）
+ *  - 設備は、向き yaw の直方体（中心 x,y・幅 w・奥行 d・底面 z0・高さ h [mm]）。skip（棒の番号の並び）があれば、その棒はその箱と見ない
+ *    （アームを載せた車体の箱で、車体の上に立つ台座の棒を外すため）
  *  - 手先が触れてよい所（目標の上など）は、allow の球（中心 p・半径 r）の中だけ当たりにしない
  *  - 依存なし。ブラウザでは window.COLLIDE、Node では module.exports（テストと共有）
  * ===================================================================== */
@@ -54,7 +55,7 @@
       const [ka, kb, rad] = LINKS[li], a = pts[ka], b = pts[kb];
       if (!a || !b) continue;
       const len = dist3(a, b), mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
-      const near = boxes.filter(o => pointBoxDist(mid, o) < len / 2 + rad); // 中点から遠い設備には、この棒のどこも届かない
+      const near = boxes.filter(o => !(o.skip && o.skip.includes(li)) && pointBoxDist(mid, o) < len / 2 + rad); // 中点から遠い設備には、この棒のどこも届かない
       if (!near.length) continue;
       const n = Math.max(1, Math.ceil(len / STEP));
       for (let k = 0; k <= n; k++) {
