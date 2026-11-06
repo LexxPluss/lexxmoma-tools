@@ -217,6 +217,15 @@
   #tlBreak { flex: 1; display: flex; gap: 2px; min-width: 0; height: 18px; }
   .tl-bk { min-width: 0; border-radius: 3px; color: #fff; font-size: 10.5px; font-weight: 700; line-height: 18px; padding: 0 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .tl-bk.armOnly { background: #2e9e5b; } .tl-bk.bodyOnly { background: #0068b7; } .tl-bk.both { background: #2f8f8f; } .tl-bk.other { background: #8e99a4; }
+  /* 回ごとの帯（rev.119〜）: 中を内訳の色で分け、見出しを重ねる */
+  .tl-visit { position: absolute; z-index: 3; border-radius: 4px; overflow: hidden; cursor: pointer; border: 1px solid rgba(0,0,0,.15); background: #e9eef2; }
+  .tl-visit.cur { box-shadow: 0 0 0 2px #e07b14 inset; }
+  .tl-visit.sel { border-color: #c0392b; border-width: 2px; }
+  .tl-visit-segs { position: absolute; inset: 0; display: flex; opacity: .85; }
+  .tl-visit-seg.bodyOnly { background: #0068b7; } .tl-visit-seg.both { background: #2f8f8f; } .tl-visit-seg.armOnly { background: #2e9e5b; } .tl-visit-seg.other { background: #8e99a4; }
+  .tl-visit-lb { position: absolute; left: 4px; right: 4px; top: 0; color: #fff; font-size: 11px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 0 2px rgba(0,0,0,.6); }
+  .tl-visit-sub { font-weight: 400; font-size: 10.5px; opacity: .95; }
+  :root[data-theme="dark"] .tl-visit { background: #1e2831; border-color: rgba(255,255,255,.15); }
   .tl-bk.none { color: #8a96a3; font-weight: 400; }
   /* 右ペイン: 選んだ段の設定 */
   .stage.sel-stage { display: block; margin-top: 8px; border-color: #f0b77a; background: #fffaf4; }
@@ -645,7 +654,7 @@
        一度開いたら、隣へマウスを動かすだけで切り替わる。Esc で閉じる -->
   <div id="titleCol">
     <h1 class="lx-tool">LexxMoMa 動作シミュレーター</h1>
-    <div id="revDisp">rev.118</div>
+    <div id="revDisp">rev.119</div>
     <nav id="menubar" role="menubar">
       <div class="hdr-menu">
         <button class="mb" id="btnFile" aria-haspopup="menu" aria-expanded="false">ファイル</button>
@@ -923,6 +932,7 @@
         <button id="btnAddOther" title="選んでいる段の後ろに、新しい段として「その他の動作」（撮像・把持など、時間だけかかる動作）を足します">＋ その他</button>
         <span id="autoStale" class="stale" hidden title="自動作成のあとに、回る順番・手先の目標・拘束・設備などが変わりました">⚠ 結果が古い</span>
         <button id="btnAuto" title="置いた手先の目標を順に回るシーケンスを自動で作ります（登録した姿勢とシーケンスは置き換わります。Ctrl+Z で戻せます）">自動作成</button>
+        <button id="btnTlVisits" class="small" title="回ごと: 段のレーンを隠して、回る順番の回ごとの帯だけを出します（もう一度押すと段も出します）">回ごと</button>
         <select id="tlScale" title="横幅の決め方&#10;時間比例: 棒の長さが時間に比例&#10;等幅: どの段も同じ幅（名前が読みやすい）">
           <option value="time" selected>時間比例</option>
           <option value="even">等幅</option>
@@ -2127,6 +2137,7 @@ async function autoGenerateRun(ents, step) {
   };
   const start = namesOf(startC).nT;
   for (let k = 0; k + 1 < V.length; k++) {
+    const s0 = steps.length; // ここから先の段は k 回目の分（前の所から離れる・走る・入る・作業）
     const a = V[k][sol.path[k]], b = V[k + 1][sol.path[k + 1]], h = how.get(a.id + ">" + b.id), nb = namesOf(b);
     if (b.kind === "target") { const pt = pts.find(p => p.name === nb.nT); pt.rv = (pt.rv || []).concat(k); }
     if (h.kind === "direct") { if (b.qT) steps.push({ arm: nb.nT }); }
@@ -2134,14 +2145,15 @@ async function autoGenerateRun(ents, step) {
     else { retreat(a); pushDrive(steps, h.w, nb.nT, nb.nA, stowName); enter(b, nb); }
     const w = ents[k].work; // この回での作業（rev.118〜）: 着いた次の段に「その他」で
     if (w && w.sec > 0) steps.push({ other: { type: "other", name: w.name || "作業", wait: w.sec } });
+    for (let j = s0; j < steps.length; j++) steps[j].v = k;
   }
   pushUndo();
   state.points = pts;
   state.initial = { body: start, arm: start };
   state.autoSig = sig;
   state.program = steps.map(st => {
-    if (st.other) return { blocks: [Object.assign({}, st.other)] };
-    const stage = { blocks: [] };
+    if (st.other) return { blocks: [Object.assign({}, st.other)], v: st.v };
+    const stage = { blocks: [], v: st.v }; // v: 回る順番の何回目の分か（rev.119〜。タイムラインの回ごとの帯）
     setStageSlots(stage, { body: st.body || null, arm: st.arm || null });
     const bb = slotBlock(stage, "body");
     if (bb && st.mode) { bb.mode = st.mode; bb.reverse = st.mode === "backward"; }
@@ -2207,7 +2219,7 @@ function pointsFromSave(data) {
       ...(p.tg ? { tg: String(p.tg) } : {}),
       ...(Array.isArray(p.rv) ? { rv: p.rv.filter(Number.isInteger) } : {}),
     })).filter(p => p.body || p.arm);
-    const program = (data.program || []).map(s => ({ blocks: (s.blocks || []).map(o => Object.assign({}, o)) }));
+    const program = (data.program || []).map(s => Object.assign({ blocks: (s.blocks || []).map(o => Object.assign({}, o)) }, Number.isInteger(s.v) ? { v: s.v } : {}));
     const ini = data.initial || {};
     return { points, program, initial: { body: ini.body || null, arm: ini.arm || null } };
   }
@@ -3918,7 +3930,9 @@ function renderProgramStage() {
  * 横が時間。縦の線のあいだが 1 段。レーンは車体・アーム・その他。
  * 段をクリックで選ぶ、左右にドラッグで並べ替え。上の目盛りか赤い線をドラッグで、その時刻の姿勢に飛ぶ */
 const TL_STARTW = 76; // 時刻 0 の「開始」の列の幅 [px]
-const TL_RULER = 18, TL_AXIS = 14, TL_MINW = 22, TL_EVENW = 84, TL_ADDW = 34;
+const TL_RULER_BASE = 18, TL_VISITH = 24; // 目盛りの帯の高さ、その上の「回」の行の高さ [px]
+let TL_RULER = TL_RULER_BASE; // 目盛りの帯の下端（回の行があるときは、その分下がる）
+const TL_AXIS = 14, TL_MINW = 22, TL_EVENW = 84, TL_ADDW = 34;
 const tlScrollEl = document.getElementById("tlScroll");
 const tlInnerEl = document.getElementById("tlInner");
 let tlZoom = 1;
@@ -4031,11 +4045,107 @@ function tlDiv(cls, css, text) {
   if (text !== undefined) d.textContent = text;
   return d;
 }
+/* 回る順番の回ごとのまとまり（rev.119〜）: 同じ v が続く段。{ v, si0, si1, t0, t1, name, parts: 内訳 } */
+function visitGroups(c) {
+  const out = [], ents = routeEntries();
+  if (!c) return out;
+  c.stages.forEach((st, si) => {
+    const v = state.program[si] && state.program[si].v;
+    if (!Number.isInteger(v)) return;
+    let g = out[out.length - 1];
+    if (!g || g.v !== v || g.si1 !== si - 1) {
+      const e = ents[v];
+      g = { v, si0: si, si1: si, t0: st.t0, t1: st.t0, name: e ? (e.o ? e.o.name : e.p.name) : `${v + 1} 回目`, parts: { bodyOnly: 0, both: 0, armOnly: 0, other: 0 } };
+      out.push(g);
+    }
+    g.si1 = si; g.t1 = st.t0 + st.dur;
+    let bodyD = 0, armD = 0; // 内訳は updateStats と同じ数え方
+    for (const cb of st.blocks) { bodyD = Math.max(bodyD, cb.bodyDur || 0); armD = Math.max(armD, cb.armDur || 0); }
+    const ov = Math.min(bodyD, armD);
+    g.parts.both += ov; g.parts.bodyOnly += bodyD - ov; g.parts.armOnly += armD - ov; g.parts.other += st.dur - Math.max(bodyD, armD);
+  });
+  return out;
+}
+const VISIT_PARTS = [["bodyOnly", "車体だけ"], ["both", "同時"], ["armOnly", "アームだけ"], ["other", "作業・待ち"]];
+let tlCollapse = false; // 「回ごと」: 段のレーンを隠して、回ごとの帯だけを出す
+try { tlCollapse = localStorage.getItem("lexxsim.tlCollapse") === "1"; } catch (e) { /* 既定のまま */ }
+/* 回の帯を 1 本作る（x・w: 横の位置と幅 [px]、top・h: 縦）。押すとその回を開いて、その時刻へ */
+function visitBar(g, x, w, top, h, big) {
+  const dur = g.t1 - g.t0;
+  const d = tlDiv("tl-visit" + (playT >= g.t0 && playT < g.t1 ? " cur" : "") + (routeEditIdx === g.v ? " sel" : ""), `left:${x + 1}px; top:${top}px; width:${Math.max(3, w - 2)}px; height:${h}px;`);
+  const segs = tlDiv("tl-visit-segs", "");
+  for (const [k] of VISIT_PARTS) if (g.parts[k] > 1e-6) segs.appendChild(tlDiv("tl-visit-seg " + k, `flex:${g.parts[k]} 1 0;`));
+  d.appendChild(segs);
+  const lb = `${g.v + 1}. ${g.name}  ${dur.toFixed(1)}s`;
+  const short = w >= 24 + lb.length * 6 ? lb : w >= 30 + g.name.length * 9 ? `${g.v + 1}. ${g.name}` : w >= 14 ? String(g.v + 1) : ""; // 幅に入る分だけ
+  const lbEl = tlDiv("tl-visit-lb", big ? "" : `line-height:${h}px;`, short);
+  if (big && w >= 60) lbEl.appendChild(tlDiv("tl-visit-sub", "", VISIT_PARTS.filter(([k]) => g.parts[k] > 0.05).map(([k, n]) => `${n} ${g.parts[k].toFixed(1)}`).join(" ／ ")));
+  d.appendChild(lbEl);
+  d.title = `${lb}\n` + VISIT_PARTS.map(([k, n]) => `${n}: ${g.parts[k].toFixed(2)} s`).join("\n") + `\n段 ${g.si0 + 1}〜${g.si1 + 1}\nクリックでこの回の設定を開き、その時刻へ`;
+  d.addEventListener("mousedown", (e) => e.stopPropagation());
+  d.addEventListener("click", () => selectVisit(g));
+  tlInnerEl.appendChild(d);
+}
+/* 回を選ぶ: 回る順番でその回を開き、その回の始めの時刻へ */
+function selectVisit(g) {
+  routeEditIdx = g.v;
+  showLeftTab("route");
+  renderRoute();
+  seekTo(g.t0 + 1e-6);
+  renderTimeline();
+}
+/* 「回ごと」の表示: 回の帯だけを大きく出す（段のレーンは出さない） */
+function renderTimelineVisits(c, groups) {
+  const bigH = tlLane * 2;
+  const top = TL_RULER_BASE + 4;
+  tlInnerEl.style.width = (tlGeom.end + 8) + "px";
+  tlInnerEl.style.height = (top + bigH + 4 + TL_AXIS) + "px";
+  for (const g of groups) {
+    const x = tlGeom.xs[g.si0], w = tlGeom.xs[g.si1] + tlGeom.ws[g.si1] - x;
+    visitBar(g, x, w, top, bigH, true);
+  }
+  if (c && c.total > 0) {
+    const span = tlTimeToX(c.total) - tlTimeToX(0);
+    const step = [0.5, 1, 2, 5, 10, 20, 30, 60, 120].find(s => span * s / c.total >= 50) || 300;
+    let lastX = -1e9;
+    for (let t = 0; t <= c.total + 1e-6; t += step) {
+      const x = tlTimeToX(t);
+      if (x - lastX < 36) continue;
+      lastX = x;
+      tlInnerEl.appendChild(tlDiv("tl-tick", `left:${x}px; top:${top + bigH + 4}px;` + (t === 0 ? " transform:none;" : ""), (step < 1 ? t.toFixed(1) : String(Math.round(t))) + " s"));
+    }
+  }
+  const ruler = tlDiv("tl-rulerhit", `left:0; width:${tlGeom.end + 4}px; height:${TL_RULER_BASE}px;`);
+  ruler.title = "ドラッグでその時刻の姿勢に飛びます";
+  ruler.addEventListener("mousedown", tlScrubStart);
+  tlInnerEl.appendChild(ruler);
+  const ph = tlDiv("", `height:${top + bigH + 4}px;`);
+  ph.id = "tlPlayhead";
+  ph.title = "再生位置（ドラッグで動かせます）";
+  ph.addEventListener("mousedown", tlScrubStart);
+  tlInnerEl.appendChild(ph);
+  updatePlayhead();
+  renderBreakdown();
+  renderMinimap();
+}
 function renderTimeline() {
   const c = currentCompiled;
   tlInnerEl.innerHTML = "";
   hoverBlockGhost = null;
   tlGeom = tlLayout();
+  // 回ごとのまとまりがあれば、目盛りの上に「回」の行を出す。「回ごと」なら帯だけ
+  const groups = visitGroups(c), collapse = tlCollapse && groups.length > 0;
+  TL_RULER = TL_RULER_BASE + (groups.length && !collapse ? TL_VISITH : 0);
+  const btnV = document.getElementById("btnTlVisits");
+  btnV.disabled = !groups.length; btnV.classList.toggle("on", collapse);
+  document.getElementById("tlLabels").innerHTML = collapse
+    ? `<div class="tl-ruler-sp" style="height:${TL_RULER_BASE + 4}px"></div><div class="tl-lb" style="height:${tlLane * 2}px; line-height:${tlLane * 2}px">回</div>`
+    : `${groups.length ? `<div class="tl-lb" style="height:${TL_VISITH}px; line-height:${TL_VISITH}px">回</div>` : ""}<div class="tl-ruler-sp"></div><div class="tl-lb">車体</div><div class="tl-lb">アーム</div><div class="tl-lb">その他</div>`;
+  if (collapse) { renderTimelineVisits(c, groups); return; }
+  for (const g of groups) { // 回の行（段のレーンの上）
+    const x = tlGeom.xs[g.si0], w = tlGeom.xs[g.si1] + tlGeom.ws[g.si1] - x;
+    visitBar(g, x, w, 2, TL_VISITH - 4, false);
+  }
   const H = TL_RULER + tlLane * 3 + TL_AXIS;
   tlInnerEl.style.width = (tlGeom.end + TL_ADDW + 8) + "px";
   tlInnerEl.style.height = H + "px";
@@ -4045,7 +4155,7 @@ function renderTimeline() {
   {
     const ib = findPoint(state.initial.body), ia = findPoint(state.initial.arm);
     const col = tlDiv("tl-stage tl-start" + (selStart ? " sel" : ""), `left:4px; width:${TL_STARTW}px; height:${TL_RULER + tlLane * 3}px;`);
-    col.appendChild(tlDiv("tl-sno", `height:${TL_RULER}px; line-height:${TL_RULER}px;`, "開始"));
+    col.appendChild(tlDiv("tl-sno", `top:${TL_RULER - TL_RULER_BASE}px; height:${TL_RULER_BASE}px; line-height:${TL_RULER_BASE}px;`, "開始"));
     const chip = (lane, p, key) => {
       const ok = p && p[key];
       const d = tlDiv("tl-bar start" + (ok ? " " + lane : " now"), `left:3px; top:${laneY[lane]}px; width:${TL_STARTW - 6}px; height:${barH}px; line-height:${barH}px;`,
@@ -4063,7 +4173,7 @@ function renderTimeline() {
     const col = tlDiv("tl-stage" + (si % 2 ? " alt" : "") + (si === selStage ? " sel" : "") + (si === lastActiveStageIdx ? " active" : ""),
       `left:${x}px; width:${w}px; height:${TL_RULER + tlLane * 3}px;`);
     col.dataset.si = si;
-    col.appendChild(tlDiv("tl-sno", `height:${TL_RULER}px; line-height:${TL_RULER}px;`, w >= String(si + 1).length * 7 + 4 ? String(si + 1) : "")); // 入らない番号は出さない
+    col.appendChild(tlDiv("tl-sno", `top:${TL_RULER - TL_RULER_BASE}px; height:${TL_RULER_BASE}px; line-height:${TL_RULER_BASE}px;`, w >= String(si + 1).length * 7 + 4 ? String(si + 1) : "")); // 入らない番号は出さない
     const prog = state.program[si];
     const tip = [`段 ${si + 1}（${st.dur.toFixed(2)} s）`];
     const bar = (lane, ww, cls, label, top, h) => {
@@ -4134,7 +4244,7 @@ function renderTimeline() {
     }
   }
   // 目盛りの帯（ドラッグでその時刻へ）と再生位置の赤い線
-  const ruler = tlDiv("tl-rulerhit", `left:0; width:${tlGeom.end + 4}px; height:${TL_RULER}px;`);
+  const ruler = tlDiv("tl-rulerhit", `left:0; top:${TL_RULER - TL_RULER_BASE}px; width:${tlGeom.end + 4}px; height:${TL_RULER_BASE}px;`);
   ruler.title = "ドラッグでその時刻の姿勢に飛びます";
   ruler.addEventListener("mousedown", tlScrubStart);
   tlInnerEl.appendChild(ruler);
@@ -4470,6 +4580,12 @@ function seekTo(t) {
   armCtrlRefresh();
 }
 
+document.getElementById("btnTlVisits").addEventListener("click", () => {
+  tlCollapse = !tlCollapse;
+  try { localStorage.setItem("lexxsim.tlCollapse", tlCollapse ? "1" : "0"); } catch (err) { /* 保存できなくても動く */ }
+  renderTimeline();
+  requestAnimationFrame(resizeCanvas); // 高さが変わるのでキャンバスも合わせる
+});
 document.getElementById("tlScale").addEventListener("change", (e) => {
   tlScale = e.target.value;
   try { localStorage.setItem("lexxsim.tlScale", tlScale); } catch (err) { /* 保存できなくても動く */ }
@@ -5329,6 +5445,7 @@ document.getElementById("btnSave").addEventListener("click", () => {
       blocks: s.blocks.map(b => b.type === "point"
         ? { type: "point", point: b.point, move: b.move || "both", mode: b.mode, vmax: b.vmax }
         : { type: b.type, name: b.name, wait: b.wait }),
+      ...(Number.isInteger(s.v) ? { v: s.v } : {}), // 回る順番の何回目の分か（rev.119〜）
     })),
     objects: state.objects, // 下絵（image）も含む
     robot: state.robot,
