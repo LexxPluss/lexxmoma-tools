@@ -645,7 +645,7 @@
        一度開いたら、隣へマウスを動かすだけで切り替わる。Esc で閉じる -->
   <div id="titleCol">
     <h1 class="lx-tool">LexxMoMa 動作シミュレーター</h1>
-    <div id="revDisp">rev.117</div>
+    <div id="revDisp">rev.118</div>
     <nav id="menubar" role="menubar">
       <div class="hdr-menu">
         <button class="mb" id="btnFile" aria-haspopup="menu" aria-expanded="false">ファイル</button>
@@ -694,6 +694,7 @@
 </header>
 
 <!-- 操作方法と前提値（ヘッダーの「ⓘ 操作と前提」で開く） -->
+<datalist id="workNames"><option value="つかむ"></option><option value="離す"></option><option value="待つ"></option><option value="撮像"></option><option value="ネジ締め"></option></datalist>
 <div id="busyDlg" hidden><div class="box" role="status" aria-live="polite">
   <div class="spin"></div><div class="ttl">自動作成中…</div><div class="step" id="busyStep"></div><div class="bar"><i id="busyBar"></i></div>
 </div></div>
@@ -810,6 +811,9 @@
       <legend>回る順番（自動作成）</legend>
       <div id="routeList"></div>
       <div id="routeAdd"></div>
+      <div id="autoCfgRow" class="addrow" title="自動作成で車体が走るあいだの、アームの手先の制約">
+        <span>走行中の手先: 高さ</span><input type="number" id="autoCfgZ" step="50" style="width:5em"><span>mm・半径</span><input type="number" id="autoCfgR" step="50" style="width:5em"><span>mm 以内</span>
+      </div>
       <div id="routeStale" class="hint stale-hint" hidden>⚠ 自動作成のあとに、回る順番・拘束・設備などが変わりました。タイムラインは古い結果のままです。下のボタンで作り直してください。</div>
       <div class="addrow"><button id="btnAutoRoute" class="primary" title="この順番で、姿勢とシーケンスを自動で作ります。自分で登録した姿勢は残ります（Ctrl+Z で戻せます）">この順番で自動作成</button></div>
     </fieldset>
@@ -1163,6 +1167,7 @@ function snapState() {
     program: state.program,
     objects: state.objects,
     autoSig: state.autoSig || null,
+    autoCfg: state.autoCfg || null,
   });
 }
 function pushUndo(snap) { // snap 省略時は現在状態。新しい編集なので redo 履歴は破棄
@@ -1181,6 +1186,8 @@ function applySnap(s) {
   state.program = c.program;
   state.objects = c.objects || [];
   state.autoSig = c.autoSig || null;
+  state.autoCfg = c.autoCfg || null;
+  renderAutoCfg();
   if (selectedId && !state.objects.some(o => o.id === selectedId)) selectedId = null;
   stopPlayback(false);
   renderPoseLists(); renderProgram(); recompute(); armCtrlRefresh(); renderObjectList();
@@ -1400,29 +1407,34 @@ function dropState(name, target) {
 /* ---------------- シーケンスの自動作成 ----------------
  * ユーザーが置くのは手先の目標（レイアウトの「手先」）だけ。手先ごとに、車体の位置・アームの姿勢・寄り付きを決めて段を作る。
  *  - 車体: 走ってよいエリア（「走行可」の区画。無ければ床全体）に収まり、設備（高さのある箱）に重ならない位置から、時間が最短のもの
- *  - 走行中: 手先は車体中心から水平 AUTO_R 以内、高さ AUTO_Z（床から）に固定（寄り付きの姿勢）。
+ *  - 走行中: 手先は車体中心から水平 autoR() 以内、高さ autoZ()（床から）に固定（寄り付きの姿勢）。
  *    走りながらアームを寄り付きの姿勢へ動かすのは、その途中も高さが AUTO_ZTOL 以内に収まるときだけ
  *  - 寄り付き: 走行中の制約を満たす姿勢のうち、目標の姿勢へ一番早く動けるもの（手先の向きは目標と同じ、方位は目標の方）
  *  - 目標へは寄り付きからそのまま動かす（rev.113〜。上から下ろすような動きが欲しければ、手先の目標を足して自分で入れる） */
-const AUTO_R = 600;      // 走行中の手先の制約: 車体中心からの水平距離 [mm]
-const AUTO_Z = 800;      // 走行中の手先の高さ（床から）[mm]
+/* 走行中の手先の制約（rev.118〜 回る順番のタブで変えられる。state.autoCfg、保存・Ctrl+Z でも一緒）
+ * 高さ: 床から [mm]、半径: 車体の中心からの水平距離 [mm] */
+const AUTO_CFG_DEF = { z: 800, r: 600 };
+const AUTO_CFG_RANGE = { z: [300, 1600], r: [150, 1000] };
+function autoCfg() { return Object.assign({}, AUTO_CFG_DEF, state.autoCfg || {}); }
+function autoZ() { return autoCfg().z; }
+function autoR() { return autoCfg().r; }
 const AUTO_ZTOL = 10;    // 走行中の手先の高さの許容差 [mm]
 const AUTO_MARGIN = 50;  // 車体の周りに空ける隙間 [mm]
 const HIT_PEN = 1000;    // 当たる動きの重み [s]: 当たらない動きがあれば必ずそちらを選び、無いときだけ当たる動きを使う
 function tcpR(q) { return tcpInfoVeh(q, state.toolLen).horizontal; }
 function tcpFloorZ(q) { return tcpInfoVeh(q, state.toolLen).z + ARM.L.base + ARM_MOUNT_Z; }
-/* 走ってよいアームの姿勢か（手先が半径 AUTO_R 以内・高さ AUTO_Z） */
-function driveOk(q) { return tcpR(q) <= AUTO_R + 1 && Math.abs(tcpFloorZ(q) - AUTO_Z) <= AUTO_ZTOL; }
-/* 寄り付きの姿勢: 手先を高さ AUTO_Z・半径 AUTO_R 以内に置き、qT へ一番早く動けるもの。戻り値 { q } か、見つからなければ null。
+/* 走ってよいアームの姿勢か（手先が半径 autoR() 以内・高さ autoZ()） */
+function driveOk(q) { return tcpR(q) <= autoR() + 1 && Math.abs(tcpFloorZ(q) - autoZ()) <= AUTO_ZTOL; }
+/* 寄り付きの姿勢: 手先を高さ autoZ()・半径 autoR() 以内に置き、qT へ一番早く動けるもの。戻り値 { q } か、見つからなければ null。
  * 車体の位置 b と設備 obs を渡すと、設備に当たる姿勢と、qT へ動くあいだに設備に当たる姿勢は選ばない（allows: 手先が触れてよい球）。
  * 当たりを気にしないときは obs に IGNORE_HITS を渡す */
 function approachOf(qT, b, obs, allows) {
   const P = params(), i = tcpInfoVeh(qT, state.toolLen);
   const az0 = i.horizontal > 1 ? Math.atan2(i.y, i.x) : ARM_MOUNT_YAW + qT[0];
-  const vz = AUTO_Z - ARM_MOUNT_Z - ARM.L.base;
+  const vz = autoZ() - ARM_MOUNT_Z - ARM.L.base;
   const search = (azs, wpr) => {
     const cs = [];
-    for (const da of azs) for (let r = AUTO_R - 20; r >= 100; r -= 60) {
+    for (const da of azs) for (let r = autoR() - 20; r >= 100; r -= 60) {
       const az = az0 + da * Math.PI / 180;
       const T = vehTargetToArm(r * Math.cos(az), r * Math.sin(az), vz, wpr[0], wpr[1], wpr[2]);
       const res = CRX.ik(T, cs.length ? cs[cs.length - 1].q : qT, state.toolLen, { iters: 80 });
@@ -1437,7 +1449,7 @@ function approachOf(qT, b, obs, allows) {
   // まず手先の向きは目標のまま。届かなければ方位をずらし、それでも無ければ真下向き
   return search([0], [i.w, i.p, i.r]) || search([-30, 30, -60, 60], [i.w, i.p, i.r]) || search([0, -30, 30], [180, 0, i.r]);
 }
-function armPathOk(qs, qg, P) { // アームが動くあいだ、手先が半径 AUTO_R 以内・高さ AUTO_Z のままか
+function armPathOk(qs, qg, P) { // アームが動くあいだ、手先が半径 autoR() 以内・高さ autoZ() のままか
   const m = armMotion(qs, qg, P);
   for (let k = 0; k <= 20; k++) if (!driveOk(m.anim(m.dur * k / 20).arm.q)) return false;
   return true;
@@ -1481,16 +1493,16 @@ function driveClear(drive, qs, qg, obs, P) {
   }
   return true;
 }
-/* たたんだ姿勢: 手先を車体の中心の少し前・高さ AUTO_Z に引き寄せ、真下に向ける（走るあいだ、アームが車体の外へ出にくい） */
+/* たたんだ姿勢: 手先を車体の中心の少し前・高さ autoZ() に引き寄せ、真下に向ける（走るあいだ、アームが車体の外へ出にくい） */
 let stowCache = null;
 function stowPose() {
-  if (stowCache && stowCache.toolLen === state.toolLen) return stowCache.q;
+  if (stowCache && stowCache.toolLen === state.toolLen && stowCache.z === autoZ()) return stowCache.q;
   let q = null;
   for (const x of [150, 0, 250]) {
-    const r = CRX.ik(vehTargetToArm(x, 0, AUTO_Z - ARM_MOUNT_Z - ARM.L.base, 180, 0, 0), ARM_READY_Q, state.toolLen, { iters: 120 });
+    const r = CRX.ik(vehTargetToArm(x, 0, autoZ() - ARM_MOUNT_Z - ARM.L.base, 180, 0, 0), ARM_READY_Q, state.toolLen, { iters: 120 });
     if (r.ok && CRX.withinLimits(r.q) && driveOk(r.q)) { q = r.q; break; }
   }
-  stowCache = { toolLen: state.toolLen, q };
+  stowCache = { toolLen: state.toolLen, z: autoZ(), q };
   return q;
 }
 /* 車体を b0 → b1 へ走らせ、アームを寄り付き qR → 行き先の寄り付き qA へ動かす走り方。設備に当たらず、時間が短いもの。
@@ -1687,14 +1699,23 @@ function targetCands(t, zones, obs, P, al) {
   return [];
 }
 /* 回る順番: 手先の目標（自動で車体の位置・姿勢を決める）と、自分で登録した姿勢（そのまま使う）の並び。
- * state.route の 1 つは、手先の目標の id（文字）、{t: id, cons: この回だけの拘束}（rev.111〜）か {pose: 姿勢の名前}。
+ * state.route の 1 つは、手先の目標の id（文字）、{t: id, cons?: この回だけの拘束（rev.111〜）, work?: この回での作業（rev.118〜）}
+ * か {pose: 姿勢の名前, work?}。work = {name: 作業の名前, sec: 秒}
  * 一覧が空なら手先の目標を置いた順に 1 回ずつ */
 function routeEntries() {
   const tg = state.objects.filter(o => o.type === "target");
   if (!state.route.length) return tg.map(o => ({ o }));
   return state.route.map(e => typeof e === "string" ? { o: tg.find(o => o.id === e) }
-    : e && e.t ? { o: tg.find(o => o.id === e.t), cons: e.cons } : { p: findPoint(e.pose) }).filter(e => e.o || e.p);
+    : e && e.t ? { o: tg.find(o => o.id === e.t), cons: e.cons, work: e.work } : { p: findPoint(e.pose), work: e.work }).filter(e => e.o || e.p);
 }
+/* 回る順番の 1 つを、変えた項目（cons・work。null で外す）で作り直す。何も付いていない手先の目標は id の文字に戻す */
+function withVisit(e, patch) {
+  const base = typeof e === "string" ? { t: e } : Object.assign({}, e);
+  for (const k of Object.keys(patch)) { if (patch[k] == null) delete base[k]; else base[k] = patch[k]; }
+  return base.t && !base.cons && !base.work ? base.t : base;
+}
+/* この回での作業の短い説明（「つかむ 1.5s」） */
+function workText(w) { return w && w.sec > 0 ? `${w.name || "作業"} ${+w.sec.toFixed(2)}s` : ""; }
 /* 回る順番の 1 つが指す手先の目標の id（姿勢なら undefined） */
 function routeTid(e) { return typeof e === "string" ? e : e && e.t; }
 /* 回 e（routeEntries の 1 つ）で使う手先の目標: この回だけの拘束があれば、それを付けた写し */
@@ -1740,9 +1761,13 @@ function renderRoute() {
     tag.title = e.cons ? "この回だけ、手先の目標とは別の拘束を使います: " + tag.textContent : "拘束: " + tag.textContent;
     if (e.cons) tag.style.background = "rgba(192,57,43,0.15)";
     row.appendChild(tag);
-    if (e.o) { // この回だけの拘束を開く・閉じる
+    if (e.work && e.work.sec > 0) { // この回での作業（rev.118〜）
+      const wt = document.createElement("span"); wt.className = "pt-tag"; wt.textContent = "⏱" + workText(e.work); wt.title = "この回での作業: " + workText(e.work);
+      row.appendChild(wt);
+    }
+    { // この回だけの拘束・作業を開く・閉じる
       const bt = document.createElement("button"); bt.className = "small" + (routeEditIdx === i ? " on" : ""); bt.textContent = "⚙";
-      bt.title = "この回だけ、手先の目標とは別の拘束にします";
+      bt.title = e.o ? "この回での作業と、この回だけの拘束を決めます" : "この回での作業を決めます";
       bt.addEventListener("click", (ev) => { ev.stopPropagation(); routeEditIdx = routeEditIdx === i ? null : i; renderRoute(); });
       row.appendChild(bt);
     }
@@ -1759,7 +1784,7 @@ function renderRoute() {
       else openPointEdit(e.p.name); // 右に姿勢の編集を出す
     });
     el.appendChild(row);
-    if (e.o && routeEditIdx === i) el.appendChild(visitConsBox(e, i));
+    if (routeEditIdx === i) { el.appendChild(visitWorkBox(e, i)); if (e.o) el.appendChild(visitConsBox(e, i)); }
   });
   if (list.length && !state.route.length) el.appendChild(hint("今は手先の目標を置いた順に 1 回ずつ回ります。並べ替えたり、下で足したりすると、その順番になります。"));
   // 足す: 手先の目標か登録した姿勢を選んで最後に足す（同じものを何度でも）
@@ -1795,7 +1820,7 @@ function visitConsBox(e, i) {
   if (e.cons) {
     const back = document.createElement("button"); back.className = "small"; back.textContent = "手先の拘束に戻す";
     back.title = "この回だけの拘束をやめて、手先の目標の拘束を使います";
-    back.addEventListener("click", () => editRoute(r => { r[i] = routeTid(r[i]); }));
+    back.addEventListener("click", () => editRoute(r => { r[i] = withVisit(r[i], { cons: null }); }));
     head.appendChild(back);
   }
   wrap.appendChild(head);
@@ -1807,8 +1832,33 @@ function visitConsBox(e, i) {
   const grid = document.createElement("div"); grid.className = "pgrid"; wrap.appendChild(grid);
   const result = state.points.find(p => p.auto && p.tg === e.o.id && (p.rv || []).includes(i) && p.body) || null; // この回の今の結果
   buildConsEditor(grid, visitTarget(e), result, (patch) => editRoute(r => {
-    r[i] = { t: routeTid(r[i]), cons: Object.assign(consOf(visitTarget(e)), patch) };
+    r[i] = withVisit(r[i], { cons: Object.assign(consOf(visitTarget(e)), patch) });
   }));
+  return wrap;
+}
+/* この回での作業の欄（rev.118〜）: 着いたあとにする作業の名前と秒。自動作成で、着いた次の段に「その他」として入る */
+function visitWorkBox(e, i) {
+  const wrap = document.createElement("div"); wrap.className = "visit-cons visit-work";
+  const head = document.createElement("div"); head.style.cssText = "font-weight:600; margin-bottom:4px;";
+  head.textContent = `${i + 1} 回目（${e.o ? e.o.name : e.p.name}）での作業`;
+  wrap.appendChild(head);
+  const row = document.createElement("div"); row.style.cssText = "display:flex; gap:4px; align-items:center; flex-wrap:wrap;";
+  const nm = document.createElement("input"); nm.type = "text"; nm.placeholder = "つかむ・離す・待つ など"; nm.style.cssText = "flex:1; min-width:6em;";
+  nm.setAttribute("list", "workNames"); nm.value = e.work ? e.work.name || "" : "";
+  const sec = document.createElement("input"); sec.type = "number"; sec.min = "0"; sec.step = "0.1"; sec.style.width = "5em";
+  sec.value = e.work ? e.work.sec : "";
+  const set = () => {
+    const v = parseFloat(sec.value), n = nm.value.trim();
+    const work = isFinite(v) && v > 0 ? { name: n || "作業", sec: v } : null;
+    editRoute(r => { r[i] = withVisit(r[i], { work }); });
+  };
+  nm.addEventListener("change", set); sec.addEventListener("change", set);
+  const u = document.createElement("span"); u.textContent = "秒";
+  row.append(nm, sec, u);
+  wrap.appendChild(row);
+  const h = document.createElement("div"); h.className = "hint"; h.style.marginTop = "4px";
+  h.textContent = "着いたあとにする作業の時間です。自動作成で、着いた次の段に「その他」として入ります（0 か空なら無し）。";
+  wrap.appendChild(h);
   return wrap;
 }
 document.getElementById("btnAutoRoute").addEventListener("click", () => autoGenerate());
@@ -1828,11 +1878,11 @@ document.getElementById("btnAutoRoute").addEventListener("click", () => autoGene
  * 回る順番（この回だけの拘束も）、手先の目標（位置・向き・拘束）、設備・区画、回る順番に入れた登録した姿勢、開始の位置、ツール長 */
 function autoInputs() {
   const r = (v) => Math.round(v * 1000) / 1000;
-  const ents = routeEntries().map(e => e.o ? { t: e.o.id, c: e.cons || null } : { p: e.p.name, b: e.p.body, a: e.p.arm && e.p.arm.q.map(r) });
+  const ents = routeEntries().map(e => Object.assign(e.o ? { t: e.o.id, c: e.cons || null } : { p: e.p.name, b: e.p.body, a: e.p.arm && e.p.arm.q.map(r) }, { w: e.work || null }));
   const tg = state.objects.filter(o => o.type === "target" && o.visible !== false).map(o => [o.id, r(o.x), r(o.y), r(o.z), r(o.w || 0), r(o.p || 0), r(o.r || 0), o.cons || null]);
   const bx = state.objects.filter(o => o.type === "box" && o.visible !== false).map(o => [r(o.x), r(o.y), r(o.yaw || 0), r(o.w), r(o.d), r(o.h || 0), r(o.z0 || 0), !!o.drive]);
   const b0 = initialBody(), q0 = initialArm().q.map(r);
-  return JSON.stringify({ ents, tg, bx, b0: [r(b0.x), r(b0.y), r(b0.th)], q0, tool: state.toolLen });
+  return JSON.stringify({ ents, tg, bx, b0: [r(b0.x), r(b0.y), r(b0.th)], q0, tool: state.toolLen, cfg: autoCfg() });
 }
 /* 結果が古いかを表示に出す（0.7 s ごとに見る） */
 function updateAutoStale() {
@@ -1840,8 +1890,30 @@ function updateAutoStale() {
   document.getElementById("autoStale").hidden = !stale;
   document.getElementById("routeStale").hidden = !stale;
   for (const id of ["btnAuto", "btnAutoRoute"]) document.getElementById(id).classList.toggle("stale-btn", stale);
+  renderAutoCfg(); // 元に戻す・読み込みでも欄が追いつくように
 }
 setInterval(updateAutoStale, 700);
+/* 走行中の手先の制約の欄（rev.118〜） */
+function renderAutoCfg() {
+  const c = autoCfg();
+  for (const k of ["z", "r"]) {
+    const el = document.getElementById(k === "z" ? "autoCfgZ" : "autoCfgR");
+    if (el !== document.activeElement) el.value = c[k];
+    el.min = AUTO_CFG_RANGE[k][0]; el.max = AUTO_CFG_RANGE[k][1];
+  }
+}
+for (const k of ["z", "r"]) {
+  const el = document.getElementById(k === "z" ? "autoCfgZ" : "autoCfgR");
+  el.addEventListener("change", () => {
+    const [lo, hi] = AUTO_CFG_RANGE[k], v = parseFloat(el.value);
+    if (!isFinite(v)) { renderAutoCfg(); return; }
+    const nv = Math.min(hi, Math.max(lo, v));
+    if (nv === autoCfg()[k]) { renderAutoCfg(); return; }
+    pushUndo();
+    state.autoCfg = Object.assign(autoCfg(), { [k]: nv });
+    renderAutoCfg();
+  });
+}
 /* 回る順番に沿って、姿勢とシーケンスを作る（rev.110〜 順番全体で時間が最短になるように）。
  * 手先の目標は、拘束に合う車体の位置の候補（目標ごとに数十）から、回ごとに 1 つ選ぶ。同じ目標でも回ごとに別の位置を選んでよい。
  * 隣り合う回の移動時間（寄り付きへ戻る＋走る＋寄り付き → 目標）の合計が最小の並びを、動的計画法で選ぶ（route-opt.js）。
@@ -1878,7 +1950,7 @@ async function autoGenerateRun(ents, step) {
   await step("準備しています", 0);
   const P = params(), zones = autoZones(), obs = autoObstacles(), al = touchSpots();
   const body0 = initialBody(), q0 = initialArm().q.slice();
-  const noApproach = (n) => `「${n}」の寄り付きの姿勢（手先の高さ ${AUTO_Z} mm・半径 ${AUTO_R} mm 以内）が見つかりませんでした。`;
+  const noApproach = (n) => `「${n}」の寄り付きの姿勢（手先の高さ ${autoZ()} mm・半径 ${autoR()} mm 以内）が見つかりませんでした。`;
   // 開始: 走る前に寄り付きへ
   const startC = { kind: "start", name: "開始", body: body0, qT: q0, qA: q0, inDur: 0, outDur: 0, pen: 0 };
   if (!driveOk(q0)) {
@@ -1897,7 +1969,7 @@ async function autoGenerateRun(ents, step) {
   for (const [ti, t] of targets.entries()) {
     await step(`車体の位置の候補を作っています（手先 ${ti + 1} / ${targets.length}: ${t.name}）`, 0.05 + 0.45 * ti / targets.length);
     const cs = targetCands(t, zones, obs, P, al);
-    if (!cs.length) { alert(`「${t.name}」に届く車体の位置（拘束: ${consText(t)}。走行中の手先の高さ ${AUTO_Z} mm・半径 ${AUTO_R} mm 以内に戻れる寄り付きも要る）が見つかりませんでした。手先の高さ・向き、拘束、走行可の区画、設備の位置を見直してください。`); return; }
+    if (!cs.length) { alert(`「${t.name}」に届く車体の位置（拘束: ${consText(t)}。走行中の手先の高さ ${autoZ()} mm・半径 ${autoR()} mm 以内に戻れる寄り付きも要る）が見つかりませんでした。手先の高さ・向き、拘束、走行可の区画、設備の位置を見直してください。`); return; }
     cands.set(t, cs);
   }
   const softOf = (t) => cands.get(t).every(c => c.hit); // 当たらない候補が 1 つも無い目標
@@ -2060,12 +2132,15 @@ async function autoGenerateRun(ents, step) {
     if (h.kind === "direct") { if (b.qT) steps.push({ arm: nb.nT }); }
     else if (h.kind === "via") { retreat(a); steps.push({ arm: nb.nA }); enter(b, nb); }
     else { retreat(a); pushDrive(steps, h.w, nb.nT, nb.nA, stowName); enter(b, nb); }
+    const w = ents[k].work; // この回での作業（rev.118〜）: 着いた次の段に「その他」で
+    if (w && w.sec > 0) steps.push({ other: { type: "other", name: w.name || "作業", wait: w.sec } });
   }
   pushUndo();
   state.points = pts;
   state.initial = { body: start, arm: start };
   state.autoSig = sig;
   state.program = steps.map(st => {
+    if (st.other) return { blocks: [Object.assign({}, st.other)] };
     const stage = { blocks: [] };
     setStageSlots(stage, { body: st.body || null, arm: st.arm || null });
     const bb = slotBlock(stage, "body");
@@ -5042,7 +5117,7 @@ const GHOST_HANDLE = 550; // 向きを変える丸の、車体の中心から前
 function ghostHandle(g) { return [g.c.bx + GHOST_HANDLE * Math.cos(g.th), g.c.by + GHOST_HANDLE * Math.sin(g.th)]; }
 /* 固定した車体の拘束を変える（手先の目標の拘束か、この回だけの拘束） */
 function setGhostCons(g, patch) {
-  if (g.visit !== undefined) state.route[g.visit] = { t: g.t.id, cons: Object.assign(consOf(g.t), patch) };
+  if (g.visit !== undefined) state.route[g.visit] = withVisit(state.route[g.visit], { cons: Object.assign(consOf(g.t), patch) });
   else { const o = state.objects.find(x => x.id === g.t.id); if (o) o.cons = Object.assign(consOf(o), patch); }
 }
 let ghostDrag = null; // { key, g, mode: "move"|"rot", start, orig, snap, moved }
@@ -5184,11 +5259,24 @@ cv.addEventListener("wheel", (e) => {
 
 /* ---------------- 保存・読込 ---------------- */
 /* 保存データ → objects。version 3 はそのまま（欠けた項目を補う）、それ以前は bgRects / bgLines / bgTexts から変換 */
+/* 保存ファイルの走行中の手先の制約（範囲の外・不正なら既定の値） */
+function autoCfgFromSave(data) {
+  const c = data.autoCfg;
+  if (!c || typeof c !== "object") return null;
+  const out = {};
+  for (const k of ["z", "r"]) { const v = +c[k]; if (isFinite(v) && v >= AUTO_CFG_RANGE[k][0] && v <= AUTO_CFG_RANGE[k][1]) out[k] = v; }
+  return Object.keys(out).length ? out : null;
+}
 /* 保存ファイルの回る順番: 手先の目標の id（文字）、{t, cons}（この回だけの拘束。rev.111〜）、{pose}。ほかは読み捨てる */
 function routeFromSave(data) {
   if (!Array.isArray(data.route)) return [];
   return data.route.filter(e => typeof e === "string" || (e && (typeof e.pose === "string" || typeof e.t === "string")))
-    .map(e => typeof e === "string" ? e : typeof e.t === "string" ? (e.cons && typeof e.cons === "object" ? { t: e.t, cons: Object.assign({}, e.cons) } : e.t) : { pose: e.pose });
+    .map(e => {
+      if (typeof e === "string") return e;
+      const w = e.work && isFinite(+e.work.sec) && +e.work.sec > 0 ? { work: { name: String(e.work.name || "作業"), sec: +e.work.sec } } : {};
+      if (typeof e.t === "string") return withVisit(e.t, Object.assign(e.cons && typeof e.cons === "object" ? { cons: Object.assign({}, e.cons) } : {}, w));
+      return Object.assign({ pose: e.pose }, w);
+    });
 }
 function objectsFromSave(data) {
   const legacyImage = (data.bgImage && data.bgImage.src)
@@ -5236,6 +5324,7 @@ document.getElementById("btnSave").addEventListener("click", () => {
     places: state.places, // ユーザーが付けた車体位置の名前（rev.97〜）
     route: state.route,   // 自動作成で手先の目標を回る順番（rev.102〜）
     autoSig: state.autoSig || null, // 自動作成したときの入力の要約（rev.114〜。違えば結果が古い）
+    autoCfg: state.autoCfg || null, // 走行中の手先の高さ z・半径 r [mm]（rev.118〜。無ければ 800・600）
     program: state.program.map(s => ({
       blocks: s.blocks.map(b => b.type === "point"
         ? { type: "point", point: b.point, move: b.move || "both", mode: b.mode, vmax: b.vmax }
@@ -5512,6 +5601,8 @@ function applyLoadedData(data) {
       state.places = Array.isArray(data.places) ? data.places.filter(q => q && isFinite(q.x) && isFinite(q.y) && q.name) : [];
       state.route = routeFromSave(data);
       state.autoSig = typeof data.autoSig === "string" ? data.autoSig : null;
+      state.autoCfg = autoCfgFromSave(data);
+      renderAutoCfg();
       state.initial = conv.initial;
       state.program = conv.program;
       selPointName = null;

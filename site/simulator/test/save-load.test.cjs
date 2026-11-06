@@ -45,11 +45,43 @@ test("知らない種類の物は読み捨て、手先の数値がおかしけ�
   assert.deepEqual([objs[0].x, objs[0].y, objs[0].z, objs[0].w], [12, 0, 0, 0]);
 });
 
-const routeFromSave = new Function(grab("routeFromSave") + "\nreturn routeFromSave;")();
+const routeFromSave = new Function(grab("withVisit") + "\n" + grab("routeFromSave") + "\nreturn routeFromSave;")();
 test("回る順番の「この回だけの拘束」（rev.111〜）は読み込んでも残る", () => {
   const cons = { hand: "fixed", pos: "free", ori: "face" };
   const r = routeFromSave({ route: ["t1", { t: "t2", cons }, { pose: "P1" }, { t: "t3" }, 5, null, { foo: 1 }] });
   assert.deepEqual(r, ["t1", { t: "t2", cons }, { pose: "P1" }, "t3"]);
   assert.notEqual(r[1].cons, cons, "拘束は写しにする（読み込んだデータと共有しない）");
   assert.deepEqual(routeFromSave({}), []);
+});
+
+const withVisit = new Function(grab("withVisit") + "\nreturn withVisit;")();
+test("回る順番の「この回での作業」（rev.118〜）は読み込んでも残り、秒がおかしければ外す", () => {
+  const r = routeFromSave({ route: [
+    { t: "t1", work: { name: "つかむ", sec: 1.5 } },
+    { t: "t2", cons: { ori: "face" }, work: { name: "離す", sec: "2" } },
+    { pose: "P1", work: { name: "待つ", sec: 3 } },
+    { t: "t3", work: { name: "x", sec: 0 } },
+    { pose: "P2", work: { sec: "abc" } },
+  ] });
+  assert.deepEqual(r, [
+    { t: "t1", work: { name: "つかむ", sec: 1.5 } },
+    { t: "t2", cons: { ori: "face" }, work: { name: "離す", sec: 2 } },
+    { pose: "P1", work: { name: "待つ", sec: 3 } },
+    "t3",
+    { pose: "P2" },
+  ]);
+});
+test("回の項目を外すと、何も付いていない手先の目標は id の文字に戻る", () => {
+  assert.equal(withVisit({ t: "t1", work: { name: "a", sec: 1 } }, { work: null }), "t1");
+  assert.deepEqual(withVisit("t1", { cons: { ori: "face" } }), { t: "t1", cons: { ori: "face" } });
+  assert.deepEqual(withVisit({ t: "t1", cons: { ori: "face" }, work: { name: "a", sec: 1 } }, { cons: null }), { t: "t1", work: { name: "a", sec: 1 } });
+  assert.deepEqual(withVisit({ pose: "P1", work: { name: "a", sec: 1 } }, { work: null }), { pose: "P1" });
+});
+
+const autoCfgFromSave = new Function("AUTO_CFG_RANGE", grab("autoCfgFromSave") + "\nreturn autoCfgFromSave;")({ z: [300, 1600], r: [150, 1000] });
+test("走行中の手先の制約（rev.118〜）は読み込んでも残り、範囲の外は既定に戻す", () => {
+  assert.deepEqual(autoCfgFromSave({ autoCfg: { z: 900, r: 550 } }), { z: 900, r: 550 });
+  assert.deepEqual(autoCfgFromSave({ autoCfg: { z: 5000, r: 550 } }), { r: 550 });
+  assert.equal(autoCfgFromSave({}), null);
+  assert.equal(autoCfgFromSave({ autoCfg: { z: "abc" } }), null);
 });
